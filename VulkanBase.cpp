@@ -1095,7 +1095,14 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
                     1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
                 };
 
-                vertex.color = { 1.0f,1.0f,1.0f };
+                vertex.color = { 0.0f,0.0f,0.0f };
+
+                vertex.normal =
+                {
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
+                };
 
                 if (uniqueVertices.count(vertex) == 0)
                 {
@@ -1164,6 +1171,12 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
 
     void VulkanBase::setMaterial(std::shared_ptr<Material> material)
     {
+        ubo.diffuse = glm::vec3{ 0.5 };
+        ubo.ambient = glm::vec3{ 2.0 };
+        ubo.specular = glm::vec3{ 2.0 };
+        ubo.emissive = glm::vec3{ 0.0 };
+        ubo.transmissive = glm::vec3{ 0.0 };
+        ubo.shininess = 30.0;
     }
 
     void VulkanBase::updateUniformBuffer(uint32_t currentImage) {
@@ -1172,8 +1185,9 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        ubo.model = glm::translate(glm::mat4(1.0f),glm::vec3(0.0f,-0.1,0.0f)) * glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        ubo.view = glm::lookAt(glm::vec3(0.0f,0.1f,0.3f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
         ubo.proj[1][1] *= -1;
 
