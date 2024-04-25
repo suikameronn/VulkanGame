@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="ソース ファイル\LoadModel">
+      <UniqueIdentifier>{9faa75b5-6077-4c30-92ae-f1ca6a9e94b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\LoadModel">
+      <UniqueIdentifier>{452c546e-1157-4489-b5de-2e853ea9ce9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Lights">
+      <UniqueIdentifier>{4cac4a24-a511-466b-ae6b-2183316919ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Lights">
+      <UniqueIdentifier>{2c1a1d75-3295-433d-bdab-de4bea32f3fe}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanBase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>ソース ファイル\LoadModel</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Trimesh.cpp">
+      <Filter>ソース ファイル\LoadModel</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>ソース ファイル\LoadModel</Filter>
+    </ClCompile>
+    <ClCompile Include="DirLight.cpp">
+      <Filter>ソース ファイル\Lights</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="VulkanBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>ヘッダー ファイル\LoadModel</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Trimesh.h">
+      <Filter>ヘッダー ファイル\LoadModel</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>ヘッダー ファイル\LoadModel</Filter>
+    </ClInclude>
+    <ClInclude Include="DirLight.h">
+      <Filter>ヘッダー ファイル\Lights</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
