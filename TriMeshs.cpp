@@ -1,17 +1,17 @@
-#include"Trimesh.h"
+#include"TriMeshs.h"
 
-Trimesh::Trimesh()
+TriMeshs::TriMeshs()
 {
 	vertexItr = vertices.begin();
 	indexItr = indices.begin();
 }
 
-void Trimesh::addVertex(Vertex v)
+void TriMeshs::addVertex(Vertex v)
 {
 	pushBackVertex(v);
 }
 
-void Trimesh::addVertex(glm::vec3 p)
+void TriMeshs::addVertex(glm::vec3 p)
 {
 	v.pos = p;
 	v.color = glm::vec3(1.0, 1.0, 1.0);
@@ -20,17 +20,17 @@ void Trimesh::addVertex(glm::vec3 p)
 	pushBackVertex(v);
 }
 
-void Trimesh::setItrBeginV()
+void TriMeshs::setItrBeginV()
 {
 	vertexItr = vertices.begin();
 }
 
-void Trimesh::setItrBeginI()
+void TriMeshs::setItrBeginI()
 {
 	indexItr = indices.begin();
 }
 
-void Trimesh::goForwardItrV()
+void TriMeshs::goForwardItrV()
 {
 	if (vertexItr + 1 != vertices.end())
 	{
@@ -38,7 +38,7 @@ void Trimesh::goForwardItrV()
 	}
 }
 
-void Trimesh::goForwardItrI()
+void TriMeshs::goForwardItrI()
 {
 	if (indexItr + 1 != indices.end())
 	{
@@ -46,7 +46,7 @@ void Trimesh::goForwardItrI()
 	}
 }
 
-std::vector<Vertex>::iterator Trimesh::getItrV()
+std::vector<Vertex>::iterator TriMeshs::getItrV()
 {
 	if (vertexItr == vertices.end())
 	{
@@ -56,7 +56,7 @@ std::vector<Vertex>::iterator Trimesh::getItrV()
 	return vertexItr;
 }
 
-std::vector<uint32_t>::iterator Trimesh::getItrI()
+std::vector<uint32_t>::iterator TriMeshs::getItrI()
 {
 	if (indexItr == indices.end() && indexItr == indices.begin())
 	{
@@ -66,70 +66,59 @@ std::vector<uint32_t>::iterator Trimesh::getItrI()
 	return indexItr;
 }
 
-std::vector<Vertex>::iterator Trimesh::getFirstItrV()
+std::vector<Vertex>::iterator TriMeshs::getFirstItrV()
 {
 	vertexItr = vertices.begin();
 	return vertexItr;
 }
 
-std::vector<uint32_t>::iterator Trimesh::getFirstItrI()
+std::vector<uint32_t>::iterator TriMeshs::getFirstItrI()
 {
 	indexItr = indices.begin();
 	return indexItr;
 }
 
-std::vector<Vertex>::iterator Trimesh::getEndItrV()
+std::vector<Vertex>::iterator TriMeshs::getEndItrV()
 {
 	return vertices.end();
 }
 
-std::vector<uint32_t>::iterator Trimesh::getEndItrI()
+std::vector<uint32_t>::iterator TriMeshs::getEndItrI()
 {
 	return indices.end();
 }
 
-void Trimesh::pushBackVertex(Vertex v)
+void TriMeshs::pushBackVertex(Vertex v)
 {
 	vertices.push_back(v);
 }
 
-void Trimesh::pushBackIndex(uint32_t u)
+void TriMeshs::pushBackIndex(uint32_t u)
 {
 	indices.push_back(u);
 }
 
-uint32_t Trimesh::getSizeVertex()
+uint32_t TriMeshs::getSizeVertex()
 {
 	return vertices.size();
 }
 
-uint32_t Trimesh::getSizeIndex()
+uint32_t TriMeshs::getSizeIndex()
 {
 	return indices.size();
 }
 
-Vertex* Trimesh::getFirstPointerVertex()
+Vertex* TriMeshs::getFirstPointerVertex()
 {
 	return &vertices[0];
 }
 
-uint32_t* Trimesh::getFirstPointerIndex()
+uint32_t* TriMeshs::getFirstPointerIndex()
 {
 	return &indices[0];
 }
 
-void Trimesh::setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
-	, float* shininess, glm::vec3* transmissive)
-{
-	material = std::unique_ptr<Material>(new Material(diffuse, ambient, specular, emissive, shininess, transmissive));
-}
-
-std::shared_ptr<Material> Trimesh::getMaterial()
-{
-	return material;
-}
-
-void Trimesh::calcNormal()
+void TriMeshs::calcNormal()
 {
 	uint32_t vertSize = getSizeVertex();
 	uint32_t indeSize = getSizeIndex();

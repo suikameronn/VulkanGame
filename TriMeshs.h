@@ -4,20 +4,10 @@
 
 #include<glm/glm.hpp>
 
+#include"Model.h"
 #include"Material.h"
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-	glm::vec3 normal;
-
-	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
-	}
-};
-
-class Trimesh
+class TriMeshs:public Model
 {
 private:
 
@@ -30,10 +20,8 @@ private:
 
 	Vertex v;
 
-	std::shared_ptr<Material> material;
-
 public:
-	Trimesh();
+	TriMeshs();
 
 	void setItrBeginV();
 	void setItrBeginI();
@@ -61,9 +49,5 @@ public:
 	Vertex* getFirstPointerVertex();
 	uint32_t* getFirstPointerIndex();
 
-	void setMaterial(glm::vec3* diffuse,glm::vec3* ambient,glm::vec3* specular,glm::vec3* emissive
-		,float* shininess,glm::vec3* transmissive);
-	std::shared_ptr<Material> getMaterial();
-
-	void calcNormal();
+	void calcNormal() override;
 };

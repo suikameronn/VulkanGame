@@ -30,22 +30,16 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
     }
 }
 
-    void VulkanBase::initWindow() {
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    }
-
     void VulkanBase::initVulkan() {
         createInstance();
         setupDebugMessenger();
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+    }
+
+    void VulkanBase::execVulkan()
+    {
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -66,15 +60,6 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
-    }
-
-    void VulkanBase::mainLoop() {
-        while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-            drawFrame();
-        }
-
-        vkDeviceWaitIdle(device);
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -98,6 +83,9 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
     }
 
     void VulkanBase::cleanup() {
+
+        vkDeviceWaitIdle(device);
+
         cleanupSwapChain();
 
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
@@ -470,7 +458,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding,/*samplerLayoutBinding*/};
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = bindings.size();
@@ -482,8 +470,8 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
     }
 
     void VulkanBase::createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/NoTextureVert.spv");
-        auto fragShaderCode = readFile("shaders/NoTextureFrag.spv");
+        auto vertShaderCode = readFile("shaders/vert.spv");
+        auto fragShaderCode = readFile("shaders/frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1074,7 +1062,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
 
         std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-        scene->addObject(&objName, std::move(std::unique_ptr<Trimesh>(new Trimesh())));
+        scene->addObject(&objName, std::move(std::unique_ptr<TriMeshs>(new TriMeshs())));
 
         for (const auto& shape : shapes)//すべてのシェイプの数だけ繰り返す
         {
@@ -1250,7 +1238,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
             imageInfo.imageView = textureImageView;
             imageInfo.sampler = textureSampler;
 
-            std::array<VkWriteDescriptorSet,1> descriptorWrites{};
+            std::array<VkWriteDescriptorSet,2> descriptorWrites{};
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = descriptorSets[i];
             descriptorWrites[0].dstBinding = 0;
@@ -1258,7 +1246,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pBufferInfo = &bufferInfo;
-            /*
+
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = descriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
@@ -1266,7 +1254,6 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[1].descriptorCount = 1;
             descriptorWrites[1].pImageInfo = &imageInfo;
-            */
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }

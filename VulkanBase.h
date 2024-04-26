@@ -34,7 +34,6 @@
 enum Extension
 {
     OBJ,
-    RAY
 };
 
 struct QueueFamilyIndices {
@@ -87,9 +86,6 @@ private:
         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-
-    const uint32_t WIDTH = 800;
-    const uint32_t HEIGHT = 600;
 
     const std::string MODEL_PATH = "C:\\Users\\sugiyama\\Documents\\VulkanProject\\VulkanProject\\models\\viking_room.obj";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
@@ -162,8 +158,8 @@ private:
 
     std::string objName = "ray";
 
-    void initWindow();
     void initVulkan();
+    void execVulkan();
     void mainLoop();
     void cleanup();
     void cleanupSwapChain();
@@ -232,12 +228,29 @@ public:
 
     bool framebufferResized = false;
 
-    void run() 
+    VulkanBase(GLFWwindow* window)
     {
-        initWindow();
-        initVulkan();
-        mainLoop();
+        this->window = window;
+    }
+
+    ~VulkanBase()
+    {
         cleanup();
+    }
+
+    void prepareVulkan()
+    {
+        initVulkan();
+    }
+
+    void defaultSetVulkan()
+    {
+        execVulkan();
+    }
+
+    void render()
+    {
+        drawFrame();
     }
 };
 

@@ -4,9 +4,9 @@ Scene::Scene()
 {
 }
 
-void Scene::addObject(std::string* name,std::unique_ptr<Trimesh> trimesh)
+void Scene::addObject(std::string* name,std::unique_ptr<TriMeshs> TriMeshs)
 {
-	triMeshs.emplace("ray", std::move(trimesh));
+	TriMeshss.emplace("ray", std::move(TriMeshs));
 }
 
 void Scene::addObject(std::string* name, std::unique_ptr<DirLight> d)
@@ -14,9 +14,9 @@ void Scene::addObject(std::string* name, std::unique_ptr<DirLight> d)
 	dirLights.emplace(*name, std::move(d));
 }
 
-Trimesh* Scene::accessObj(std::string* name)
+TriMeshs* Scene::accessObj(std::string* name)
 {
-	return triMeshs["ray"].get();
+	return TriMeshss["ray"].get();
 }
 
 DirLight* Scene::accessLight(std::string* name)

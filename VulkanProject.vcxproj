@@ -24,6 +24,7 @@
     <ProjectGuid>{2882d01d-577d-46c4-b23a-37d8aba24d61}</ProjectGuid>
     <RootNamespace>VulkanProject</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>VulkanGame</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -136,20 +137,30 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Controller.cpp" />
     <ClCompile Include="DirLight.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Object.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="Trimesh.cpp" />
+    <ClCompile Include="TriMeshs.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="DirLight.h" />
+    <ClInclude Include="GameManager.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="Object.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="Trimesh.h" />
+    <ClInclude Include="TriMeshs.h" />
     <ClInclude Include="VulkanBase.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="classDesign.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
