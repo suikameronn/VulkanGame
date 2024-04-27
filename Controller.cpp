@@ -38,7 +38,6 @@ Controller::Controller(GLFWwindow* window)
 	glfwSetCursorPosCallback(window, mousePosCB);
 	glfwSetScrollCallback(window, mouseScrollCB);
 
-	glfwSetKeyCallback(window, keyFunCB);
 	glfwSetCharCallback(window, charFunCB);
 }
 
@@ -47,28 +46,41 @@ Controller::Controller(GLFWwindow* window)
 //’Ç‰ÁƒIƒvƒVƒ‡ƒ“
 void Controller::mouseButton(int button, int action, int mods)
 {
-	//std::cout << "mouseButton" << " " << button << " " << action << " " << mods << std::endl;
-	
+#ifdef _DEBUG
+	std::cout << "mouseButton" << " " << button << " " << action << " " << mods << std::endl;
+#endif
+
+	mButtonStat.button = button;
+	mButtonStat.clicked = action;
+	mButtonStat.mods = mods;
 }
 
 void Controller::mousePos(double x, double y)
 {
+#ifdef _DEBUG
 	std::cout << "mousePos" << " " << x << " " << y << std::endl;
+#endif
+
+	mPos.x = x;
+	mPos.y = y;
 }
 
 void Controller::mouseScroll(double x, double y)
 {
+#ifdef _DEBUG
 	std::cout << "mouseScroll" << " " << x << " " << y << std::endl;
-}
+#endif
 
-void Controller::keyFun(int key, int scancode, int action, int mods)
-{
-	std::cout << "keyFun" << " " << key << " " << scancode << " " << action << " " << mods << std::endl;
+	mScroll.y = y;
 }
 
 void Controller::charFun(unsigned int charInfo)
 {
+#ifdef _DEBUG
 	std::cout << "charFun" << " " << charInfo << std::endl;
+#endif
+
+	keyChar.charInfo = charInfo;
 }
 
 void Controller::setMouseButton(int button, int action, int mods)
@@ -84,11 +96,6 @@ void Controller::setMousePos(double x, double y)
 void Controller::setMouseScroll(double x, double y)
 {
 	mouseScroll(x, y);
-}
-
-void Controller::setKeyFun(int key, int scancode, int action, int mods)
-{
-	keyFun(key, scancode, action, mods);
 }
 
 void Controller::setCharFun(unsigned int charInfo)

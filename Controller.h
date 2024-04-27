@@ -3,6 +3,29 @@
 
 #include<GLFW/glfw3.h>
 
+struct MButtonStat
+{
+	int button;
+	int clicked;
+	int mods;
+};
+
+struct MPos
+{
+	double x;
+	double y;
+};
+
+struct MScroll
+{
+	double y;
+};
+
+struct KeyChar
+{
+	unsigned int charInfo;
+};
+
 class Controller
 {
 public:
@@ -11,8 +34,11 @@ public:
 	virtual void mouseButton(int button, int action, int mods);
 	virtual void mousePos(double x, double y);
 	virtual void mouseScroll(double x, double y);
-	virtual void keyFun(int key, int scancode, int action, int mods);
 	virtual void charFun(unsigned int charInfo);
+
+	static MButtonStat* getMButtonStat() { return &mButtonStat; }
+	static MPos* getMPos() { return &mPos; }
+	static KeyChar* getKeyChar() { return &keyChar; }
 
 protected:
 
@@ -21,10 +47,14 @@ protected:
 	static int mouseW;
 	static unsigned int keyInput;
 
+	static MButtonStat mButtonStat;
+	static MPos mPos;
+	static MScroll mScroll;
+	static KeyChar keyChar;
+
 	void setMouseButton(int button, int action, int mods);
 	void setMousePos(double x, double y);
 	void setMouseScroll(double x, double y);
-	void setKeyFun(int key, int scancode, int action, int mods);
 	void setCharFun(unsigned int charInfo);
 
 	static Controller* getThisPtr(GLFWwindow* window)
@@ -45,11 +75,6 @@ protected:
 	static void mouseScrollCB(GLFWwindow* window, double x, double y)
 	{
 		getThisPtr(window)->setMouseScroll(x, y);
-	}
-
-	static void keyFunCB(GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
-		getThisPtr(window)->setKeyFun(key, scancode, action, mods);
 	}
 
 	static void charFunCB(GLFWwindow* window, unsigned int charInfo)
