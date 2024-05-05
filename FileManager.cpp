@@ -1,5 +1,7 @@
 #include"FileManager.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+
 #include<tiny_obj_loader.h>
 
 std::string FileManager::getPath(OBJECT obj)
@@ -7,20 +9,18 @@ std::string FileManager::getPath(OBJECT obj)
     switch (obj)
     {
     case TEST:
-        path = "models/viking_room.obj";
+        path = "C:\\Users\\sugiyama\\Documents\\VulkanGame\\models\\viking_room.obj";
         return path;
         break;
 
     }
 }
 
-std::shared_ptr<Model> FileManager::loadModel(OBJECT obj)
+Model* FileManager::loadModel(OBJECT obj)
 {
     if (models.contains(obj))
     {
-        Model m = *models[obj];
-        std::shared_ptr<Model> p(&m);
-        return p;
+        return models[obj].get();
     }
 
     Model* model = new Model();
@@ -78,29 +78,10 @@ std::shared_ptr<Model> FileManager::loadModel(OBJECT obj)
 
     models[obj].reset(model);
 
-    Model m = *models[obj];
-    std::shared_ptr<Model> p(&m);
-    return p;
+    return models[obj].get();
 }
 
-std::shared_ptr<Model> FileManager::getModelData(OBJECT obj)
+Model* FileManager::getModelData(OBJECT obj)
 {
-    return models[obj];
-}
-
-void FileManager::loadScene()
-{
-    if (scene == nullptr)
-    {
-        scene = std::shared_ptr<Scene>(new Scene());
-    }
-    else
-    {
-        scene.reset();
-    }
-}
-
-std::shared_ptr<Scene> FileManager::getScene()
-{
-    return scene;
+    return models[obj].get();
 }

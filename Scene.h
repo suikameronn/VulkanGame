@@ -11,23 +11,22 @@
 #include"FileManager.h"
 #include"Model.h"
 #include"VulkanBase.h"
-#include"Model.h"
 
 class Scene
 {
 private:
 	//ここにシーンのオブジェクトの名前とモデルが保存される
-	std::unordered_map<std::string, std::shared_ptr<Model>> sceneSet;
+	std::unordered_map<std::string, Model> sceneSet;
 
 	//シーン全体のモデルへのポインターを持つ
-	std::vector<std::shared_ptr<Model>> modelsPointer;
+	std::vector<Model*> modelsPointer;
 	void setPointers();
 	void setPointers(std::string name);
 
 public:
 	Scene();
-	Scene(std::shared_ptr<FileManager> manager);
+	Scene(FileManager* manager);
 
-	std::shared_ptr<Model> getSceneModelData(std::string name);
-	std::vector<std::shared_ptr<Model>>& getSceneModel();
+	Model* getSceneModelData(std::string name);
+	std::vector<Model*>& getSceneModel();
 };

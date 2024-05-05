@@ -4,13 +4,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define TINYOBJLOADER_IMPLEMENTATION
 #define GLFW_INCLUDE_VULKAN
 
 #include "GLFW/glfw3.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -29,7 +27,8 @@
 #include <functional>
 #include<fstream>
 
-#include"Scene.h"
+#include"Model.h"
+#include"vulkan/vulkan.h"
 
 enum Extension
 {
@@ -199,9 +198,8 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    Extension checkFileExtension(const std::string name);
-    void createVertexBuffer(std::shared_ptr<Model> model, uint32_t i);
-    void createIndexBuffer(std::shared_ptr<Model> model, uint32_t i);
+    void createVertexBuffer(Model* model, uint32_t i);
+    void createIndexBuffer(Model* model, uint32_t i);
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
@@ -258,7 +256,7 @@ public:
         drawFrame();
     }
 
-    void setVertexIndex(std::vector<std::shared_ptr<Model>>& modelsData);
+    void setVertexIndex(std::vector<Model*>& modelsData);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

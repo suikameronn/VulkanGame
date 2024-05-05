@@ -4,7 +4,7 @@ Scene::Scene()
 {
 }
 
-Scene::Scene(std::shared_ptr<FileManager> manager)
+Scene::Scene(FileManager* manager)
 {
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
@@ -15,22 +15,22 @@ Scene::Scene(std::shared_ptr<FileManager> manager)
 
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
-		sceneSet[itr->first] = manager->loadModel(itr->second);
+		sceneSet[itr->first] = *manager->loadModel(itr->second);
 	}
 
 	setPointers();
 }
 
-std::shared_ptr<Model> Scene::getSceneModelData(std::string name)
+Model* Scene::getSceneModelData(std::string name)
 {
-	return sceneSet[name];
+	return &sceneSet[name];
 }
 
 void Scene::setPointers()
 {
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		modelsPointer.push_back(itr->second);
+		modelsPointer.push_back(&itr->second);
 	}
 }
 
@@ -38,20 +38,20 @@ void Scene::setPointers(std::string name)
 {
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		if (itr->second == sceneSet[name])
+		if (&itr->second == &sceneSet[name])
 		{
 			continue;
 		}
 
-		modelsPointer.push_back(itr->second);
+		modelsPointer.push_back(&itr->second);
 	}
 }
 
-std::vector<std::shared_ptr<Model>>& Scene::getSceneModel()
+std::vector<Model*>& Scene::getSceneModel()
 {
 	if (modelsPointer.empty())
 	{
-		std::cout << "error" << std::endl;
+		std::cout << "getSceneModel error" << std::endl;
 	}
 
 	return modelsPointer;

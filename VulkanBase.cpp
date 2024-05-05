@@ -1,7 +1,6 @@
 #include"VulkanBase.h"
 
 #include <stb_image.h>
-#include<tiny_obj_loader.h>
 
 VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -1016,17 +1015,20 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::setVertexIndex(std::vector<std::shared_ptr<Model>>& modelData)
+    void VulkanBase::setVertexIndex(std::vector<Model*> & modelData)
     {
         int i;
 
+        std::cout << modelData[0]->getVerticesSize() << std::endl;
+
         if (firstSendModelData)
         {
-            modelData.clear();
             vertexBufferData.resize(modelData.size());
             indexBufferData.resize(modelData.size());
             firstSendModelData = false;
         }
+
+        std::cout << modelData[0]->getVerticesSize() << std::endl;
 
         //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って、それぞれをGPUを送る
         for (i = 0; i < modelData.size(); i++)
@@ -1036,7 +1038,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         }
     }
 
-    void VulkanBase::createVertexBuffer(std::shared_ptr<Model> model,uint32_t i) 
+    void VulkanBase::createVertexBuffer(Model* model,uint32_t i) 
     {
         vertexBufferData[i].count = model->getVerticesSize();
         VkDeviceSize bufferSize = sizeof(*model->getVertItr()) * vertexBufferData[i].count;
@@ -1060,7 +1062,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer(std::shared_ptr<Model> model,uint32_t i) 
+    void VulkanBase::createIndexBuffer(Model* model,uint32_t i) 
     {
         indexBufferData[i].count = model->getIndicesSize();
         VkDeviceSize bufferSize = sizeof(*model->getIndiItr()) * indexBufferData[i].count;
