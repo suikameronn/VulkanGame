@@ -26,6 +26,16 @@ struct KeyChar
 	unsigned int charInfo;
 };
 
+static int mouseX, mouseY;
+static bool mouseR, mouseL;
+static int mouseW;
+static unsigned int keyInput;
+
+static MButtonStat mButtonStat;
+static MPos mPos;
+static MScroll mScroll;
+static KeyChar keyChar;
+
 class Controller
 {
 public:
@@ -41,16 +51,6 @@ public:
 	static KeyChar* getKeyChar() { return &keyChar; }
 
 protected:
-
-	static int mouseX, mouseY;
-	static bool mouseR, mouseL;
-	static int mouseW;
-	static unsigned int keyInput;
-
-	static MButtonStat mButtonStat;
-	static MPos mPos;
-	static MScroll mScroll;
-	static KeyChar keyChar;
 
 	void setMouseButton(int button, int action, int mods);
 	void setMousePos(double x, double y);

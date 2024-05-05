@@ -64,6 +64,12 @@ struct UniformBufferObject {
     float shininess;
 };
 
+struct VkBufferData
+{
+    uint32_t count;
+    VkBuffer buffer;
+    VkDeviceMemory handler;
+};
 
 class VulkanBase
 {
@@ -131,10 +137,9 @@ private:
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    bool firstSendModelData = true;
+    std::vector<VkBufferData> vertexBufferData;
+    std::vector<VkBufferData> indexBufferData;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -158,10 +163,6 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
-
-    std::unique_ptr<Scene> scene;
-
-    std::string objName = "ray";
 
     void initVulkan();
     void execVulkan();
@@ -199,11 +200,8 @@ private:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     Extension checkFileExtension(const std::string name);
-    void loadModel();
-    void loadObj();
-    void loadRay();
-    void createVertexBuffer();
-    void createIndexBuffer();
+    void createVertexBuffer(std::shared_ptr<Model> model, uint32_t i);
+    void createIndexBuffer(std::shared_ptr<Model> model, uint32_t i);
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
@@ -253,10 +251,14 @@ public:
         execVulkan();
     }
 
+    void last();
+
     void render()
     {
         drawFrame();
     }
+
+    void setVertexIndex(std::vector<std::shared_ptr<Model>>& modelsData);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

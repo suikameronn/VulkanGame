@@ -48,6 +48,4 @@ public:
 
 	Vertex* getFirstPointerVertex();
 	uint32_t* getFirstPointerIndex();
-
-	void calcNormal() override;
 };

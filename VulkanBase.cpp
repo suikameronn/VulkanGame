@@ -3,16 +3,6 @@
 #include <stb_image.h>
 #include<tiny_obj_loader.h>
 
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^
-                (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-                (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
-}
-
 VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -52,9 +42,12 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         createTextureImage();
         createTextureImageView();
         createTextureSampler();
-        loadModel();
-        createVertexBuffer();
-        createIndexBuffer();
+
+        //頂点やインデックスをここでセットする
+    }
+
+    void VulkanBase::last()
+    {
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
@@ -107,11 +100,17 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
 
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
+        for (auto itr = vertexBufferData.begin(); itr != vertexBufferData.end(); itr++)
+        {
+            vkDestroyBuffer(device, itr->buffer, nullptr);
+            vkFreeMemory(device, itr->handler, nullptr);
+        }
 
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        for (auto itr = indexBufferData.begin(); itr != indexBufferData.end(); itr++)
+        {
+            vkDestroyBuffer(device, itr->buffer, nullptr);
+            vkFreeMemory(device, itr->handler, nullptr);
+        }
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -1017,94 +1016,31 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::loadModel()
-    {
-        Extension e = checkFileExtension(MODEL_PATH);
-
-        switch (e)
-        {
-        case OBJ:
-            loadObj();
-            break;
-        }
-    }
-
-    Extension VulkanBase::checkFileExtension(const std::string name)
+    void VulkanBase::setVertexIndex(std::vector<std::shared_ptr<Model>>& modelData)
     {
         int i;
-        int size = (int)(name.length());
 
-        std::string fileExt = name.substr(size - 4);
-
-        if (fileExt == ".ray")
+        if (firstSendModelData)
         {
-            
+            modelData.clear();
+            vertexBufferData.resize(modelData.size());
+            indexBufferData.resize(modelData.size());
+            firstSendModelData = false;
         }
-        else if (fileExt == ".obj")
+
+        //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って、それぞれをGPUを送る
+        for (i = 0; i < modelData.size(); i++)
         {
-            return OBJ;
+            createVertexBuffer(modelData[i],i);
+            createIndexBuffer(modelData[i],i);
         }
     }
 
-    void VulkanBase::loadObj()
+    void VulkanBase::createVertexBuffer(std::shared_ptr<Model> model,uint32_t i) 
     {
-        scene = std::unique_ptr<Scene>(new Scene());
+        vertexBufferData[i].count = model->getVerticesSize();
+        VkDeviceSize bufferSize = sizeof(*model->getVertItr()) * vertexBufferData[i].count;
 
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
-
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
-        {
-            throw std::runtime_error(warn + err);
-        }
-
-        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-        scene->addObject(&objName, std::move(std::unique_ptr<TriMeshs>(new TriMeshs())));
-
-        for (const auto& shape : shapes)//すべてのシェイプの数だけ繰り返す
-        {
-            for (const auto& index : shape.mesh.indices)//指定のシェイプを構成するメッシュの数だけ繰り返す
-            {
-                Vertex vertex{};
-
-                vertex.pos =
-                {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
-                };
-
-                vertex.texCoord =
-                {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                };
-
-                vertex.color = { 0.0f,0.0f,0.0f };
-
-                vertex.normal =
-                {
-                    attrib.normals[3 * index.normal_index + 0],
-                    attrib.normals[3 * index.normal_index + 1],
-                    attrib.normals[3 * index.normal_index + 2]
-                };
-
-                if (uniqueVertices.count(vertex) == 0)
-                {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(scene->accessObj(&objName)->getSizeVertex());
-                    scene->accessObj(&objName)->pushBackVertex(vertex);
-                }
-
-                scene->accessObj(&objName)->pushBackIndex(uniqueVertices[vertex]);
-            }
-        }
-    }
-
-    void VulkanBase::createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(*scene->accessObj(&objName)->getFirstPointerVertex()) * scene->accessObj(&objName)->getSizeVertex();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1112,19 +1048,22 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, scene->accessObj(&objName)->getFirstPointerVertex(), (size_t)bufferSize);
+        memcpy(data, model->getVertexPoint(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBufferData[i].buffer, vertexBufferData[i].handler);
 
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+        //vertexBuffer配列にコピーしていく(vector型)
+        copyBuffer(stagingBuffer, vertexBufferData[i].buffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer() {
-        VkDeviceSize bufferSize = sizeof(*scene->accessObj(&objName)->getFirstPointerIndex()) * scene->accessObj(&objName)->getSizeIndex();
+    void VulkanBase::createIndexBuffer(std::shared_ptr<Model> model,uint32_t i) 
+    {
+        indexBufferData[i].count = model->getIndicesSize();
+        VkDeviceSize bufferSize = sizeof(*model->getIndiItr()) * indexBufferData[i].count;
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1132,12 +1071,12 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, scene->accessObj(&objName)->getFirstPointerIndex(), (size_t)bufferSize);
+        memcpy(data, model->getIndexPoint(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBufferData[i].buffer, indexBufferData[i].handler);
 
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, indexBufferData[i].buffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1190,8 +1129,6 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
         mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
         ubo.normal = mat;
-
-        setMaterial(scene->accessObj(&objName)->getMaterial());
 
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
@@ -1394,15 +1331,19 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         scissor.extent = swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = { vertexBuffer };
         VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        int i;
+        for (i = 0; i < indexBufferData.size(); i++)
+        {
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData[i].buffer, offsets);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+            vkCmdBindIndexBuffer(commandBuffer, indexBufferData[i].buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(scene->accessObj(&objName)->getSizeIndex()), 1, 0, 0, 0);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+            vkCmdDrawIndexed(commandBuffer, indexBufferData[i].count, 1, 0, 0, 0);
+        }
 
         vkCmdEndRenderPass(commandBuffer);
 

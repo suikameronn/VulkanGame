@@ -1,9 +1,9 @@
 #pragma once
 #include"Object.h"
-
-#include<memory>
-
 #include"Material.h"
+
+#include <glm/gtx/hash.hpp>
+#include <functional>
 
 struct Vertex {
 	glm::vec3 pos;
@@ -16,21 +16,42 @@ struct Vertex {
 	}
 };
 
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 class Model:Object
 {
 protected:
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 	glm::vec3 avePosition;
 	std::shared_ptr<Material> material;
 
 public:
 	void setPosition(std::vector<glm::vec3>* positions);
-
 	glm::vec3* getPosition();
+
+	void pushBackVertex(Vertex* v);
+	void pushBackIndex(uint32_t i);
+	
+	std::vector<Vertex>::iterator getVertItr();
+	std::vector<uint32_t>::iterator getIndiItr();
+
+	Vertex* getVertexPoint();
+	uint32_t* getIndexPoint();
+
+	uint32_t getVerticesSize();
+	uint32_t getIndicesSize();
 
 	void setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
 		, float* shininess, glm::vec3* transmissive);
 	std::shared_ptr<Material> getMaterial();
-
-	 virtual void calcNormal() = 0;
 };

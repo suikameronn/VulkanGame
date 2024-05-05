@@ -1,7 +1,9 @@
 #include<iostream>
 
+#include"GameManager.h"
 #include"VulkanBase.h"
 #include"Controller.h"
+#include"FileManager.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -15,28 +17,14 @@ int main() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 
-    Controller controller(window);
-    VulkanBase app(window);
+    std::shared_ptr<Controller> controller = std::shared_ptr<Controller>(new Controller(window));
+    std::shared_ptr<VulkanBase> vulkan = std::shared_ptr<VulkanBase>(new VulkanBase(window));
+    std::shared_ptr<FileManager> manager = std::shared_ptr<FileManager>(new FileManager());
 
-    glfwSetWindowUserPointer(window,&controller);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    std::unique_ptr<GameManager> gameManager
+        = std::unique_ptr <GameManager>(new GameManager(manager, vulkan, controller, window));
 
-    app.prepareVulkan();
-    app.defaultSetVulkan();
-
-    try
-    {
-        while (!glfwWindowShouldClose(window))
-        {
-            glfwPollEvents();
-            app.render();
-        }
-    }
-    catch (const std::runtime_error& e)
-    {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+    gameManager->GameLoop();
 
     return EXIT_SUCCESS;
 }

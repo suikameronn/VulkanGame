@@ -20,6 +20,46 @@ glm::vec3* Model::getPosition()
 	return &avePosition;
 }
 
+void Model::pushBackVertex(Vertex* v)
+{
+	vertices.push_back(*v);
+}
+
+void Model::pushBackIndex(uint32_t i)
+{
+	indices.push_back(i);
+}
+
+std::vector<Vertex>::iterator Model::getVertItr()
+{
+	return vertices.begin();
+}
+
+std::vector<uint32_t>::iterator Model::getIndiItr()
+{
+	return indices.begin();
+}
+
+Vertex* Model::getVertexPoint()
+{
+	return &*vertices.begin();
+}
+
+uint32_t* Model::getIndexPoint()
+{
+	return &*indices.begin();
+}
+
+uint32_t Model::getVerticesSize()
+{
+	return vertices.size();
+}
+
+uint32_t Model::getIndicesSize()
+{
+	return indices.size();
+}
+
 void Model::setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
 	, float* shininess, glm::vec3* transmissive)
 {
