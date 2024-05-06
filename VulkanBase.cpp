@@ -496,7 +496,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         
-        std::array<VkVertexInputAttributeDescription,4> attributeDescriptions;
+        std::array<VkVertexInputAttributeDescription,3> attributeDescriptions;
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -512,10 +512,12 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
+        /*
         attributeDescriptions[3].binding = 0;
         attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[3].offset = offsetof(Vertex, normal);
+        */
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -1019,16 +1021,12 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
     {
         int i;
 
-        std::cout << modelData[0]->getVerticesSize() << std::endl;
-
         if (firstSendModelData)
         {
             vertexBufferData.resize(modelData.size());
             indexBufferData.resize(modelData.size());
             firstSendModelData = false;
         }
-
-        std::cout << modelData[0]->getVerticesSize() << std::endl;
 
         //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って、それぞれをGPUを送る
         for (i = 0; i < modelData.size(); i++)
@@ -1042,7 +1040,6 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
     {
         vertexBufferData[i].count = model->getVerticesSize();
         VkDeviceSize bufferSize = sizeof(*model->getVertItr()) * vertexBufferData[i].count;
-
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1098,6 +1095,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         }
     }
 
+    /*
     void VulkanBase::setMaterial(std::shared_ptr<Material> material)
     {
         ubo.diffuse = glm::vec3{ 0.5 };
@@ -1107,6 +1105,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         ubo.transmissive = glm::vec3{ 0.0 };
         ubo.shininess = 30.0;
     }
+    */
 
     void VulkanBase::updateUniformBuffer(uint32_t currentImage) {
         static auto startTime = std::chrono::high_resolution_clock::now();
@@ -1117,7 +1116,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
         glm::mat3 mat;
@@ -1130,7 +1129,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         mat[2][0] = ubo.view[0][1] * ubo.view[2][1] - ubo.view[0][2] * ubo.view[1][1];
         mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
         mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
-        ubo.normal = mat;
+        //ubo.normal = mat;
 
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
@@ -1338,13 +1337,13 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         int i;
         for (i = 0; i < indexBufferData.size(); i++)
         {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData[i].buffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData[0].buffer, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, indexBufferData[i].buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, indexBufferData[0].buffer, 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-            vkCmdDrawIndexed(commandBuffer, indexBufferData[i].count, 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, indexBufferData[0].count, 1, 0, 0, 0);
         }
 
         vkCmdEndRenderPass(commandBuffer);

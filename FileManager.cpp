@@ -68,7 +68,7 @@ Model* FileManager::loadModel(OBJECT obj)
 
             if (uniqueVertices.count(vertex) == 0)
             {
-                uniqueVertices[vertex] = static_cast<uint32_t>(model->getVerticesSize());
+                uniqueVertices[vertex] = model->getVerticesSize();
                 model->pushBackVertex(&vertex);
             }
 

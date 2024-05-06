@@ -42,12 +42,12 @@ std::vector<uint32_t>::iterator Model::getIndiItr()
 
 Vertex* Model::getVertexPoint()
 {
-	return &*vertices.begin();
+	return vertices.data();
 }
 
 uint32_t* Model::getIndexPoint()
 {
-	return &*indices.begin();
+	return indices.data();
 }
 
 uint32_t Model::getVerticesSize()
