@@ -76,10 +76,6 @@ class VulkanBase
 {
 private:
 
-    int models = 2;
-
-
-
     const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
     };
@@ -167,7 +163,6 @@ private:
 
     void initVulkan();
     void execVulkan();
-    void mainLoop();
     void cleanup();
     void cleanupSwapChain();
     void recreateSwapChain();

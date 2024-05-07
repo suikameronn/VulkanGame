@@ -8,10 +8,15 @@ Scene::Scene(FileManager* manager)
 {
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
-	std::pair<std::string, OBJECT> pair;
-	pair.first = "test";
-	pair.second = TEST;
-	parth.push_back(pair);
+
+
+	int test = 2;
+	parth.resize(test);
+	for (int i = 0; i < test; i++)
+	{
+		parth[i].first = i;
+		parth[i].second = TEST;
+	}
 
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{

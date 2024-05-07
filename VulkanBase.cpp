@@ -1337,13 +1337,13 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         int i;
         for (i = 0; i < indexBufferData.size(); i++)
         {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData[0].buffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData[i].buffer, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, indexBufferData[0].buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, indexBufferData[i].buffer, 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-            vkCmdDrawIndexed(commandBuffer, indexBufferData[0].count, 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, indexBufferData[i].count, 1, 0, 0, 0);
         }
 
         vkCmdEndRenderPass(commandBuffer);
