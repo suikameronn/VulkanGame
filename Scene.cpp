@@ -14,7 +14,7 @@ Scene::Scene(FileManager* manager)
 	for (int i = 0; i < test; i++)
 	{
 		parth[i].first = i;
-		parth[i].second = TEST;
+		parth[i].second = MODELTEST;
 	}
 
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)

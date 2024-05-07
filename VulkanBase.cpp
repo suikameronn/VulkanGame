@@ -1,5 +1,6 @@
 #include"VulkanBase.h"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -25,10 +26,6 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
-    }
-
-    void VulkanBase::execVulkan()
-    {
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -38,6 +35,10 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         createColorResources();
         createDepthResources();
         createFramebuffers();
+    }
+
+    void VulkanBase::execVulkan()
+    {
         createTextureImage();
         createTextureImageView();
         createTextureSampler();

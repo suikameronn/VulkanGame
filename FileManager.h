@@ -4,21 +4,41 @@
 
 #include"Model.h"
 
+struct ImageData
+{
+	int width;
+	int height;
+	int texChannels;
+	std::shared_ptr<unsigned char> pixcels;
+};
+
 enum OBJECT
 {
-	TEST = 0
+	MODELTEST = 0
+};
+
+enum IMAGE
+{
+	IMAGETEST = 0
 };
 
 class FileManager
 {
 private:
 	//ファイルのパスを入れる
-	std::string path;
-
+	std::string modelPath;
 	std::unordered_map<OBJECT, std::shared_ptr<Model>> models;
+	std::string getModelPath(OBJECT obj);
 
-	std::string getPath(OBJECT obj);
+	//画像ファイルのパスを入れる
+	std::string imagePath;
+	std::unordered_map < IMAGE, std::shared_ptr<ImageData>> images;
+	std::string getImagePath(IMAGE image);
+
 public:
 	Model* loadModel(OBJECT obj);
 	Model* getModelData(OBJECT obj);
+
+	ImageData* loadImage(IMAGE image);
+	ImageData* getImageData(IMAGE image);
 };
