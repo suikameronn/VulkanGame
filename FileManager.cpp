@@ -9,7 +9,7 @@ std::string FileManager::getPath(OBJECT obj)
     switch (obj)
     {
     case TEST:
-        path = "C:\\Users\\sugiyama\\Documents\\VulkanGame\\models\\viking_room.obj";
+        path = "models/viking_room.obj";
         return path;
         break;
 
