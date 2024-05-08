@@ -39,6 +39,8 @@ public:
 	Model* loadModel(OBJECT obj);
 	Model* getModelData(OBJECT obj);
 
+	/*
 	ImageData* loadImage(IMAGE image);
 	ImageData* getImageData(IMAGE image);
+	*/
 };

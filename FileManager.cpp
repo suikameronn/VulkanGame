@@ -3,15 +3,17 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include<tiny_obj_loader.h>
 
+/*
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+*/
 
 std::string FileManager::getModelPath(OBJECT obj)
 {
     switch (obj)
     {
     case OBJECT::MODELTEST:
-        modelPath = "models/viking_room.obj";
+        modelPath = "C:/Users/sugiyama/Documents/VulkanGame/models/viking_room.obj";
         return modelPath;
         break;
     }
@@ -97,6 +99,7 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
+/*
 ImageData* FileManager::loadImage(IMAGE image)
 {
     if (images.contains(image))
@@ -105,13 +108,13 @@ ImageData* FileManager::loadImage(IMAGE image)
     }
 
     ImageData imageData;
-    stbi_uc* pixels = stbi_load(getImagePath(image).c_str(), &imageData.width, &imageData.height, &imageData.texChannels,STBI_rgb_alpha);
-    
+    stbi_uc* pixels = stbi_load(getImagePath(image).c_str(), &imageData.width, &imageData.height, &imageData.texChannels, STBI_rgb_alpha);
+
     if (!pixels)
     {
         throw std::runtime_error("faile image load");
     }
-    
+
     int imageSize = imageData.width * imageData.height * 4;
     imageData.pixcels = std::shared_ptr<unsigned char>(new unsigned char(imageSize));
     std::copy(pixels[0], pixels[imageSize - 1], imageData.pixcels);
@@ -121,3 +124,4 @@ ImageData* FileManager::loadImage(IMAGE image)
     images[image].reset(&imageData);
     return images[image].get();
 }
+*/

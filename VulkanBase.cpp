@@ -1135,7 +1135,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
-    void VulkanBase::createDescriptorPool() {
+    void VulkanBase::createDescriptorPool(/*そのシーンで必要なテクスチャファイルの数*/) {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
