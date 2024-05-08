@@ -9,7 +9,7 @@ Scene::Scene(FileManager* manager)
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
 
-	int test = 10;
+	int test = 100;
 	parth.resize(test);
 	for (int i = 0; i < test; i++)
 	{
@@ -19,7 +19,8 @@ Scene::Scene(FileManager* manager)
 
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
-		sceneSet[itr->first] = *manager->loadModel(itr->second);
+		sceneSet[itr->first] = *manager->loadModelPoints(itr->second);
+		sceneSet[itr->first].setImageData(*manager->loadModelImage(IMAGETEST));
 	}
 
 	setPointers();

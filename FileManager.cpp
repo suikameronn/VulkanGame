@@ -3,10 +3,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include<tiny_obj_loader.h>
 
-/*
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-*/
 
 std::string FileManager::getModelPath(OBJECT obj)
 {
@@ -19,7 +17,7 @@ std::string FileManager::getModelPath(OBJECT obj)
     }
 }
 
-Model* FileManager::loadModel(OBJECT obj)
+Model* FileManager::loadModelPoints(OBJECT obj)
 {
     if (models.contains(obj))
     {
@@ -99,8 +97,7 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
-/*
-ImageData* FileManager::loadImage(IMAGE image)
+ImageData* FileManager::loadModelImage(IMAGE image)
 {
     if (images.contains(image))
     {
@@ -108,20 +105,31 @@ ImageData* FileManager::loadImage(IMAGE image)
     }
 
     ImageData imageData;
+    imageData.id = image;
     stbi_uc* pixels = stbi_load(getImagePath(image).c_str(), &imageData.width, &imageData.height, &imageData.texChannels, STBI_rgb_alpha);
-
     if (!pixels)
     {
         throw std::runtime_error("faile image load");
     }
 
     int imageSize = imageData.width * imageData.height * 4;
-    imageData.pixcels = std::shared_ptr<unsigned char>(new unsigned char(imageSize));
-    std::copy(pixels[0], pixels[imageSize - 1], imageData.pixcels);
+    imageData.pixels = std::shared_ptr<unsigned char>(new unsigned char(imageSize));
+    std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
 
     stbi_image_free(pixels);
 
     images[image].reset(&imageData);
     return images[image].get();
 }
-*/
+
+ImageData* FileManager::getImageData(IMAGE image)
+{
+    if (images.contains(image))
+    {
+        return images[image].get();
+    }
+    else
+    {
+        throw std::runtime_error("getImageData :get none ImageData");
+    }
+}

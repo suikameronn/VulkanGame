@@ -74,6 +74,7 @@ struct VkBufferData
 
 struct VkImageData
 {
+    uint32_t id;
     uint32_t mipLevels;
     VkImage image;
     VkDeviceMemory memory;
@@ -143,21 +144,9 @@ private:
 
     VkCommandPool commandPool;
 
-    uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-
-    //std::unordered_map<IMAGE, VkImageData> texturData;
-
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModelData = true;
-    /*
-    std::vector<VkBufferData> vertexBufferData;
-    std::vector<VkBufferData> indexBufferData;
-    */
     std::vector<VkModelData> vkModelData;
 
     VkImage depthImage;
@@ -220,8 +209,9 @@ private:
     void createVertexBuffer(Model* model, uint32_t i);
     void createIndexBuffer(Model* model, uint32_t i);
     void createUniformBuffers();
-    void createDescriptorPool();
-    void createDescriptorSets();
+    void createDescriptorPool(uint32_t texSize);
+    void allocateDescriptorSets();
+    void createDescriptorSets(VkModelData* imageData);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -244,7 +234,7 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createTextureData(uint32_t id);
+    void createTextureData(ImageData& imageData);
 
 public:
 
@@ -273,6 +263,7 @@ public:
     }
 
     void setModel(std::vector<Model*>& modelsData);
+    void prepareTextureVulkan(std::unordered_map<OBJECT, std::shared_ptr<IMAGE>>& images)
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

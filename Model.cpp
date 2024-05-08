@@ -60,9 +60,14 @@ uint32_t Model::getIndicesSize()
 	return indices.size();
 }
 
-uint32_t Model::getImageID()
+void Model::setImageData(ImageData image)
 {
-	return imageID;
+	texture.reset(&image);
+}
+
+ImageData* Model::getImageData()
+{
+	return texture.get();
 }
 
 void Model::setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive

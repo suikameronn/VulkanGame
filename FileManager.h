@@ -4,14 +4,6 @@
 
 #include"Model.h"
 
-struct ImageData
-{
-	int width;
-	int height;
-	int texChannels;
-	std::shared_ptr<unsigned char> pixcels;
-};
-
 enum OBJECT
 {
 	MODELTEST = 0
@@ -36,11 +28,9 @@ private:
 	std::string getImagePath(IMAGE image);
 
 public:
-	Model* loadModel(OBJECT obj);
+	Model* loadModelPoints(OBJECT obj);
 	Model* getModelData(OBJECT obj);
 
-	/*
-	ImageData* loadImage(IMAGE image);
+	ImageData* loadModelImage(IMAGE image);
 	ImageData* getImageData(IMAGE image);
-	*/
 };
