@@ -60,6 +60,11 @@ uint32_t Model::getIndicesSize()
 	return indices.size();
 }
 
+uint32_t Model::getImageID()
+{
+	return imageID;
+}
+
 void Model::setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
 	, float* shininess, glm::vec3* transmissive)
 {

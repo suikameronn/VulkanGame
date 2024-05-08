@@ -27,7 +27,7 @@
 #include <functional>
 #include<fstream>
 
-#include"Model.h"
+#include"FileManager.h"
 #include"vulkan/vulkan.h"
 
 enum Extension
@@ -70,6 +70,23 @@ struct VkBufferData
     uint32_t count;
     VkBuffer buffer;
     VkDeviceMemory handler;
+};
+
+struct VkImageData
+{
+    uint32_t mipLevels;
+    VkImage image;
+    VkDeviceMemory memory;
+    VkImageView view;
+    VkSampler sampler;
+};
+
+struct VkModelData
+{
+    VkBufferData vertices;
+    VkBufferData indices;
+
+    VkImageData texture;
 };
 
 class VulkanBase
@@ -132,11 +149,16 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
 
+    //std::unordered_map<IMAGE, VkImageData> texturData;
+
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModelData = true;
+    /*
     std::vector<VkBufferData> vertexBufferData;
     std::vector<VkBufferData> indexBufferData;
+    */
+    std::vector<VkModelData> vkModelData;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -222,6 +244,8 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
+    void createTextureData(uint32_t id);
+
 public:
 
     bool framebufferResized = false;
@@ -241,11 +265,6 @@ public:
         initVulkan();
     }
 
-    void defaultSetVulkan()
-    {
-        execVulkan();
-    }
-
     void last();
 
     void render()
@@ -253,7 +272,7 @@ public:
         drawFrame();
     }
 
-    void setVertexIndex(std::vector<Model*>& modelsData);
+    void setModel(std::vector<Model*>& modelsData);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

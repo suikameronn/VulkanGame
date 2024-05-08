@@ -3,23 +3,24 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else {
+    VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+        }
+        else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
     }
-}
 
-void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
+    void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debugMessenger, pAllocator);
+        }
     }
-}
 
+    //Vulkanの初期化
     void VulkanBase::initVulkan() {
         createInstance();
         setupDebugMessenger();
@@ -29,16 +30,19 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         createSwapChain();
         createImageViews();
         createRenderPass();
-        createDescriptorSetLayout();
-        createGraphicsPipeline();
         createCommandPool();
         createColorResources();
         createDepthResources();
         createFramebuffers();
+        createUniformBuffers();
+        createCommandBuffers();
+        createSyncObjects();
     }
 
     void VulkanBase::execVulkan()
     {
+        createDescriptorSetLayout();
+        createGraphicsPipeline();
         createTextureImage();
         createTextureImageView();
         createTextureSampler();
@@ -46,13 +50,19 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         //頂点やインデックスをここでセットする
     }
 
+    void VulkanBase::createTextureData(uint32_t id)
+    {
+        createDescriptorSetLayout();
+        createGraphicsPipeline();
+        createTextureImage();
+        createTextureImageView();
+        createTextureSampler();
+    }
+
     void VulkanBase::last()
     {
-        createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
-        createCommandBuffers();
-        createSyncObjects();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -1018,7 +1028,7 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::setVertexIndex(std::vector<Model*> & modelData)
+    void VulkanBase::setModel(std::vector<Model*> & modelData)
     {
         int i;
 
@@ -1034,6 +1044,14 @@ void VulkanBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtils
         {
             createVertexBuffer(modelData[i],i);
             createIndexBuffer(modelData[i],i);
+        }
+
+        createTextureData(0);
+
+        //モデルにテクスチャ入れていく
+        for (i = 0; i < modelData.size(); i++)
+        {
+
         }
     }
 

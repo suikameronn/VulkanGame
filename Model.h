@@ -33,6 +33,8 @@ protected:
 	std::vector<uint32_t> indices;
 
 	glm::vec3 avePosition;
+	
+	uint32_t imageID = -1;//テクスチャを張らない場合は、-1で固定
 	std::shared_ptr<Material> material;
 
 public:
@@ -51,6 +53,7 @@ public:
 	uint32_t getVerticesSize();
 	uint32_t getIndicesSize();
 
+	uint32_t getImageID();
 	void setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
 		, float* shininess, glm::vec3* transmissive);
 	std::shared_ptr<Material> getMaterial();
