@@ -31,6 +31,7 @@ public:
 	Model* loadModelPoints(OBJECT obj);
 	Model* getModelData(OBJECT obj);
 
-	ImageData* loadModelImage(IMAGE image);
+	std::shared_ptr<ImageData> loadModelImage(IMAGE image);
 	ImageData* getImageData(IMAGE image);
+	uint32_t getRegisteredImageCount();
 };

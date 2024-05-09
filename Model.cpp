@@ -60,9 +60,9 @@ uint32_t Model::getIndicesSize()
 	return indices.size();
 }
 
-void Model::setImageData(ImageData image)
+void Model::setImageData(std::shared_ptr<ImageData> image)
 {
-	texture.reset(&image);
+	texture = image;
 }
 
 ImageData* Model::getImageData()

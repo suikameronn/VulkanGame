@@ -16,13 +16,50 @@ struct Vertex {
 	}
 };
 
-struct ImageData
+class ImageData
 {
+private:
 	uint32_t id;
 	int width;
 	int height;
 	int texChannels;
-	std::shared_ptr<unsigned char> pixels;
+	std::vector<unsigned char> pixels;
+
+public:
+	ImageData(uint32_t id, uint32_t width, uint32_t height,
+		uint32_t texChannels, std::vector<unsigned char>& pixels)
+	{
+		this->id = id;
+		this->width = width;
+		this->height = height;
+		this->texChannels = texChannels;
+		this->pixels = pixels;
+	}
+
+	uint32_t getId()
+	{
+		return this->id;
+	}
+
+	int getWidth()
+	{
+		return this->width;
+	}
+
+	int getHeight()
+	{
+		return this->height;
+	}
+
+	int getTexChannels()
+	{
+		return this->texChannels;
+	}
+
+	unsigned char* getPixelsData()
+	{
+		return this->pixels.data();
+	}
 };
 
 namespace std {
@@ -62,7 +99,7 @@ public:
 	uint32_t getVerticesSize();
 	uint32_t getIndicesSize();
 
-	void setImageData(ImageData image);
+	void setImageData(std::shared_ptr<ImageData> image);
 	ImageData* getImageData();
 
 	void setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive

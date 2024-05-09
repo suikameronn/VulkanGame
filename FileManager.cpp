@@ -97,30 +97,35 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
-ImageData* FileManager::loadModelImage(IMAGE image)
+std::shared_ptr<ImageData> FileManager::loadModelImage(IMAGE image)
 {
     if (images.contains(image))
     {
-        return images[image].get();
+        return images[image];
     }
 
-    ImageData imageData;
-    imageData.id = image;
-    stbi_uc* pixels = stbi_load(getImagePath(image).c_str(), &imageData.width, &imageData.height, &imageData.texChannels, STBI_rgb_alpha);
-    if (!pixels)
+    uint32_t id = image;
+    int width, height, texChannels;
+    std::vector<unsigned char> pixels;
+
+    stbi_uc* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    if (!picture)
     {
         throw std::runtime_error("faile image load");
     }
 
-    int imageSize = imageData.width * imageData.height * 4;
-    imageData.pixels = std::make_shared<unsigned char>(imageSize);
+    int imageSize = width * height * 4;
+    pixels.resize(imageSize);
     //ファイルからロードした画素の配列を別のメモリにコピーしたいが、データ型が違うのでコピーできない
     //std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
 
-    stbi_image_free(pixels);
+    std::fill(pixels.begin(), pixels.end(), (unsigned char)100);
 
-    images[image].reset(&imageData);
-    return images[image].get();
+    stbi_image_free(picture);
+
+    images[image] = std::shared_ptr<ImageData>(new ImageData(id,width,height,texChannels,pixels));
+
+    return images[image];
 }
 
 ImageData* FileManager::getImageData(IMAGE image)
@@ -133,4 +138,9 @@ ImageData* FileManager::getImageData(IMAGE image)
     {
         throw std::runtime_error("getImageData :get none ImageData");
     }
+}
+
+uint32_t FileManager::getRegisteredImageCount()
+{
+    return images.size();
 }

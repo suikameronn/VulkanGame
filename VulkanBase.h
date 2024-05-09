@@ -84,10 +84,10 @@ struct VkImageData
 
 struct VkModelData
 {
-    std::unique_ptr<VkBufferData> vertices;
-    std::unique_ptr<VkBufferData> indices;
+    VkBufferData vertices;
+    VkBufferData indices;
 
-    std::unique_ptr<VkImageData> texture;
+    VkImageData texture;
 };
 
 class VulkanBase
@@ -264,7 +264,7 @@ public:
     }
 
     void setModel(std::vector<Model*>& modelsData);
-    void prepareTextureVulkan(std::vector<Model*>& modelData);
+    void prepareTextureVulkan(uint32_t count);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

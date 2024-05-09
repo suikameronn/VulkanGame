@@ -20,7 +20,7 @@ Scene::Scene(FileManager* manager)
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
 		sceneSet[itr->first] = *manager->loadModelPoints(itr->second);
-		sceneSet[itr->first].setImageData(*manager->loadModelImage(IMAGETEST));
+		sceneSet[itr->first].setImageData(manager->loadModelImage(IMAGETEST));
 	}
 
 	setPointers();
