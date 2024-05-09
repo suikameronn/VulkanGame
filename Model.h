@@ -64,6 +64,7 @@ public:
 
 	void setImageData(ImageData image);
 	ImageData* getImageData();
+
 	void setMaterial(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular, glm::vec3* emissive
 		, float* shininess, glm::vec3* transmissive);
 	std::shared_ptr<Material> getMaterial();

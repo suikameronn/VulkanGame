@@ -75,7 +75,7 @@ struct VkBufferData
 struct VkImageData
 {
     uint32_t id;
-    uint32_t mipLevels;
+    uint32_t mipLevel;
     VkImage image;
     VkDeviceMemory memory;
     VkImageView view;
@@ -84,10 +84,10 @@ struct VkImageData
 
 struct VkModelData
 {
-    VkBufferData vertices;
-    VkBufferData indices;
+    std::unique_ptr<VkBufferData> vertices;
+    std::unique_ptr<VkBufferData> indices;
 
-    VkImageData texture;
+    std::unique_ptr<VkImageData> texture;
 };
 
 class VulkanBase
@@ -187,7 +187,7 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout();
+    void createDescriptorSetLayout(uint32_t texSize);
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
@@ -197,10 +197,11 @@ private:
         VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
-    void createTextureImage();
+    uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
+    void createTextureImage(ImageData* imageData,uint32_t i);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView();
-    void createTextureSampler();
+    void createTextureImageView(uint32_t i);
+    void createTextureSampler(uint32_t i);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -211,7 +212,7 @@ private:
     void createUniformBuffers();
     void createDescriptorPool(uint32_t texSize);
     void allocateDescriptorSets();
-    void createDescriptorSets(VkModelData* imageData);
+    void createDescriptorSets();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -234,7 +235,7 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createTextureData(ImageData& imageData);
+    void createTextureData(ImageData* imageData,uint32_t i);
 
 public:
 
@@ -263,7 +264,7 @@ public:
     }
 
     void setModel(std::vector<Model*>& modelsData);
-    void prepareTextureVulkan(std::unordered_map<OBJECT, std::shared_ptr<IMAGE>>& images)
+    void prepareTextureVulkan(std::vector<Model*>& modelData);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

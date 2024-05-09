@@ -113,8 +113,9 @@ ImageData* FileManager::loadModelImage(IMAGE image)
     }
 
     int imageSize = imageData.width * imageData.height * 4;
-    imageData.pixels = std::shared_ptr<unsigned char>(new unsigned char(imageSize));
-    std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
+    imageData.pixels = std::make_shared<unsigned char>(imageSize);
+    //ファイルからロードした画素の配列を別のメモリにコピーしたいが、データ型が違うのでコピーできない
+    //std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
 
     stbi_image_free(pixels);
 
