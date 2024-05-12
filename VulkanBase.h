@@ -72,6 +72,12 @@ struct VkBufferData
     VkDeviceMemory handler;
 };
 
+struct VkPointsData
+{
+    VkBufferData vertices;
+    VkBufferData indices;
+};
+
 struct VkImageData
 {
     uint32_t id;
@@ -84,10 +90,9 @@ struct VkImageData
 
 struct VkModelData
 {
-    VkBufferData vertices;
-    VkBufferData indices;
-
-    VkImageData texture;
+    uint32_t 
+    uint32_t vkPointsDataID;
+    uint32_t vkImageDataID;
 };
 
 class VulkanBase
@@ -148,6 +153,8 @@ private:
 
     bool firstSendModelData = true;
     std::vector<VkModelData> vkModelData;
+    std::vector<VkPointsData> vkBufferDataMap;
+    std::vector<VkImageData> vkImageDataMap;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -207,8 +214,8 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(Model* model, uint32_t i);
-    void createIndexBuffer(Model* model, uint32_t i);
+    void createVertexBuffer(Geometry* model, uint32_t i);
+    void createIndexBuffer(Geometry* model, uint32_t i);
     void createUniformBuffers();
     void createDescriptorPool(uint32_t texSize);
     void allocateDescriptorSets();
@@ -222,7 +229,6 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
     void updateUniformBuffer(uint32_t currentImage);
-    void setMaterial(std::shared_ptr<Material> material);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -263,7 +269,7 @@ public:
         drawFrame();
     }
 
-    void setModel(std::vector<Model*>& modelsData);
+    void setModel(std::vector<Geometry*>& modelsData);
     void prepareTextureVulkan(uint32_t count);
 };
 

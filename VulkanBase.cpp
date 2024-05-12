@@ -1021,7 +1021,7 @@
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::setModel(std::vector<Model*> & modelData)
+    void VulkanBase::setModel(std::vector<Geometry*> & modelData)
     {
         int i;
 
@@ -1031,7 +1031,8 @@
             firstSendModelData = false;
         }
 
-        //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って、それぞれをGPUを送る
+        //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って
+        //それぞれをGPUを送る
         for (i = 0; i < modelData.size(); i++)
         {
             createVertexBuffer(modelData[i],i);
@@ -1040,7 +1041,7 @@
         }
     }
 
-    void VulkanBase::createVertexBuffer(Model* model,uint32_t i) 
+    void VulkanBase::createVertexBuffer(Geometry* model,uint32_t i) 
     {
         vkModelData[i].vertices.count = model->getVerticesSize();
         VkDeviceSize bufferSize = sizeof(*model->getVertItr()) * vkModelData[i].vertices.count;
@@ -1063,7 +1064,7 @@
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer(Model* model,uint32_t i) 
+    void VulkanBase::createIndexBuffer(Geometry* model,uint32_t i) 
     {
         vkModelData[i].indices.count = model->getIndicesSize();
         VkDeviceSize bufferSize = sizeof(*model->getIndiItr()) * vkModelData[i].indices.count;
@@ -1198,13 +1199,13 @@
                 imageInfo.imageView = vkModelData[j].texture.view;
                 imageInfo.sampler = vkModelData[j].texture.sampler;
 
-                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet = descriptorSets[i];
-                descriptorWrites[1].dstBinding = 1;
-                descriptorWrites[1].dstArrayElement = 0;
-                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &imageInfo;
+                descriptorWrites[j + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[j + 1].dstSet = descriptorSets[i];
+                descriptorWrites[j + 1].dstBinding = 1;
+                descriptorWrites[j + 1].dstArrayElement = 0;
+                descriptorWrites[j + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorWrites[j + 1].descriptorCount = 1;
+                descriptorWrites[j + 1].pImageInfo = &imageInfo;
             }
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

@@ -25,12 +25,15 @@
     <Filter Include="ソース ファイル\Lights">
       <UniqueIdentifier>{2c1a1d75-3295-433d-bdab-de4bea32f3fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Vulkan">
+      <UniqueIdentifier>{3fcbab67-6893-4a1b-a6db-ccfb3dda7ed3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Vulkan">
+      <UniqueIdentifier>{8e5f75bc-37c1-40c7-a477-7fa13b6cef96}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
@@ -48,7 +51,7 @@
     <ClCompile Include="Object.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Model.cpp">
+    <ClCompile Include="Geometry.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
     <ClCompile Include="Controller.cpp">
@@ -60,11 +63,17 @@
     <ClCompile Include="GameManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="VulkanBase.cpp">
+      <Filter>ソース ファイル\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkModel.cpp">
+      <Filter>ソース ファイル\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Storage.cpp">
+      <Filter>ソース ファイル\LoadModel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="VulkanBase.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
@@ -80,7 +89,7 @@
     <ClInclude Include="Object.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
+    <ClInclude Include="Geometry.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
     <ClInclude Include="Controller.h">
@@ -92,9 +101,21 @@
     <ClInclude Include="GameManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="VulkanBase.h">
+      <Filter>ヘッダー ファイル\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkModel.h">
+      <Filter>ヘッダー ファイル\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Storage.h">
+      <Filter>ヘッダー ファイル\LoadModel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="classDesign.txt">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="scene.txt">
       <Filter>リソース ファイル</Filter>
     </Text>
   </ItemGroup>

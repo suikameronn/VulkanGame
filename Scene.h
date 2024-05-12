@@ -9,17 +9,17 @@
 #include<glm/glm.hpp>
 
 #include"FileManager.h"
-#include"Model.h"
+#include"Geometry.h"
 #include"VulkanBase.h"
 
 class Scene
 {
 private:
 	//ここにシーンのオブジェクトの名前とモデルが保存される
-	std::unordered_map<std::string, Model> sceneSet;
+	std::unordered_map<std::string, Geometry> sceneSet;
 
 	//シーン全体のモデルへのポインターを持つ
-	std::vector<Model*> modelsPointer;
+	std::vector<Geometry*> modelsPointer;
 	void setPointers();
 	void setPointers(std::string name);
 
@@ -27,6 +27,6 @@ public:
 	Scene();
 	Scene(FileManager* manager);
 
-	Model* getSceneModelData(std::string name);
-	std::vector<Model*>& getSceneModel();
+	Geometry* getSceneModelData(std::string name);
+	std::vector<Geometry*>& getSceneModel();
 };

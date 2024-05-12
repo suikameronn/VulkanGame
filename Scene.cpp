@@ -17,6 +17,7 @@ Scene::Scene(FileManager* manager)
 		parth[i].second = MODELTEST;
 	}
 
+	//ファイルからモデルとテクスチャを読み取る
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
 		sceneSet[itr->first] = *manager->loadModelPoints(itr->second);
@@ -26,13 +27,14 @@ Scene::Scene(FileManager* manager)
 	setPointers();
 }
 
-Model* Scene::getSceneModelData(std::string name)
+Geometry* Scene::getSceneModelData(std::string name)
 {
 	return &sceneSet[name];
 }
 
 void Scene::setPointers()
 {
+	//描画するモデルのポインタを積んでいく
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		modelsPointer.push_back(&itr->second);
@@ -41,6 +43,7 @@ void Scene::setPointers()
 
 void Scene::setPointers(std::string name)
 {
+	//シーン内の重複したモデルやデータを除いた、シーンに必要なモデルやテクスチャをmodelsPointerに入れる
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		if (&itr->second == &sceneSet[name])
@@ -52,7 +55,7 @@ void Scene::setPointers(std::string name)
 	}
 }
 
-std::vector<Model*>& Scene::getSceneModel()
+std::vector<Geometry*>& Scene::getSceneModel()
 {
 	if (modelsPointer.empty())
 	{

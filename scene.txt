@@ -1,0 +1,103 @@
+シーンファイルの例
+
+//一旦すべてのオブジェクトには当たり判定が存在することとする
+
+Cube//これがオブジェクトの名前
+{
+	Initialize
+	{
+		Transform
+		{
+			Position
+			{
+				{0.0,0.0,0.0};
+			}
+
+			Rotation
+			{
+				x,y,z軸で何度傾いてるかを表記
+				{0.0,0.0,0.0};
+			}
+
+			Scale
+			{
+				{1.0,1.0,1.0};
+			}
+		}
+		//表示するモデルの種類
+		Model
+		{
+			VIKING_ROOM
+		}
+
+		Material
+		{
+			Diffuse
+			{
+				{1.0,1.0,1.0};
+			}
+
+			Ambient
+			{
+				{1.0,1.0,1.0};
+			}
+
+			Specular
+			{
+				{1.0,1.0,1.0};
+			}
+
+			Emissive
+			{
+				{1.0,1.0,1.0};
+			}
+
+			Shininess
+			{
+				(0.0);
+			}
+
+			Transmissive
+			{
+				{1.0,1.0,1.0};
+			}
+
+			Texture
+			{
+				(VIKING_ROOM);
+			}
+		}
+	}
+
+	Animation
+	{
+		//指定した場所から指定した目的地まで平行移動する
+		Translate
+		{
+			speed
+			{
+				(1.0);
+			}
+
+			currentPosition
+			{
+				{0.0,0.0,0.0};
+			}
+
+			destinationPosition
+			{
+				{10.0,10.0,10.0};
+			}
+			//再び、目的地から初期値まで戻るから戻らないか
+			Back
+			{
+				(true);
+			}
+			//一連の動作を繰り返すか繰り返さないか
+			Loop
+			{
+				(true);
+			}
+		}
+	}
+}

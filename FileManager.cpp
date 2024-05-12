@@ -17,14 +17,14 @@ std::string FileManager::getModelPath(OBJECT obj)
     }
 }
 
-Model* FileManager::loadModelPoints(OBJECT obj)
+Geometry* FileManager::loadModelPoints(OBJECT obj)
 {
     if (models.contains(obj))
     {
         return models[obj].get();
     }
 
-    Model* model = new Model();
+    Geometry* model = new Geometry();
 
 
     tinyobj::attrib_t attrib;
@@ -81,7 +81,7 @@ Model* FileManager::loadModelPoints(OBJECT obj)
     return models[obj].get();
 }
 
-Model* FileManager::getModelData(OBJECT obj)
+Geometry* FileManager::getModelData(OBJECT obj)
 {
     return models[obj].get();
 }
