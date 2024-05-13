@@ -1,6 +1,5 @@
 #pragma once
 #include"Object.h"
-#include"Material.h"
 
 #include <glm/gtx/hash.hpp>
 #include <functional>
@@ -26,7 +25,7 @@ namespace std {
 	};
 }
 
-class Geometry:Object
+class Meshes:Object
 {
 protected:
 

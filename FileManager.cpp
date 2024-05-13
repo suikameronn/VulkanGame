@@ -6,6 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+FileManager* FileManager::fileManager = nullptr;
+
 std::string FileManager::getModelPath(OBJECT obj)
 {
     switch (obj)
@@ -17,15 +19,16 @@ std::string FileManager::getModelPath(OBJECT obj)
     }
 }
 
-Geometry* FileManager::loadModelPoints(OBJECT obj)
+Meshes* FileManager::loadModelPoints(OBJECT obj)
 {
+    /*
     if (models.contains(obj))
     {
         return models[obj].get();
     }
+    */
 
-    Geometry* model = new Geometry();
-
+    Meshes* model = new Meshes();
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -77,13 +80,10 @@ Geometry* FileManager::loadModelPoints(OBJECT obj)
         }
     }
 
+    /*
     models[obj].reset(model);
-    return models[obj].get();
-}
-
-Geometry* FileManager::getModelData(OBJECT obj)
-{
-    return models[obj].get();
+    */
+    return model;
 }
 
 std::string FileManager::getImagePath(IMAGE image)
@@ -97,12 +97,16 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
-std::shared_ptr<ImageData> FileManager::loadModelImage(IMAGE image)
+ImageData* FileManager::loadModelImage(IMAGE image)
 {
+    /*
     if (images.contains(image))
     {
         return images[image];
     }
+    */
+
+    ImageData* imageData = new ImageData();
 
     uint32_t id = image;
     int width, height, texChannels;
@@ -115,32 +119,12 @@ std::shared_ptr<ImageData> FileManager::loadModelImage(IMAGE image)
     }
 
     int imageSize = width * height * 4;
-    pixels.resize(imageSize);
     //ファイルからロードした画素の配列を別のメモリにコピーしたいが、データ型が違うのでコピーできない
     //std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
 
-    std::fill(pixels.begin(), pixels.end(), (unsigned char)100);
-
     stbi_image_free(picture);
 
-    images[image] = std::shared_ptr<ImageData>(new ImageData(id,width,height,texChannels,pixels));
+    //images[image] = std::shared_ptr<ImageData>(new ImageData(id,width,height,texChannels,pixels));
 
-    return images[image];
-}
-
-ImageData* FileManager::getImageData(IMAGE image)
-{
-    if (images.contains(image))
-    {
-        return images[image].get();
-    }
-    else
-    {
-        throw std::runtime_error("getImageData :get none ImageData");
-    }
-}
-
-uint32_t FileManager::getRegisteredImageCount()
-{
-    return images.size();
+    return imageData;
 }

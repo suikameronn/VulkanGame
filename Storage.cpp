@@ -1,9 +1,9 @@
 #include"Storage.h"
 
-//StorageにGeometryを追加する
-void Storage::addObj(OBJECT obj, Geometry* geo)
+//StorageにMeshesを追加する
+void Storage::addObj(OBJECT obj, Meshes* geo)
 {
-	objStorage[obj].reset(geo);
+	meshesStorage[obj].reset(geo);
 }
 
 //StorageにImageDataを追加する
@@ -12,10 +12,10 @@ void Storage::addImage(IMAGE image, ImageData* imageData)
 	imageStorage[image].reset(imageData);
 }
 
-//Storageから指定されたGeometryへの参照を返す
-std::shared_ptr<Geometry> Storage::shareObj(OBJECT obj)
+//Storageから指定されたMeshesへの参照を返す
+std::shared_ptr<Meshes> Storage::shareObj(OBJECT obj)
 {
-	return objStorage[obj];
+	return meshesStorage[obj];
 }
 
 //Storageから指定されたImageDataへの参照を返す
@@ -24,14 +24,26 @@ std::shared_ptr<ImageData> Storage::shareImage(IMAGE image)
 	return imageStorage[image];
 }
 
-//Storageに指定されたGeometryがすでに存在するかどうかを返す
-bool Storage::containGeometry(OBJECT obj)
+//Storageに指定されたMeshesがすでに存在するかどうかを返す
+bool Storage::containMeshes(OBJECT obj)
 {
-	return objStorage.contains(obj);
+	return meshesStorage.contains(obj);
 }
 
 //Storageに指定されたImageDataがすでに存在するかどうかを返す
 bool Storage::containImageData(IMAGE image)
 {
 	return imageStorage.contains(image);
+}
+
+//Storageに格納されたMeshesのサイズを返す
+uint32_t Storage::getSizeObjStorage()
+{
+	return meshesStorage.size();
+}
+
+//Storageに格納されたImageのサイズを返す
+uint32_t Storage::getSizeImageStorage()
+{
+	return imageStorage.size();
 }

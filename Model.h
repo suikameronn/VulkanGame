@@ -1,17 +1,24 @@
 #pragma once
 #include<vector>
-#include"Geometry.h"
 
-//画面などに現れるモデル、それぞれのクラス
-//同じモデルでも、固有の名前が付けられている
+#include"Meshes.h"
+#include"Material.h"
+
 class Model
 {
 private:
-	std::string name;
-	std::shared_ptr<Geometry> geo;
+	Meshes* meshes;
 
-	glm::vec3 pos;
+	Material* material;
+
 public:
-	void setName(std::string& n);
-	std::string& getName();
+	Model();
+	Model(Meshes* m, Material* material);
+
+	void setMeshes(Meshes* meshes);
+	void setImageData(ImageData* image);
+	void setMaterial(Material* material);
+
+	Meshes* getMeshes();
+	Material* getMaterial();
 };

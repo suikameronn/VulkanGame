@@ -1,5 +1,7 @@
 #include"VulkanBase.h"
 
+VulkanBase* VulkanBase::vulkanBase = nullptr;
+
     VkResult VulkanBase::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr) {
@@ -48,6 +50,7 @@
     }
 
     //テクスチャ分だけのDescriptorを作れるように、プールにテクスチャの数を指定する
+    //VkModelのサイズを引数として、テクスチャがない場合の処理はここで行う
     void VulkanBase::prepareTextureVulkan(uint32_t texCount)
     {
         createDescriptorSetLayout(texCount);
@@ -1021,16 +1024,35 @@
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::setModel(std::vector<Geometry*> & modelData)
+    void VulkanBase::endFirstSendModel()
     {
-        int i;
+        firstSendModel = false;
+    }
 
-        if (firstSendModelData)
+    void VulkanBase::resizeModels(uint32_t size)
+    {
+        if (firstSendModel)
         {
-            vkModelData.resize(modelData.size());
-            firstSendModelData = false;
+            vkModels.resize(size);
+            vkModelsItr = vkModels.begin();
+        }
+    }
+
+    void VulkanBase::setModels(Model* model)
+    {
+        /*modelデータからVkModelクラスを作成する*/
+        if (firstSendModel)
+        {
+            (*vkModelsItr)->setModel(model);
+            vkModelsItr++;
+        }
+        else
+        {
+            VkModel* vkModel = new VkModel(model);
+            vkModels.push_back(vkModel);
         }
 
+        /*
         //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って
         //それぞれをGPUを送る
         for (i = 0; i < modelData.size(); i++)
@@ -1039,9 +1061,10 @@
             createIndexBuffer(modelData[i],i);
             createTextureData(modelData[i]->getImageData(),i);
         }
+        */
     }
 
-    void VulkanBase::createVertexBuffer(Geometry* model,uint32_t i) 
+    void VulkanBase::createVertexBuffer(Meshes* model,uint32_t i) 
     {
         vkModelData[i].vertices.count = model->getVerticesSize();
         VkDeviceSize bufferSize = sizeof(*model->getVertItr()) * vkModelData[i].vertices.count;
@@ -1064,7 +1087,7 @@
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer(Geometry* model,uint32_t i) 
+    void VulkanBase::createIndexBuffer(Meshes* model,uint32_t i) 
     {
         vkModelData[i].indices.count = model->getIndicesSize();
         VkDeviceSize bufferSize = sizeof(*model->getIndiItr()) * vkModelData[i].indices.count;

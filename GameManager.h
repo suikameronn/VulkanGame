@@ -1,32 +1,37 @@
 #pragma once
 
-#include"FileManager.h"
-#include"Controller.h"
+#include"GLFW/glfw3.h"
+
 #include"VulkanBase.h"
-#include"Scene.h"
+
+extern GLFWwindow* window;
 
 class GameManager
 {
 private:
-	std::shared_ptr<FileManager> fileManager;//ファイルを読み取る
-	std::shared_ptr<VulkanBase> vulkanBase;//vulkanの機能を使う
-	std::shared_ptr<Controller> controller;//コントローラ
-
-	GLFWwindow* window;
+	static GameManager* gameManager;
+	GameManager();
 
 public:
-	GameManager() {};
-	GameManager(std::shared_ptr<FileManager> f, std::shared_ptr<VulkanBase> v
-		,std::shared_ptr<Controller> c,GLFWwindow* w)
+	static GameManager* GetInstance()
 	{
-		window = w;
-		fileManager = f;
-		vulkanBase = v;
-		controller = c;
+		if (!gameManager)
+		{
+			gameManager = new GameManager();
 
-		glfwSetWindowUserPointer(window, controller.get());
-		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+			glfwSetWindowUserPointer(window, gameManager);
+			glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+		}
+
+		return gameManager;
 	}
+
+	~GameManager()
+	{
+		delete gameManager;
+		gameManager = nullptr;
+	}
+
 
 	void GameLoop();
 };

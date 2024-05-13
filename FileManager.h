@@ -2,7 +2,7 @@
 #include<iostream>
 #include<unordered_map>
 
-#include"Geometry.h"
+#include"Meshes.h"
 
 enum OBJECT
 {
@@ -17,6 +17,10 @@ enum IMAGE
 class FileManager
 {
 private:
+	static FileManager* fileManager;
+
+	FileManager() {};
+
 	//ファイルのパスを入れる
 	std::string modelPath;
 	std::string getModelPath(OBJECT obj);
@@ -26,10 +30,22 @@ private:
 	std::string getImagePath(IMAGE image);
 
 public:
-	Geometry* loadModelPoints(OBJECT obj);
-	Geometry* getModelData(OBJECT obj);
+	static FileManager* GetInstance()
+	{
+		if (!fileManager)
+		{
+			fileManager = new FileManager();
+		}
 
-	std::shared_ptr<ImageData> loadModelImage(IMAGE image);
-	ImageData* getImageData(IMAGE image);
-	uint32_t getRegisteredImageCount();
+		return fileManager;
+	}
+
+	~FileManager()
+	{
+		delete fileManager;
+		fileManager = nullptr;
+	}
+
+	Meshes* loadModelPoints(OBJECT obj);
+	ImageData* loadModelImage(IMAGE image);
 };

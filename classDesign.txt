@@ -125,8 +125,6 @@ ImageDataƒ|ƒCƒ“ƒ^‚ðƒZƒbƒg‚·‚éŠÖ”
 
 Materialƒ|ƒCƒ“ƒ^‚ðƒZƒbƒg‚·‚éŠÖ”
 
-ã‚Ì3‚Â‚Ìƒ|ƒCƒ“ƒ^‚ð•Ô‚·ŠÖ”
-
 <MaterialƒNƒ‰ƒX>
 private:
 glm::vec3‚Ìdiffuse‚È‚Ç‚Ì•Ï”‚ðŽ‚Â
@@ -170,3 +168,26 @@ ModelƒNƒ‰ƒX‚©‚çŒÄ‚Ño‚³‚êAVkModelƒNƒ‰ƒX‚ðì¬‚·‚éŠÖ”AModelƒNƒ‰ƒX‚Ìƒ|ƒCƒ“ƒ^‚ðˆ
 
 <VkModelƒNƒ‰ƒX>
 private:
+
+Descriptor‚Ì”z—ñ‚©‚çŽg—p‚·‚é‚à‚Ì‚ðŽw’è‚·‚éID‚Æ‚È‚éuint32_t
+
+public
+
+Meshes‚Ìƒ|ƒCƒ“ƒ^‚ð•Ô‚·ŠÖ”
+
+Material‚Ìƒ|ƒCƒ“ƒ^‚ð•Ô‚·ŠÖ”
+
+Vulkan‚Å‚ÌƒŒƒ“ƒ_ƒŠƒ“ƒO‚É•K—v‚È‚à‚Ì
+
+1.ƒeƒNƒXƒ`ƒƒ‚ðŽ‚½‚È‚¢ƒ‚ƒfƒ‹‚ÆƒeƒNƒXƒ`ƒƒ‚ðŽ‚Âƒ‚ƒfƒ‹‚Ì“ñ‚Â‚ð•`‚­ê‡‚ÍADescriptorLayout‚ª“ñ‚Â•K—vB
+ƒeƒNƒXƒ`ƒƒ‚ÌŽí—Þ‚Ìˆá‚¢‚É‚æ‚Á‚ÄAƒŒƒCƒAƒEƒg‚Ì”‚à‰ž‚¶‚é•K—v‚È‚¢B
+
+2.‘Oq‚Ìê‡AƒOƒ‰ƒtƒBƒbƒNƒXƒpƒCƒvƒ‰ƒCƒ“‚ª“ñ‚Â•K—vBƒVƒF[ƒ_‚É‚æ‚Á‚ÄƒeƒNƒXƒ`ƒƒ—p‚Ìdescriptor‚ðˆø”‚Æ‚·‚éƒVƒF[ƒ_‚Æ‚»‚¤‚Å‚È‚¢ƒVƒF[ƒ_‚Ì“ñ‚Â‚ð—˜—p‚·‚é‚½‚ßB
+‚±‚Ìê‡‚Å‚àƒfƒvƒXƒoƒbƒtƒ@[ŠÖ˜A‚ÍARenderPass‚ÌŠÇŠ‚È‚Ì‚ÅA[“xƒeƒXƒg‚Ís‚í‚ê‚éB
+
+3.DescriptorLayout‚ªˆÙ‚È‚éê‡A‚»‚Ì”‚¾‚¯‚ÌCommandPool‚ª•K—v
+
+4.ƒ‚ƒfƒ‹‚Ìƒ}ƒeƒŠƒAƒ‹‚È‚Ç‚ÌŠeŽíÝ’è‚ÆA‚»‚ê‚É‡‚í‚¹‚½ADescriptorSetLayout‚ÆDescriptorPool‚ðˆø”‚É“n‚µ‚ÄADescriptorSet‚ðì¬‚·‚éB
+‚È‚¨A‚±‚ê‚É‚ÍAƒeƒNƒXƒ`ƒƒ‚Ìˆá‚¤ê‡‚ÍA‚»‚ê‚É‰ž‚¶‚½ŒÂ”‚ðì‚ç‚È‚¯‚ê‚Î‚È‚ç‚È‚¢
+
+5.•`‰æŽžA‚Ü‚¸ƒOƒ‰ƒtƒBƒbƒNƒXƒpƒCƒvƒ‰ƒCƒ“‚ðÝ’è‚µ‚ÄA’¸“_AƒCƒ“ƒfƒbƒNƒXADescriptorSets‚ÆŽw’è‚µ‚ÄAÅŒã‚ÉAvkCmdDrawIndexed()‚ðŽÀs‚·‚éB

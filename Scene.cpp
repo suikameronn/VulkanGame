@@ -2,9 +2,12 @@
 
 Scene::Scene()
 {
+	parseScene();
+
+	setModels();
 }
 
-Scene::Scene(FileManager* manager)
+void Scene::parseScene()
 {
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
@@ -20,28 +23,33 @@ Scene::Scene(FileManager* manager)
 	//ファイルからモデルとテクスチャを読み取る
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
-		sceneSet[itr->first] = *manager->loadModelPoints(itr->second);
-		sceneSet[itr->first].setImageData(manager->loadModelImage(IMAGETEST));
+		Model* model = new Model();
+		model->setMeshes(FileManager::GetInstance()->loadModelPoints(itr->second));
+		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
+
+		sceneSet[itr->first] = model;
 	}
-
-	setPointers();
 }
 
-Geometry* Scene::getSceneModelData(std::string name)
+Model* Scene::getSceneModelData(std::string name)
 {
-	return &sceneSet[name];
+	return sceneSet[name];
 }
 
-void Scene::setPointers()
+void Scene::setModels()
 {
+	VulkanBase::GetInstance()->resizeModels(sceneSet.size());
+
 	//描画するモデルのポインタを積んでいく
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		modelsPointer.push_back(&itr->second);
+		VulkanBase::GetInstance()->setModels(itr->second);
 	}
+
+	VulkanBase::GetInstance()->endFirstSendModel();
 }
 
-void Scene::setPointers(std::string name)
+void Scene::setModels(std::string name)
 {
 	//シーン内の重複したモデルやデータを除いた、シーンに必要なモデルやテクスチャをmodelsPointerに入れる
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
@@ -51,16 +59,6 @@ void Scene::setPointers(std::string name)
 			continue;
 		}
 
-		modelsPointer.push_back(&itr->second);
+		VulkanBase::GetInstance()->setModels(itr->second);
 	}
-}
-
-std::vector<Geometry*>& Scene::getSceneModel()
-{
-	if (modelsPointer.empty())
-	{
-		std::cout << "getSceneModel error" << std::endl;
-	}
-
-	return modelsPointer;
 }

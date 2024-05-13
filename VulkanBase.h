@@ -27,6 +27,7 @@
 #include <functional>
 #include<fstream>
 
+#include"VkModel.h"
 #include"FileManager.h"
 #include"vulkan/vulkan.h"
 
@@ -65,39 +66,12 @@ struct UniformBufferObject {
     */
 };
 
-struct VkBufferData
-{
-    uint32_t count;
-    VkBuffer buffer;
-    VkDeviceMemory handler;
-};
-
-struct VkPointsData
-{
-    VkBufferData vertices;
-    VkBufferData indices;
-};
-
-struct VkImageData
-{
-    uint32_t id;
-    uint32_t mipLevel;
-    VkImage image;
-    VkDeviceMemory memory;
-    VkImageView view;
-    VkSampler sampler;
-};
-
-struct VkModelData
-{
-    uint32_t 
-    uint32_t vkPointsDataID;
-    uint32_t vkImageDataID;
-};
-
 class VulkanBase
 {
 private:
+    static VulkanBase* vulkanBase;
+
+    VulkanBase();
 
     const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -151,7 +125,9 @@ private:
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    bool firstSendModelData = true;
+    bool firstSendModel = true;
+    std::vector<VkModel*>::iterator vkModelsItr;
+    std::vector<VkModel*> vkModels;
     std::vector<VkModelData> vkModelData;
     std::vector<VkPointsData> vkBufferDataMap;
     std::vector<VkImageData> vkImageDataMap;
@@ -205,7 +181,7 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
-    void createTextureImage(ImageData* imageData,uint32_t i);
+    void createTextureImage(ImageData* imageData, uint32_t i);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     void createTextureImageView(uint32_t i);
     void createTextureSampler(uint32_t i);
@@ -214,8 +190,8 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(Geometry* model, uint32_t i);
-    void createIndexBuffer(Geometry* model, uint32_t i);
+    void createVertexBuffer(Meshes* model, uint32_t i);
+    void createIndexBuffer(Meshes* model, uint32_t i);
     void createUniformBuffers();
     void createDescriptorPool(uint32_t texSize);
     void allocateDescriptorSets();
@@ -241,9 +217,25 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createTextureData(ImageData* imageData,uint32_t i);
+    void createTextureData(ImageData* imageData, uint32_t i);
 
 public:
+
+    static VulkanBase* GetInstance()
+    {
+        if (!vulkanBase)
+        {
+            vulkanBase = new VulkanBase();
+        }
+
+        return vulkanBase;
+    }
+
+    ~VulkanBase()
+    {
+        delete vulkanBase;
+        vulkanBase = nullptr;
+    }
 
     bool framebufferResized = false;
 
@@ -269,7 +261,10 @@ public:
         drawFrame();
     }
 
-    void setModel(std::vector<Geometry*>& modelsData);
+    void endFirstSendModel();
+    void resizeModels(uint32_t size);
+    //Ç±Ç±Ç≈ModelÇ©ÇÁVkModelÉNÉâÉXÇçÏê¨Ç∑ÇÈ
+    void setModels(Model* model);
     void prepareTextureVulkan(uint32_t count);
 };
 

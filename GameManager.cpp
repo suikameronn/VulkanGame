@@ -1,19 +1,21 @@
 #include"GameManager.h"
 
+#include"Scene.h"
+
+GameManager* GameManager::gameManager = nullptr;
+
 void GameManager::GameLoop()
 {
-    vulkanBase->prepareVulkan();
+    VulkanBase::GetInstance()->prepareVulkan();
 
-    std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene(fileManager.get()));
+    std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
 
     //テクスチャの配列を丸ごとほしい
-    vulkanBase->prepareTextureVulkan(fileManager->getRegisteredImageCount());
-    vulkanBase->setModel(scene->getSceneModel());
-    vulkanBase->last();
+    VulkanBase::GetInstance()->last();
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        vulkanBase->render();
+        VulkanBase::GetInstance()->render();
     }
 }
