@@ -90,7 +90,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+        for (auto itr = graphicsPipelines.begin(); itr != graphicsPipelines.end(); itr++)
+        {
+            vkDestroyPipeline(device, *itr, nullptr);
+        }
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
         vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -99,26 +102,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-        for (auto itr = vkModelData.begin(); itr != vkModelData.end(); itr++)
+        for (auto itr = descriptorPools.begin(); itr != descriptorPools.end(); itr++)
         {
-            vkDestroyBuffer(device, itr->vertices.buffer, nullptr);
-            vkFreeMemory(device, itr->vertices.handler, nullptr);
+            vkDestroyDescriptorPool(device, *itr, nullptr);
+        }
 
-            vkDestroyBuffer(device, itr->indices.buffer, nullptr);
-            vkFreeMemory(device, itr->indices.handler, nullptr);
+        for (auto itr = descriptorSetLayouts.begin(); itr != descriptorSetLayouts.end(); itr++)
+        {
+            vkDestroyDescriptorSetLayout(device, *itr, nullptr);
+        }
 
-            if (itr->texture.id != -1)
-            {
-                vkDestroySampler(device, itr->texture.sampler, nullptr);
-                vkDestroyImageView(device, itr->texture.view, nullptr);
-
-                vkDestroyImage(device, itr->texture.image, nullptr);
-                vkFreeMemory(device, itr->texture.memory, nullptr);
-            }
+        for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
+        {
+            *itr->release();//vkModels‚Ì”jŠüAdevice‚ğ”jŠü‚·‚é‘O‚És‚í‚È‚¯‚ê‚Î‚È‚ç‚È‚¢
         }
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -127,7 +123,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyFence(device, inFlightFences[i], nullptr);
         }
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        for (auto itr = commandPools.begin(); itr != commandPools.end(); itr++)
+        {
+            vkDestroyCommandPool(device, *itr, nullptr);
+        }
 
         vkDestroyDevice(device, nullptr);
 
@@ -472,7 +471,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layoutInfo.bindingCount = bindings.size();
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayouts.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
     }
@@ -599,7 +598,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -622,7 +621,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
 
-        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipelines.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
 
@@ -663,7 +662,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPools.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics command pool!");
         }
     }

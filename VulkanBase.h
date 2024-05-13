@@ -31,6 +31,8 @@
 #include"FileManager.h"
 #include"vulkan/vulkan.h"
 
+extern GLFWwindow* window;
+
 enum Extension
 {
     OBJ,
@@ -97,8 +99,6 @@ private:
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    GLFWwindow* window;
-
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
@@ -117,20 +117,18 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
     VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
 
-    VkCommandPool commandPool;
+    std::vector<VkPipeline> graphicsPipelines;//シェーダを使い分けるために複数いる場合がある
+
+    std::vector<VkCommandPool> commandPools;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModel = true;
     std::vector<VkModel*>::iterator vkModelsItr;
-    std::vector<VkModel*> vkModels;
-    std::vector<VkModelData> vkModelData;
-    std::vector<VkPointsData> vkBufferDataMap;
-    std::vector<VkImageData> vkImageDataMap;
+    std::vector<std::unique_ptr<VkModel>> vkModels;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -145,7 +143,7 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
-    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorPool> descriptorPools;
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -233,21 +231,12 @@ public:
 
     ~VulkanBase()
     {
+        cleanup();
         delete vulkanBase;
         vulkanBase = nullptr;
     }
 
     bool framebufferResized = false;
-
-    VulkanBase(GLFWwindow* window)
-    {
-        this->window = window;
-    }
-
-    ~VulkanBase()
-    {
-        cleanup();
-    }
 
     void prepareVulkan()
     {

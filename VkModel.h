@@ -1,26 +1,33 @@
 #pragma once
 #include"Model.h"
+#include"vulkan/vulkan.h"
 
 //GeometryクラスにVulkan特有の変数を増やしたようなクラス
 class VkModel
 {
 private:
+	VkDevice device;//デストラクタ使用時に必要
+
 	Model* model;
 
 	int texDescriptorID;
 	int uniformDescriptorID;
 
-	VkBuffer buffer;
-	VkDeviceMemory handler;
+	VkBuffer vertBuffer = nullptr;
+	VkDeviceMemory vertHandler = nullptr;
 
-	uint32_t mipLevel;
-	VkImage image;
-	VkDeviceMemory memory;
-	VkImageView view;
-	VkSampler sampler;
+	VkBuffer indiBuffer = nullptr;
+	VkDeviceMemory indiHandler = nullptr;
+
+	uint32_t mipLevel = 0;
+	VkImage image = nullptr;
+	VkDeviceMemory memory = nullptr;
+	VkImageView view = nullptr;
+	VkSampler sampler = nullptr;
 
 public:
 	VkModel(Model* model);
+	~VkModel();
 
 	void setModel(Model* model);
 

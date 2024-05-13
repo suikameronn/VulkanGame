@@ -7,6 +7,21 @@ VkModel::VkModel(Model* model)
 	this->uniformDescriptorID = -1;
 }
 
+VkModel::~VkModel()
+{
+	vkDestroyBuffer(device, vertBuffer, nullptr);
+	vkFreeMemory(device, vertHandler, nullptr);
+
+	vkDestroyBuffer(device, indiBuffer, nullptr);
+	vkFreeMemory(device, indiHandler, nullptr);
+
+	vkDestroySampler(device, sampler, nullptr);
+	vkDestroyImageView(device, view, nullptr);
+
+	vkDestroyImage(device, image, nullptr);
+	vkFreeMemory(device, memory, nullptr);
+}
+
 void VkModel::setModel(Model* model)
 {
 	this->model = model;
