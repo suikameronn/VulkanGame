@@ -662,7 +662,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPools.data()) != VK_SUCCESS) {
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPoolscommandPools.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics command pool!");
         }
     }
