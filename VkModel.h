@@ -2,7 +2,9 @@
 #include"Model.h"
 #include"vulkan/vulkan.h"
 
-//GeometryクラスにVulkan特有の変数を増やしたようなクラス
+#include<bitset>
+
+//ModelクラスにVulkan特有の変数を増やしたようなクラス
 class VkModel
 {
 private:
@@ -10,14 +12,16 @@ private:
 
 	Model* model;
 
-	int texDescriptorID;
-	int uniformDescriptorID;
-
 	VkBuffer vertBuffer = nullptr;
 	VkDeviceMemory vertHandler = nullptr;
 
 	VkBuffer indiBuffer = nullptr;
 	VkDeviceMemory indiHandler = nullptr;
+
+	UniformBufferObject ubo;
+	VkBuffer uniformBuffer;
+	VkDeviceMemory uniformBufferMemory;
+	void* uniformBufferMappedPoint;
 
 	uint32_t mipLevel = 0;
 	VkImage image = nullptr;
@@ -25,16 +29,22 @@ private:
 	VkImageView view = nullptr;
 	VkSampler sampler = nullptr;
 
+	std::bitset<8> layoutBit;//右から、テクスチャ...とフラグを立てていく、
+	VkDescriptorSetLayout* layout;
+	std::vector<VkDescriptorSet>* descriptorSet;
+
 public:
 	VkModel(Model* model);
 	~VkModel();
 
 	void setModel(Model* model);
 
-	void setTexDescriptorID(uint32_t id);
-	void setUniformDescriptorID(uint32_t id);
-
 	Meshes* getMeshes();
 	Material* getMaterial();
 	ImageData* getImageData();
+
+	std::bitset<8> getLayoutBit();
+	std::pair<std::bitset<8>, ImageData*> getPairLayoutImage();
+	void setDescriptorSetLayout(VkDescriptorSetLayout* layout);
+	void setDescriptorSet(std::vector<VkDescriptorSet>* descriptorSet);
 };

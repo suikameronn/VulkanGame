@@ -250,6 +250,11 @@ public:
         drawFrame();
     }
 
+    VkDevice getDevice()
+    {
+        return device;
+    }
+
     void endFirstSendModel();
     void resizeModels(uint32_t size);
     //‚±‚±‚ÅModel‚©‚çVkModelƒNƒ‰ƒX‚ğì¬‚·‚é
