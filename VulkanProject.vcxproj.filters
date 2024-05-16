@@ -75,6 +75,9 @@
     <ClCompile Include="VkStorage.cpp">
       <Filter>ソース ファイル\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="VkObject.cpp">
+      <Filter>ソース ファイル\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -114,6 +117,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="VkStorage.h">
+      <Filter>ヘッダー ファイル\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkObject.h">
       <Filter>ヘッダー ファイル\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>

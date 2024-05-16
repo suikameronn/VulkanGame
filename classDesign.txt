@@ -216,8 +216,6 @@ UniformBufferだけでいい
 5.に必要なもの
 vkModelに登録されたDescriptorSetsなどを指定できるようにする必要がある。
 
-
-
 1.の実装
 VkStorageクラスという、VulkanBase用のStorageクラスを作成し、作成したDescriptorなどをそれに持たせる。
 既存のDescriptorLayoutやDescriptorSetsなどは、そこから持ってくる。
@@ -225,11 +223,11 @@ DescriptorLayoutの登録などは、Storageクラスなど同じようにする。
 vkModelにテクスチャがいるかどうか、UniformBufferがいるかどうかのboolを持たせて、それから、Layoutを作成する。
 既存のレイアウトで十分な場合の識別もそれで行う。なお識別はVkStorageクラスで行う。
 
-2.の実装
+2.の実装//いまここ5/16
 これは、DescriptorSetLayoutを作成するのと同じ繰り返しでグラフィックスパイプライン作成することにする。
 
 3.の実装
-これは単純に、DescriptorSetLayoutのvectorからサイズを求め、それだけDescriptorPoolを作る。
+
 
 4.の実装
 vkModelクラスから指定されたDescriptorSetLayoutを参照して、指定したUniformBufferにモデル行列などをセットする。

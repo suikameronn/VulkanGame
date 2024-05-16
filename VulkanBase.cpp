@@ -33,7 +33,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createColorResources();
         createDepthResources();
         createFramebuffers();
-        createUniformBuffers();
+        //createUniformBuffers();
         createCommandBuffers();
         createSyncObjects();
     }
@@ -53,15 +53,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //VkModelのサイズを引数として、テクスチャがない場合の処理はここで行う
     void VulkanBase::prepareTextureVulkan(uint32_t texCount)
     {
+        /*
         createDescriptorSetLayout(texCount);
         createDescriptorPool(texCount);
+        */
     }
 
     void VulkanBase::last()
     {
-        createGraphicsPipeline();
-        allocateDescriptorSets();
-        createDescriptorSets();
+        //allocateDescriptorSets();
+        //createDescriptorSets();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -450,35 +451,68 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(uint32_t texSize) {
+    VkDescriptorSetLayout* VulkanBase::createDescriptorSetLayout(VkModel* model) 
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        bindings.push_back(uboLayoutBinding);
 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = texSize;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        ImageData* image = model->getImageData();
+        if (image)
+        {
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding = 1;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            bindings.push_back(samplerLayoutBinding);
+        }
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = bindings.size();
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayouts.data()) != VK_SUCCESS) {
+        VkDescriptorSetLayout* descriptorSetLayout = nullptr;
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
+
+        return descriptorSetLayout;
     }
 
-    void VulkanBase::createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
+    void VulkanBase::shaderChoice(std::bitset<8> layoutBit, std::vector<char>& vert, std::vector<char>& frag)
+    {
+        if (layoutBit == std::bitset<8>(00000001))
+        {
+            vert = readFile("shaders/vert.spv");
+            frag = readFile("shaders/frag.spv");
+
+            return;
+        }
+
+        vert = readFile("shaders/vert.spv");
+        frag = readFile("shaders/frag.spv");
+    }
+
+    //右から、テクスチャとフラグを立てていく
+    VkPipeline* VulkanBase::createGraphicsPipeline(VkModel* model)
+    {
+        /*
+        std::vector<char> vertShaderCode = readFile("shaders/vert.spv");
+        std::vector<char> fragShaderCode = readFile("shaders/frag.spv");
+        */
+
+        std::vector<char> vertShaderCode;
+        std::vector<char> fragShaderCode;
+        shaderChoice(model->getLayoutBit(),vertShaderCode, fragShaderCode);
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -598,7 +632,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.pSetLayouts = model->getDescriptorSetLayout();
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -1040,16 +1074,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::setModels(Model* model)
     {
         /*modelデータからVkModelクラスを作成する*/
-        if (firstSendModel)
-        {
-            (*vkModelsItr)->setModel(model);
-            vkModelsItr++;
-        }
-        else
-        {
-            VkModel* vkModel = new VkModel(model);
-            vkModels.push_back(vkModel);
-        }
+        VkModel* vkModel = new VkModel(model);
+        vkModels.push_back(std::unique_ptr<VkModel>(vkModel));
+    }
 
         /*
         //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って
@@ -1108,18 +1135,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createUniformBuffers() {
+    void VulkanBase::createUniformBuffers(VkModel* model) {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-
-            vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
-        }
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformBuffersMemory);
+        vkMapMemory(device, uniformBuffersMemory, 0, bufferSize, 0, &uniformBuffersMapped);
     }
 
     /*
@@ -1158,80 +1178,82 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
         //ubo.normal = mat;
 
-        memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+        memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
     }
 
-    void VulkanBase::createDescriptorPool(uint32_t texSize) 
+    VkDescriptorPool* VulkanBase::createDescriptorPool(VkModel* model) 
     {
-        std::array<VkDescriptorPoolSize,2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(texSize * MAX_FRAMES_IN_FLIGHT);
+        std::vector<VkDescriptorPoolSize> poolSizes{};
+        VkDescriptorPoolSize pool;
+        pool.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pool.descriptorCount = static_cast<uint32_t>(1);
+        poolSizes.push_back(pool);
+        if (model->getLayoutBit() == std::bitset<8>(00000001))
+        {
+            pool.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            pool.descriptorCount = static_cast<uint32_t>(1);
+        }
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * texSize);
+        poolInfo.maxSets = static_cast<uint32_t>(1);
 
+        
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
         }
+
+        return &descriptorPool;
     }
 
-    void VulkanBase::allocateDescriptorSets()
+    void VulkanBase::allocateDescriptorSets(VkModel* model)
     {
-        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
+        allocInfo.pSetLayouts = model->getDescriptorSetLayout();
 
-        descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) 
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
         {
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
     }
 
-    void VulkanBase::createDescriptorSets() 
+    VkDescriptorSet* VulkanBase::createDescriptorSets(VkModel* model)
     {
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = *model->getUniformBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
 
-            std::array<VkWriteDescriptorSet,2> descriptorWrites{};
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = descriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-            int j;
-            for (j = 0; j < vkModelData.size(); j++)
-            {
-                VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = vkModelData[j].texture.view;
-                imageInfo.sampler = vkModelData[j].texture.sampler;
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = model->getImageView();
+        imageInfo.sampler = model->getSampler();
 
-                descriptorWrites[j + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[j + 1].dstSet = descriptorSets[i];
-                descriptorWrites[j + 1].dstBinding = 1;
-                descriptorWrites[j + 1].dstArrayElement = 0;
-                descriptorWrites[j + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[j + 1].descriptorCount = 1;
-                descriptorWrites[j + 1].pImageInfo = &imageInfo;
-            }
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSet;
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+        return &descriptorSet;
     }
 
     void VulkanBase::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {

@@ -6,43 +6,43 @@ void VkStorage::setDescriptorSetLayout(VkModel* model)
     if (layoutStorage.contains(layoutBit))
     {
         model->setDescriptorSetLayout(layoutStorage[layoutBit].get());
+        setPipeline(model);
+        return;
     }
 
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    bindings.push_back(uboLayoutBinding);
-
-    ImageData* image = model->getImageData();
-    if (image)
-    { 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        bindings.push_back(samplerLayoutBinding);
-    }
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = bindings.size();
-    layoutInfo.pBindings = bindings.data();
-
-    VkDescriptorSetLayout* descriptorSetLayout = nullptr;
-    if (vkCreateDescriptorSetLayout(VulkanBase::GetInstance()->getDevice(), &layoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
+    VkDescriptorSetLayout* descriptorSetLayout = VulkanBase::GetInstance()->createDescriptorSetLayout(model);
 
     layoutStorage[layoutBit] = std::unique_ptr<VkDescriptorSetLayout>(descriptorSetLayout);
 
     model->setDescriptorSetLayout(layoutStorage[layoutBit].get());
+}
+
+void VkStorage::setPipeline(VkModel* model)
+{
+    auto layout = model->getLayoutBit();
+    if (pipelineStorage.contains(layout))
+    {
+        model->setPipeline(pipelineStorage[layout].get());
+        return;
+    }
+
+    VkPipeline* pipeline = VulkanBase::GetInstance()->createGraphicsPipeline();
+
+    pipelineStorage[layout] = std::unique_ptr<VkPipeline>(pipeline);
+    model->setPipeline(pipelineStorage[layout].get());
+}
+
+void VkStorage::setDescriptorPool(VkModel* model)
+{
+    auto bit = model->getLayoutBit();
+    if (poolStorage.contains(bit))
+    {
+        model->setDescriptorPool(poolStorage[bit].get());
+    }
+
+    VkDescriptorPool* pool = VulkanBase::GetInstance()->createDescriptorPool(model);
+    poolStorage[bit] = std::unique_ptr <VkDescriptorPool> (pool);
+    model->setDescriptorPool(poolStorage[bit].get());
 }
 
 void VkStorage::setDescriptorSet(VkModel* model)
@@ -51,38 +51,10 @@ void VkStorage::setDescriptorSet(VkModel* model)
     if (descriptorSetStorage.contains(pair))
     {
         model->setDescriptorSet(descriptorSetStorage[pair].get());
+        return;
     }
 
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformBuffers[i];
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
-
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = descriptorSets[i];
-    descriptorWrites[0].dstBinding = 0;
-    descriptorWrites[0].dstArrayElement = 0;
-    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrites[0].descriptorCount = 1;
-    descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-    int j;
-    for (j = 0; j < vkModelData.size(); j++)
-    {
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vkModelData[j].texture.view;
-        imageInfo.sampler = vkModelData[j].texture.sampler;
-
-        descriptorWrites[j + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[j + 1].dstSet = descriptorSets[i];
-        descriptorWrites[j + 1].dstBinding = 1;
-        descriptorWrites[j + 1].dstArrayElement = 0;
-        descriptorWrites[j + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[j + 1].descriptorCount = 1;
-        descriptorWrites[j + 1].pImageInfo = &imageInfo;
-    }
-
-    vkUpdateDescriptorSets(VulkanBase::GetInstance()->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    VkDescriptorSet* descriptor = VulkanBase::GetInstance()->createDescriptorSets(model);
+    descriptorSetStorage[pair] = std::unique_ptr<VkDescriptorSet>(descriptor);
+    model->setDescriptorSet(descriptorSetStorage[pair].get());
 }

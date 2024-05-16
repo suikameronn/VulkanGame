@@ -1,10 +1,11 @@
 #pragma once
 #include<vector>
 
+#include"Object.h"
 #include"Meshes.h"
 #include"Material.h"
 
-class Model
+class Model:protected Object
 {
 private:
 	Meshes* meshes;

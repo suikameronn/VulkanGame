@@ -13,10 +13,13 @@ struct RotateData
 class Object
 {
 protected:
+	glm::vec3 pos;
 	RotateData rotateData;
 
-public:
+protected:
 	void setRotateData(RotateData* rotateData);
+	void setPos(glm::vec3& p);
 
+	glm::vec3& getPos();
 	RotateData* getRotateData();
 };

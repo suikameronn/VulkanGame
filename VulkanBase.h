@@ -53,21 +53,6 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    /*
-    alignas(16) glm::mat3 normal;
-    alignas(16) glm::vec3 diffuse;
-    alignas(16) glm::vec3 ambient;
-    alignas(16) glm::vec3 specular;
-    alignas(16) glm::vec3 emissive;
-    alignas(16) glm::vec3 transmissive;
-    float shininess;
-    */
-};
-
 class VulkanBase
 {
 private:
@@ -127,7 +112,7 @@ private:
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModel = true;
-    std::vector<VkModel*>::iterator vkModelsItr;
+    std::vector<std::unique_ptr<VkModel>>::iterator vkModelsItr;
     std::vector<std::unique_ptr<VkModel>> vkModels;
 
     VkImage depthImage;
@@ -139,12 +124,12 @@ private:
     VkImageView colorImageView;
 
     UniformBufferObject ubo{};
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
+    VkBuffer uniformBuffer;
+    VkDeviceMemory uniformBuffersMemory;
+    void* uniformBuffersMapped;
 
-    std::vector<VkDescriptorPool> descriptorPools;
-    std::vector<VkDescriptorSet> descriptorSets;
+    VkDescriptorPool descriptorPool = nullptr;
+    VkDescriptorSet descriptorSet = nullptr;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -168,8 +153,7 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(uint32_t texSize);
-    void createGraphicsPipeline();
+    void shaderChoice(std::bitset<8> layoutBit, std::vector<char>& vert, std::vector<char>& frag);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -190,10 +174,10 @@ private:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void createVertexBuffer(Meshes* model, uint32_t i);
     void createIndexBuffer(Meshes* model, uint32_t i);
-    void createUniformBuffers();
-    void createDescriptorPool(uint32_t texSize);
-    void allocateDescriptorSets();
-    void createDescriptorSets();
+    //void createUniformBuffers(VkModel* model);
+    //void createDescriptorPool(VkModel* model);
+    //void allocateDescriptorSets(VkModel* model);
+    //void createDescriptorSets(VkModel* model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -254,6 +238,22 @@ public:
     {
         return device;
     }
+
+    VkRenderPass getRenderPass()
+    {
+        if (renderPass == nullptr)
+        {
+            throw std::runtime_error("getRenderPass():_renderPass_is_nullptr");
+        }
+        return renderPass;
+    }
+
+    VkDescriptorSetLayout* createDescriptorSetLayout(VkModel* model);
+    VkPipeline* createGraphicsPipeline(VkModel* model);
+    void createUniformBuffers(VkModel* model);
+    VkDescriptorPool* createDescriptorPool(VkModel* model);
+    void allocateDescriptorSets(VkModel* model);
+    void createDescriptorSets(VkModel* model);
 
     void endFirstSendModel();
     void resizeModels(uint32_t size);
