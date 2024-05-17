@@ -41,13 +41,27 @@ std::shared_ptr<ImageData> Storage::shareImage(IMAGE image)
 //Storageに指定されたMeshesがすでに存在するかどうかを返す
 bool Storage::containMeshes(OBJECT obj)
 {
-	return meshesStorage.contains(obj);
+	if (meshesStorage[obj] != nullptr)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 //Storageに指定されたImageDataがすでに存在するかどうかを返す
 bool Storage::containImageData(IMAGE image)
 {
-	return imageStorage.contains(image);
+	if (imageStorage[image] != nullptr)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 //Storageに格納されたMeshesのサイズを返す

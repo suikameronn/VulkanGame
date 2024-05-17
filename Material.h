@@ -6,28 +6,35 @@
 class ImageData
 {
 private:
-	int width;
-	int height;
-	int texChannels;
+	uint32_t width;
+	uint32_t height;
+	uint32_t texChannels;
 	std::vector<unsigned char> pixels;
 
 public:
 	ImageData()
 	{
-		this->width = 1024;
-		this->height = 1024;
-		this->texChannels = 4;
-		pixels.resize(width * height * texChannels);
-		std::fill(pixels.begin(), pixels.end(), 100);
+		this->width = 0;
+		this->height = 0;
+		this->texChannels = 0;
 	}
 
-	ImageData(uint32_t width, uint32_t height,
-		uint32_t texChannels, std::vector<unsigned char>& pixels)
+	ImageData(int width, int height, int texChannel)
 	{
-		this->width = width;
-		this->height = height;
-		this->texChannels = texChannels;
-		this->pixels = pixels;
+		this->width = static_cast<uint32_t>(width);
+		this->height = static_cast<uint32_t>(height);
+		this->texChannels = static_cast<uint32_t>(texChannel);
+		pixels.resize(width * height * texChannels);
+	}
+
+	ImageData(int width, int height,
+		int texChannels, unsigned char* pixels)
+	{
+		this->width = static_cast<uint32_t>(width);
+		this->height = static_cast<uint32_t>(height);
+		this->texChannels = static_cast<uint32_t>(texChannels);
+		this->pixels.resize(width * height * 4);
+		this->pixels.assign(pixels, pixels + ((width * height * 4) - 1));
 	}
 
 	int getWidth()
@@ -47,7 +54,7 @@ public:
 
 	unsigned char* getPixelsData()
 	{
-		return this->pixels.data();
+		return pixels.data();
 	}
 };
 

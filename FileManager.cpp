@@ -13,7 +13,7 @@ std::string FileManager::getModelPath(OBJECT obj)
     switch (obj)
     {
     case OBJECT::MODELTEST:
-        modelPath = "C:/Users/sugiyama/Documents/VulkanGame/models/viking_room.obj";
+        modelPath = "models/viking_room.obj";
         return modelPath;
         break;
     }
@@ -101,21 +101,17 @@ ImageData* FileManager::loadModelImage(IMAGE image)
         return Storage::GetInstance()->accessImage(image);
     }
 
-    imageData = new ImageData();
-
-    uint32_t id = image;
     int width, height, texChannels;
     std::vector<unsigned char> pixels;
 
-    stbi_uc* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    unsigned char* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
     if (!picture)
     {
         throw std::runtime_error("faile image load");
     }
 
     int imageSize = width * height * 4;
-    //ファイルからロードした画素の配列を別のメモリにコピーしたいが、データ型が違うのでコピーできない
-    //std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
+    imageData = new ImageData(width,height,texChannels,picture);
 
     stbi_image_free(picture);
 
