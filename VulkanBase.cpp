@@ -1158,7 +1158,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(1);
+        poolInfo.maxSets = static_cast<uint32_t>(2);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
@@ -1394,8 +1394,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-
-    void VulkanBase::drawFrame(VkModel* model) {
+    void VulkanBase::drawFrame() {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1675,14 +1674,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             /*テクスチャ関連の設定を持たせる*/
             createTextureData(model);
 
+            /*ディスクリプタレイアウトを持たせる*/
+            createDescriptorSetLayout(model);
+
             /*ディスクリプタプールを作る*/
             createDescriptorPool(model);
 
             /*ディスクリプタ用のメモリを空ける*/
             allocateDescriptorSets(model);
-
-            /*ディスクリプタレイアウトを持たせる*/
-            createDescriptorSetLayout(model);
 
             /*グラフィックスパイプラインを作る*/
             createGraphicsPipeline(model);
@@ -1695,5 +1694,5 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         /*描画*/
-        drawFrame(model);
+        drawFrame();
     }
