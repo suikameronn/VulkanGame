@@ -10,7 +10,7 @@ class GameManager
 {
 private:
 	static GameManager* gameManager;
-	GameManager();
+	GameManager() {};
 
 public:
 	static GameManager* GetInstance()

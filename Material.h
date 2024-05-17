@@ -17,6 +17,7 @@ public:
 		this->width = 1024;
 		this->height = 1024;
 		this->texChannels = 4;
+		pixels.resize(width * height * texChannels);
 		std::fill(pixels.begin(), pixels.end(), 100);
 	}
 
@@ -62,7 +63,7 @@ private:
 	glm::vec3 transmissive;
 
 	//テクスチャのもととなる画像データへのポインタ
-	ImageData* texture;
+	ImageData* texture = nullptr;
 
 public:
 

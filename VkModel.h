@@ -2,6 +2,28 @@
 #include"Model.h"
 #include"vulkan/vulkan.h"
 
+struct BufferObject
+{
+	VkBuffer buffer;
+	VkDeviceMemory handler;
+};
+
+struct MappedBuffer
+{
+	VkBuffer uniformBuffer;
+	VkDeviceMemory uniformBufferMemory;
+	void* uniformBufferMapped;
+};
+
+struct TextureData
+{
+	uint32_t mipLevel = 0;
+	VkImage image = nullptr;
+	VkDeviceMemory memory = nullptr;
+	VkImageView view = nullptr;
+	VkSampler sampler = nullptr;
+};
+
 //GeometryクラスにVulkan特有の変数を増やしたようなクラス
 class VkModel
 {
@@ -10,20 +32,18 @@ private:
 
 	Model* model;
 
-	int texDescriptorID;
-	int uniformDescriptorID;
+	MappedBuffer mappedBuffer;
 
-	VkBuffer vertBuffer = nullptr;
-	VkDeviceMemory vertHandler = nullptr;
+	BufferObject vertBuffer;
 
-	VkBuffer indiBuffer = nullptr;
-	VkDeviceMemory indiHandler = nullptr;
+	BufferObject indeBuffer;
 
-	uint32_t mipLevel = 0;
-	VkImage image = nullptr;
-	VkDeviceMemory memory = nullptr;
-	VkImageView view = nullptr;
-	VkSampler sampler = nullptr;
+	TextureData textureData;
+
+	VkDescriptorSetLayout* layout;
+	VkPipeline* pipeline;
+	VkDescriptorPool* pool;
+	VkDescriptorSet* descriptorSet;
 
 public:
 	VkModel(Model* model);
@@ -31,10 +51,21 @@ public:
 
 	void setModel(Model* model);
 
-	void setTexDescriptorID(uint32_t id);
-	void setUniformDescriptorID(uint32_t id);
+	void setLayout(VkDescriptorSetLayout* layout);
+	void setPipeline(VkPipeline* pipeline);
+	void setPool(VkDescriptorPool* pool);
+	void setDescriptorSet(VkDescriptorSet* descriptorSet);
+
+	VkDescriptorSetLayout* getLayout();
+	VkDescriptorPool* getPool();
+	VkDescriptorSet* getDescriptorSet();
+	VkPipeline* getPipeline();
 
 	Meshes* getMeshes();
 	Material* getMaterial();
 	ImageData* getImageData();
+	MappedBuffer* getMappedBuffer();
+	TextureData* getTextureData();
+	BufferObject* getVertBuffer();
+	BufferObject* getIndeBuffer();
 };

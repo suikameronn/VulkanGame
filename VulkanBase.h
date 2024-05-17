@@ -73,7 +73,7 @@ class VulkanBase
 private:
     static VulkanBase* vulkanBase;
 
-    VulkanBase();
+    VulkanBase() {};
 
     const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -117,17 +117,13 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass renderPass;
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-    VkPipelineLayout pipelineLayout;
 
-    std::vector<VkPipeline> graphicsPipelines;//シェーダを使い分けるために複数いる場合がある
-
-    std::vector<VkCommandPool> commandPools;
+    VkCommandPool commandPool;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModel = true;
-    std::vector<VkModel*>::iterator vkModelsItr;
+    std::vector<std::unique_ptr<VkModel>>::iterator vkModelsItr;
     std::vector<std::unique_ptr<VkModel>> vkModels;
 
     VkImage depthImage;
@@ -139,12 +135,12 @@ private:
     VkImageView colorImageView;
 
     UniformBufferObject ubo{};
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
 
-    std::vector<VkDescriptorPool> descriptorPools;
-    std::vector<VkDescriptorSet> descriptorSets;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -153,8 +149,6 @@ private:
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
 
-    void initVulkan();
-    void execVulkan();
     void cleanup();
     void cleanupSwapChain();
     void recreateSwapChain();
@@ -168,8 +162,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(uint32_t texSize);
-    void createGraphicsPipeline();
+    void createDescriptorSetLayout(VkModel* model);
+    void createGraphicsPipeline(VkModel* model);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -179,21 +173,21 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
-    void createTextureImage(ImageData* imageData, uint32_t i);
+    void createTextureImage(VkModel* model);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView(uint32_t i);
-    void createTextureSampler(uint32_t i);
+    void createTextureImageView(VkModel* model);
+    void createTextureSampler(VkModel* model);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(Meshes* model, uint32_t i);
-    void createIndexBuffer(Meshes* model, uint32_t i);
-    void createUniformBuffers();
-    void createDescriptorPool(uint32_t texSize);
-    void allocateDescriptorSets();
-    void createDescriptorSets();
+    void createVertexBuffer(VkModel* model);
+    void createIndexBuffer(VkModel* model);
+    void createUniformBuffer(VkModel* model);
+    void createDescriptorPool(VkModel* model);
+    void allocateDescriptorSets(VkModel* model);
+    void createDescriptorSets(VkModel* model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -202,7 +196,7 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(VkModel* model,uint32_t i);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -215,7 +209,8 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createTextureData(ImageData* imageData, uint32_t i);
+    void createMeshesData(VkModel* model);
+    void createTextureData(VkModel* model);
 
 public:
 
@@ -238,23 +233,13 @@ public:
 
     bool framebufferResized = false;
 
-    void prepareVulkan()
-    {
-        initVulkan();
-    }
-
-    void last();
-
-    void render()
-    {
-        drawFrame();
-    }
+    void initVulkan();
+    void render();
 
     void endFirstSendModel();
     void resizeModels(uint32_t size);
     //ここでModelからVkModelクラスを作成する
     void setModels(Model* model);
-    void prepareTextureVulkan(uint32_t count);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

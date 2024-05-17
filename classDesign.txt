@@ -185,7 +185,7 @@ Vulkanでのレンダリングに必要なもの
 2.前述の場合、グラフィックスパイプラインが二つ必要。シェーダによってテクスチャ用のdescriptorを引数とするシェーダとそうでないシェーダの二つを利用するため。
 この場合でもデプスバッファー関連は、RenderPassの管轄なので、深度テストは行われる。
 
-3.DescriptorLayoutが異なる場合、その数だけのCommandPoolが必要
+3.DescriptorLayoutが異なる場合、その数だけのDescriptorPoolが必要
 
 4.モデルのマテリアルなどの各種設定と、それに合わせた、DescriptorSetLayoutとDescriptorPoolを引数に渡して、DescriptorSetを作成する。
 なお、これには、テクスチャの違う場合は、それに応じた個数を作らなければならない
@@ -199,4 +199,10 @@ setModelsにより、VkModelが作られる
 render()を実行
 ↓
 いろいろと変える必要があるかをboolで判断(以下初期描写時を想定)
+↓
+頂点、インデックスバッファーを持たせる
+↓
+UniformBufferを持たせる
+↓
+テクスチャデータを持たせる
 ↓

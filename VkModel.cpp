@@ -3,23 +3,21 @@
 VkModel::VkModel(Model* model)
 {
 	this->model = model;
-	this->texDescriptorID = -1;
-	this->uniformDescriptorID = -1;
 }
 
 VkModel::~VkModel()
 {
-	vkDestroyBuffer(device, vertBuffer, nullptr);
-	vkFreeMemory(device, vertHandler, nullptr);
+	vkDestroyBuffer(device, vertBuffer.buffer, nullptr);
+	vkFreeMemory(device, vertBuffer.handler, nullptr);
 
-	vkDestroyBuffer(device, indiBuffer, nullptr);
-	vkFreeMemory(device, indiHandler, nullptr);
+	vkDestroyBuffer(device, indeBuffer.buffer, nullptr);
+	vkFreeMemory(device, indeBuffer.handler, nullptr);
 
-	vkDestroySampler(device, sampler, nullptr);
-	vkDestroyImageView(device, view, nullptr);
+	vkDestroySampler(device, textureData.sampler, nullptr);
+	vkDestroyImageView(device, textureData.view, nullptr);
 
-	vkDestroyImage(device, image, nullptr);
-	vkFreeMemory(device, memory, nullptr);
+	vkDestroyImage(device, textureData.image, nullptr);
+	vkFreeMemory(device, textureData.memory, nullptr);
 }
 
 void VkModel::setModel(Model* model)
@@ -27,14 +25,44 @@ void VkModel::setModel(Model* model)
 	this->model = model;
 }
 
-void VkModel::setTexDescriptorID(uint32_t id)
+void VkModel::setLayout(VkDescriptorSetLayout* layout)
 {
-	this->texDescriptorID = id;
+	this->layout = layout;
 }
 
-void VkModel::setUniformDescriptorID(uint32_t id)
+void VkModel::setPipeline(VkPipeline* pipeline)
 {
-	this->uniformDescriptorID = id;
+	this->pipeline = pipeline;
+}
+
+void VkModel::setPool(VkDescriptorPool* pool)
+{
+	this->pool = pool;
+}
+
+void VkModel::setDescriptorSet(VkDescriptorSet* descriptorSet)
+{
+	this->descriptorSet = descriptorSet;
+}
+
+VkDescriptorSetLayout* VkModel::getLayout()
+{
+	return layout;
+}
+
+VkPipeline* VkModel::getPipeline()
+{
+	return pipeline;
+}
+
+VkDescriptorPool* VkModel::getPool()
+{
+	return pool;
+}
+
+VkDescriptorSet* VkModel::getDescriptorSet()
+{
+	return descriptorSet;
 }
 
 Meshes* VkModel::getMeshes()
@@ -50,4 +78,24 @@ Material* VkModel::getMaterial()
 ImageData* VkModel::getImageData()
 {
 	return model->getMaterial()->getImageData();
+}
+
+MappedBuffer* VkModel::getMappedBuffer()
+{
+	return &mappedBuffer;
+}
+
+TextureData* VkModel::getTextureData()
+{
+	return &textureData;
+}
+
+BufferObject* VkModel::getVertBuffer()
+{
+	return &vertBuffer;
+}
+
+BufferObject* VkModel::getIndeBuffer()
+{
+	return &indeBuffer;
 }

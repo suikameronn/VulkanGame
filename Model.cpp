@@ -24,6 +24,10 @@ void Model::setMaterial(Material* material)
 
 void Model::setImageData(ImageData* image)
 {
+	if (material == nullptr)
+	{
+		material = new Material();
+	}
 	this->material->setImageData(image);
 }
 
