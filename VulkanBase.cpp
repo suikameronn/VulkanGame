@@ -1175,7 +1175,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = *pool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
         allocInfo.pSetLayouts = layouts;
 
         if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
@@ -1395,7 +1395,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
 
-    void VulkanBase::drawFrame() {
+    void VulkanBase::drawFrame(VkModel* model) {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1675,7 +1675,25 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             /*テクスチャ関連の設定を持たせる*/
             createTextureData(model);
 
+            /*ディスクリプタプールを作る*/
+            createDescriptorPool(model);
+
+            /*ディスクリプタ用のメモリを空ける*/
+            allocateDescriptorSets(model);
+
             /*ディスクリプタレイアウトを持たせる*/
             createDescriptorSetLayout(model);
+
+            /*グラフィックスパイプラインを作る*/
+            createGraphicsPipeline(model);
+
+            /*ディスクリプタプールを作る*/
+            createDescriptorPool(model);
+
+            /*ディスクリプタセットを作る*/
+            createDescriptorSets(model);
         }
+
+        /*描画*/
+        drawFrame(model);
     }
