@@ -426,7 +426,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(VkModel* model) {
+    void VulkanBase::createDescriptorSetLayout(Model* model) {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -454,7 +454,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         model->setLayout(&descriptorSetLayout);
     }
 
-    void VulkanBase::createGraphicsPipeline(VkModel* model) {
+    void VulkanBase::createGraphicsPipeline(Model* model) {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -576,7 +576,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = model->getLayout();
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -712,7 +712,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return std::floor(std::log2(std::max(width, height))) + 1;
     }
 
-    void VulkanBase::createTextureImage(VkModel* model)
+    void VulkanBase::createTextureImage(Model* model)
     {
         ImageData* imageData = model->getImageData();
         TextureData* textureData = model->getTextureData();
@@ -830,12 +830,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::createTextureImageView(VkModel* model) {
+    void VulkanBase::createTextureImageView(Model* model) {
         TextureData* textureData = model->getTextureData();
         textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
     }
 
-    void VulkanBase::createTextureSampler(VkModel* model) 
+    void VulkanBase::createTextureSampler(Model* model) 
     {
         TextureData* textureData = model->getTextureData();
 
@@ -1026,32 +1026,21 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::setModels(Model* model)
     {
-        /*modelデータからVkModelクラスを作成する*/
+        /*modelデータからModelクラスを作成する*/
         if (firstSendModel)
         {
-            *vkModelsItr = std::unique_ptr<VkModel>(new VkModel(model));
+            *vkModelsItr = std::unique_ptr<Model>(new Model(model));
             (*vkModelsItr)->setModel(model);
             vkModelsItr++;
         }
         else
         {
-            VkModel* vkModel = new VkModel(model);
-            vkModels.push_back(std::unique_ptr<VkModel>(vkModel));
+            Model* vkModel = new Model(model);
+            vkModels.push_back(std::unique_ptr<Model>(vkModel));
         }
-
-        /*
-        //配列から頂点配列とインデックス配列を取り出し、createVertexBufferとcreateIndexBufferを使って
-        //それぞれをGPUを送る
-        for (i = 0; i < modelData.size(); i++)
-        {
-            createVertexBuffer(modelData[i],i);
-            createIndexBuffer(modelData[i],i);
-            createTextureData(modelData[i]->getImageData(),i);
-        }
-        */
     }
 
-    void VulkanBase::createVertexBuffer(VkModel* model) 
+    void VulkanBase::createVertexBuffer(Model* model) 
     {
         Meshes* meshes = model->getMeshes();
         VkDeviceSize bufferSize = sizeof(*meshes->getVertItr()) * meshes->getVerticesSize();
@@ -1074,7 +1063,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer(VkModel* model) 
+    void VulkanBase::createIndexBuffer(Model* model) 
     {
         Meshes* meshes = model->getMeshes();
         VkDeviceSize bufferSize = sizeof(*meshes->getIndiItr()) * meshes->getIndicesSize();
@@ -1096,7 +1085,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createUniformBuffer(VkModel* model)
+    void VulkanBase::createUniformBuffer(Model* model)
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -1119,7 +1108,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
     */
 
-    void VulkanBase::updateUniformBuffer(VkModel* model,uint32_t i) {
+    void VulkanBase::updateUniformBuffer(Model* model,uint32_t i) {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -1146,7 +1135,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(model->getMappedBuffer()->uniformBufferMapped, &ubo, sizeof(ubo));
     }
 
-    void VulkanBase::createDescriptorPool(VkModel* model)
+    void VulkanBase::createDescriptorPool(Model* model)
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1158,7 +1147,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(2);
+        poolInfo.maxSets = static_cast<uint32_t>(1);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
@@ -1167,7 +1156,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         model->setPool(&descriptorPool);
     }
 
-    void VulkanBase::allocateDescriptorSets(VkModel* model)
+    void VulkanBase::allocateDescriptorSets(Model* model)
     {
         VkDescriptorSetLayout* layouts = model->getLayout();
         VkDescriptorPool* pool = model->getPool();
@@ -1186,7 +1175,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         model->setDescriptorSet(&descriptorSet);
     }
 
-    void VulkanBase::createDescriptorSets(VkModel* model)
+    void VulkanBase::createDescriptorSets(Model* model)
     {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = model->getMappedBuffer()->uniformBuffer;
@@ -1645,13 +1634,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return true;
     }
 
-    void VulkanBase::createMeshesData(VkModel* model)
+    void VulkanBase::createMeshesData(Model* model)
     {
         createVertexBuffer(model);
         createIndexBuffer(model);
     }
 
-    void VulkanBase::createTextureData(VkModel* model)
+    void VulkanBase::createTextureData(Model* model)
     {
         createTextureImage(model);
         createTextureImageView(model);
@@ -1660,7 +1649,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::render()
     {
-        VkModel* model;
+        Model* model;
         for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
         {
             model = itr->get();
@@ -1674,6 +1663,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             /*テクスチャ関連の設定を持たせる*/
             createTextureData(model);
 
+            /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
+            /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
+
             /*ディスクリプタレイアウトを持たせる*/
             createDescriptorSetLayout(model);
 
@@ -1685,9 +1677,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             /*グラフィックスパイプラインを作る*/
             createGraphicsPipeline(model);
-
-            /*ディスクリプタプールを作る*/
-            createDescriptorPool(model);
 
             /*ディスクリプタセットを作る*/
             createDescriptorSets(model);

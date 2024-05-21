@@ -27,7 +27,7 @@
 #include <functional>
 #include<fstream>
 
-#include"VkModel.h"
+#include"Model.h"
 #include"FileManager.h"
 #include"vulkan/vulkan.h"
 
@@ -123,8 +123,6 @@ private:
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     bool firstSendModel = true;
-    std::vector<std::unique_ptr<VkModel>>::iterator vkModelsItr;
-    std::vector<std::unique_ptr<VkModel>> vkModels;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -162,8 +160,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(VkModel* model);
-    void createGraphicsPipeline(VkModel* model);
+    void createDescriptorSetLayout(Model* model);
+    void createGraphicsPipeline(Model* model);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -173,21 +171,21 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
-    void createTextureImage(VkModel* model);
+    void createTextureImage(Model* model);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView(VkModel* model);
-    void createTextureSampler(VkModel* model);
+    void createTextureImageView(Model* model);
+    void createTextureSampler(Model* model);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(VkModel* model);
-    void createIndexBuffer(VkModel* model);
-    void createUniformBuffer(VkModel* model);
-    void createDescriptorPool(VkModel* model);
-    void allocateDescriptorSets(VkModel* model);
-    void createDescriptorSets(VkModel* model);
+    void createVertexBuffer(Model* model);
+    void createIndexBuffer(Model* model);
+    void createUniformBuffer(Model* model);
+    void createDescriptorPool(Model* model);
+    void allocateDescriptorSets(Model* model);
+    void createDescriptorSets(Model* model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -196,7 +194,7 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
-    void updateUniformBuffer(VkModel* model,uint32_t i);
+    void updateUniformBuffer(Model* model,uint32_t i);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -209,8 +207,8 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createMeshesData(VkModel* model);
-    void createTextureData(VkModel* model);
+    void createMeshesData(Model* model);
+    void createTextureData(Model* model);
 
 public:
 
@@ -222,6 +220,18 @@ public:
         }
 
         return vulkanBase;
+    }
+
+    VkDevice GetDevice()
+    {
+        if (device)
+        {
+            return device;
+        }
+        else
+        {
+            throw std::runtime_error("GetDevice: failed");
+        }
     }
 
     ~VulkanBase()
@@ -238,7 +248,7 @@ public:
 
     void endFirstSendModel();
     void resizeModels(uint32_t size);
-    //ここでModelからVkModelクラスを作成する
+    //ここでModelからModelクラスを作成する
     void setModels(Model* model);
 };
 

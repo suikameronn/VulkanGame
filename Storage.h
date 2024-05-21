@@ -7,6 +7,15 @@ enum OBJECT;
 
 enum IMAGE;
 
+struct BufferObject
+{
+	VkBuffer vertBuffer;
+	VkDeviceMemory vertHandler;
+
+	VkBuffer indeBuffer;
+	VkDeviceMemory indeHandler;
+};
+
 class Storage
 {
 private:

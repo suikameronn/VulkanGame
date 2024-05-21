@@ -26,6 +26,8 @@ public:
 		return gameManager;
 	}
 
+	
+
 	~GameManager()
 	{
 		delete gameManager;

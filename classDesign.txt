@@ -72,13 +72,13 @@ std::unordered_map<std::string,std::shared_ptr<Model>>といった具合に格納する。
 Cube(オブジェクトの名前)を読み取ったら、Modelクラスのインスタンスを作成して、それぞれのトークンを読みとったらset～()で
 セットしていく。
 
-Modelクラスを必要なだけ、生成出来たら、このModelクラスを渡す。この際、VkModelクラスを生成して、
+Modelクラスを必要なだけ、生成出来たら、このModelクラスを渡す。この際、Modelクラスを生成して、
 Vulkan側が欲しいデータ(オブジェクトの原点からの距離など)を渡すことで、Vulkan側にデータを渡す。
-このVkModelクラスにはVulkan固有の機能である、Descriptorなどを示すidなどを持つ。
+このModelクラスにはVulkan固有の機能である、Descriptorなどを示すidなどを持つ。
 
-VkModelクラスを利用したレンダリングは後日記載する
+Modelクラスを利用したレンダリングは後日記載する
 
-レンダリングが終了したら、VkModelクラスはすべて破棄する。
+レンダリングが終了したら、Modelクラスはすべて破棄する。
 
 次のフレームの処理に移す。最初のフレームはModelクラスを生成したのちに、すぐにレンダリングしたが、2フレーム目からは、
 Sceneクラス内のUpdateFrame関数でModelクラスの処理(Animationによる座標移動など)を終わらせてからレンダリングする。
@@ -150,23 +150,23 @@ public:
 
 vector<char>の文字列のパースをする関数、トークナイザーなどを利用する
 
-VulkanBaseクラスのVkModelクラスにModelクラスをセットする関数
+VulkanBaseクラスのModelクラスにModelクラスをセットする関数
 (Modelクラスがどういうつのテクスチャなどを参照している場合は、VulkanBaseクラス側で対応する
-、なので、実際には、VulkanBaseクラス側のVkModelクラスを作成する関数にModelクラスを引き渡す関数)
+、なので、実際には、VulkanBaseクラス側のModelクラスを作成する関数にModelクラスを引き渡す関数)
 
 このクラスはシングルトンを使用する
 <VulkanBaseクラス>
 private:
 Vulkanの動作に必要な様々な変数
 
-VkModelクラスのunique_ptrを持つvector配列
+Modelクラスのunique_ptrを持つvector配列
 
 public:
-VkModelクラスからデータを読み取り、レンダリングする関数
+Modelクラスからデータを読み取り、レンダリングする関数
 
-Modelクラスから呼び出され、VkModelクラスを作成する関数、Modelクラスのポインタを引数に持つ
+Modelクラスから呼び出され、Modelクラスを作成する関数、Modelクラスのポインタを引数に持つ
 
-<VkModelクラス>
+<Modelクラス>
 private:
 
 Descriptorの配列から使用するものを指定するIDとなるuint32_t
@@ -194,7 +194,7 @@ Vulkanでのレンダリングに必要なもの
 
 全体の流れ
 
-setModelsにより、VkModelが作られる
+setModelsにより、Modelが作られる
 ↓
 render()を実行
 ↓
@@ -206,3 +206,10 @@ UniformBufferを持たせる
 ↓
 テクスチャデータを持たせる
 ↓
+
+
+ディスクリプターレイアウト、ディスクリプタプール、パイプラインレイアウト
+これらは、同じグループのモデルで使いまわせる。
+これらをStorageに持たせて、Modelはそれの参照を取得することにする。
+ディスクリプタレイアウトが決まればプールとパイプラインレイアウトが決まるので、レイアウトを決定するUniformBufferの数などをキーとする。
+UniformBufferやテクスチャの有無はビットで判断できるようにする。
