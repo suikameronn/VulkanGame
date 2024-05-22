@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 
+#include"Storage.h"
 #include"Meshes.h"
 #include"Material.h"
 
@@ -13,6 +14,7 @@ enum IMAGE
 {
 	IMAGETEST = 0
 };
+
 
 class FileManager
 {
@@ -28,6 +30,7 @@ private:
 	//画像ファイルのパスを入れる
 	std::string imagePath;
 	std::string getImagePath(IMAGE image);
+	ImageData* imageData = nullptr;
 
 public:
 	static FileManager* GetInstance()

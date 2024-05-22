@@ -72,13 +72,13 @@ std::unordered_map<std::string,std::shared_ptr<Model>>‚Æ‚¢‚Á‚½‹ï‡‚ÉŠi”[‚·‚éB
 Cube(ƒIƒuƒWƒFƒNƒg‚Ì–¼‘O)‚ð“Ç‚ÝŽæ‚Á‚½‚çAModelƒNƒ‰ƒX‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚ðì¬‚µ‚ÄA‚»‚ê‚¼‚ê‚Ìƒg[ƒNƒ“‚ð“Ç‚Ý‚Æ‚Á‚½‚çset`()‚Å
 ƒZƒbƒg‚µ‚Ä‚¢‚­B
 
-ModelƒNƒ‰ƒX‚ð•K—v‚È‚¾‚¯A¶¬o—ˆ‚½‚çA‚±‚ÌModelƒNƒ‰ƒX‚ð“n‚·B‚±‚ÌÛAVkModelƒNƒ‰ƒX‚ð¶¬‚µ‚ÄA
+ModelƒNƒ‰ƒX‚ð•K—v‚È‚¾‚¯A¶¬o—ˆ‚½‚çA‚±‚ÌModelƒNƒ‰ƒX‚ð“n‚·B‚±‚ÌÛAModelƒNƒ‰ƒX‚ð¶¬‚µ‚ÄA
 Vulkan‘¤‚ª—~‚µ‚¢ƒf[ƒ^(ƒIƒuƒWƒFƒNƒg‚ÌŒ´“_‚©‚ç‚Ì‹——£‚È‚Ç)‚ð“n‚·‚±‚Æ‚ÅAVulkan‘¤‚Éƒf[ƒ^‚ð“n‚·B
-‚±‚ÌVkModelƒNƒ‰ƒX‚É‚ÍVulkanŒÅ—L‚Ì‹@”\‚Å‚ ‚éADescriptor‚È‚Ç‚ðŽ¦‚·id‚È‚Ç‚ðŽ‚ÂB
+‚±‚ÌModelƒNƒ‰ƒX‚É‚ÍVulkanŒÅ—L‚Ì‹@”\‚Å‚ ‚éADescriptor‚È‚Ç‚ðŽ¦‚·id‚È‚Ç‚ðŽ‚ÂB
 
-VkModelƒNƒ‰ƒX‚ð—˜—p‚µ‚½ƒŒƒ“ƒ_ƒŠƒ“ƒO‚ÍŒã“ú‹LÚ‚·‚é
+ModelƒNƒ‰ƒX‚ð—˜—p‚µ‚½ƒŒƒ“ƒ_ƒŠƒ“ƒO‚ÍŒã“ú‹LÚ‚·‚é
 
-ƒŒƒ“ƒ_ƒŠƒ“ƒO‚ªI—¹‚µ‚½‚çAVkModelƒNƒ‰ƒX‚Í‚·‚×‚Ä”jŠü‚·‚éB
+ƒŒƒ“ƒ_ƒŠƒ“ƒO‚ªI—¹‚µ‚½‚çAModelƒNƒ‰ƒX‚Í‚·‚×‚Ä”jŠü‚·‚éB
 
 ŽŸ‚ÌƒtƒŒ[ƒ€‚Ìˆ—‚ÉˆÚ‚·BÅ‰‚ÌƒtƒŒ[ƒ€‚ÍModelƒNƒ‰ƒX‚ð¶¬‚µ‚½‚Ì‚¿‚ÉA‚·‚®‚ÉƒŒƒ“ƒ_ƒŠƒ“ƒO‚µ‚½‚ªA2ƒtƒŒ[ƒ€–Ú‚©‚ç‚ÍA
 SceneƒNƒ‰ƒX“à‚ÌUpdateFrameŠÖ”‚ÅModelƒNƒ‰ƒX‚Ìˆ—(Animation‚É‚æ‚éÀ•WˆÚ“®‚È‚Ç)‚ðI‚í‚ç‚¹‚Ä‚©‚çƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚éB
@@ -150,23 +150,23 @@ public:
 
 vector<char>‚Ì•¶Žš—ñ‚Ìƒp[ƒX‚ð‚·‚éŠÖ”Aƒg[ƒNƒiƒCƒU[‚È‚Ç‚ð—˜—p‚·‚é
 
-VulkanBaseƒNƒ‰ƒX‚ÌVkModelƒNƒ‰ƒX‚ÉModelƒNƒ‰ƒX‚ðƒZƒbƒg‚·‚éŠÖ”
+VulkanBaseƒNƒ‰ƒX‚ÌModelƒNƒ‰ƒX‚ÉModelƒNƒ‰ƒX‚ðƒZƒbƒg‚·‚éŠÖ”
 (ModelƒNƒ‰ƒX‚ª‚Ç‚¤‚¢‚¤‚Â‚ÌƒeƒNƒXƒ`ƒƒ‚È‚Ç‚ðŽQÆ‚µ‚Ä‚¢‚éê‡‚ÍAVulkanBaseƒNƒ‰ƒX‘¤‚Å‘Î‰ž‚·‚é
-A‚È‚Ì‚ÅAŽÀÛ‚É‚ÍAVulkanBaseƒNƒ‰ƒX‘¤‚ÌVkModelƒNƒ‰ƒX‚ðì¬‚·‚éŠÖ”‚ÉModelƒNƒ‰ƒX‚ðˆø‚«“n‚·ŠÖ”)
+A‚È‚Ì‚ÅAŽÀÛ‚É‚ÍAVulkanBaseƒNƒ‰ƒX‘¤‚ÌModelƒNƒ‰ƒX‚ðì¬‚·‚éŠÖ”‚ÉModelƒNƒ‰ƒX‚ðˆø‚«“n‚·ŠÖ”)
 
 ‚±‚ÌƒNƒ‰ƒX‚ÍƒVƒ“ƒOƒ‹ƒgƒ“‚ðŽg—p‚·‚é
 <VulkanBaseƒNƒ‰ƒX>
 private:
 Vulkan‚Ì“®ì‚É•K—v‚È—lX‚È•Ï”
 
-VkModelƒNƒ‰ƒX‚Ìunique_ptr‚ðŽ‚Âvector”z—ñ
+ModelƒNƒ‰ƒX‚Ìunique_ptr‚ðŽ‚Âvector”z—ñ
 
 public:
-VkModelƒNƒ‰ƒX‚©‚çƒf[ƒ^‚ð“Ç‚ÝŽæ‚èAƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚éŠÖ”
+ModelƒNƒ‰ƒX‚©‚çƒf[ƒ^‚ð“Ç‚ÝŽæ‚èAƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚éŠÖ”
 
-ModelƒNƒ‰ƒX‚©‚çŒÄ‚Ño‚³‚êAVkModelƒNƒ‰ƒX‚ðì¬‚·‚éŠÖ”AModelƒNƒ‰ƒX‚Ìƒ|ƒCƒ“ƒ^‚ðˆø”‚ÉŽ‚Â
+ModelƒNƒ‰ƒX‚©‚çŒÄ‚Ño‚³‚êAModelƒNƒ‰ƒX‚ðì¬‚·‚éŠÖ”AModelƒNƒ‰ƒX‚Ìƒ|ƒCƒ“ƒ^‚ðˆø”‚ÉŽ‚Â
 
-<VkModelƒNƒ‰ƒX>
+<ModelƒNƒ‰ƒX>
 private:
 
 Descriptor‚Ì”z—ñ‚©‚çŽg—p‚·‚é‚à‚Ì‚ðŽw’è‚·‚éID‚Æ‚È‚éuint32_t
@@ -192,6 +192,7 @@ Vulkan‚Å‚ÌƒŒƒ“ƒ_ƒŠƒ“ƒO‚É•K—v‚È‚à‚Ì
 
 5.•`‰æŽžA‚Ü‚¸ƒOƒ‰ƒtƒBƒbƒNƒXƒpƒCƒvƒ‰ƒCƒ“‚ðÝ’è‚µ‚ÄA’¸“_AƒCƒ“ƒfƒbƒNƒXADescriptorSets‚ÆŽw’è‚µ‚ÄAÅŒã‚ÉAvkCmdDrawIndexed()‚ðŽÀs‚·‚éB
 
+<<<<<<< HEAD
 
 
 1.‚É•K—v‚È‚à‚Ì
@@ -238,3 +239,26 @@ vkModelƒNƒ‰ƒX‚©‚çŽw’è‚³‚ê‚½DescriptorSetLayout‚ðŽQÆ‚µ‚ÄAŽw’è‚µ‚½UniformBuffer‚
 5.‚ÌŽÀ‘•
 vkModel‚©‚çDescriptorSets‚ÌID‚ðŽó‚¯Žæ‚èAVkStorageƒNƒ‰ƒX‚©‚çŽw’è‚³‚ê‚½DescriptorSets‚ðŽó‚¯Žæ‚èAˆÈ‘O‚Ì‚æ‚¤‚ÉA
 ƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚éB
+=======
+‘S‘Ì‚Ì—¬‚ê
+
+setModels‚É‚æ‚èAModel‚ªì‚ç‚ê‚é
+«
+render()‚ðŽÀs
+«
+‚¢‚ë‚¢‚ë‚Æ•Ï‚¦‚é•K—v‚ª‚ ‚é‚©‚ðbool‚Å”»’f(ˆÈ‰º‰Šú•`ŽÊŽž‚ð‘z’è)
+«
+’¸“_AƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@[‚ðŽ‚½‚¹‚é
+«
+UniformBuffer‚ðŽ‚½‚¹‚é
+«
+ƒeƒNƒXƒ`ƒƒƒf[ƒ^‚ðŽ‚½‚¹‚é
+«
+
+
+ƒfƒBƒXƒNƒŠƒvƒ^[ƒŒƒCƒAƒEƒgAƒfƒBƒXƒNƒŠƒvƒ^ƒv[ƒ‹AƒpƒCƒvƒ‰ƒCƒ“ƒŒƒCƒAƒEƒg
+‚±‚ê‚ç‚ÍA“¯‚¶ƒOƒ‹[ƒv‚Ìƒ‚ƒfƒ‹‚ÅŽg‚¢‚Ü‚í‚¹‚éB
+‚±‚ê‚ç‚ðStorage‚ÉŽ‚½‚¹‚ÄAModel‚Í‚»‚ê‚ÌŽQÆ‚ðŽæ“¾‚·‚é‚±‚Æ‚É‚·‚éB
+ƒfƒBƒXƒNƒŠƒvƒ^ƒŒƒCƒAƒEƒg‚ªŒˆ‚Ü‚ê‚Îƒv[ƒ‹‚ÆƒpƒCƒvƒ‰ƒCƒ“ƒŒƒCƒAƒEƒg‚ªŒˆ‚Ü‚é‚Ì‚ÅAƒŒƒCƒAƒEƒg‚ðŒˆ’è‚·‚éUniformBuffer‚Ì”‚È‚Ç‚ðƒL[‚Æ‚·‚éB
+UniformBuffer‚âƒeƒNƒXƒ`ƒƒ‚Ì—L–³‚Íƒrƒbƒg‚Å”»’f‚Å‚«‚é‚æ‚¤‚É‚·‚éB
+>>>>>>> VulkanSettingInterface

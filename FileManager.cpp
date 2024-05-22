@@ -13,7 +13,7 @@ std::string FileManager::getModelPath(OBJECT obj)
     switch (obj)
     {
     case OBJECT::MODELTEST:
-        modelPath = "C:/Users/sugiyama/Documents/VulkanGame/models/viking_room.obj";
+        modelPath = "models/viking_room.obj";
         return modelPath;
         break;
     }
@@ -21,14 +21,12 @@ std::string FileManager::getModelPath(OBJECT obj)
 
 Meshes* FileManager::loadModelPoints(OBJECT obj)
 {
-    /*
-    if (models.contains(obj))
+    if (Storage::GetInstance()->containMeshes(obj))
     {
-        return models[obj].get();
+        return Storage::GetInstance()->accessObj(obj);
     }
-    */
 
-    Meshes* model = new Meshes();
+    Meshes* meshes = new Meshes();
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -72,18 +70,17 @@ Meshes* FileManager::loadModelPoints(OBJECT obj)
 
             if (uniqueVertices.count(vertex) == 0)
             {
-                uniqueVertices[vertex] = model->getVerticesSize();
-                model->pushBackVertex(&vertex);
+                uniqueVertices[vertex] = meshes->getVerticesSize();
+                meshes->pushBackVertex(&vertex);
             }
 
-            model->pushBackIndex(uniqueVertices[vertex]);
+            meshes->pushBackIndex(uniqueVertices[vertex]);
         }
     }
 
-    /*
-    models[obj].reset(model);
-    */
-    return model;
+    Storage::GetInstance()->addObj(obj, meshes);
+
+    return meshes;
 }
 
 std::string FileManager::getImagePath(IMAGE image)
@@ -99,32 +96,26 @@ std::string FileManager::getImagePath(IMAGE image)
 
 ImageData* FileManager::loadModelImage(IMAGE image)
 {
-    /*
-    if (images.contains(image))
+    if (Storage::GetInstance()->containImageData(image))
     {
-        return images[image];
+        return Storage::GetInstance()->accessImage(image);
     }
-    */
 
-    ImageData* imageData = new ImageData();
-
-    uint32_t id = image;
     int width, height, texChannels;
     std::vector<unsigned char> pixels;
 
-    stbi_uc* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    unsigned char* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
     if (!picture)
     {
         throw std::runtime_error("faile image load");
     }
 
     int imageSize = width * height * 4;
-    //ファイルからロードした画素の配列を別のメモリにコピーしたいが、データ型が違うのでコピーできない
-    //std::copy(pixels[0], pixels[imageSize - 1], imageData.pixels);
+    imageData = new ImageData(width,height,texChannels,picture);
 
     stbi_image_free(picture);
 
-    //images[image] = std::shared_ptr<ImageData>(new ImageData(id,width,height,texChannels,pixels));
+    Storage::GetInstance()->addImage(image, imageData);
 
     return imageData;
 }

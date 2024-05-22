@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #pragma once
 #include"Model.h"
 #include"vulkan/vulkan.h"
@@ -48,3 +49,5 @@ public:
 	void setDescriptorSetLayout(VkDescriptorSetLayout* layout);
 	void setDescriptorSet(std::vector<VkDescriptorSet>* descriptorSet);
 };
+=======
+>>>>>>> VulkanSettingInterface

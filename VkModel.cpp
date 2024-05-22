@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include"VkModel.h"
 
 VkModel::VkModel(Model* model)
@@ -65,3 +66,5 @@ void VkModel::setDescriptorSet(std::vector<VkDescriptorSet>* descriptorSet)
 {
 	this->descriptorSet = descriptorSet;
 }
+=======
+>>>>>>> VulkanSettingInterface

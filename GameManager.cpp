@@ -6,16 +6,20 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::GameLoop()
 {
-    VulkanBase::GetInstance()->prepareVulkan();
 
     std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
 
-    //テクスチャの配列を丸ごとほしい
-    VulkanBase::GetInstance()->last();
+    VulkanBase::GetInstance()->initVulkan();
+    /*
+    while (/*!glfwWindowShouldClose(window))
+    {
+    }
+    */
+
+    VulkanBase::GetInstance()->render();
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        VulkanBase::GetInstance()->render();
     }
 }
