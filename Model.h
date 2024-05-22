@@ -24,6 +24,8 @@ struct TextureData
 class Model
 {
 private:
+	std::bitset<8> layoutBit;
+
 	Meshes* meshes;
 	Material* material;
 
@@ -34,7 +36,8 @@ private:
 	uint32_t texID;
 	TextureData textureData;
 
-	VkDescriptorSet descriptorSet;//ディスクリプタ関連の個々のModelが持たなければならなければならないのは、これだけ
+	DescriptorInfo descriptorInfo;
+	VkDescriptorSet descriptorSet;
 
 public:
 	Model();
@@ -47,12 +50,13 @@ public:
 	Meshes* getMeshes();
 	Material* getMaterial();
 
+	void setDescriptorInfo(DescriptorInfo* info);
 	void setDescriptorSet(VkDescriptorSet* descriptorSet);
 
-	VkDescriptorSet* getDescriptorSet();
+	DescriptorInfo* getDescriptorInfo();
 
 	MappedBuffer* getMappedBuffer();
 	TextureData* getTextureData();
-	BufferObject* getVertBuffer();
-	BufferObject* getIndeBuffer();
+	std::bitset<8> getLayoutBit();
+	VkDescriptorSet* getDescriptorSet();
 };

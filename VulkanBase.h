@@ -134,10 +134,6 @@ private:
 
     UniformBufferObject ubo{};
 
-    VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -160,8 +156,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(Model* model);
-    void createGraphicsPipeline(Model* model);
+    void createDescriptorSetLayout(Model* model, VkDescriptorSetLayout& descriptorSetLayout);
+    void createGraphicsPipeline(Model* model, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -183,7 +179,7 @@ private:
     void createVertexBuffer(Model* model);
     void createIndexBuffer(Model* model);
     void createUniformBuffer(Model* model);
-    void createDescriptorPool(Model* model);
+    void createDescriptorPool(Model* model,VkDescriptorPool& pool);
     void allocateDescriptorSets(Model* model);
     void createDescriptorSets(Model* model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
@@ -209,6 +205,7 @@ private:
 
     void createMeshesData(Model* model);
     void createTextureData(Model* model);
+    void createDescriptorInfo(Model* model);
 
 public:
 

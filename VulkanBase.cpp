@@ -426,7 +426,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(Model* model) {
+    void VulkanBase::createDescriptorSetLayout(Model* model,VkDescriptorSetLayout &descriptorSetLayout) {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -450,11 +450,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
-
-        model->setLayout(&descriptorSetLayout);
     }
 
-    void VulkanBase::createGraphicsPipeline(Model* model) {
+    void VulkanBase::createGraphicsPipeline(Model* model,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -576,9 +574,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = model->getLayout();
+        pipelineLayoutInfo.pSetLayouts = &layout;
 
-        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
         }
 
@@ -593,7 +591,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
-        pipelineInfo.layout = pipelineLayout;
+        pipelineInfo.layout = pLayout;
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -605,8 +603,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
-
-        model->setPipeline(&pipeline);
     }
 
     void VulkanBase::createFramebuffers() {
@@ -714,7 +710,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createTextureImage(Model* model)
     {
-        ImageData* imageData = model->getImageData();
+        ImageData* imageData = model->getMaterial()->getImageData();
         TextureData* textureData = model->getTextureData();
 
         VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
@@ -1135,7 +1131,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(model->getMappedBuffer()->uniformBufferMapped, &ubo, sizeof(ubo));
     }
 
-    void VulkanBase::createDescriptorPool(Model* model)
+    void VulkanBase::createDescriptorPool(Model* model, VkDescriptorPool& pool)
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1149,17 +1145,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(1);
 
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
         }
-
-        model->setPool(&descriptorPool);
     }
 
     void VulkanBase::allocateDescriptorSets(Model* model)
     {
-        VkDescriptorSetLayout* layouts = model->getLayout();
-        VkDescriptorPool* pool = model->getPool();
+        VkDescriptorSetLayout* layouts = &model->getDescriptorInfo()->layout;
+        VkDescriptorPool* pool = &model->getDescriptorInfo()->pool;
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1350,7 +1344,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkCmdBindIndexBuffer(commandBuffer, (*itr)->getIndeBuffer()->buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, (*itr)->getDescriptorSet(), 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*itr)->getDescriptorInfo()->pLayout, 0, 1, (*itr)->getDescriptorSet(), 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffer, (*itr)->getMeshes()->getIndicesSize(), 1, 0, 0, 0);
         }
@@ -1647,6 +1641,29 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createTextureSampler(model);
     }
 
+    void VulkanBase::createDescriptorInfo(Model* model)
+    {
+        auto layoutBit = model->getLayoutBit();
+        if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
+        {
+            model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
+        }
+
+        DescriptorInfo info;
+
+        /*ディスクリプタレイアウトを持たせる*/
+        createDescriptorSetLayout(model,info.layout);
+
+        /*ディスクリプタプールを作る*/
+        createDescriptorPool(model,info.pool);
+
+        /*グラフィックスパイプラインを作る*/
+        createGraphicsPipeline(model,info.layout,info.pLayout,info.pipeline);
+
+        Storage::GetInstance()->addDescriptorInfo(layoutBit, &info);
+        model->setDescriptorInfo(&info);
+    }
+
     void VulkanBase::render()
     {
         Model* model;
@@ -1665,18 +1682,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
             /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-
-            /*ディスクリプタレイアウトを持たせる*/
-            createDescriptorSetLayout(model);
-
-            /*ディスクリプタプールを作る*/
-            createDescriptorPool(model);
+            createDescriptorInfo(model);
 
             /*ディスクリプタ用のメモリを空ける*/
             allocateDescriptorSets(model);
-
-            /*グラフィックスパイプラインを作る*/
-            createGraphicsPipeline(model);
 
             /*ディスクリプタセットを作る*/
             createDescriptorSets(model);

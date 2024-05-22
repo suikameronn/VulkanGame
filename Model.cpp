@@ -56,14 +56,19 @@ Material* Model::getMaterial()
 	return this->material;
 }
 
+void Model::setDescriptorInfo(DescriptorInfo* info)
+{
+	descriptorInfo = *info;
+}
+
 void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
 {
 	this->descriptorSet = *descriptorSet;
 }
 
-VkDescriptorSet* Model::getDescriptorSet()
+DescriptorInfo* Model::getDescriptorInfo()
 {
-	return &descriptorSet;
+	return &descriptorInfo;
 }
 
 MappedBuffer* Model::getMappedBuffer()
@@ -76,12 +81,12 @@ TextureData* Model::getTextureData()
 	return &textureData;
 }
 
-BufferObject* Model::getVertBuffer()
+std::bitset<8> Model::getLayoutBit()
 {
-	return &vertBuffer;
+	return layoutBit;
 }
 
-BufferObject* Model::getIndeBuffer()
+VkDescriptorSet* Model::getDescriptorSet()
 {
-	return &indeBuffer;
+	return &descriptorSet;
 }
