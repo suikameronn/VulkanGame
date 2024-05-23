@@ -2,18 +2,9 @@
 #include<iostream>
 
 #include"Storage.h"
-#include"Meshes.h"
-#include"Material.h"
 
-enum OBJECT
-{
-	MODELTEST = 0
-};
-
-enum IMAGE
-{
-	IMAGETEST = 0
-};
+enum OBJECT;
+enum IMAGE;
 
 
 class FileManager

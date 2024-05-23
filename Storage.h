@@ -1,30 +1,34 @@
 #pragma once
-#include"Meshes.h"
-#include"Material.h"
-#include"FileManager.h"
-
+#include"Model.h"
 #include<bitset>
-#include<vulkan/vulkan.h>
+#include<unordered_map>
 
-enum OBJECT;
-
-enum IMAGE;
-
-struct BufferObject
+enum OBJECT
 {
-	VkBuffer vertBuffer;
-	VkDeviceMemory vertHandler;
-
-	VkBuffer indeBuffer;
-	VkDeviceMemory indeHandler;
+	MODELTEST = 0
 };
 
-struct DescriptorInfo
+enum IMAGE
 {
-	VkDescriptorSetLayout layout;
-	VkDescriptorPool pool;
-	VkPipelineLayout pLayout;
-	VkPipeline pipeline;
+	IMAGETEST = 0
+};
+
+class ImageData;
+
+bool operator==(const DescriptorInfo& a,const DescriptorInfo& b)
+{
+	return a.layout == b.layout;
+}
+
+struct Hash {
+	size_t operator()(const DescriptorInfo& info) const {
+		size_t a = std::hash<VkDescriptorSetLayout>()(info.layout);
+		size_t b = std::hash<VkPipeline>()(info.pipeline);
+		size_t c = std::hash<VkPipelineLayout>()(info.pLayout);
+		size_t d = std::hash<VkDescriptorPool>()(info.pool);
+
+		return a ^ b ^ c ^ d;
+	}
 };
 
 class Storage
@@ -34,6 +38,8 @@ private:
 	std::unordered_map<IMAGE, std::shared_ptr<ImageData>> imageStorage;
 
 	std::unordered_map<std::bitset<8>, std::shared_ptr<DescriptorInfo>> descriptorStorage;
+
+	std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>,Hash> sceneModelStorage;
 
 	Storage() {};
 	static Storage* storage;
@@ -52,10 +58,16 @@ public:
 	void addObj(OBJECT obj, Meshes* geo);
 	void addImage(IMAGE image, ImageData* imageData);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
+	void addModel(Model* model);
 
 	Meshes* accessObj(OBJECT obj);
 	ImageData* accessImage(IMAGE image);
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
+	void accessModelVector(std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator current, 
+		std::vector<std::unique_ptr<Model>>::iterator& itr, std::vector<std::unique_ptr<Model>>::iterator& itr2);
+	void accessModelUnMap(std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
+		std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2);
+
 	std::shared_ptr<Meshes> shareObj(OBJECT obj);
 	std::shared_ptr<ImageData> shareImage(IMAGE image);
 	std::shared_ptr<DescriptorInfo> shareDescriptor(std::bitset<8> layoutBit);

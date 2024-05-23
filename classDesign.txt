@@ -192,8 +192,6 @@ Vulkanでのレンダリングに必要なもの
 
 5.描画時、まずグラフィックスパイプラインを設定して、頂点、インデックス、DescriptorSetsと指定して、最後に、vkCmdDrawIndexed()を実行する。
 
-<<<<<<< HEAD
-
 
 1.に必要なもの
 テクスチャ用のDescriptorとUniformBuffer用のDescriptorがいる
@@ -261,4 +259,3 @@ UniformBufferを持たせる
 これらをStorageに持たせて、Modelはそれの参照を取得することにする。
 ディスクリプタレイアウトが決まればプールとパイプラインレイアウトが決まるので、レイアウトを決定するUniformBufferの数などをキーとする。
 UniformBufferやテクスチャの有無はビットで判断できるようにする。
->>>>>>> VulkanSettingInterface

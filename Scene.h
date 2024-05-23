@@ -10,7 +10,6 @@
 
 #include"FileManager.h"
 #include"Model.h"
-#include"VulkanBase.h"
 
 class Scene
 {

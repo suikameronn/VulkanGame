@@ -63,17 +63,11 @@
     <ClCompile Include="VulkanBase.cpp">
       <Filter>ソース ファイル\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkModel.cpp">
-      <Filter>ソース ファイル\Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="Storage.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="VkStorage.cpp">
-      <Filter>ソース ファイル\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -104,17 +98,11 @@
     <ClInclude Include="VulkanBase.h">
       <Filter>ヘッダー ファイル\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkModel.h">
-      <Filter>ヘッダー ファイル\Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="Storage.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="VkStorage.h">
-      <Filter>ヘッダー ファイル\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

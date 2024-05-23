@@ -12,21 +12,6 @@ Model::Model(Meshes* meshes, Material* material)
 	this->material = material;
 }
 
-Model::~Model()
-{
-	vkDestroyBuffer(VulkanBase::GetInstance()->GetDevice(), vertBuffer.buffer, nullptr);
-	vkFreeMemory(VulkanBase::GetInstance()->GetDevice(), vertBuffer.handler, nullptr);
-
-	vkDestroyBuffer(VulkanBase::GetInstance()->GetDevice(), indeBuffer.buffer, nullptr);
-	vkFreeMemory(VulkanBase::GetInstance()->GetDevice(), indeBuffer.handler, nullptr);
-
-	vkDestroySampler(VulkanBase::GetInstance()->GetDevice(), textureData.sampler, nullptr);
-	vkDestroyImageView(VulkanBase::GetInstance()->GetDevice(), textureData.view, nullptr);
-
-	vkDestroyImage(VulkanBase::GetInstance()->GetDevice(), textureData.image, nullptr);
-	vkFreeMemory(VulkanBase::GetInstance()->GetDevice(), textureData.memory, nullptr);
-}
-
 void Model::setMeshes(Meshes* meshes)
 {
 	this->meshes = meshes;
@@ -69,6 +54,11 @@ void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
 DescriptorInfo* Model::getDescriptorInfo()
 {
 	return &descriptorInfo;
+}
+
+BufferObject* Model::getPointBuffer()
+{
+	return &pointBuffer;
 }
 
 MappedBuffer* Model::getMappedBuffer()

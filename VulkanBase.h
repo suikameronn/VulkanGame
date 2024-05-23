@@ -27,8 +27,7 @@
 #include <functional>
 #include<fstream>
 
-#include"Model.h"
-#include"FileManager.h"
+#include"Storage.h"
 #include"vulkan/vulkan.h"
 
 extern GLFWwindow* window;
@@ -248,10 +247,7 @@ public:
         return device;
     }
 
-    void endFirstSendModel();
-    void resizeModels(uint32_t size);
-    //‚±‚±‚ÅModel‚©‚çModelƒNƒ‰ƒX‚ğì¬‚·‚é
-    void setModels(Model* model);
+    void setModelData(Model* model);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

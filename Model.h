@@ -1,9 +1,27 @@
 #pragma once
 #include<vector>
-#include"VulkanBase.h"
+#include<bitset>
+#include<vulkan/vulkan.h>
 
 #include"Meshes.h"
 #include"Material.h"
+
+struct BufferObject
+{
+	VkBuffer vertBuffer;
+	VkDeviceMemory vertHandler;
+
+	VkBuffer indeBuffer;
+	VkDeviceMemory indeHandler;
+};
+
+struct DescriptorInfo
+{
+	VkDescriptorSetLayout layout;
+	VkDescriptorPool pool;
+	VkPipelineLayout pLayout;
+	VkPipeline pipeline;
+};
 
 struct MappedBuffer
 {
@@ -14,11 +32,11 @@ struct MappedBuffer
 
 struct TextureData
 {
-	uint32_t mipLevel = 0;
-	VkImage image = nullptr;
-	VkDeviceMemory memory = nullptr;
-	VkImageView view = nullptr;
-	VkSampler sampler = nullptr;
+	uint32_t mipLevel;
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView view;
+	VkSampler sampler;
 };
 
 class Model
@@ -29,6 +47,7 @@ private:
 	Meshes* meshes;
 	Material* material;
 
+	BufferObject pointBuffer;
 	MappedBuffer mappedBuffer;
 
 	uint32_t pointID;
@@ -55,6 +74,7 @@ public:
 
 	DescriptorInfo* getDescriptorInfo();
 
+	BufferObject* getPointBuffer();
 	MappedBuffer* getMappedBuffer();
 	TextureData* getTextureData();
 	std::bitset<8> getLayoutBit();

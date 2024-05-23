@@ -638,11 +638,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-<<<<<<< HEAD
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPoolscommandPools.data()) != VK_SUCCESS) {
-=======
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
->>>>>>> VulkanSettingInterface
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) 
+        {
             throw std::runtime_error("failed to create graphics command pool!");
         }
     }
@@ -1010,36 +1007,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::endFirstSendModel()
-    {
-        firstSendModel = false;
-    }
-
-    void VulkanBase::resizeModels(uint32_t size)
-    {
-        if (firstSendModel)
-        {
-            vkModels.resize(size);
-            vkModelsItr = vkModels.begin();
-        }
-    }
-
-    void VulkanBase::setModels(Model* model)
-    {
-        /*modelデータからModelクラスを作成する*/
-        if (firstSendModel)
-        {
-            *vkModelsItr = std::unique_ptr<Model>(new Model(model));
-            (*vkModelsItr)->setModel(model);
-            vkModelsItr++;
-        }
-        else
-        {
-            Model* vkModel = new Model(model);
-            vkModels.push_back(std::unique_ptr<Model>(vkModel));
-        }
-    }
-
     void VulkanBase::createVertexBuffer(Model* model) 
     {
         Meshes* meshes = model->getMeshes();
@@ -1054,10 +1021,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, meshes->getVertexPoint(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getVertBuffer()->buffer, model->getVertBuffer()->handler);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer()->vertBuffer, model->getPointBuffer()->vertHandler);
 
         //vertexBuffer配列にコピーしていく(vector型)
-        copyBuffer(stagingBuffer, model->getVertBuffer()->buffer, bufferSize);
+        copyBuffer(stagingBuffer, model->getPointBuffer()->vertBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1077,9 +1044,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, meshes->getIndexPoint(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getIndeBuffer()->buffer,model->getIndeBuffer()->handler);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer()->indeBuffer, model->getPointBuffer()->indeHandler);
 
-        copyBuffer(stagingBuffer, model->getIndeBuffer()->buffer, bufferSize);
+        copyBuffer(stagingBuffer, model->getPointBuffer()->indeBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1324,33 +1291,42 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
+        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        Storage::GetInstance()->accessModelUnMap(&beginMap,&endMap);
+        for (auto modelGroup = beginMap; modelGroup != endMap; modelGroup++)
         {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *(*itr)->getPipeline());
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelGroup->first.pipeline);
 
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float)swapChainExtent.width;
-            viewport.height = (float)swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                VkViewport viewport{};
+                viewport.x = 0.0f;
+                viewport.y = 0.0f;
+                viewport.width = (float)swapChainExtent.width;
+                viewport.height = (float)swapChainExtent.height;
+                viewport.minDepth = 0.0f;
+                viewport.maxDepth = 1.0f;
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-            VkRect2D scissor{};
-            scissor.offset = { 0, 0 };
-            scissor.extent = swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                VkRect2D scissor{};
+                scissor.offset = { 0, 0 };
+                scissor.extent = swapChainExtent;
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            VkDeviceSize offsets[] = { 0 };
+                VkDeviceSize offsets[] = { 0 };
 
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*itr)->getVertBuffer()->buffer, offsets);
+                std::vector<std::unique_ptr<Model>>::iterator beginVec;
+                std::vector<std::unique_ptr<Model>>::iterator endVec;
+                Storage::GetInstance()->accessModelVector(modelGroup, beginVec, endVec);
+                for (auto model = beginVec; model != endVec; model++)
+                {
+                    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer()->vertBuffer, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, (*itr)->getIndeBuffer()->buffer, 0, VK_INDEX_TYPE_UINT32);
+                    vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*itr)->getDescriptorInfo()->pLayout, 0, 1, (*itr)->getDescriptorSet(), 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*model)->getDescriptorInfo()->pLayout, 0, 1, (*model)->getDescriptorSet(), 0, nullptr);
 
-            vkCmdDrawIndexed(commandBuffer, (*itr)->getMeshes()->getIndicesSize(), 1, 0, 0, 0);
+                    vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes()->getIndicesSize(), 1, 0, 0, 0);
+                }
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -1395,10 +1371,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
+        /*
         for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
         {
             updateUniformBuffer(itr->get(), 1);
         }
+        */
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -1668,33 +1646,30 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         model->setDescriptorInfo(&info);
     }
 
+    void VulkanBase::setModelData(Model* model)
+    {
+        /*頂点、インデックスバッファーを持たせる*/
+        createMeshesData(model);
+
+        /*UnifomBufferを持たせる*/
+        createUniformBuffer(model);
+
+        /*テクスチャ関連の設定を持たせる*/
+        createTextureData(model);
+
+        /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
+        /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
+        createDescriptorInfo(model);
+
+        /*ディスクリプタ用のメモリを空ける*/
+        allocateDescriptorSets(model);
+
+        /*ディスクリプタセットを作る*/
+        createDescriptorSets(model);
+    }
+
     void VulkanBase::render()
     {
-        Model* model;
-        for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
-        {
-            model = itr->get();
-
-            /*頂点、インデックスバッファーを持たせる*/
-            createMeshesData(model);
-
-            /*UnifomBufferを持たせる*/
-            createUniformBuffer(model);
-
-            /*テクスチャ関連の設定を持たせる*/
-            createTextureData(model);
-
-            /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
-            /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-            createDescriptorInfo(model);
-
-            /*ディスクリプタ用のメモリを空ける*/
-            allocateDescriptorSets(model);
-
-            /*ディスクリプタセットを作る*/
-            createDescriptorSets(model);
-        }
-
         /*描画*/
         drawFrame();
     }

@@ -38,15 +38,11 @@ Model* Scene::getSceneModelData(std::string name)
 
 void Scene::setModels()
 {
-	VulkanBase::GetInstance()->resizeModels(sceneSet.size());
-
 	//描画するモデルのポインタを積んでいく
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		VulkanBase::GetInstance()->setModels(itr->second);
+		Storage::GetInstance()->addModel(itr->second);
 	}
-
-	VulkanBase::GetInstance()->endFirstSendModel();
 }
 
 void Scene::setModels(std::string name)
@@ -59,6 +55,6 @@ void Scene::setModels(std::string name)
 			continue;
 		}
 
-		VulkanBase::GetInstance()->setModels(itr->second);
+		Storage::GetInstance()->addModel(itr->second);
 	}
 }

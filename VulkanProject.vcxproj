@@ -147,8 +147,6 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Storage.cpp" />
-    <ClCompile Include="VkModel.cpp" />
-    <ClCompile Include="VkStorage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,8 +160,6 @@
     <ClInclude Include="Object.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
-    <ClInclude Include="VkModel.h" />
-    <ClInclude Include="VkStorage.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>
   <ItemGroup>
