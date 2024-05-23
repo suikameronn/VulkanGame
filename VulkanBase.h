@@ -134,6 +134,7 @@ private:
     UniformBufferObject ubo{};
 
     VkDescriptorSet descriptorSet;
+    DescriptorInfo info;
 
     std::vector<VkCommandBuffer> commandBuffers;
 

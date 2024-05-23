@@ -21,6 +21,16 @@ struct DescriptorInfo
 	VkDescriptorPool pool;
 	VkPipelineLayout pLayout;
 	VkPipeline pipeline;
+
+	bool operator==(const DescriptorInfo& a) const
+	{
+		return layout == a.layout;
+	}
+
+	bool operator!=(const DescriptorInfo& a) const
+	{
+		return !(layout == a.layout);
+	}
 };
 
 struct MappedBuffer

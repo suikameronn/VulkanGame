@@ -13,7 +13,7 @@ std::string FileManager::getModelPath(OBJECT obj)
     switch (obj)
     {
     case OBJECT::MODELTEST:
-        modelPath = "models/viking_room.obj";
+        modelPath = "./models/viking_room.obj";
         return modelPath;
         break;
     }

@@ -15,11 +15,6 @@ enum IMAGE
 
 class ImageData;
 
-bool operator==(const DescriptorInfo& a,const DescriptorInfo& b)
-{
-	return a.layout == b.layout;
-}
-
 struct Hash {
 	size_t operator()(const DescriptorInfo& info) const {
 		size_t a = std::hash<VkDescriptorSetLayout>()(info.layout);

@@ -1106,15 +1106,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(100);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(100);
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(1);
+        poolInfo.maxSets = static_cast<uint32_t>(100);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
@@ -1629,9 +1629,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
         {
             model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
+            return;
         }
-
-        DescriptorInfo info;
 
         /*ディスクリプタレイアウトを持たせる*/
         createDescriptorSetLayout(model,info.layout);

@@ -7,9 +7,8 @@ GameManager* GameManager::gameManager = nullptr;
 void GameManager::GameLoop()
 {
 
-    std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
-
     VulkanBase::GetInstance()->initVulkan();
+    std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
     /*
     while (/*!glfwWindowShouldClose(window))
     {

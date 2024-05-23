@@ -12,7 +12,7 @@ void Scene::parseScene()
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
 
-	int test = 1;
+	int test = 2;
 	parth.resize(test);
 	for (int i = 0; i < test; i++)
 	{
