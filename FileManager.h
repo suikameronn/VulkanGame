@@ -34,9 +34,13 @@ public:
 		return fileManager;
 	}
 
-	~FileManager()
+	void FinishFileManger()
 	{
 		delete fileManager;
+	}
+
+	~FileManager()
+	{
 		fileManager = nullptr;
 	}
 

@@ -60,17 +60,15 @@ private:
 	BufferObject pointBuffer;
 	MappedBuffer mappedBuffer;
 
-	uint32_t pointID;
-
-	uint32_t texID;
 	TextureData textureData;
 
-	DescriptorInfo descriptorInfo;
-	VkDescriptorSet descriptorSet;
+	DescriptorInfo* descriptorInfo;
+	VkDescriptorSet descriptorSet;//VkDescriptorPool‚ª”jŠü‚³‚ê‚ê‚Î©“®‚ÅÁ‚³‚ê‚éB
 
 public:
 	Model();
 	Model(Meshes* m, Material* material);
+	~Model();
 
 	void setMeshes(Meshes* meshes);
 	void setImageData(ImageData* image);

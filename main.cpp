@@ -1,3 +1,7 @@
+#define _CRTDBG_MAP_ALLOC
+#include <cstdlib>
+#include <crtdbg.h>
+
 #include<iostream>
 
 #include"GameManager.h"
@@ -17,6 +21,8 @@ int main() {
 
     GameManager* gameManager = GameManager::GetInstance();
     gameManager->GameLoop();
+
+    std::cout << "main function" << _CrtDumpMemoryLeaks() << std::endl;
 
     return EXIT_SUCCESS;
 }

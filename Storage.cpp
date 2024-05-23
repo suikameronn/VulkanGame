@@ -3,6 +3,14 @@
 
 Storage* Storage::storage = nullptr;
 
+void Storage::cleanup()
+{
+	for (auto itr = descriptorStorage.begin(); itr != descriptorStorage.end(); itr++)
+	{
+
+	}
+}
+
 //StorageにMeshesを追加する
 void Storage::addObj(OBJECT obj, Meshes* meshes)
 {
@@ -18,14 +26,14 @@ void Storage::addImage(IMAGE image, ImageData* imageData)
 //StorageにDescriptorInfoを追加する
 void Storage::addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info)
 {
-	descriptorStorage[layoutBit].reset(info);
+	descriptorStorage[layoutBit] = info;
 }
 
 //StorageにModelを追加する
 void Storage::addModel(Model* model)
 {
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[*model->getDescriptorInfo()].push_back(std::move(std::unique_ptr<Model>(model)));
+	sceneModelStorage[model->getDescriptorInfo()].push_back(std::move(std::unique_ptr<Model>(model)));
 }
 
 //Storageから指定されたMeshesへの参照を返す
@@ -43,11 +51,19 @@ ImageData* Storage::accessImage(IMAGE image)
 //Storageから指定されたDescriptorInfoへの参照を返す
 DescriptorInfo* Storage::accessDescriptorInfo(std::bitset<8> layoutBit)
 {
-	return descriptorStorage[layoutBit].get();
+	return descriptorStorage[layoutBit];
+}
+
+//StorageからDescriptorInfoのマップへの参照を返す
+void Storage::accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
+	std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& end)
+{
+	begin = descriptorStorage.begin();
+	end = descriptorStorage.end();
 }
 
 //Storageから指定された個別のグループのvectorの参照を返す
-void Storage::accessModelVector(std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator current,
+void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current,
 	std::vector<std::unique_ptr<Model>>::iterator& itr,std::vector<std::unique_ptr<Model>>::iterator& itr2)
 {
 	itr = current->second.begin();
@@ -55,29 +71,11 @@ void Storage::accessModelVector(std::unordered_map<DescriptorInfo, std::vector<s
 }
 
 //Storageから指定された全体のunordered_mapの参照を返す
-void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
-	std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2)
+void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
+	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2)
 {
 	*itr = sceneModelStorage.begin();
 	*itr2 = sceneModelStorage.end();
-}
-
-//Storageから指定されたMeshesへの参照を返す
-std::shared_ptr<Meshes> Storage::shareObj(OBJECT obj)
-{
-	return meshesStorage[obj];
-}
-
-//Storageから指定されたImageDataへの参照を返す
-std::shared_ptr<ImageData> Storage::shareImage(IMAGE image)
-{
-	return imageStorage[image];
-}
-
-//Storageから指定されたDescriptorInfoへの参照を返す
-std::shared_ptr<DescriptorInfo> Storage::shareDescriptor(std::bitset<8> layoutBit)
-{
-	return descriptorStorage[layoutBit];
 }
 
 //Storageに指定されたMeshesがすでに存在するかどうかを返す

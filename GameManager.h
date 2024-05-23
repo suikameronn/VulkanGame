@@ -2,6 +2,7 @@
 
 #include"GLFW/glfw3.h"
 
+#include"FileManager.h"
 #include"VulkanBase.h"
 
 extern GLFWwindow* window;
@@ -26,12 +27,21 @@ public:
 		return gameManager;
 	}
 
-	
+	void FinishApp()
+	{
+		VulkanBase::GetInstance()->FinishVulkanBase();
+		FileManager::GetInstance()->FinishFileManger();
+		Storage::GetInstance()->FinishStorage();
+
+		delete gameManager;
+		gameManager = nullptr;
+	}
 
 	~GameManager()
 	{
-		delete gameManager;
-		gameManager = nullptr;
+		glfwDestroyWindow(window);
+
+		glfwTerminate();
 	}
 
 

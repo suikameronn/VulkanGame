@@ -21,4 +21,8 @@ void GameManager::GameLoop()
     {
         glfwPollEvents();
     }
+
+    scene.reset();
+
+    FinishApp();
 }

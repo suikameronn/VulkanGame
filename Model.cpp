@@ -1,4 +1,5 @@
 #include"Model.h"
+#include"VulkanBase.h"
 
 Model::Model()
 {
@@ -10,6 +11,28 @@ Model::Model(Meshes* meshes, Material* material)
 {
 	this->meshes = meshes;
 	this->material = material;
+}
+
+Model::~Model()
+{
+	VkDevice device = VulkanBase::GetInstance()->GetDevice();
+
+	vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
+	vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
+
+	vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
+	vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
+
+	vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
+	vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
+	mappedBuffer.uniformBufferMapped = nullptr;
+
+	vkDestroySampler(device, textureData.sampler, nullptr);
+	vkDestroyImageView(device, textureData.view, nullptr);
+	vkDestroyImage(device, textureData.image, nullptr);
+	vkFreeMemory(device, textureData.memory, nullptr);
+
+	delete material;
 }
 
 void Model::setMeshes(Meshes* meshes)
@@ -43,7 +66,7 @@ Material* Model::getMaterial()
 
 void Model::setDescriptorInfo(DescriptorInfo* info)
 {
-	descriptorInfo = *info;
+	descriptorInfo = info;
 }
 
 void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
@@ -53,7 +76,7 @@ void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
 
 DescriptorInfo* Model::getDescriptorInfo()
 {
-	return &descriptorInfo;
+	return descriptorInfo;
 }
 
 BufferObject* Model::getPointBuffer()

@@ -28,7 +28,6 @@
 #include<fstream>
 
 #include"Storage.h"
-#include"vulkan/vulkan.h"
 
 extern GLFWwindow* window;
 
@@ -207,8 +206,6 @@ private:
     void createTextureData(Model* model);
     void createDescriptorInfo(Model* model);
 
-    float aa = 0.0001f;
-
 public:
 
     static VulkanBase* GetInstance()
@@ -233,10 +230,15 @@ public:
         }
     }
 
+    static void FinishVulkanBase()
+    {
+        delete vulkanBase;
+    }
+
     ~VulkanBase()
     {
         cleanup();
-        delete vulkanBase;
+
         vulkanBase = nullptr;
     }
 

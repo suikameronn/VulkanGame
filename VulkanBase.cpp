@@ -58,39 +58,38 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
 
-    void VulkanBase::cleanup() {
-
-        /*
+    void VulkanBase::cleanup()
+    {
         vkDeviceWaitIdle(device);
 
         cleanupSwapChain();
 
-        for (auto itr = graphicsPipelines.begin(); itr != graphicsPipelines.end(); itr++)
+        std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoBegin;
+        std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoEnd;
+        Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
+        for (auto itr = infoBegin; itr != infoEnd; itr++)
         {
-            vkDestroyPipeline(device, *itr, nullptr);
+            vkDestroyDescriptorPool(device, itr->second->pool, nullptr);
+            vkDestroyPipeline(device, itr->second->pipeline, nullptr);
+            vkDestroyPipelineLayout(device, itr->second->pLayout, nullptr);
+            vkDestroyDescriptorSetLayout(device, itr->second->layout, nullptr);
         }
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
+        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
+        {
+            std::vector<std::unique_ptr<Model>>::iterator beginVec;
+            std::vector<std::unique_ptr<Model>>::iterator endVec;
+            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
+            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
+            {
+                vecItr->reset();
+            }
+        }
+
         vkDestroyRenderPass(device, renderPass, nullptr);
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
-        }
-
-        for (auto itr = descriptorPools.begin(); itr != descriptorPools.end(); itr++)
-        {
-            vkDestroyDescriptorPool(device, *itr, nullptr);
-        }
-
-        for (auto itr = descriptorSetLayouts.begin(); itr != descriptorSetLayouts.end(); itr++)
-        {
-            vkDestroyDescriptorSetLayout(device, *itr, nullptr);
-        }
-
-        for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
-        {
-            *itr->release();//vkModels‚Ì”jŠüAdevice‚ğ”jŠü‚·‚é‘O‚És‚í‚È‚¯‚ê‚Î‚È‚ç‚È‚¢
-        }
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -98,11 +97,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyFence(device, inFlightFences[i], nullptr);
         }
 
-        for (auto itr = commandPools.begin(); itr != commandPools.end(); itr++)
-        {
-            vkDestroyCommandPool(device, *itr, nullptr);
-        }
+        vkDestroyCommandPool(device, commandPool, nullptr);
 
+        //‚±‚Ì“_‚Ågpu‘¤‚Éì‚Á‚½•Ï”‚ğ”jŠü‚µ‚Ä’u‚©‚È‚¯‚ê‚Î‚È‚ç‚È‚¢
         vkDestroyDevice(device, nullptr);
 
         if (enableValidationLayers) {
@@ -111,11 +108,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
-        */
-
-        glfwDestroyWindow(window);
-
-        glfwTerminate();
     }
 
     void VulkanBase::recreateSwapChain() {
@@ -1292,12 +1284,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap,&endMap);
         for (auto modelGroup = beginMap; modelGroup != endMap; modelGroup++)
         {
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelGroup->first.pipeline);
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelGroup->first->pipeline);
 
                 VkViewport viewport{};
                 viewport.x = 0.0f;
@@ -1372,8 +1364,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
         for (auto itr = beginMap; itr != endMap; itr++)
         {

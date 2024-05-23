@@ -9,7 +9,6 @@
 #include<glm/glm.hpp>
 
 #include"FileManager.h"
-#include"Model.h"
 
 class Scene
 {

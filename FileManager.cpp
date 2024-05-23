@@ -117,5 +117,5 @@ ImageData* FileManager::loadModelImage(IMAGE image)
 
     Storage::GetInstance()->addImage(image, imageData);
 
-    return imageData;
+    return Storage::GetInstance()->accessImage(image);
 }
