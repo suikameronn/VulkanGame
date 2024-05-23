@@ -1075,12 +1075,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
     */
 
-    void VulkanBase::updateUniformBuffer(Model* model,uint32_t i) {
+    void VulkanBase::updateUniformBuffer(Model* model) {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+        UniformBufferObject ubo;
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1371,12 +1372,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        /*
-        for (auto itr = vkModels.begin(); itr != vkModels.end(); itr++)
+        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
+        for (auto itr = beginMap; itr != endMap; itr++)
         {
-            updateUniformBuffer(itr->get(), 1);
+            std::vector<std::unique_ptr<Model>>::iterator beginVec;
+            std::vector<std::unique_ptr<Model>>::iterator endVec;
+            Storage::GetInstance()->accessModelVector(itr, beginVec, endVec);
+            for (auto model = beginVec; model != endVec; model++)
+            {
+                updateUniformBuffer(model->get());
+            }
         }
-        */
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 

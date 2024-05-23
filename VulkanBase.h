@@ -190,7 +190,7 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
-    void updateUniformBuffer(Model* model,uint32_t i);
+    void updateUniformBuffer(Model* model);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -206,6 +206,8 @@ private:
     void createMeshesData(Model* model);
     void createTextureData(Model* model);
     void createDescriptorInfo(Model* model);
+
+    float aa = 0.0001f;
 
 public:
 
