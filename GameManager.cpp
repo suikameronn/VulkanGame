@@ -4,19 +4,46 @@
 
 GameManager* GameManager::gameManager = nullptr;
 
-void GameManager::GameLoop()
+void GameManager::initGame()
+{
+    VulkanBase::GetInstance()->initVulkan();
+
+    while (true)
+    {
+        //‰½‚ç‚©‚Ì“ü—Í‚ð‘Ò‚Â
+        break;
+    }
+
+    createScene();
+}
+
+void GameManager::createScene()
+{
+    scene = std::unique_ptr<Scene>(new Scene());
+
+    mainGameLoop();
+}
+
+void GameManager::mainGameLoop()
 {
 
-    VulkanBase::GetInstance()->initVulkan();
-    std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
-
-    while (!glfwWindowShouldClose(window))
+    while (!exit)
     {
+        exit = scene->Update();
         VulkanBase::GetInstance()->render();
         glfwPollEvents();
     }
 
-    scene.reset();
+    exitScene();
+}
 
-    FinishApp();
+void GameManager::exitScene()
+{
+    scene.reset();
+}
+
+void GameManager::FinishGame()
+{
+    glfwWindowShouldClose(window);
+    FinishInstance();
 }

@@ -1,5 +1,7 @@
 #include"Controller.h"
 
+Controller* Controller::controller = nullptr;
+
 enum
 {
 	a = 97,
@@ -30,15 +32,41 @@ enum
 	z
 };
 
-Controller::Controller(GLFWwindow* window)
+Controller::Controller()
 {
-	glfwSetWindowUserPointer(window, this);
+	controllableObj = nullptr;
+
+	//glfwSetWindowUserPointer(window, this);
 
 	glfwSetMouseButtonCallback(window, mouseButtonCB);
 	glfwSetCursorPosCallback(window, mousePosCB);
 	glfwSetScrollCallback(window, mouseScrollCB);
 
 	glfwSetCharCallback(window, charFunCB);
+}
+
+void Controller::setController(Object* obj)
+{
+	if (!obj)
+	{
+		controllableObj = obj;
+	}
+	else
+	{
+		throw std::runtime_error("setController: controllerObj is nullptr");
+	}
+}
+
+void Controller::releaseController()
+{
+	if(controllableObj)
+	{
+		controllableObj = nullptr;
+	}
+	else
+	{
+		throw std::runtime_error("releaseController: controllerObj is nullptr");
+	}
 }
 
 //button Ç«Ç¡ÇøÇÃÉ{É^ÉìÇ™âüÇ≥ÇÍÇΩÇ© 0:ç∂ 1:âE

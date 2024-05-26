@@ -20,7 +20,7 @@ int main() {
 
 
     GameManager* gameManager = GameManager::GetInstance();
-    gameManager->GameLoop();
+    gameManager->initGame();
 
     std::cout << "main function" << _CrtDumpMemoryLeaks() << std::endl;
 

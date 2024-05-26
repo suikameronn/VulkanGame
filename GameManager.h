@@ -4,6 +4,8 @@
 
 #include"FileManager.h"
 #include"VulkanBase.h"
+#include"Controller.h"
+#include"Scene.h"
 
 extern GLFWwindow* window;
 
@@ -11,6 +13,10 @@ class GameManager
 {
 private:
 	static GameManager* gameManager;
+
+	bool exit = false;
+	std::unique_ptr<Scene> scene;
+
 	GameManager() {};
 
 public:
@@ -27,8 +33,9 @@ public:
 		return gameManager;
 	}
 
-	void FinishApp()
+	void FinishInstance()
 	{
+		Controller::GetInstance()->FinishController();
 		VulkanBase::GetInstance()->FinishVulkanBase();
 		FileManager::GetInstance()->FinishFileManger();
 		Storage::GetInstance()->FinishStorage();
@@ -44,6 +51,9 @@ public:
 		glfwTerminate();
 	}
 
-
-	void GameLoop();
+	void initGame();
+	void createScene();
+	void mainGameLoop();
+	void exitScene();
+	void FinishGame();
 };

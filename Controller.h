@@ -1,7 +1,10 @@
 #pragma once
 #include<iostream>
-
 #include<GLFW/glfw3.h>
+
+#include"Object.h"
+
+extern GLFWwindow* window;
 
 struct MButtonStat
 {
@@ -38,8 +41,37 @@ static KeyChar keyChar;
 
 class Controller
 {
+private:
+	static Controller* controller;
+
+	Object* controllableObj;
+
+	Controller();
+	~Controller()
+	{
+		controllableObj = nullptr;
+	}
+
 public:
-	Controller(GLFWwindow* window);
+	
+	static Controller* GetInstance()
+	{
+		if (!controller)
+		{
+			controller = new Controller();
+		}
+
+		return controller;
+	}
+
+	void FinishController()
+	{
+		delete controller;
+		controller = nullptr;
+	}
+
+	void setController(Object* obj);
+	void releaseController();
 
 	virtual void mouseButton(int button, int action, int mods);
 	virtual void mousePos(double x, double y);

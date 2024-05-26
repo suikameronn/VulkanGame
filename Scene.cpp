@@ -20,6 +20,11 @@ void Scene::parseScene()
 		parth[i].second = MODELTEST;
 	}
 
+	Model* model = new Model();
+	model->setMeshes(FileManager::GetInstance()->loadModelPoints(parth[0].second));
+	model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
+	Controller::GetInstance()->setController(model);
+
 	//ファイルからモデルとテクスチャを読み取る
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
@@ -29,6 +34,14 @@ void Scene::parseScene()
 
 		sceneSet[itr->first] = model;
 	}
+}
+
+bool Scene::Update()
+{
+	bool exit = false;
+
+
+	return exit;
 }
 
 Model* Scene::getSceneModelData(std::string name)

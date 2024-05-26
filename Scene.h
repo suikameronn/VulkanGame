@@ -9,6 +9,7 @@
 #include<glm/glm.hpp>
 
 #include"FileManager.h"
+#include"Controller.h"
 
 class Scene
 {
@@ -23,6 +24,8 @@ private:
 
 public:
 	Scene();
+
+	bool Update();
 
 	Model* getSceneModelData(std::string name);
 };
