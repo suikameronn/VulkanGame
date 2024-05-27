@@ -103,3 +103,8 @@ VkDescriptorSet* Model::getDescriptorSet()
 {
 	return &descriptorSet;
 }
+
+void Model::Update()
+{
+
+}

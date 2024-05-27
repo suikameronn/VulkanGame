@@ -44,13 +44,8 @@ class Controller
 private:
 	static Controller* controller;
 
-	Object* controllableObj;
-
 	Controller();
-	~Controller()
-	{
-		controllableObj = nullptr;
-	}
+	~Controller() {};
 
 public:
 	
@@ -69,9 +64,6 @@ public:
 		delete controller;
 		controller = nullptr;
 	}
-
-	void setController(Object* obj);
-	void releaseController();
 
 	virtual void mouseButton(int button, int action, int mods);
 	virtual void mousePos(double x, double y);

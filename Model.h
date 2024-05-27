@@ -3,6 +3,7 @@
 #include<bitset>
 #include<vulkan/vulkan.h>
 
+#include"Object.h"
 #include"Meshes.h"
 #include"Material.h"
 
@@ -49,9 +50,9 @@ struct TextureData
 	VkSampler sampler;
 };
 
-class Model
+class Model:public Object
 {
-private:
+protected:
 	std::bitset<8> layoutBit;
 
 	Meshes* meshes;
@@ -64,6 +65,8 @@ private:
 
 	DescriptorInfo* descriptorInfo;
 	VkDescriptorSet descriptorSet;//VkDescriptorPool‚ª”jŠü‚³‚ê‚ê‚Î©“®‚ÅÁ‚³‚ê‚éB
+
+	void Update() override;
 
 public:
 	Model();

@@ -145,6 +145,7 @@
     <ClCompile Include="Meshes.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="Meshes.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="VulkanBase.h" />

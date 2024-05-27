@@ -25,7 +25,7 @@ private:
 public:
 	Scene();
 
-	bool Update();
+	bool UpdateScene();
 
 	Model* getSceneModelData(std::string name);
 };

@@ -12,7 +12,8 @@ void Scene::parseScene()
 	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
 	std::vector<std::pair<std::string, OBJECT>> parth;
 
-	int test = 100;
+	//VkDescriptorSetの上限は100
+	int test = 99;
 	parth.resize(test);
 	for (int i = 0; i < test; i++)
 	{
@@ -20,10 +21,12 @@ void Scene::parseScene()
 		parth[i].second = MODELTEST;
 	}
 
-	Model* model = new Model();
-	model->setMeshes(FileManager::GetInstance()->loadModelPoints(parth[0].second));
-	model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
-	Controller::GetInstance()->setController(model);
+	{
+		Model* model = new Model();
+		model->setMeshes(FileManager::GetInstance()->loadModelPoints(parth[1].second));
+		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
+		sceneSet["CONTROLLER"] = model;
+	}
 
 	//ファイルからモデルとテクスチャを読み取る
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
@@ -36,7 +39,7 @@ void Scene::parseScene()
 	}
 }
 
-bool Scene::Update()
+bool Scene::UpdateScene()
 {
 	bool exit = false;
 

@@ -8,6 +8,8 @@ void GameManager::initGame()
 {
     VulkanBase::GetInstance()->initVulkan();
 
+    Controller::GetInstance();
+
     while (true)
     {
         //‰½‚ç‚©‚Ì“ü—Í‚ð‘Ò‚Â
@@ -27,10 +29,16 @@ void GameManager::createScene()
 void GameManager::mainGameLoop()
 {
 
-    while (!exit)
+    while (!glfwWindowShouldClose(window))
     {
-        exit = scene->Update();
+        exit = scene->UpdateScene();
         VulkanBase::GetInstance()->render();
+
+        if (exit)
+        {
+            break;
+        }
+
         glfwPollEvents();
     }
 
@@ -40,10 +48,11 @@ void GameManager::mainGameLoop()
 void GameManager::exitScene()
 {
     scene.reset();
+
+    FinishGame();
 }
 
 void GameManager::FinishGame()
 {
-    glfwWindowShouldClose(window);
     FinishInstance();
 }

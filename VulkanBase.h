@@ -132,6 +132,7 @@ private:
 
     UniformBufferObject ubo{};
 
+    int descriptorSetCount;
     VkDescriptorSet descriptorSet;
     DescriptorInfo info;
 

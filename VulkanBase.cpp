@@ -21,6 +21,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     //VulkanÇÃèâä˙âª
     void VulkanBase::initVulkan() {
+        descriptorSetCount = 0;
+
         createInstance();
         setupDebugMessenger();
         createSurface();
@@ -1074,9 +1076,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo;
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.model = glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(0.0f, 0.4f, 2.0f), glm::vec3(0.0f, 0.4f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
@@ -1125,10 +1127,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
         allocInfo.pSetLayouts = layouts;
 
-        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
+
+        if (descriptorSetCount > 100)
+        {
+            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+        }
+        descriptorSetCount++;
 
         model->setDescriptorSet(&descriptorSet);
     }
@@ -1669,6 +1677,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::render()
     {
+        descriptorSetCount = 0;
         /*ï`âÊ*/
         drawFrame();
     }
