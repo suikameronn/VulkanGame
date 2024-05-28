@@ -2,36 +2,6 @@
 
 Controller* Controller::controller = nullptr;
 
-enum
-{
-	a = 97,
-	b,
-	c,
-	d,
-	e,
-	f,
-	g,
-	h,
-	i,
-	j,
-	k,
-	l,
-	m,
-	n,
-	o,
-	p,
-	q,
-	r,
-	s,
-	t,
-	u,
-	v,
-	w,
-	x,
-	y,
-	z
-};
-
 Controller::Controller()
 {
 	glfwSetWindowUserPointer(window, this);
@@ -41,6 +11,8 @@ Controller::Controller()
 	glfwSetScrollCallback(window, mouseScrollCB);
 
 	glfwSetCharCallback(window, charFunCB);
+
+	keyChar.charInfo = 127;
 }
 
 //button ‚Ç‚Á‚¿‚Ìƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚© 0:¶ 1:‰E

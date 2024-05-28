@@ -66,8 +66,6 @@ protected:
 	DescriptorInfo* descriptorInfo;
 	VkDescriptorSet descriptorSet;//VkDescriptorPool‚ª”jŠü‚³‚ê‚ê‚Î©“®‚ÅÁ‚³‚ê‚éB
 
-	void Update() override;
-
 public:
 	Model();
 	Model(Meshes* m, Material* material);
@@ -90,4 +88,6 @@ public:
 	TextureData* getTextureData();
 	std::bitset<8> getLayoutBit();
 	VkDescriptorSet* getDescriptorSet();
+
+	void Update() override;
 };

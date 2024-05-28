@@ -1,18 +1,25 @@
 #pragma once
 #include"Model.h"
+#include"Controller.h"
 
-class Player :public Model
+class Player
 {
 private:
-	int speed;
+	Object* object;
+	float speed;
 	int rotateSpeed;
 
+	glm::vec3 moveDirec;
+
 	glm::vec3 forward;
+	glm::vec3 right;
 
 	void inputKeys();
 
 public:
 	Player();
+	void setObject(Model* obj);
+	Object* getObject();
 
-	void Update() override;
+	void Update();
 };

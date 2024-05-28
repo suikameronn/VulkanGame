@@ -2,8 +2,11 @@
 
 Object::Object()
 {
-	controllable = false;
 	position = { 0,0,0 };
+
+	forward = glm::vec3{ 0,0,1 };
+	right = glm::vec3{ 1,0,0 };
+
 }
 
 void Object::bindObject(Object* obj)

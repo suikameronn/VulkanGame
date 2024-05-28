@@ -10,12 +10,15 @@
 
 #include"FileManager.h"
 #include"Controller.h"
+#include"Player.h"
 
 class Scene
 {
 private:
 	//ここにシーンのオブジェクトの名前とモデルが保存される
-	std::unordered_map<std::string, Model*> sceneSet;
+	std::unordered_map<std::string, Object*> sceneSet;
+
+	std::unique_ptr<Player> player;
 
 	void parseScene();
 

@@ -6,6 +6,36 @@
 
 extern GLFWwindow* window;
 
+enum
+{
+	a = 97,
+	b,
+	c,
+	d,
+	e,
+	f,
+	g,
+	h,
+	i,
+	j,
+	k,
+	l,
+	m,
+	n,
+	o,
+	p,
+	q,
+	r,
+	s,
+	t,
+	u,
+	v,
+	w,
+	x,
+	y,
+	z
+};
+
 struct MButtonStat
 {
 	int button;
@@ -29,16 +59,6 @@ struct KeyChar
 	unsigned int charInfo;
 };
 
-static int mouseX, mouseY;
-static bool mouseR, mouseL;
-static int mouseW;
-static unsigned int keyInput;
-
-static MButtonStat mButtonStat;
-static MPos mPos;
-static MScroll mScroll;
-static KeyChar keyChar;
-
 class Controller
 {
 private:
@@ -48,6 +68,11 @@ private:
 	~Controller() {};
 
 public:
+
+	MButtonStat mButtonStat;
+	MPos mPos;
+	MScroll mScroll;
+	KeyChar keyChar;
 	
 	static Controller* GetInstance()
 	{
@@ -69,10 +94,6 @@ public:
 	virtual void mousePos(double x, double y);
 	virtual void mouseScroll(double x, double y);
 	virtual void charFun(unsigned int charInfo);
-
-	static MButtonStat* getMButtonStat() { return &mButtonStat; }
-	static MPos* getMPos() { return &mPos; }
-	static KeyChar* getKeyChar() { return &keyChar; }
 
 protected:
 

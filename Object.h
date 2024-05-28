@@ -17,22 +17,23 @@ struct RotateData
 class Object
 {
 protected:
-	bool controllable;
-
-	glm::vec3 position;
 	RotateData rotateData;
 
 	Object* otherObject;
 
 	void move();
-	virtual void Update();
 
 public:
 
+	glm::vec3 position;
+	glm::vec3 forward;
+	glm::vec3 right;
+
 	void bindObject(Object* obj);
 
-	glm::vec3* getPosition();
 	RotateData* getRotateData();
+
+	virtual void Update();
 
 	Object();
 	virtual ~Object() {};

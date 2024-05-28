@@ -2,6 +2,7 @@
 
 Scene::Scene()
 {
+	player = std::make_unique<Player>();
 	parseScene();
 
 	setModels();
@@ -13,7 +14,7 @@ void Scene::parseScene()
 	std::vector<std::pair<std::string, OBJECT>> parth;
 
 	//VkDescriptorSetの上限は100
-	int test = 99;
+	int test = 0;
 	parth.resize(test);
 	for (int i = 0; i < test; i++)
 	{
@@ -23,9 +24,9 @@ void Scene::parseScene()
 
 	{
 		Model* model = new Model();
-		model->setMeshes(FileManager::GetInstance()->loadModelPoints(parth[1].second));
+		model->setMeshes(FileManager::GetInstance()->loadModelPoints(MODELTEST));
 		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
-		sceneSet["CONTROLLER"] = model;
+		player->setObject(model);
 	}
 
 	//ファイルからモデルとテクスチャを読み取る
@@ -43,21 +44,29 @@ bool Scene::UpdateScene()
 {
 	bool exit = false;
 
+	player->Update();
+
+	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
+	{
+		itr->second->Update();
+	}
 
 	return exit;
 }
 
 Model* Scene::getSceneModelData(std::string name)
 {
-	return sceneSet[name];
+	return static_cast<Model*>(sceneSet[name]);
 }
 
 void Scene::setModels()
 {
 	//描画するモデルのポインタを積んでいく
+	Storage::GetInstance()->addModel(static_cast<Model*>(player->getObject()));
+
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		Storage::GetInstance()->addModel(itr->second);
+		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));
 	}
 }
 
@@ -71,6 +80,6 @@ void Scene::setModels(std::string name)
 			continue;
 		}
 
-		Storage::GetInstance()->addModel(itr->second);
+		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));
 	}
 }

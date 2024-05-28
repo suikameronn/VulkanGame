@@ -59,6 +59,7 @@ public:
 	void addObj(OBJECT obj, Meshes* geo);
 	void addImage(IMAGE image, ImageData* imageData);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
+
 	void addModel(Model* model);
 
 	Meshes* accessObj(OBJECT obj);
