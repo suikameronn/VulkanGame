@@ -2,11 +2,12 @@
 
 Object::Object()
 {
+	uniformBufferChange = true;
+
 	position = { 0,0,0 };
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
-
 }
 
 void Object::bindObject(Object* obj)
@@ -27,4 +28,14 @@ void Object::move()
 void Object::Update()
 {
 	move();
+}
+
+void Object::setPosition(glm::vec3 pos)
+{
+	position = pos;
+}
+
+glm::vec3 Object::getPosition()
+{
+	return position;
 }

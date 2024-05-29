@@ -11,8 +11,11 @@ Controller::Controller()
 	glfwSetScrollCallback(window, mouseScrollCB);
 
 	glfwSetCharCallback(window, charFunCB);
+}
 
-	keyChar.charInfo = 127;
+void Controller::initInput()
+{
+	keyChar.charInfo = 128;
 }
 
 //button ‚Ç‚Á‚¿‚Ìƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚© 0:¶ 1:‰E

@@ -23,15 +23,20 @@ protected:
 
 	void move();
 
-public:
-
 	glm::vec3 position;
+
+public:
+	bool uniformBufferChange;
+
 	glm::vec3 forward;
 	glm::vec3 right;
 
 	void bindObject(Object* obj);
 
 	RotateData* getRotateData();
+
+	void setPosition(glm::vec3 pos);
+	glm::vec3 getPosition();
 
 	virtual void Update();
 

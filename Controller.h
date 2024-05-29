@@ -90,6 +90,8 @@ public:
 		controller = nullptr;
 	}
 
+	void initInput();
+
 	virtual void mouseButton(int button, int action, int mods);
 	virtual void mousePos(double x, double y);
 	virtual void mouseScroll(double x, double y);

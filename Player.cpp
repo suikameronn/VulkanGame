@@ -50,7 +50,9 @@ void Player::Update()
 	glm::vec3 pos = { 0,0,0 };
 	pos = moveDirec * speed;
 
-	object->position += pos;
+	pos += object->getPosition();
 
-	std::cout << object->position.x << object->position.y << object->position.z << std::endl;
+	std::cout << pos.x << pos.y << pos.z << std::endl;
+
+	object->setPosition(pos);
 }

@@ -67,6 +67,7 @@ protected:
 	VkDescriptorSet descriptorSet;//VkDescriptorPool‚ª”jŠü‚³‚ê‚ê‚Î©“®‚ÅÁ‚³‚ê‚éB
 
 public:
+
 	Model();
 	Model(Meshes* m, Material* material);
 	~Model();
