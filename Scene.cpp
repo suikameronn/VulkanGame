@@ -3,6 +3,8 @@
 Scene::Scene()
 {
 	player = std::make_unique<Player>();
+	camera = std::make_unique<Camera>();
+
 	parseScene();
 
 	setModels();
@@ -14,7 +16,7 @@ void Scene::parseScene()
 	std::vector<std::pair<std::string, OBJECT>> parth;
 
 	//VkDescriptorSetの上限は100
-	int test = 0;
+	int test = 1;
 	parth.resize(test);
 	for (int i = 0; i < test; i++)
 	{
@@ -27,6 +29,8 @@ void Scene::parseScene()
 		model->setMeshes(FileManager::GetInstance()->loadModelPoints(MODELTEST));
 		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
 		player->setObject(model);
+
+		camera->bindObject(model);
 	}
 
 	//ファイルからモデルとテクスチャを読み取る
@@ -45,6 +49,7 @@ bool Scene::UpdateScene()
 	bool exit = false;
 
 	player->Update();
+	camera->Update();
 
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
@@ -61,9 +66,10 @@ Model* Scene::getSceneModelData(std::string name)
 
 void Scene::setModels()
 {
+	Storage::GetInstance()->setCamera(camera.get());
+
 	//描画するモデルのポインタを積んでいく
 	Storage::GetInstance()->addModel(static_cast<Model*>(player->getObject()));
-
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));

@@ -4,9 +4,9 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
+#include<iostream>
 #include<glm/glm.hpp>
 #include<vector>
-#include <stdexcept>
 
 struct RotateData
 {
@@ -28,6 +28,7 @@ protected:
 public:
 	bool uniformBufferChange;
 
+	glm::vec3 posOffSet;
 	glm::vec3 forward;
 	glm::vec3 right;
 

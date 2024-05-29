@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="DirLight.cpp" />
     <ClCompile Include="FileManager.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="DirLight.h" />
     <ClInclude Include="FileManager.h" />

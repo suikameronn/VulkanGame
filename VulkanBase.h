@@ -92,9 +92,6 @@ private:
 
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
-    const std::string MODEL_PATH = "C:\\Users\\sugiyama\\Documents\\VulkanProject\\VulkanProject\\models\\viking_room.obj";
-    const std::string TEXTURE_PATH = "textures/viking_room.png";
-
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     VkInstance instance;

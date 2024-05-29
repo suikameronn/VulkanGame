@@ -2,10 +2,10 @@
 
 Player::Player()
 {
-	forward = glm::vec3{ 0,0,1 };
+	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
 
-	speed = 1;
+	speed = 0.1;
 	rotateSpeed = 0;
 }
 
@@ -51,8 +51,6 @@ void Player::Update()
 	pos = moveDirec * speed;
 
 	pos += object->getPosition();
-
-	std::cout << pos.x << pos.y << pos.z << std::endl;
 
 	object->setPosition(pos);
 }

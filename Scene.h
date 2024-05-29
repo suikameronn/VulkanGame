@@ -11,6 +11,7 @@
 #include"FileManager.h"
 #include"Controller.h"
 #include"Player.h"
+#include"Camera.h"
 
 class Scene
 {
@@ -18,6 +19,7 @@ private:
 	//ここにシーンのオブジェクトの名前とモデルが保存される
 	std::unordered_map<std::string, Object*> sceneSet;
 
+	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Player> player;
 
 	void parseScene();

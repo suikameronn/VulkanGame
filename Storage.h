@@ -1,4 +1,5 @@
 #pragma once
+#include"Camera.h"
 #include"Model.h"
 #include<bitset>
 #include<unordered_map>
@@ -34,6 +35,7 @@ private:
 
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
+	Camera* camera;
 	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>,Hash> sceneModelStorage;
 
 	Storage() {};
@@ -60,6 +62,7 @@ public:
 	void addImage(IMAGE image, ImageData* imageData);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
+	void setCamera(Camera* c);
 	void addModel(Model* model);
 
 	Meshes* accessObj(OBJECT obj);
@@ -68,6 +71,8 @@ public:
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
 		std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& end);
+
+	Camera* accessCamera();
 
 	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current, 
 		std::vector<std::unique_ptr<Model>>::iterator& itr, std::vector<std::unique_ptr<Model>>::iterator& itr2);

@@ -29,6 +29,12 @@ void Storage::addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info)
 	descriptorStorage[layoutBit] = info;
 }
 
+//StorageにCameraを追加する
+void Storage::setCamera(Camera* c)
+{
+	camera = c;
+}
+
 //StorageにModelを追加する
 void Storage::addModel(Model* model)
 {
@@ -60,6 +66,12 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, Descrip
 {
 	begin = descriptorStorage.begin();
 	end = descriptorStorage.end();
+}
+
+//StorageのCameraにアクセスする
+Camera* Storage::accessCamera()
+{
+	return camera;
 }
 
 //Storageから指定された個別のグループのvectorの参照を返す

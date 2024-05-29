@@ -5,6 +5,7 @@ Object::Object()
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };
+	posOffSet = { 0,0,0 };
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
@@ -20,19 +21,22 @@ RotateData* Object::getRotateData()
 	return &rotateData;
 }
 
-void Object::move()
-{
-
-}
-
 void Object::Update()
 {
-	move();
+	glm::vec3 pos = { 0,0,0 };
+	setPosition(pos);
 }
 
 void Object::setPosition(glm::vec3 pos)
 {
-	position = pos;
+	if (otherObject)
+	{
+		position = posOffSet + otherObject->getPosition();
+	}
+	else
+	{
+		position = pos;
+	}
 }
 
 glm::vec3 Object::getPosition()
