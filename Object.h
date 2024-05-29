@@ -7,6 +7,7 @@
 #include<iostream>
 #include<glm/glm.hpp>
 #include<vector>
+#include<math.h>
 
 struct RotateData
 {

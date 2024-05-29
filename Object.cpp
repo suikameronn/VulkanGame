@@ -29,14 +29,7 @@ void Object::Update()
 
 void Object::setPosition(glm::vec3 pos)
 {
-	if (otherObject)
-	{
-		position = posOffSet + otherObject->getPosition();
-	}
-	else
-	{
-		position = pos;
-	}
+	position = pos;
 }
 
 glm::vec3 Object::getPosition()
