@@ -6,30 +6,22 @@ Controller::Controller()
 {
 	glfwSetWindowUserPointer(window, this);
 
-	glfwSetMouseButtonCallback(window, mouseButtonCB);
 	glfwSetCursorPosCallback(window, mousePosCB);
 	glfwSetScrollCallback(window, mouseScrollCB);
 
 	glfwSetCharCallback(window, charFunCB);
+
+	glfwSetKeyCallback(window, keyInputCB);
 }
 
 void Controller::initInput()
 {
 	keyChar.charInfo = 128;
-}
 
-//button どっちのボタンが押されたか 0:左 1:右
-//action 押されたか、話されたか 0:離す 1:押す
-//追加オプション
-void Controller::mouseButton(int button, int action, int mods)
-{
-#ifdef _DEBUG
-	std::cout << "mouseButton" << " " << button << " " << action << " " << mods << std::endl;
-#endif
-
-	mButtonStat.button = button;
-	mButtonStat.clicked = action;
-	mButtonStat.mods = mods;
+	keyInput.key = -1;
+	keyInput.scancode = -1;
+	keyInput.action = 2;
+	keyInput.mods = 0;
 }
 
 void Controller::mousePos(double x, double y)
@@ -60,9 +52,17 @@ void Controller::charFun(unsigned int charInfo)
 	keyChar.charInfo = charInfo;
 }
 
-void Controller::setMouseButton(int button, int action, int mods)
+void Controller::keyFun(int key, int scancode, int action, int mods)
 {
-	mouseButton(button, action, mods);
+#ifdef _DEBUG
+	std::cout << "keyFun" << " " <<key << " " << scancode << " " << action << " " << mods << std::endl;
+#endif
+
+	keyInput.key = key;
+	keyInput.scancode = scancode;
+	keyInput.action = action;
+	keyInput.mods = mods;
+
 }
 
 void Controller::setMousePos(double x, double y)
@@ -78,4 +78,9 @@ void Controller::setMouseScroll(double x, double y)
 void Controller::setCharFun(unsigned int charInfo)
 {
 	charFun(charInfo);
+}
+
+void Controller::setKeyFun(int key, int scancode, int action, int mods)
+{
+	keyFun(key, scancode, action, mods);
 }

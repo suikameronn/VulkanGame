@@ -13,7 +13,7 @@ std::string FileManager::getModelPath(OBJECT obj)
     switch (obj)
     {
     case OBJECT::MODELTEST:
-        modelPath = "./models/viking_room.obj";
+        modelPath = "models/viking_room.obj";
         return modelPath;
         break;
     }
@@ -88,7 +88,7 @@ std::string FileManager::getImagePath(IMAGE image)
     switch (image)
     {
     case IMAGE::IMAGETEST:
-        imagePath = "textures/viking_room.png";
+        imagePath = "textures\\viking_room.png";
         return imagePath;
         break;
     }

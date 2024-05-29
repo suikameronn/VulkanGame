@@ -41,6 +41,23 @@ void Player::inputKeys()
 		moveDirec = { 0,0,0 };
 		break;
 	}
+
+	if (controller->keyInput.key == GLFW_KEY_LEFT != GLFW_RELEASE)
+	{
+		std::cout << "left" << std::endl;
+	}
+	else if (controller->keyInput.key == GLFW_KEY_RIGHT != GLFW_RELEASE)
+	{
+		std::cout << "right" << std::endl;
+	}
+	else if (controller->keyInput.key == GLFW_KEY_UP != GLFW_RELEASE)
+	{
+		std::cout << "up" << std::endl;
+	}
+	else if (controller->keyInput.key == GLFW_KEY_DOWN != GLFW_RELEASE)
+	{
+		std::cout << "down" << std::endl;
+	}
 }
 
 void Player::Update()

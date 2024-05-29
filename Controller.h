@@ -36,10 +36,11 @@ enum
 	z
 };
 
-struct MButtonStat
+struct KeyInput
 {
-	int button;
-	int clicked;
+	int key;
+	int scancode;
+	int action;
 	int mods;
 };
 
@@ -69,7 +70,7 @@ private:
 
 public:
 
-	MButtonStat mButtonStat;
+	KeyInput keyInput;
 	MPos mPos;
 	MScroll mScroll;
 	KeyChar keyChar;
@@ -92,10 +93,10 @@ public:
 
 	void initInput();
 
-	virtual void mouseButton(int button, int action, int mods);
 	virtual void mousePos(double x, double y);
 	virtual void mouseScroll(double x, double y);
 	virtual void charFun(unsigned int charInfo);
+	virtual void keyFun(int key, int scancode, int action, int mods);
 
 protected:
 
@@ -103,15 +104,11 @@ protected:
 	void setMousePos(double x, double y);
 	void setMouseScroll(double x, double y);
 	void setCharFun(unsigned int charInfo);
+	void setKeyFun(int key, int scancode, int action, int mods);
 
 	static Controller* getThisPtr(GLFWwindow* window)
 	{
 		return static_cast<Controller*>(glfwGetWindowUserPointer(window));
-	}
-
-	static void mouseButtonCB(GLFWwindow* window, int button, int action, int mods)
-	{
-		getThisPtr(window)->setMouseButton(button, action, mods);
 	}
 
 	static void mousePosCB(GLFWwindow* window, double x, double y)
@@ -127,5 +124,10 @@ protected:
 	static void charFunCB(GLFWwindow* window, unsigned int charInfo)
 	{
 		getThisPtr(window)->setCharFun(charInfo);
+	}
+
+	static void keyInputCB(GLFWwindow* const window, int key, int scancode,int action, int mods)
+	{
+		getThisPtr(window)->setKeyFun(key, scancode, action, mods);
 	}
 };
