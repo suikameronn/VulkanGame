@@ -22,11 +22,6 @@ void Object::bindObject(Object* obj)
 	otherObject = obj;
 }
 
-RotateData* Object::getRotateData()
-{
-	return &rotateData;
-}
-
 void Object::Update()
 {
 	glm::vec3 pos = { 0,0,-10 };

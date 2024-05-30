@@ -5,7 +5,7 @@ Camera::Camera()
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,1.0f };
-	posOffSet = { 0,0.2f,2.0f };
+	posOffSet = { 0,0.0f,5.0f };
 
 	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
@@ -13,7 +13,7 @@ Camera::Camera()
 	theta = 95.8f;
 	phi = 30.0f;
 	viewAngle = 45;
-	viewPointSpeed = 0.1f;
+	viewPointSpeed = 0.01f;
 }
 
 void Camera::setViewAngle(float f)
@@ -51,7 +51,7 @@ void Camera::Update()
 			phi -= viewPointSpeed;
 		}
 
-		setSpherePos(otherObject->getPosition(),posOffSet, theta, phi);
+		setSpherePos(otherObject->getPosition(), posOffSet, theta, phi);
 	}
 	else
 	{
@@ -73,5 +73,17 @@ void Camera::Update()
 		{
 			phi -= viewPointSpeed;
 		}
+	}
+}
+
+glm::vec3 Camera::getViewTarget()
+{
+	if (otherObject)
+	{
+		return otherObject->getPosition();
+	}
+	else
+	{
+		return position;
 	}
 }

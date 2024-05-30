@@ -12,10 +12,14 @@ private:
 
 public:
 
+	glm::mat3 mat;
+
 	Camera();
 
 	void setViewAngle(float f);
 	float getViewAngle();
+
+	glm::vec3 getViewTarget();
 
 	void Update() override;
 };

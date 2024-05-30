@@ -9,16 +9,9 @@
 #include<vector>
 #include<math.h>
 
-struct RotateData
-{
-	glm::vec3 direction;
-	float rad;
-};
-
 class Object
 {
 protected:
-	RotateData rotateData;
 
 	Object* otherObject;
 	float theta, phi;
@@ -38,8 +31,7 @@ public:
 	glm::vec3 right;
 
 	void bindObject(Object* obj);
-
-	RotateData* getRotateData();
+	Object* getBindObject() { return otherObject; }
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
