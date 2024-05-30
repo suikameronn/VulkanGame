@@ -17,7 +17,5 @@ public:
 	void setViewAngle(float f);
 	float getViewAngle();
 
-	void sphereMove();
-
 	void Update() override;
 };

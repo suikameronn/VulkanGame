@@ -98,9 +98,10 @@ public:
 	virtual void charFun(unsigned int charInfo);
 	virtual void keyFun(int key, int scancode, int action, int mods);
 
+	bool getKey(int key);
+
 protected:
 
-	void setMouseButton(int button, int action, int mods);
 	void setMousePos(double x, double y);
 	void setMouseScroll(double x, double y);
 	void setCharFun(unsigned int charInfo);

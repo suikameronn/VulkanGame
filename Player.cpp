@@ -23,23 +23,25 @@ void Player::inputKeys()
 {
 	auto controller = Controller::GetInstance();
 
-	switch (controller->keyChar.charInfo)
+	if (controller->getKey(GLFW_KEY_W))
 	{
-	case w:
 		moveDirec = forward;
-		break;
-	case a:
+	}
+	else if (controller->getKey(GLFW_KEY_A))
+	{
 		moveDirec = -right;
-		break;
-	case d:
+	}
+	else if (controller->getKey(GLFW_KEY_D))
+	{
 		moveDirec = right;
-		break;
-	case s:
+	}
+	else if (controller->getKey(GLFW_KEY_S))
+	{
 		moveDirec = -forward;
-		break;
-	default:
+	}
+	else
+	{
 		moveDirec = { 0,0,0 };
-		break;
 	}
 }
 

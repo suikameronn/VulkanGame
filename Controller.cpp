@@ -84,3 +84,8 @@ void Controller::setKeyFun(int key, int scancode, int action, int mods)
 {
 	keyFun(key, scancode, action, mods);
 }
+
+bool Controller::getKey(int key)
+{
+	return glfwGetKey(window,key);
+}

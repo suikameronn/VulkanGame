@@ -5,12 +5,24 @@ Model::Model()
 {
 	meshes = nullptr;
 	material = nullptr;
+
+	otherObject = nullptr;
+	spherePos = false;
+	theta = 0.1f;
+	phi = 0.1f;
+	rotateSpeed = 0.1f;
 }
 
 Model::Model(Meshes* meshes, Material* material)
 {
 	this->meshes = meshes;
 	this->material = material;
+
+	otherObject = nullptr;
+	spherePos = false;
+	theta = 0.1f;
+	phi = 0.1f;
+	rotateSpeed = 0.1f;
 }
 
 Model::~Model()
@@ -106,5 +118,14 @@ VkDescriptorSet* Model::getDescriptorSet()
 
 void Model::Update()
 {
+	glm::vec3 pos = { 0,0,0 };
 
+
+	//setPosition(pos);
+
+	glm::vec3 offset = { 0,0,1};
+	theta += rotateSpeed;
+	phi = 0.01f;
+
+	setSpherePos(pos, offset, theta, phi);
 }
