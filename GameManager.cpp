@@ -6,6 +6,8 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()
 {
+    frameDuration = (100 / fps) * 1000;
+
     VulkanBase::GetInstance()->initVulkan();
 
     Controller::GetInstance();
@@ -28,9 +30,12 @@ void GameManager::createScene()
 
 void GameManager::mainGameLoop()
 {
+    start2 = std::chrono::system_clock::now();
 
     while (!glfwWindowShouldClose(window))
     {
+        start = std::chrono::system_clock::now();
+
         exit = scene->UpdateScene();
         VulkanBase::GetInstance()->render();
 
@@ -38,6 +43,14 @@ void GameManager::mainGameLoop()
         {
             break;
         }
+
+        end = std::chrono::system_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() * 1000;
+        if (elapsed < frameDuration)
+        {
+            std::this_thread::sleep_for(std::chrono::microseconds(frameDuration - elapsed));
+        }
+        
 
         Controller::GetInstance()->initInput();
         glfwPollEvents();

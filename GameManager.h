@@ -1,5 +1,8 @@
 #pragma once
 
+#include<chrono>
+#include <thread>
+
 #include"GLFW/glfw3.h"
 
 #include"FileManager.h"
@@ -12,7 +15,16 @@ extern GLFWwindow* window;
 class GameManager
 {
 private:
+
+	int frame = 0;
+
 	static GameManager* gameManager;
+	
+	const int fps = 60;
+	int frameDuration;
+	std::chrono::system_clock::time_point  start, end;
+	std::chrono::system_clock::time_point  start2, end2;
+	int elapsed;
 
 	bool exit = false;
 	std::unique_ptr<Scene> scene;
