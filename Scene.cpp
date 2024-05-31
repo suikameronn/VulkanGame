@@ -48,13 +48,13 @@ bool Scene::UpdateScene()
 {
 	bool exit = false;
 
-	player->Update();
-	camera->Update();
-
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		itr->second->Update();
 	}
+
+	player->Update();
+	camera->Update();
 
 	return exit;
 }

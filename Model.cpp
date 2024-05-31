@@ -6,6 +6,14 @@ Model::Model()
 	meshes = nullptr;
 	material = nullptr;
 
+	uniformBufferChange = true;
+
+	position = { 0,0,0 };
+	posOffSet = { 0,0,0 };
+
+	forward = glm::vec3{ 0,0,1 };
+	right = glm::vec3{ 1,0,0 };
+
 	otherObject = nullptr;
 	spherePos = false;
 	theta = 0.1f;
@@ -17,6 +25,12 @@ Model::Model(Meshes* meshes, Material* material)
 {
 	this->meshes = meshes;
 	this->material = material;
+
+	position = { 0,0,0 };
+	posOffSet = { 0,0,0 };
+
+	forward = glm::vec3{ 0,0,1 };
+	right = glm::vec3{ 1,0,0 };
 
 	otherObject = nullptr;
 	spherePos = false;
@@ -123,9 +137,9 @@ void Model::Update()
 
 	//setPosition(pos);
 
-	glm::vec3 offset = { 0,0,1};
+	glm::vec3 offset = { 0.0f,0.0f,10.0f};
 	theta += rotateSpeed;
-	phi = 0.01f;
+	phi = 30.0f;
 
-	setSpherePos(pos, offset, theta, phi);
+	setSpherePos(pos, 5.0f, theta, phi);
 }

@@ -12,8 +12,8 @@ Object::Object()
 
 	otherObject = nullptr;
 	spherePos = false;
-	theta = 0.01f;
-	phi = 0.01f;
+	theta = 30.0f;
+	phi = 30.0f;
 	rotateSpeed = 0.1f;
 }
 
@@ -24,10 +24,7 @@ void Object::bindObject(Object* obj)
 
 void Object::Update()
 {
-	glm::vec3 pos = { 0,0,-10 };
 
-
-	setPosition(pos);
 }
 
 void Object::setPosition(glm::vec3 pos)
@@ -40,11 +37,10 @@ glm::vec3 Object::getPosition()
 	return position;
 }
 
-void Object::setSpherePos(glm::vec3 center,glm::vec3 posOffSet, float theta, float phi)
+void Object::setSpherePos(glm::vec3 center,float r, float theta, float phi)
 {
-	float r = glm::length(posOffSet);
-
 	glm::vec3 pos = { r * sin(phi) * cos(theta) ,r * cos(phi),-r * sin(phi) * sin(theta) };
+
 	pos += center;
 	setPosition(pos);
 }

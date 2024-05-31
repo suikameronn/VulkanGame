@@ -1074,7 +1074,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Camera* camera = Storage::GetInstance()->accessCamera();
 
         UniformBufferObject ubo;
-        ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(model->getPosition().x, model->getPosition().y, model->getPosition().z)) * 
+        ubo.model = glm::translate(glm::mat4(1.0f),model->getPosition()) * 
             glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f));

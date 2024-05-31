@@ -36,7 +36,7 @@ public:
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
 
-	void setSpherePos(glm::vec3 center,glm::vec3 posOffSet, float theta, float phi);
+	void setSpherePos(glm::vec3 center,float r, float theta, float phi);
 
 	virtual void Update();
 

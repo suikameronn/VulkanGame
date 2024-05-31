@@ -5,7 +5,7 @@ Player::Player()
 	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
 
-	speed = 0.1;
+	speed = 0.1f;
 	rotateSpeed = 0;
 }
 
