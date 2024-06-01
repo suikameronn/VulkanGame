@@ -33,18 +33,107 @@ std::string FileManager::getModelPath(OBJECT obj)
     }
 }
 
-Meshes* FileManager::loadModelPoints(OBJECT obj)
+void FileManager::loadMesh(Meshes* meshes,FbxMesh* mesh)
 {
-    if (obj >= 1000)
+    int i, j;
+    for (i = 0; i < mesh->GetPolygonCount(); i++)
     {
-        return loadPointsFbx(obj);
+        meshes->pushBackIndex(i * 3 + indexSize);
+        meshes->pushBackIndex(i * 3 + 1 + indexSize);
+        meshes->pushBackIndex(i * 3 + 2 + indexSize);
     }
-    else
+
+    //頂点バッファの取得
+    FbxVector4* verticesFbx = mesh->GetControlPoints();
+    //インデックスバッファの取得
+    int* indicesFbx = mesh->GetPolygonVertices();
+    //頂点座標の数の取得
+    int polygonVertexCount = mesh->GetPolygonVertexCount();
+
+    //法線リストの取得
+    FbxArray<FbxVector4> normals;
+    //法線リスト取得
+    mesh->GetPolygonVertexNormals(normals);
+
+    //uvセットの名前保存
+    FbxStringList uvSetName;
+    //uvセットの名前リスト取得
+    mesh->GetUVSetNames(uvSetName);
+    FbxArray<FbxVector2> uvBuffer;
+    //UVSetの名前からUVSetを取得する
+    mesh->GetPolygonVertexUVs(uvSetName.GetStringAt(0), uvBuffer);
+
+    //GetPolygonVertexCount:頂点数
+    for (i = 0; i < polygonVertexCount; i++)
     {
-        return loadObj(obj);
+        Vertex vertex{};
+        //インデックスバッファから頂点番号を取得
+        int index = indicesFbx[i];
+
+        //頂点座標リストから座標を取得する
+        if (indexSize != 0)
+        {
+            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.1f, verticesFbx[index][1], verticesFbx[index][2]);
+        }
+        else
+        {
+            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.0f, verticesFbx[index][1], verticesFbx[index][2]);
+        }
+        vertex.normal = glm::vec3(normals[index][0], normals[index][1], normals[index][2]);
+        vertex.texCoord = glm::vec2(uvBuffer[index][0], uvBuffer[index][1]);
+
+        meshes->pushBackVertex(&vertex);
+    }
+
+    indexSize += mesh->GetPolygonCount() * 3;
+}
+
+FbxModel* FileManager::loadModel(OBJECT obj)
+{
+    if (Storage::GetInstance()->containFbxModel(obj))
+    {
+        return Storage::GetInstance()->accessFbxModel(obj);
+    }
+
+    FbxModel* model = new FbxModel();
+
+    indexSize = 0;
+
+    converter = new FbxGeometryConverter(manager);
+    converter->Triangulate(scene,true);
+
+    if (importer->Initialize(getModelPath(obj).c_str()))
+    {
+        throw std::runtime_error("load model error");
+    }
+
+    if (importer->Import(scene))
+    {
+        throw std::runtime_error("load scene error");
+    }
+
+    FbxNode* rootNode = scene->GetRootNode();
+    if (rootNode == nullptr)
+    {
+        throw std::runtime_error("rootNode error");
+    }
+
+    for (int i = 0; i < rootNode->GetChildCount(); i++)
+    {
+        FbxNode* child = rootNode->GetChild(i);
+        FbxNodeAttribute::EType type = child->GetNodeAttribute()->GetAttributeType();
+
+        switch (type)
+        {
+        case FbxNodeAttribute::EType::eMesh:
+            FbxMesh* mesh = (FbxMesh*)child->GetNodeAttribute();
+            loadMesh(model->getMeshes(),mesh);
+            break;
+        }
     }
 }
 
+/*
 Meshes* FileManager::loadObj(OBJECT obj)
 {
     if (Storage::GetInstance()->containMeshes(obj))
@@ -108,98 +197,7 @@ Meshes* FileManager::loadObj(OBJECT obj)
 
     return meshes;
 }
-
-void FileManager::loadPointsFbx(Meshes* meshes, FbxNode* node)
-{
-    if (node->GetNodeAttribute()->GetAttributeType() != FbxNodeAttribute::eMesh || node->GetNodeAttribute() == NULL)
-    {
-        return;
-    }
-
-    int i, j;
-
-    FbxMesh* mesh = (FbxMesh*)node->GetNodeAttribute();
-
-    for (i = 0; i < mesh->GetPolygonCount(); i++)
-    {
-        meshes->pushBackIndex(i * 3 + indexSize);
-        meshes->pushBackIndex(i * 3 + 1 + indexSize);
-        meshes->pushBackIndex(i * 3 + 2 + indexSize);
-    }
-
-    //頂点バッファの取得
-    FbxVector4* verticesFbx = mesh->GetControlPoints();
-    //インデックスバッファの取得
-    int* indicesFbx = mesh->GetPolygonVertices();
-    //頂点座標の数の取得
-    int polygonVertexCount = mesh->GetPolygonVertexCount();
-    
-    //法線リストの取得
-    FbxArray<FbxVector4> normals;
-    //法線リスト取得
-    mesh->GetPolygonVertexNormals(normals);
-
-    //uvセットの名前保存
-    FbxStringList uvSetName;
-    //uvセットの名前リスト取得
-    mesh->GetUVSetNames(uvSetName);
-    FbxArray<FbxVector2> uvBuffer;
-    //UVSetの名前からUVSetを取得する
-    mesh->GetPolygonVertexUVs(uvSetName.GetStringAt(0), uvBuffer);
-
-    //GetPolygonVertexCount:頂点数
-    for (i = 0; i < polygonVertexCount; i++)
-    {
-        Vertex vertex{};
-        //インデックスバッファから頂点番号を取得
-        int index = indicesFbx[i];
-
-        //頂点座標リストから座標を取得する
-        if (indexSize != 0)
-        {
-            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.1f, verticesFbx[index][1], verticesFbx[index][2]);
-        }
-        else
-        {
-            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.0f, verticesFbx[index][1], verticesFbx[index][2]);
-        }
-        vertex.normal = glm::vec3(normals[index][0], normals[index][1], normals[index][2]);
-        vertex.texCoord = glm::vec2(uvBuffer[index][0], uvBuffer[index][1]);
-
-        meshes->pushBackVertex(&vertex);
-    }
-
-    indexSize += mesh->GetPolygonCount() * 3;
-}
-
-Meshes* FileManager::loadPointsFbx(OBJECT obj)
-{
-    if (Storage::GetInstance()->containMeshes(obj))
-    {
-        return Storage::GetInstance()->accessObj(obj);
-    }
-
-    Meshes* meshes = new Meshes();
-
-    /*fbxファイルの読み込み*/
-    importer->Initialize(getModelPath(obj).c_str(), -1, manager->GetIOSettings());
-    importer->Import(scene);
-
-    //三角ポリゴン化
-    converter->Triangulate(scene, true);
-
-    FbxNode* node = scene->GetRootNode();
-
-    if (node)
-    {
-        for (int i = 0; i < node->GetChildCount(); i++)
-        {
-            loadPointsFbx(meshes,node->GetChild(i));
-        }
-    }
-
-    return meshes;
-}
+*/
 
 std::string FileManager::getImagePath(IMAGE image)
 {
@@ -212,6 +210,7 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
+/*
 ImageData* FileManager::loadModelImage(IMAGE image)
 {
     if (Storage::GetInstance()->containImageData(image))
@@ -237,3 +236,4 @@ ImageData* FileManager::loadModelImage(IMAGE image)
 
     return Storage::GetInstance()->accessImage(image);
 }
+*/

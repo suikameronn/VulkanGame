@@ -1,5 +1,6 @@
 #pragma once
 #include<iostream>
+#include"FbxModel.h"
 #include "fbxsdk.h"
 
 #include"Storage.h"
@@ -30,8 +31,9 @@ private:
 	FbxScene* scene;
 	FbxGeometryConverter* converter;
 
-	int vertSize = 0;
-    int indexSize = 0;
+	int indexSize;
+
+	void loadMesh(Meshes* meshes, FbxMesh* node);
 
 public:
 	static FileManager* GetInstance()
@@ -59,9 +61,5 @@ public:
 		manager->Destroy();
 	}
 
-	Meshes* loadModelPoints(OBJECT obj);
-	Meshes* loadObj(OBJECT obj);
-	Meshes* loadPointsFbx(OBJECT obj);
-	void loadPointsFbx(Meshes* meshes, FbxNode* node);
-	ImageData* loadModelImage(IMAGE image);
+	FbxModel* loadModel(OBJECT obj);
 };

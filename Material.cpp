@@ -8,8 +8,6 @@ Material::Material()
 	this->emissive = glm::vec3(1.0, 1.0, 1.0);
 	this->shininess = 0.0;
 	this->transmissive = glm::vec3(1.0, 1.0, 1.0);
-
-	//texture = new ImageData();
 }
 
 Material::Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
@@ -21,14 +19,4 @@ Material::Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
 	this->emissive = *emissive;
 	this->shininess = *shininess;
 	this->transmissive = *transmissive;
-}
-
-void Material::setImageData(ImageData* image)
-{
-	texture = image;
-}
-
-ImageData* Material::getImageData()
-{
-	return texture;
 }

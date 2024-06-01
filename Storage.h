@@ -1,4 +1,5 @@
 #pragma once
+#include"FbxModel.h"
 #include"Camera.h"
 #include"Model.h"
 #include<bitset>
@@ -16,8 +17,6 @@ enum IMAGE
 	BUCHDENOEL
 };
 
-class ImageData;
-
 struct Hash {
 	size_t operator()(const DescriptorInfo* info) const {
 		size_t a = std::hash<VkDescriptorSetLayout>()(info->layout);
@@ -32,9 +31,8 @@ struct Hash {
 class Storage
 {
 private:
-	std::unordered_map<OBJECT, std::unique_ptr<Meshes>> meshesStorage;
-	std::unordered_map<IMAGE, std::unique_ptr<ImageData>> imageStorage;
 
+	std::vector<std::shared_ptr<FbxModel>> fbxModelStorage;
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
 	Camera* camera;
@@ -60,15 +58,13 @@ public:
 		return storage;
 	}
 
-	void addObj(OBJECT obj, Meshes* geo);
-	void addImage(IMAGE image, ImageData* imageData);
+	void addFbx(OBJECT obj,FbxModel* model);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
 	void setCamera(Camera* c);
 	void addModel(Model* model);
 
-	Meshes* accessObj(OBJECT obj);
-	ImageData* accessImage(IMAGE image);
+	FbxModel* accessFbxModel(OBJECT obj);
 
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
@@ -81,12 +77,10 @@ public:
 	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
 		std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2);
 
-	bool containMeshes(OBJECT obj);
-	bool containImageData(IMAGE image);
+	bool containFbxModel(OBJECT obj);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);
 
-	uint32_t getSizeObjStorage();
-	uint32_t getSizeImageStorage();
+	uint32_t getSizeFbxModelStorage();
 
 	static void FinishStorage()
 	{

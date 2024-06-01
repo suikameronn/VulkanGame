@@ -12,15 +12,9 @@ void Storage::cleanup()
 }
 
 //StorageにMeshesを追加する
-void Storage::addObj(OBJECT obj, Meshes* meshes)
+void Storage::addFbx(OBJECT obj, FbxModel* meshes)
 {
-	meshesStorage[obj].reset(meshes);
-}
-
-//StorageにImageDataを追加する
-void Storage::addImage(IMAGE image, ImageData* imageData)
-{
-	imageStorage[image].reset(imageData);
+	fbxModelStorage[obj] = std::shared_ptr<FbxModel>(meshes);
 }
 
 //StorageにDescriptorInfoを追加する
@@ -42,16 +36,10 @@ void Storage::addModel(Model* model)
 	sceneModelStorage[model->getDescriptorInfo()].push_back(std::move(std::unique_ptr<Model>(model)));
 }
 
-//Storageから指定されたMeshesへの参照を返す
-Meshes* Storage::accessObj(OBJECT obj)
+//Storageから指定されたFbxModelへの参照を返す
+FbxModel* Storage::accessFbxModel(OBJECT obj)
 {
-	return meshesStorage[obj].get();
-}
-
-//Storageから指定されたImageDataへの参照を返す
-ImageData* Storage::accessImage(IMAGE image)
-{
-	return imageStorage[image].get();
+	return fbxModelStorage[obj].get();
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
@@ -91,22 +79,9 @@ void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<s
 }
 
 //Storageに指定されたMeshesがすでに存在するかどうかを返す
-bool Storage::containMeshes(OBJECT obj)
+bool Storage::containFbxModel(OBJECT obj)
 {
-	if (meshesStorage[obj] != nullptr)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-//Storageに指定されたImageDataがすでに存在するかどうかを返す
-bool Storage::containImageData(IMAGE image)
-{
-	if (imageStorage[image] != nullptr)
+	if (fbxModelStorage[obj] != nullptr)
 	{
 		return true;
 	}
@@ -129,14 +104,8 @@ bool Storage::containDescriptorInfo(std::bitset<8> layoutBit)
 	}
 }
 
-//Storageに格納されたMeshesのサイズを返す
-uint32_t Storage::getSizeObjStorage()
+//Storageに格納されたFbxModelのサイズを返す
+uint32_t Storage::getSizeFbxModelStorage()
 {
-	return meshesStorage.size();
-}
-
-//Storageに格納されたImageのサイズを返す
-uint32_t Storage::getSizeImageStorage()
-{
-	return imageStorage.size();
+	return fbxModelStorage.size();
 }

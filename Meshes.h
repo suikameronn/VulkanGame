@@ -31,8 +31,6 @@ protected:
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	glm::vec3 avePosition;
-
 public:
 
 	void pushBackVertex(Vertex* v);
