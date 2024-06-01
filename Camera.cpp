@@ -5,7 +5,7 @@ Camera::Camera()
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,1.0f };
-	posOffSet = { 0.0f,0.0f,5.0f };
+	posOffSet = { 0.0f,0.0f,2.0f };
 
 	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
@@ -53,7 +53,7 @@ void Camera::Update()
 
 		if (phi > 28.4f && phi < 31.3f)
 		{
-			setSpherePos(otherObject->getPosition(), 10.0f, theta, phi);
+			setSpherePos(otherObject->getPosition(), 1.0f, theta, phi);
 		}
 	}
 	else

@@ -46,4 +46,7 @@ public:
 
 	uint32_t getVerticesSize();
 	uint32_t getIndicesSize();
+
+	void vertResize(uint32_t size);
+	void indexResize(uint32_t size);
 };

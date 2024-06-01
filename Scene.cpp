@@ -21,18 +21,19 @@ void Scene::parseScene()
 	for (int i = 0; i < test; i++)
 	{
 		parth[i].first = i;
-		parth[i].second = MODELTEST;
+		parth[i].second = FBXTEST;
 	}
 
 	{
 		Model* model = new Model();
-		model->setMeshes(FileManager::GetInstance()->loadModelPoints(MODELTEST));
+		model->setMeshes(FileManager::GetInstance()->loadModelPoints(FBXTEST));
 		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
 		player->setObject(model);
 
 		camera->bindObject(model);
 	}
 
+	/*
 	//ファイルからモデルとテクスチャを読み取る
 	for (auto itr = parth.begin(); itr != parth.end(); itr++)
 	{
@@ -42,6 +43,7 @@ void Scene::parseScene()
 
 		sceneSet[itr->first] = model;
 	}
+	*/
 }
 
 bool Scene::UpdateScene()

@@ -39,3 +39,13 @@ uint32_t Meshes::getIndicesSize()
 {
 	return indices.size();
 }
+
+void Meshes::vertResize(uint32_t size)
+{
+	vertices.resize(size);
+}
+
+void Meshes::indexResize(uint32_t size)
+{
+	indices.resize(size);
+}

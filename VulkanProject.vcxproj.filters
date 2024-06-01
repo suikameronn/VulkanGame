@@ -42,9 +42,6 @@
     <ClCompile Include="Material.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
-    <ClCompile Include="DirLight.cpp">
-      <Filter>ソース ファイル\Lights</Filter>
-    </ClCompile>
     <ClCompile Include="Object.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -82,9 +79,6 @@
     </ClInclude>
     <ClInclude Include="Material.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
-    </ClInclude>
-    <ClInclude Include="DirLight.h">
-      <Filter>ヘッダー ファイル\Lights</Filter>
     </ClInclude>
     <ClInclude Include="Object.h">
       <Filter>ヘッダー ファイル</Filter>
