@@ -1,6 +1,9 @@
 #pragma once
 #include<iostream>
-#include "fbxsdk.h"
+
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
 
 #include"Storage.h"
 
@@ -24,12 +27,6 @@ private:
 	std::string getImagePath(IMAGE image);
 	ImageData* imageData = nullptr;
 
-	FbxManager* manager;
-	FbxIOSettings* ios;
-	FbxImporter* importer;
-	FbxScene* scene;
-	FbxGeometryConverter* converter;
-
 	int vertSize = 0;
     int indexSize = 0;
 
@@ -52,16 +49,5 @@ public:
 	~FileManager()
 	{
 		fileManager = nullptr;
-
-		delete converter;
-		importer->Destroy();
-		ios->Destroy();
-		manager->Destroy();
 	}
-
-	Meshes* loadModelPoints(OBJECT obj);
-	Meshes* loadObj(OBJECT obj);
-	Meshes* loadPointsFbx(OBJECT obj);
-	void loadPointsFbx(Meshes* meshes, FbxNode* node);
-	ImageData* loadModelImage(IMAGE image);
 };
