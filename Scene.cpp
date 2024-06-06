@@ -26,8 +26,7 @@ void Scene::parseScene()
 
 	{
 		Model* model = new Model();
-		model->setMeshes(FileManager::GetInstance()->loadModelPoints(FBXTEST));
-		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
+		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		player->setObject(model);
 
 		camera->bindObject(model);
