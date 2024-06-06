@@ -4,8 +4,7 @@
 #include<vulkan/vulkan.h>
 
 #include"Object.h"
-#include"Meshes.h"
-#include"Material.h"
+#include"FbxModel.h"
 
 struct BufferObject
 {

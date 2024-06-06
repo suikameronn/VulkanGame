@@ -10,7 +10,7 @@
 class FbxModel
 {
 private:
-	std::shared_ptr<FbxModel> fbxModel;
+	std::vector<std::shared_ptr<FbxModel>> fbxModel;
 
 	std::shared_ptr<Meshes> meshes;
 	std::shared_ptr<Material> material;
@@ -25,11 +25,13 @@ public:
 
 	FbxModel(Meshes* meshes,Material* material);
 
+	void bindFbxModel(FbxModel* model);
+
 	const std::shared_ptr<Meshes> accessMeshes();
 	const std::shared_ptr<Material> accessMaterial();
 
 	void setAnimLoop(bool loop);
 
 	//アニメーションを適用させるための行列を取得する
-	glm::mat4* getAnimationMatrix();
+	glm::mat4* getAnimationMatrix(glm::mat4 mat);
 };

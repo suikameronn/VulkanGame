@@ -32,8 +32,7 @@ struct Hash {
 class Storage
 {
 private:
-	std::unordered_map<OBJECT, std::unique_ptr<Meshes>> meshesStorage;
-	std::unordered_map<IMAGE, std::unique_ptr<ImageData>> imageStorage;
+	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>> fbxModelStorage;
 
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
@@ -60,15 +59,13 @@ public:
 		return storage;
 	}
 
-	void addObj(OBJECT obj, Meshes* geo);
-	void addImage(IMAGE image, ImageData* imageData);
+	void addModel(OBJECT obj, FbxModel* geo);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
 	void setCamera(Camera* c);
 	void addModel(Model* model);
 
-	Meshes* accessObj(OBJECT obj);
-	ImageData* accessImage(IMAGE image);
+	std::shared_ptr<FbxModel> getFbxModel(OBJECT obj);
 
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
@@ -81,12 +78,8 @@ public:
 	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
 		std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2);
 
-	bool containMeshes(OBJECT obj);
-	bool containImageData(IMAGE image);
+	bool containModel(OBJECT obj);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);
-
-	uint32_t getSizeObjStorage();
-	uint32_t getSizeImageStorage();
 
 	static void FinishStorage()
 	{

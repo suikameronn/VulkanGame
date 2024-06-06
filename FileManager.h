@@ -20,11 +20,14 @@ private:
 
 	//画像ファイルのパスを入れる
 	std::string imagePath;
-	std::string getImagePath(IMAGE image);
 	ImageData* imageData = nullptr;
 
 	int vertSize = 0;
     int indexSize = 0;
+
+	Assimp::Importer importer;
+	void processNode(const aiNode* node,const aiScene* scene);
+	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
 
 public:
 	static FileManager* GetInstance()
@@ -47,6 +50,6 @@ public:
 		fileManager = nullptr;
 	}
 
-
-	ImageData* loadModelImage(IMAGE image);
+	std::shared_ptr<FbxModel> loadModel(OBJECT obj);
+	ImageData* loadModelImage(std::string filePath);
 };
