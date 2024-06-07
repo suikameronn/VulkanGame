@@ -10,9 +10,7 @@
 class FbxModel
 {
 private:
-	std::vector<std::shared_ptr<FbxModel>> fbxModel;
-
-	std::shared_ptr<Meshes> meshes;
+	std::vector<std::shared_ptr<Meshes>> meshes;
 	std::shared_ptr<Material> material;
 
 	float startFrame;
@@ -23,12 +21,14 @@ private:
 
 public:
 
-	FbxModel(Meshes* meshes,Material* material);
+	FbxModel();
 
-	void bindFbxModel(FbxModel* model);
+	void addMeshes(Meshes* mesh);
 
-	const std::shared_ptr<Meshes> accessMeshes();
-	const std::shared_ptr<Material> accessMaterial();
+	std::shared_ptr<Meshes> getMeshes(uint32_t i);
+	std::shared_ptr<Material> accessMaterial();
+
+	uint32_t getMeshesSize();
 
 	void setAnimLoop(bool loop);
 

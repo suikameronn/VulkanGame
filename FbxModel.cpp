@@ -1,23 +1,35 @@
 #include"FbxModel.h"
 
-FbxModel::FbxModel(Meshes* meshes, Material* material)
+FbxModel::FbxModel()
 {
-	this->meshes = std::shared_ptr<Meshes>(meshes);
-	this->material = std::shared_ptr<Material>(material);
 }
 
-const std::shared_ptr<Meshes> FbxModel::accessMeshes()
+void FbxModel::addMeshes(Meshes* mesh)
 {
-	return meshes;
+	meshes.push_back(std::shared_ptr<Meshes>(mesh));
 }
 
-const std::shared_ptr<Material> FbxModel::accessMaterial()
+std::shared_ptr<Meshes> FbxModel::getMeshes(uint32_t i)
+{
+	return meshes[i];
+}
+
+uint32_t FbxModel::getMeshesSize()
+{
+	return meshes.size();
+}
+
+
+std::shared_ptr<Material> FbxModel::accessMaterial()
 {
 	return material;
 }
+
+/*
 
 //アニメーションの行列を求める
 glm::mat4* getAnimationMatrix(glm::mat4 mat)
 {
 
 }
+*/

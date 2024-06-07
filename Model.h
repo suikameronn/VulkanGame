@@ -6,6 +6,12 @@
 #include"Object.h"
 #include"FbxModel.h"
 
+template<typename T>
+uint32_t getSize(T v)
+{
+	return v.size();
+}
+
 struct BufferObject
 {
 	VkBuffer vertBuffer;
@@ -54,40 +60,40 @@ class Model:public Object
 protected:
 	std::bitset<8> layoutBit;
 
-	Meshes* meshes;
-	Material* material;
+	std::shared_ptr<FbxModel> fbxModel;
 
-	BufferObject pointBuffer;
-	MappedBuffer mappedBuffer;
+	std::vector<BufferObject> pointBuffers;
+	std::vector<MappedBuffer> mappedBuffers;
 
-	TextureData textureData;
+	std::vector<TextureData> textureDatas;
 
-	DescriptorInfo* descriptorInfo;
-	VkDescriptorSet descriptorSet;//VkDescriptorPoolÇ™îjä¸Ç≥ÇÍÇÍÇŒé©ìÆÇ≈è¡Ç≥ÇÍÇÈÅB
+	std::vector<DescriptorInfo*> descriptorInfos;
+	std::vector<VkDescriptorSet> descriptorSets;//VkDescriptorPoolÇ™îjä¸Ç≥ÇÍÇÍÇŒé©ìÆÇ≈è¡Ç≥ÇÍÇÈÅB
 
 public:
 
 	Model();
-	Model(Meshes* m, Material* material);
 	~Model();
 
-	void setMeshes(Meshes* meshes);
-	void setImageData(ImageData* image);
-	void setMaterial(Material* material);
+	void setFbxModel(std::shared_ptr<FbxModel> model);
 
-	Meshes* getMeshes();
-	Material* getMaterial();
+	std::shared_ptr<Meshes> getMeshes(uint32_t i);
+	uint32_t getMeshesSize();
+
+	//Material* getMaterial();
 
 	void setDescriptorInfo(DescriptorInfo* info);
 	void setDescriptorSet(VkDescriptorSet* descriptorSet);
 
-	DescriptorInfo* getDescriptorInfo();
+	DescriptorInfo* getDescriptorInfo(uint32_t i);
 
-	BufferObject* getPointBuffer();
-	MappedBuffer* getMappedBuffer();
-	TextureData* getTextureData();
+	BufferObject* getPointBuffer(uint32_t i);
+	MappedBuffer* getMappedBuffer(uint32_t i);
+	TextureData* getTextureData(uint32_t i);
 	std::bitset<8> getLayoutBit();
-	VkDescriptorSet* getDescriptorSet();
+	VkDescriptorSet* getDescriptorSet(uint32_t i);
+
+	void datasResize();
 
 	void Update() override;
 };

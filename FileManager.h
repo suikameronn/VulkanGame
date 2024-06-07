@@ -23,10 +23,13 @@ private:
 	ImageData* imageData = nullptr;
 
 	int vertSize = 0;
-    int indexSize = 0;
+	int indexSize = 0;
 
 	Assimp::Importer importer;
-	void processNode(const aiNode* node,const aiScene* scene);
+	Meshes* meshes;
+	Material* material;
+
+	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
 	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
 
 public:

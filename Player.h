@@ -5,7 +5,7 @@
 class Player
 {
 private:
-	Object* object;
+	std::shared_ptr<Object> object;
 	float speed;
 	int rotateSpeed;
 

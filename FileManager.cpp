@@ -32,6 +32,8 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         return storage->getFbxModel(obj);
     }
 
+    FbxModel* fbxModel = new FbxModel();
+
     const aiScene* scene = importer.ReadFile(getModelPath(obj), 
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
@@ -43,28 +45,32 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         throw std::runtime_error("scene error");
     }
 
-    processNode(scene->mRootNode,scene);
+    processNode(scene->mRootNode,scene,fbxModel);
+
+    storage->addModel(obj,fbxModel);
+    return storage->getFbxModel(obj);
 }
 
-void FileManager::processNode(const aiNode* node, const aiScene* scene)
+void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel* model)
 {
-
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Meshes* meshes = processAiMesh(mesh, scene);
+        meshes = processAiMesh(mesh, scene);
+        model->addMeshes(meshes);
     }
+
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene);
+        processNode(node->mChildren[i], scene,model);
     }
 }
 
-Meshes* processAiMesh(const aiMesh* mesh,const aiScene* scene)
+Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
 {
-    Meshes* meshes = new Meshes();
+    meshes = new Meshes();
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
@@ -93,7 +99,7 @@ Meshes* processAiMesh(const aiMesh* mesh,const aiScene* scene)
         }
     }
 
-    return Mesh(vertices, indices, textures);
+    return meshes;
 }
 
 ImageData* FileManager::loadModelImage(std::string filePath)

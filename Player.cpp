@@ -11,12 +11,12 @@ Player::Player()
 
 void Player::setObject(Model* obj)
 {
-	object = obj;
+	object = std::shared_ptr<Object>(obj);
 }
 
 Object* Player::getObject()
 {
-	return object;
+	return object.get();
 }
 
 void Player::inputKeys()

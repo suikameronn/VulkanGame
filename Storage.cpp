@@ -32,8 +32,10 @@ void Storage::setCamera(Camera* c)
 //Storage‚ÉModel‚ğ’Ç‰Á‚·‚é
 void Storage::addModel(Model* model)
 {
+	model->datasResize();
+
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[model->getDescriptorInfo()].push_back(std::move(std::unique_ptr<Model>(model)));
+	sceneModelStorage[model->getDescriptorInfo(0)].push_back(std::move(std::unique_ptr<Model>(model)));
 }
 
 //Storage‚©‚çw’è‚³‚ê‚½DescriptorInfo‚Ö‚ÌQÆ‚ğ•Ô‚·

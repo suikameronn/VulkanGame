@@ -3,28 +3,7 @@
 
 Model::Model()
 {
-	meshes = nullptr;
-	material = nullptr;
-
 	uniformBufferChange = true;
-
-	position = { 0,0,0 };
-	posOffSet = { 0,0,0 };
-
-	forward = glm::vec3{ 0,0,1 };
-	right = glm::vec3{ 1,0,0 };
-
-	otherObject = nullptr;
-	spherePos = false;
-	theta = 0.1f;
-	phi = 0.1f;
-	rotateSpeed = 0.1f;
-}
-
-Model::Model(Meshes* meshes, Material* material)
-{
-	this->meshes = meshes;
-	this->material = material;
 
 	position = { 0,0,0 };
 	posOffSet = { 0,0,0 };
@@ -43,81 +22,76 @@ Model::~Model()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
 
-	vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
-
-	vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
-
-	vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
-	vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
-	mappedBuffer.uniformBufferMapped = nullptr;
-
-	vkDestroySampler(device, textureData.sampler, nullptr);
-	vkDestroyImageView(device, textureData.view, nullptr);
-	vkDestroyImage(device, textureData.image, nullptr);
-	vkFreeMemory(device, textureData.memory, nullptr);
-
-	delete material;
-}
-
-void Model::setMeshes(Meshes* meshes)
-{
-	this->meshes = meshes;
-}
-
-void Model::setMaterial(Material* material)
-{
-	this->material = material;
-}
-
-void Model::setImageData(ImageData* image)
-{
-	if (material == nullptr)
+	for (uint32_t i = 0; i < getMeshesSize(); i++)
 	{
-		material = new Material();
+		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
+		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
+
+		vkDestroyBuffer(device, pointBuffers[i].indeBuffer, nullptr);
+		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
+
+		vkDestroyBuffer(device, mappedBuffers[i].uniformBuffer, nullptr);
+		vkFreeMemory(device, mappedBuffers[i].uniformBufferMemory, nullptr);
+		mappedBuffers[i].uniformBufferMapped = nullptr;
 	}
-	this->material->setImageData(image);
+
+	for (uint32_t i = 0; i < getSize<std::vector<TextureData>>(textureDatas); i++)
+	{
+		vkDestroySampler(device, textureDatas[i].sampler, nullptr);
+		vkDestroyImageView(device, textureDatas[i].view, nullptr);
+		vkDestroyImage(device, textureDatas[i].image, nullptr);
+		vkFreeMemory(device, textureDatas[i].memory, nullptr);
+	}
+
+	//delete material;
 }
 
-Meshes* Model::getMeshes()
+void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 {
-	return this->meshes;
+	fbxModel = model;
+
+	pointBuffers.resize(model->getMeshesSize());
+	mappedBuffers.resize(model->getMeshesSize());
 }
 
-Material* Model::getMaterial()
+std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
 {
-	return this->material;
+	return this->fbxModel->getMeshes(i);
+}
+
+uint32_t Model::getMeshesSize()
+{
+	return this->fbxModel->getMeshesSize();
 }
 
 void Model::setDescriptorInfo(DescriptorInfo* info)
 {
-	descriptorInfo = info;
+	descriptorInfos.push_back(info);
 }
 
 void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
 {
-	this->descriptorSet = *descriptorSet;
+	this->descriptorSets.push_back(*descriptorSet);
 }
 
-DescriptorInfo* Model::getDescriptorInfo()
+DescriptorInfo* Model::getDescriptorInfo(uint32_t i)
 {
-	return descriptorInfo;
+	return descriptorInfos[i];
 }
 
-BufferObject* Model::getPointBuffer()
+BufferObject* Model::getPointBuffer(uint32_t i)
 {
-	return &pointBuffer;
+	return &pointBuffers[i];
 }
 
-MappedBuffer* Model::getMappedBuffer()
+MappedBuffer* Model::getMappedBuffer(uint32_t i)
 {
-	return &mappedBuffer;
+	return &mappedBuffers[i];
 }
 
-TextureData* Model::getTextureData()
+TextureData* Model::getTextureData(uint32_t i)
 {
-	return &textureData;
+	return &textureDatas[i];
 }
 
 std::bitset<8> Model::getLayoutBit()
@@ -125,9 +99,17 @@ std::bitset<8> Model::getLayoutBit()
 	return layoutBit;
 }
 
-VkDescriptorSet* Model::getDescriptorSet()
+VkDescriptorSet* Model::getDescriptorSet(uint32_t i)
 {
-	return &descriptorSet;
+	return &descriptorSets[i];
+}
+
+void Model::datasResize()
+{
+	uint32_t size = getMeshesSize();
+
+	//descriptorInfos.resize(size);
+	//descriptorSets.resize(size);
 }
 
 void Model::Update()
