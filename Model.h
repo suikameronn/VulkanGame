@@ -93,7 +93,5 @@ public:
 	std::bitset<8> getLayoutBit();
 	VkDescriptorSet* getDescriptorSet(uint32_t i);
 
-	void datasResize();
-
 	void Update() override;
 };

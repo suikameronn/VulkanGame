@@ -32,10 +32,8 @@ void Storage::setCamera(Camera* c)
 //StorageにModelを追加する
 void Storage::addModel(Model* model)
 {
-	model->datasResize();
-
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[model->getDescriptorInfo(0)].push_back(std::move(std::unique_ptr<Model>(model)));
+	sceneModelStorage[model->getDescriptorInfo(0)].push_back(std::shared_ptr<Model>(model));
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
@@ -59,16 +57,16 @@ Camera* Storage::accessCamera()
 }
 
 //Storageから指定された個別のグループのvectorの参照を返す
-void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current,
-	std::vector<std::unique_ptr<Model>>::iterator& itr,std::vector<std::unique_ptr<Model>>::iterator& itr2)
+void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
+	std::vector<std::shared_ptr<Model>>::iterator& itr,std::vector<std::shared_ptr<Model>>::iterator& itr2)
 {
 	itr = current->second.begin();
 	itr2 = current->second.end();
 }
 
 //Storageから指定された全体のunordered_mapの参照を返す
-void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
-	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2)
+void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
+	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2)
 {
 	*itr = sceneModelStorage.begin();
 	*itr2 = sceneModelStorage.end();

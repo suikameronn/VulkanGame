@@ -32,14 +32,19 @@ void GameManager::mainGameLoop()
 {
     start2 = std::chrono::system_clock::now();
 
-    while (!glfwWindowShouldClose(window))
+    while (true)
     {
         start = std::chrono::system_clock::now();
 
         exit = scene->UpdateScene();
+        if (exit)
+        {
+            std::cout << "pose" << std::endl;
+        }
+
         VulkanBase::GetInstance()->render();
 
-        if (exit)
+        if (exit || glfwWindowShouldClose(window))
         {
             break;
         }

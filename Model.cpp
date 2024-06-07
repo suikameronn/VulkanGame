@@ -104,14 +104,6 @@ VkDescriptorSet* Model::getDescriptorSet(uint32_t i)
 	return &descriptorSets[i];
 }
 
-void Model::datasResize()
-{
-	uint32_t size = getMeshesSize();
-
-	//descriptorInfos.resize(size);
-	//descriptorSets.resize(size);
-}
-
 void Model::Update()
 {
 	glm::vec3 pos = { 0,0,0 };

@@ -37,7 +37,7 @@ private:
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
 	Camera* camera;
-	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>,Hash> sceneModelStorage;
+	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>,Hash> sceneModelStorage;
 
 	Storage() {};
 	~Storage()
@@ -73,10 +73,10 @@ public:
 
 	Camera* accessCamera();
 
-	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current, 
-		std::vector<std::unique_ptr<Model>>::iterator& itr, std::vector<std::unique_ptr<Model>>::iterator& itr2);
-	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
-		std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2);
+	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
+		std::vector<std::shared_ptr<Model>>::iterator& itr, std::vector<std::shared_ptr<Model>>::iterator& itr2);
+	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
+		std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2);
 
 	bool containModel(OBJECT obj);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);

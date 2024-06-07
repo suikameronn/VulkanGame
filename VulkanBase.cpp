@@ -66,6 +66,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
+        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
+        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
+        {
+            std::vector<std::shared_ptr<Model>>::iterator beginVec;
+            std::vector<std::shared_ptr<Model>>::iterator endVec;
+            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
+            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
+            {
+                vecItr->reset();
+            }
+        }
+
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoBegin;
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoEnd;
         Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
@@ -75,20 +89,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyPipeline(device, itr->second->pipeline, nullptr);
             vkDestroyPipelineLayout(device, itr->second->pLayout, nullptr);
             vkDestroyDescriptorSetLayout(device, itr->second->layout, nullptr);
-        }
-
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
-        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
-        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
-        {
-            std::vector<std::unique_ptr<Model>>::iterator beginVec;
-            std::vector<std::unique_ptr<Model>>::iterator endVec;
-            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
-            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
-            {
-                vecItr->reset();
-            }
         }
 
         vkDestroyRenderPass(device, renderPass, nullptr);
@@ -1315,8 +1315,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap,&endMap);
         for (auto modelGroup = beginMap; modelGroup != endMap; modelGroup++)
         {
@@ -1338,8 +1338,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 VkDeviceSize offsets[] = { 0 };
 
-                std::vector<std::unique_ptr<Model>>::iterator beginVec;
-                std::vector<std::unique_ptr<Model>>::iterator endVec;
+                std::vector<std::shared_ptr<Model>>::iterator beginVec;
+                std::vector<std::shared_ptr<Model>>::iterator endVec;
                 Storage::GetInstance()->accessModelVector(modelGroup, beginVec, endVec);
                 for (auto model = beginVec; model != endVec; model++)
                 {
@@ -1398,13 +1398,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
         for (auto itr = beginMap; itr != endMap; itr++)
         {
-            std::vector<std::unique_ptr<Model>>::iterator beginVec;
-            std::vector<std::unique_ptr<Model>>::iterator endVec;
+            std::vector<std::shared_ptr<Model>>::iterator beginVec;
+            std::vector<std::shared_ptr<Model>>::iterator endVec;
             Storage::GetInstance()->accessModelVector(itr, beginVec, endVec);
             for (auto model = beginVec; model != endVec; model++)
             {
