@@ -6,7 +6,7 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()
 {
-    frameDuration = (100 / fps) * 1000;
+    frameDuration = (1.0f / (fps * 2)) * 1000;
 
     VulkanBase::GetInstance()->initVulkan();
 
@@ -30,7 +30,6 @@ void GameManager::createScene()
 
 void GameManager::mainGameLoop()
 {
-    start2 = std::chrono::system_clock::now();
 
     while (true)
     {
@@ -50,10 +49,14 @@ void GameManager::mainGameLoop()
         }
 
         end = std::chrono::system_clock::now();
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() * 1000;
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         if (elapsed < frameDuration)
         {
-            std::this_thread::sleep_for(std::chrono::microseconds(frameDuration - elapsed));
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));
+        }
+        else
+        {
+            std::cout << "fps down" << std::endl;
         }
         
 
