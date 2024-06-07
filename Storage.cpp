@@ -11,10 +11,10 @@ void Storage::cleanup()
 	}
 }
 
-//StorageにMeshesを追加する
-void Storage::addFbx(OBJECT obj, FbxModel* meshes)
+//StorageにFbxModelを追加する
+void Storage::addModel(OBJECT obj, FbxModel* model)
 {
-	fbxModelStorage[obj] = std::shared_ptr<FbxModel>(meshes);
+	fbxModelStorage[obj] = std::shared_ptr<FbxModel>(model);
 }
 
 //StorageにDescriptorInfoを追加する
@@ -33,13 +33,7 @@ void Storage::setCamera(Camera* c)
 void Storage::addModel(Model* model)
 {
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[model->getDescriptorInfo()].push_back(std::move(std::unique_ptr<Model>(model)));
-}
-
-//Storageから指定されたFbxModelへの参照を返す
-FbxModel* Storage::accessFbxModel(OBJECT obj)
-{
-	return fbxModelStorage[obj].get();
+	sceneModelStorage[model->getDescriptorInfo(0)].push_back(std::shared_ptr<Model>(model));
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
@@ -63,23 +57,23 @@ Camera* Storage::accessCamera()
 }
 
 //Storageから指定された個別のグループのvectorの参照を返す
-void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current,
-	std::vector<std::unique_ptr<Model>>::iterator& itr,std::vector<std::unique_ptr<Model>>::iterator& itr2)
+void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
+	std::vector<std::shared_ptr<Model>>::iterator& itr,std::vector<std::shared_ptr<Model>>::iterator& itr2)
 {
 	itr = current->second.begin();
 	itr2 = current->second.end();
 }
 
 //Storageから指定された全体のunordered_mapの参照を返す
-void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
-	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2)
+void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
+	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2)
 {
 	*itr = sceneModelStorage.begin();
 	*itr2 = sceneModelStorage.end();
 }
 
-//Storageに指定されたMeshesがすでに存在するかどうかを返す
-bool Storage::containFbxModel(OBJECT obj)
+//Storageに指定されあFbxModelが既に存在しているかどうかを返す
+bool Storage::containModel(OBJECT obj)
 {
 	if (fbxModelStorage[obj] != nullptr)
 	{
@@ -104,8 +98,8 @@ bool Storage::containDescriptorInfo(std::bitset<8> layoutBit)
 	}
 }
 
-//Storageに格納されたFbxModelのサイズを返す
-uint32_t Storage::getSizeFbxModelStorage()
+//StorageからFbxModelを読み取る
+std::shared_ptr<FbxModel> Storage::getFbxModel(OBJECT obj)
 {
-	return fbxModelStorage.size();
+	return fbxModelStorage[obj];
 }

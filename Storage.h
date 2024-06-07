@@ -31,12 +31,13 @@ struct Hash {
 class Storage
 {
 private:
+	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>> fbxModelStorage;
 
 	std::vector<std::shared_ptr<FbxModel>> fbxModelStorage;
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
 	Camera* camera;
-	std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>,Hash> sceneModelStorage;
+	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>,Hash> sceneModelStorage;
 
 	Storage() {};
 	~Storage()
@@ -58,13 +59,13 @@ public:
 		return storage;
 	}
 
-	void addFbx(OBJECT obj,FbxModel* model);
+	void addModel(OBJECT obj, FbxModel* geo);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
 	void setCamera(Camera* c);
 	void addModel(Model* model);
 
-	FbxModel* accessFbxModel(OBJECT obj);
+	std::shared_ptr<FbxModel> getFbxModel(OBJECT obj);
 
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
@@ -72,15 +73,13 @@ public:
 
 	Camera* accessCamera();
 
-	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator current, 
-		std::vector<std::unique_ptr<Model>>::iterator& itr, std::vector<std::unique_ptr<Model>>::iterator& itr2);
-	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr,
-		std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator* itr2);
+	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
+		std::vector<std::shared_ptr<Model>>::iterator& itr, std::vector<std::shared_ptr<Model>>::iterator& itr2);
+	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
+		std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2);
 
-	bool containFbxModel(OBJECT obj);
+	bool containModel(OBJECT obj);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);
-
-	uint32_t getSizeFbxModelStorage();
 
 	static void FinishStorage()
 	{

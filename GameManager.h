@@ -21,10 +21,10 @@ private:
 	static GameManager* gameManager;
 	
 	const int fps = 60;
-	int frameDuration;
+	float frameDuration;
 	std::chrono::system_clock::time_point  start, end;
 	std::chrono::system_clock::time_point  start2, end2;
-	int elapsed;
+	float elapsed;
 
 	bool exit = false;
 	std::unique_ptr<Scene> scene;

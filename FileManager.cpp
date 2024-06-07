@@ -1,8 +1,5 @@
 #include"FileManager.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include<tiny_obj_loader.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -10,12 +7,6 @@ FileManager* FileManager::fileManager = nullptr;
 
 FileManager::FileManager()
 {
-    manager = FbxManager::Create();
-    ios = FbxIOSettings::Create(manager, IOSROOT);
-    manager->SetIOSettings(ios);
-    importer = FbxImporter::Create(manager, "");
-    scene = FbxScene::Create(manager, "");
-    converter = new FbxGeometryConverter(manager);
 
     indexSize = 0;
 }
@@ -33,144 +24,55 @@ std::string FileManager::getModelPath(OBJECT obj)
     }
 }
 
-void FileManager::loadMesh(Meshes* meshes,FbxMesh* mesh)
+std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 {
-    int i, j;
-    for (i = 0; i < mesh->GetPolygonCount(); i++)
+    Storage* storage = Storage::GetInstance();
+    if (storage->containModel(obj))
     {
-        meshes->pushBackIndex(i * 3 + indexSize);
-        meshes->pushBackIndex(i * 3 + 1 + indexSize);
-        meshes->pushBackIndex(i * 3 + 2 + indexSize);
+        return storage->getFbxModel(obj);
     }
 
-    //頂点バッファの取得
-    FbxVector4* verticesFbx = mesh->GetControlPoints();
-    //インデックスバッファの取得
-    int* indicesFbx = mesh->GetPolygonVertices();
-    //頂点座標の数の取得
-    int polygonVertexCount = mesh->GetPolygonVertexCount();
+    FbxModel* fbxModel = new FbxModel();
 
-    //法線リストの取得
-    FbxArray<FbxVector4> normals;
-    //法線リスト取得
-    mesh->GetPolygonVertexNormals(normals);
+    const aiScene* scene = importer.ReadFile(getModelPath(obj), 
+        aiProcess_CalcTangentSpace |
+        aiProcess_Triangulate |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_SortByPType);
 
-    //uvセットの名前保存
-    FbxStringList uvSetName;
-    //uvセットの名前リスト取得
-    mesh->GetUVSetNames(uvSetName);
-    FbxArray<FbxVector2> uvBuffer;
-    //UVSetの名前からUVSetを取得する
-    mesh->GetPolygonVertexUVs(uvSetName.GetStringAt(0), uvBuffer);
-
-    //GetPolygonVertexCount:頂点数
-    for (i = 0; i < polygonVertexCount; i++)
+    if (scene == nullptr)
     {
-        Vertex vertex{};
-        //インデックスバッファから頂点番号を取得
-        int index = indicesFbx[i];
-
-        //頂点座標リストから座標を取得する
-        if (indexSize != 0)
-        {
-            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.1f, verticesFbx[index][1], verticesFbx[index][2]);
-        }
-        else
-        {
-            vertex.pos = glm::vec3(verticesFbx[index][0] + 0.0f, verticesFbx[index][1], verticesFbx[index][2]);
-        }
-        vertex.normal = glm::vec3(normals[index][0], normals[index][1], normals[index][2]);
-        vertex.texCoord = glm::vec2(uvBuffer[index][0], uvBuffer[index][1]);
-
-        meshes->pushBackVertex(&vertex);
+        throw std::runtime_error("scene error");
     }
 
-    indexSize += mesh->GetPolygonCount() * 3;
+    processNode(scene->mRootNode,scene,fbxModel);
+
+    storage->addModel(obj,fbxModel);
+    return storage->getFbxModel(obj);
 }
 
-FbxModel* FileManager::loadModel(OBJECT obj)
+void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel* model)
 {
-    if (Storage::GetInstance()->containFbxModel(obj))
+
+    for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        return Storage::GetInstance()->accessFbxModel(obj);
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        meshes = processAiMesh(mesh, scene);
+        model->addMeshes(meshes);
     }
 
-    FbxModel* model = new FbxModel();
-
-    indexSize = 0;
-
-    converter = new FbxGeometryConverter(manager);
-    converter->Triangulate(scene,true);
-
-    if (importer->Initialize(getModelPath(obj).c_str()))
+    // then do the same for each of its children
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        throw std::runtime_error("load model error");
-    }
-
-    if (importer->Import(scene))
-    {
-        throw std::runtime_error("load scene error");
-    }
-
-    FbxNode* rootNode = scene->GetRootNode();
-    if (rootNode == nullptr)
-    {
-        throw std::runtime_error("rootNode error");
-    }
-
-    for (int i = 0; i < rootNode->GetChildCount(); i++)
-    {
-        FbxNode* child = rootNode->GetChild(i);
-        FbxNodeAttribute::EType type = child->GetNodeAttribute()->GetAttributeType();
-
-        switch (type)
-        {
-        case FbxNodeAttribute::EType::eMesh:
-            FbxMesh* mesh = (FbxMesh*)child->GetNodeAttribute();
-            loadMesh(model->getMeshes(),mesh);
-            break;
-        }
+        processNode(node->mChildren[i], scene,model);
     }
 }
 
-/*
-Meshes* FileManager::loadObj(OBJECT obj)
+Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
 {
-    if (Storage::GetInstance()->containMeshes(obj))
-    {
-        return Storage::GetInstance()->accessObj(obj);
-    }
+    meshes = new Meshes();
 
-    Meshes* meshes = new Meshes();
-
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, getModelPath(obj).c_str()))
-    {
-        throw std::runtime_error(warn + err);
-    }
-
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-    for (const auto& shape : shapes)//すべてのシェイプの数だけ繰り返す
-    {
-        for (const auto& index : shape.mesh.indices)//指定のシェイプを構成するメッシュの数だけ繰り返す
-        {
-            Vertex vertex{};
-
-            vertex.pos =
-            {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
-
-            vertex.texCoord =
-            {
-                attrib.texcoords[2 * index.texcoord_index + 0],
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
             };
 
@@ -187,9 +89,65 @@ Meshes* FileManager::loadObj(OBJECT obj)
             {
                 uniqueVertices[vertex] = meshes->getVerticesSize();
                 meshes->pushBackVertex(&vertex);
-            }
 
-            meshes->pushBackIndex(uniqueVertices[vertex]);
+    indexSize += mesh->GetPolygonCount() * 3;
+}
+
+Meshes* FileManager::loadPointsFbx(OBJECT obj)
+{
+    if (Storage::GetInstance()->containMeshes(obj))
+    {
+        return Storage::GetInstance()->accessObj(obj);
+    }
+
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned int j = 0; j < face.mNumIndices; j++)
+        {
+            meshes->pushBackIndex(face.mIndices[j]);
+    }
+
+    //頂点バッファの取得
+    FbxVector4* verticesFbx = mesh->GetControlPoints();
+    //インデックスバッファの取得
+    int* indicesFbx = mesh->GetPolygonVertices();
+    //頂点座標の数の取得
+    int polygonVertexCount = mesh->GetPolygonVertexCount();
+    
+ImageData* FileManager::loadModelImage(std::string filePath)
+{
+        vertex.normal = glm::vec3(mesh->mNormals[i].x, -mesh->mNormals[i].y, mesh->mNormals[i].z);
+
+        if (mesh->mTextureCoords[0])
+        {
+            vertex.texCoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+        }
+        else
+        {
+            vertex.texCoord = glm::vec2(0.0f, 0.0f);
+        }
+
+        meshes->pushBackVertex(&vertex);
+    }
+}    }
+
+    Meshes* meshes = new Meshes();
+
+    /*fbxファイルの読み込み*/
+    importer->Initialize(getModelPath(obj).c_str(), -1, manager->GetIOSettings());
+    importer->Import(scene);
+
+    //三角ポリゴン化
+    converter->Triangulate(scene, true);
+
+    FbxNode* node = scene->GetRootNode();
+
+    if (node)
+    {
+        for (int i = 0; i < node->GetChildCount(); i++)
+        {
+            loadPointsFbx(meshes,node->GetChild(i));
         }
     }
 
@@ -210,7 +168,6 @@ std::string FileManager::getImagePath(IMAGE image)
     }
 }
 
-/*
 ImageData* FileManager::loadModelImage(IMAGE image)
 {
     if (Storage::GetInstance()->containImageData(image))
@@ -221,7 +178,7 @@ ImageData* FileManager::loadModelImage(IMAGE image)
     int width, height, texChannels;
     std::vector<unsigned char> pixels;
 
-    unsigned char* picture = stbi_load(getImagePath(image).c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    unsigned char* picture = stbi_load(filePath.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
     if (!picture)
     {
         throw std::runtime_error("faile image load");
@@ -236,4 +193,3 @@ ImageData* FileManager::loadModelImage(IMAGE image)
 
     return Storage::GetInstance()->accessImage(image);
 }
-*/

@@ -1,7 +1,10 @@
 #pragma once
 #include<iostream>
+<<<<<<< HEAD
 #include"FbxModel.h"
 #include "fbxsdk.h"
+=======
+>>>>>>> master
 
 #include"Storage.h"
 
@@ -22,9 +25,9 @@ private:
 
 	//画像ファイルのパスを入れる
 	std::string imagePath;
-	std::string getImagePath(IMAGE image);
 	ImageData* imageData = nullptr;
 
+<<<<<<< HEAD
 	FbxManager* manager;
 	FbxIOSettings* ios;
 	FbxImporter* importer;
@@ -34,6 +37,17 @@ private:
 	int indexSize;
 
 	void loadMesh(Meshes* meshes, FbxMesh* node);
+=======
+	int vertSize = 0;
+	int indexSize = 0;
+
+	Assimp::Importer importer;
+	Meshes* meshes;
+	Material* material;
+
+	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
+	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
+>>>>>>> master
 
 public:
 	static FileManager* GetInstance()
@@ -54,12 +68,12 @@ public:
 	~FileManager()
 	{
 		fileManager = nullptr;
-
-		delete converter;
-		importer->Destroy();
-		ios->Destroy();
-		manager->Destroy();
 	}
 
+<<<<<<< HEAD
 	FbxModel* loadModel(OBJECT obj);
+=======
+	std::shared_ptr<FbxModel> loadModel(OBJECT obj);
+	ImageData* loadModelImage(std::string filePath);
+>>>>>>> master
 };

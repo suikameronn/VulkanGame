@@ -66,6 +66,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
+        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
+        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
+        {
+            std::vector<std::shared_ptr<Model>>::iterator beginVec;
+            std::vector<std::shared_ptr<Model>>::iterator endVec;
+            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
+            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
+            {
+                vecItr->reset();
+            }
+        }
+
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoBegin;
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoEnd;
         Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
@@ -75,20 +89,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyPipeline(device, itr->second->pipeline, nullptr);
             vkDestroyPipelineLayout(device, itr->second->pLayout, nullptr);
             vkDestroyDescriptorSetLayout(device, itr->second->layout, nullptr);
-        }
-
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
-        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
-        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
-        {
-            std::vector<std::unique_ptr<Model>>::iterator beginVec;
-            std::vector<std::unique_ptr<Model>>::iterator endVec;
-            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
-            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
-            {
-                vecItr->reset();
-            }
         }
 
         vkDestroyRenderPass(device, renderPass, nullptr);
@@ -705,8 +705,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createTextureImage(Model* model)
     {
-        ImageData* imageData = model->getMaterial()->getImageData();
-        TextureData* textureData = model->getTextureData();
+        ImageData* imageData = nullptr;
+        //ImageData* imageData = model->getMaterial()->getImageData();
+        TextureData* textureData = model->getTextureData(0);
 
         VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
 
@@ -822,13 +823,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     void VulkanBase::createTextureImageView(Model* model) {
-        TextureData* textureData = model->getTextureData();
+        TextureData* textureData = model->getTextureData(0);
         textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
     }
 
     void VulkanBase::createTextureSampler(Model* model) 
     {
-        TextureData* textureData = model->getTextureData();
+        TextureData* textureData = model->getTextureData(0);
 
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -1003,58 +1004,68 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createVertexBuffer(Model* model) 
     {
-        Meshes* meshes = model->getMeshes();
-        VkDeviceSize bufferSize = sizeof(*meshes->getVertItr()) * meshes->getVerticesSize();
+        uint32_t i;
+        for (i = 0; i < model->getMeshesSize(); i++)
+        {
+            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
+            VkDeviceSize bufferSize = sizeof(*meshes->getVertItr()) * meshes->getVerticesSize();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+            VkBuffer stagingBuffer;
+            VkDeviceMemory stagingBufferMemory;
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, meshes->getVertexPoint(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+            void* data;
+            vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            memcpy(data, meshes->getVertexPoint(), (size_t)bufferSize);
+            vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer()->vertBuffer, model->getPointBuffer()->vertHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(i)->vertBuffer, model->getPointBuffer(i)->vertHandler);
 
-        //vertexBuffer配列にコピーしていく(vector型)
-        copyBuffer(stagingBuffer, model->getPointBuffer()->vertBuffer, bufferSize);
+            //vertexBuffer配列にコピーしていく(vector型)
+            copyBuffer(stagingBuffer, model->getPointBuffer(i)->vertBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+            vkDestroyBuffer(device, stagingBuffer, nullptr);
+            vkFreeMemory(device, stagingBufferMemory, nullptr);
+        }
     }
 
     void VulkanBase::createIndexBuffer(Model* model) 
     {
-        Meshes* meshes = model->getMeshes();
-        VkDeviceSize bufferSize = sizeof(*meshes->getIndiItr()) * meshes->getIndicesSize();
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        {
+            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
+            VkDeviceSize bufferSize = sizeof(*meshes->getIndiItr()) * meshes->getIndicesSize();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+            VkBuffer stagingBuffer;
+            VkDeviceMemory stagingBufferMemory;
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, meshes->getIndexPoint(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+            void* data;
+            vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            memcpy(data, meshes->getIndexPoint(), (size_t)bufferSize);
+            vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer()->indeBuffer, model->getPointBuffer()->indeHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(i)->indeBuffer, model->getPointBuffer(i)->indeHandler);
 
-        copyBuffer(stagingBuffer, model->getPointBuffer()->indeBuffer, bufferSize);
+            copyBuffer(stagingBuffer, model->getPointBuffer(i)->indeBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+            vkDestroyBuffer(device, stagingBuffer, nullptr);
+            vkFreeMemory(device, stagingBufferMemory, nullptr);
+        }
     }
 
     void VulkanBase::createUniformBuffer(Model* model)
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        MappedBuffer* mappedBuffer = model->getMappedBuffer();
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        {
+            MappedBuffer* mappedBuffer = model->getMappedBuffer(i);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer,mappedBuffer->uniformBufferMemory);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
-        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+            vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+        }
     }
 
     /*
@@ -1093,7 +1104,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
         //ubo.normal = mat;
 
-        memcpy(model->getMappedBuffer()->uniformBufferMapped, &ubo, sizeof(ubo));
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        {
+            memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
+        }
     }
 
     void VulkanBase::createDescriptorPool(Model* model, VkDescriptorPool& pool)
@@ -1117,59 +1131,69 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::allocateDescriptorSets(Model* model)
     {
-        VkDescriptorSetLayout* layouts = &model->getDescriptorInfo()->layout;
-        VkDescriptorPool* pool = &model->getDescriptorInfo()->pool;
-
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = *pool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = layouts;
-
-        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
+            VkDescriptorSetLayout* layouts = &model->getDescriptorInfo(i)->layout;
+            VkDescriptorPool* pool = &model->getDescriptorInfo(i)->pool;
 
-        if (descriptorSetCount > 100)
-        {
-            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
-        }
-        descriptorSetCount++;
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = *pool;
+            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+            allocInfo.pSetLayouts = layouts;
 
-        model->setDescriptorSet(&descriptorSet);
+            if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            if (descriptorSetCount > 100)
+            {
+                throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+            }
+            descriptorSetCount++;
+
+            model->setDescriptorSet(&descriptorSet);
+        }
     }
 
     void VulkanBase::createDescriptorSets(Model* model)
     {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = model->getMappedBuffer()->uniformBuffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        {
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = model->getMappedBuffer(i)->uniformBuffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBufferObject);
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = *model->getDescriptorSet();
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
+            std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = *model->getDescriptorSet(i);
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = model->getTextureData()->view;
-        imageInfo.sampler = model->getTextureData()->sampler;
+            /*
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = model->getTextureData()->view;
+            imageInfo.sampler = model->getTextureData()->sampler;
+            */
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = *model->getDescriptorSet();
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
+            /*
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = *model->getDescriptorSet(i);
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo = &imageInfo;
+            */
 
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
     }
 
     void VulkanBase::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
@@ -1291,8 +1315,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap,&endMap);
         for (auto modelGroup = beginMap; modelGroup != endMap; modelGroup++)
         {
@@ -1314,18 +1338,21 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 VkDeviceSize offsets[] = { 0 };
 
-                std::vector<std::unique_ptr<Model>>::iterator beginVec;
-                std::vector<std::unique_ptr<Model>>::iterator endVec;
+                std::vector<std::shared_ptr<Model>>::iterator beginVec;
+                std::vector<std::shared_ptr<Model>>::iterator endVec;
                 Storage::GetInstance()->accessModelVector(modelGroup, beginVec, endVec);
                 for (auto model = beginVec; model != endVec; model++)
                 {
-                    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer()->vertBuffer, offsets);
+                    for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
+                    {
+                        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer(i)->vertBuffer, offsets);
 
-                    vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+                        vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer(i)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*model)->getDescriptorInfo()->pLayout, 0, 1, (*model)->getDescriptorSet(), 0, nullptr);
+                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*model)->getDescriptorInfo(i)->pLayout, 0, 1, (*model)->getDescriptorSet(i), 0, nullptr);
 
-                    vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes()->getIndicesSize(), 1, 0, 0, 0);
+                        vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
+                    }
                 }
         }
 
@@ -1371,13 +1398,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::unique_ptr<Model>>, Hash>::iterator endMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
         Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
         for (auto itr = beginMap; itr != endMap; itr++)
         {
-            std::vector<std::unique_ptr<Model>>::iterator beginVec;
-            std::vector<std::unique_ptr<Model>>::iterator endVec;
+            std::vector<std::shared_ptr<Model>>::iterator beginVec;
+            std::vector<std::shared_ptr<Model>>::iterator endVec;
             Storage::GetInstance()->accessModelVector(itr, beginVec, endVec);
             for (auto model = beginVec; model != endVec; model++)
             {
@@ -1636,23 +1663,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createDescriptorInfo(Model* model)
     {
         auto layoutBit = model->getLayoutBit();
-        if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
+
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
+            if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
+            {
+                model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
+                return;
+            }
+
+            /*ディスクリプタレイアウトを持たせる*/
+            createDescriptorSetLayout(model, info.layout);
+
+            /*ディスクリプタプールを作る*/
+            createDescriptorPool(model, info.pool);
+
+            /*グラフィックスパイプラインを作る*/
+            createGraphicsPipeline(model, info.layout, info.pLayout, info.pipeline);
+
+            Storage::GetInstance()->addDescriptorInfo(layoutBit, &info);
             model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
-            return;
         }
-
-        /*ディスクリプタレイアウトを持たせる*/
-        createDescriptorSetLayout(model,info.layout);
-
-        /*ディスクリプタプールを作る*/
-        createDescriptorPool(model,info.pool);
-
-        /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline(model,info.layout,info.pLayout,info.pipeline);
-
-        Storage::GetInstance()->addDescriptorInfo(layoutBit, &info);
-        model->setDescriptorInfo(&info);
     }
 
     void VulkanBase::setModelData(Model* model)
@@ -1664,7 +1695,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createUniformBuffer(model);
 
         /*テクスチャ関連の設定を持たせる*/
-        createTextureData(model);
+        //createTextureData(model);
 
         /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
         /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/

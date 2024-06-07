@@ -71,6 +71,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>false</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -105,14 +108,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\VulkanProject\OpenGL\include;$(SolutionDir)\VulkanProject\FBX\include;$(SolutionDir)\VulkanProject\VulkanSDK\1.3.275.0\Include;$(SolutionDir)\VulkanProject\GLM;$(SolutionDir)\VulkanProject\LoadModel</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>OpenGL\include;$(SolutionDir)\FBX\include;VulkanSDK\1.3.275.0\Include;GLM;$(SolutionDir)\LoadModel</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\VulkanProject\OpenGL\lib;$(SolutionDir)\VulkanProject\VulkanSDK\1.3.275.0\Lib;$(SolutionDir)\VulkanProject\GLM;$(SolutionDir)\VulkanProject\FBX\lib\x64\debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;libfbxsdk.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -123,7 +126,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\VulkanProject\OpenGL\include;$(SolutionDir)\VulkanProject\FBX\include;$(SolutionDir)\VulkanProject\VulkanSDK\1.3.275.0\Include;$(SolutionDir)\VulkanProject\GLM;$(SolutionDir)\VulkanProject\LoadModel</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>OpenGL\include;$(SolutionDir)\FBX\include;VulkanSDK\1.3.275.0\Include;GLM;$(SolutionDir)\LoadModel</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -131,8 +134,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\VulkanProject\OpenGL\lib;$(SolutionDir)\VulkanProject\VulkanSDK\1.3.275.0\Lib;$(SolutionDir)\VulkanProject\GLM;$(SolutionDir)\VulkanProject\FBX\lib\x64\release</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;libfbxsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
