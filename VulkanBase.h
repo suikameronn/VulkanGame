@@ -1,9 +1,5 @@
 #pragma once
 
-#define STB_IMAGE_IMPLEMENTATION
-#define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLFW_INCLUDE_VULKAN
 
 #include "GLFW/glfw3.h"
@@ -164,10 +160,10 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
-    void createTextureImage(Model* model);
+    void createTextureImage(std::shared_ptr<Material> material);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView(Model* model);
-    void createTextureSampler(Model* model);
+    void createTextureImageView(std::shared_ptr<Material> material);
+    void createTextureSampler(std::shared_ptr<Material> material);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);

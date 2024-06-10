@@ -102,6 +102,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkDestroyCommandPool(device, commandPool, nullptr);
 
         //この時点でgpu側に作った変数を破棄して置かなければならない
+        //deviceの変数を使って作る変数も破棄
         vkDestroyDevice(device, nullptr);
 
         if (enableValidationLayers) {
@@ -703,11 +704,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return std::floor(std::log2(std::max(width, height))) + 1;
     }
 
-    void VulkanBase::createTextureImage(Model* model)
+    void VulkanBase::createTextureImage(std::shared_ptr<Material> material)
     {
-        ImageData* imageData = nullptr;
-        //ImageData* imageData = model->getMaterial()->getImageData();
-        TextureData* textureData = model->getTextureData(0);
+        std::shared_ptr<ImageData> imageData = material->getImageData();
+        TextureData* textureData = material->getTextureData();
 
         VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
 
@@ -822,14 +822,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::createTextureImageView(Model* model) {
-        TextureData* textureData = model->getTextureData(0);
+    void VulkanBase::createTextureImageView(std::shared_ptr<Material> material) {
+        TextureData* textureData = material->getTextureData();
         textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
     }
 
-    void VulkanBase::createTextureSampler(Model* model) 
+    void VulkanBase::createTextureSampler(std::shared_ptr<Material> material)
     {
-        TextureData* textureData = model->getTextureData(0);
+        TextureData* textureData = material->getTextureData();
 
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -1655,9 +1655,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createTextureData(Model* model)
     {
-        createTextureImage(model);
-        createTextureImageView(model);
-        createTextureSampler(model);
+        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        {
+            std::shared_ptr<Material> material = model->getMeshes(i)->getMaterial();
+
+            createTextureImage(material);
+            createTextureImageView(material);
+            createTextureSampler(material);
+        }
     }
 
     void VulkanBase::createDescriptorInfo(Model* model)
@@ -1695,7 +1700,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createUniformBuffer(model);
 
         /*テクスチャ関連の設定を持たせる*/
-        //createTextureData(model);
+        createTextureData(model);
 
         /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
         /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/

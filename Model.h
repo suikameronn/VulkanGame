@@ -46,15 +46,6 @@ struct MappedBuffer
 	void* uniformBufferMapped;
 };
 
-struct TextureData
-{
-	uint32_t mipLevel;
-	VkImage image;
-	VkDeviceMemory memory;
-	VkImageView view;
-	VkSampler sampler;
-};
-
 class Model:public Object
 {
 protected:
@@ -64,8 +55,6 @@ protected:
 
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
-
-	std::vector<TextureData> textureDatas;
 
 	std::vector<DescriptorInfo*> descriptorInfos;
 	std::vector<VkDescriptorSet> descriptorSets;//VkDescriptorPoolÇ™îjä¸Ç≥ÇÍÇÍÇŒé©ìÆÇ≈è¡Ç≥ÇÍÇÈÅB
@@ -89,7 +78,6 @@ public:
 
 	BufferObject* getPointBuffer(uint32_t i);
 	MappedBuffer* getMappedBuffer(uint32_t i);
-	TextureData* getTextureData(uint32_t i);
 	std::bitset<8> getLayoutBit();
 	VkDescriptorSet* getDescriptorSet(uint32_t i);
 

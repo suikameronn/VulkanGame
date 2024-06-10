@@ -1,4 +1,10 @@
 #include"Meshes.h"
+#include"VulkanBase.h"
+
+Meshes::~Meshes()
+{
+
+}
 
 void Meshes::pushBackVertex(Vertex* v)
 {
@@ -8,6 +14,11 @@ void Meshes::pushBackVertex(Vertex* v)
 void Meshes::pushBackIndex(uint32_t i)
 {
 	indices.push_back(i);
+}
+
+void Meshes::setMaterial(std::shared_ptr<Material> material)
+{
+	this->material = material;
 }
 
 std::vector<Vertex>::iterator Meshes::getVertItr()

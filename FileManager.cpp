@@ -57,7 +57,10 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel*
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes = processAiMesh(mesh, scene);
+        Meshes* meshes = processAiMesh(mesh, scene);
+
+        std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
+        meshes->setMaterial(material);
         model->addMeshes(meshes);
     }
 
@@ -70,7 +73,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel*
 
 Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
 {
-    meshes = new Meshes();
+    Meshes* meshes = new Meshes();
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
@@ -102,19 +105,91 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
     return meshes;
 }
 
-ImageData* FileManager::loadModelImage(std::string filePath)
+std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)
 {
+    std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
+
+    aiMaterial* aiMat = scene->mMaterials[index];
+
+    glm::vec3 v;
+    
+    aiColor3D diffuse{};
+    aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+
+    aiColor3D ambient{};
+    aiMat->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
+
+    aiColor3D specular{};
+    aiMat->Get(AI_MATKEY_COLOR_SPECULAR, specular);
+
+    aiColor3D emissive{};
+    aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissive);
+
+    float shininess;
+    aiMat->Get(AI_MATKEY_SHININESS, shininess);
+
+    aiColor3D transparent{};
+    aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, transparent);
+
+    if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+    {
+        aiString Path;
+        if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+        {
+            std::string path = Path.data;
+            std::shared_ptr<ImageData> imageData = loadModelImage(path);
+
+            material->setImageData(imageData);
+        }
+
+        Path.Clear();
+    }
+
+    return material;
+}
+
+std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
+{
+    Storage* storage = Storage::GetInstance();
+
+    HRESULT hr = S_OK;
+    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDB_PNG1), L"PNG");
+    hr = (hrsrc ? S_OK : E_FAIL);
+
+    HGLOBAL handle = NULL;
+    if (SUCCEEDED(hr)) {
+        handle = LoadResource(NULL, hrsrc);
+        hr = (handle ? S_OK : E_FAIL);
+    }
+
+    void* pFile = nullptr;
+    if (SUCCEEDED(hr)) {
+        pFile = LockResource(handle);
+        hr = (pFile ? S_OK : E_FAIL);
+    }
+
+    int size = 0;
+    if (SUCCEEDED(hr)) {
+        size = SizeofResource(NULL, hrsrc);
+        hr = (size ? S_OK : E_FAIL);
+    }
+
     int width, height, texChannels;
     std::vector<unsigned char> pixels;
 
-    unsigned char* picture = stbi_load(filePath.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    stbi_uc* picture = nullptr;
+    picture = stbi_load_from_memory((unsigned char*)pFile,size,&width,&height,&texChannels,4);
     if (!picture)
     {
         throw std::runtime_error("faile image load");
     }
 
     int imageSize = width * height * 4;
-    imageData = new ImageData(width,height,texChannels,picture);
+    ImageData* imageData = new ImageData(width,height,texChannels,picture);
 
     stbi_image_free(picture);
+
+    storage->addImageData(filePath,imageData);
+
+    return storage->getImageData(filePath);
 }

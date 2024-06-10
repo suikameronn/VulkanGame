@@ -33,6 +33,7 @@ class Storage
 {
 private:
 	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>> fbxModelStorage;
+	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
@@ -60,12 +61,14 @@ public:
 	}
 
 	void addModel(OBJECT obj, FbxModel* geo);
+	void addImageData(std::string, ImageData* image);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
 	void setCamera(Camera* c);
 	void addModel(Model* model);
 
 	std::shared_ptr<FbxModel> getFbxModel(OBJECT obj);
+	std::shared_ptr<ImageData> getImageData(std::string path);
 
 	DescriptorInfo* accessDescriptorInfo(std::bitset<8> layoutBit);
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
@@ -79,6 +82,7 @@ public:
 		std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2);
 
 	bool containModel(OBJECT obj);
+	bool containImageData(std::string path);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);
 
 	static void FinishStorage()

@@ -19,11 +19,12 @@ uint32_t FbxModel::getMeshesSize()
 	return meshes.size();
 }
 
-
+/*
 std::shared_ptr<Material> FbxModel::accessMaterial()
 {
 	return material;
 }
+*/
 
 /*
 

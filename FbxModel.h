@@ -11,7 +11,6 @@ class FbxModel
 {
 private:
 	std::vector<std::shared_ptr<Meshes>> meshes;
-	std::shared_ptr<Material> material;
 
 	float startFrame;
 	float endFrame;
@@ -26,7 +25,6 @@ public:
 	void addMeshes(Meshes* mesh);
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
-	std::shared_ptr<Material> accessMaterial();
 
 	uint32_t getMeshesSize();
 

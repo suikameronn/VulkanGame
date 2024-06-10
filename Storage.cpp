@@ -17,6 +17,11 @@ void Storage::addModel(OBJECT obj, FbxModel* model)
 	fbxModelStorage[obj] = std::shared_ptr<FbxModel>(model);
 }
 
+void Storage::addImageData(std::string path,ImageData* image)
+{
+	imageDataStorage[path] = std::shared_ptr<ImageData>(image);
+}
+
 //StorageÇ…DescriptorInfoÇí«â¡Ç∑ÇÈ
 void Storage::addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info)
 {
@@ -85,6 +90,18 @@ bool Storage::containModel(OBJECT obj)
 	}
 }
 
+bool Storage::containImageData(std::string path)
+{
+	if (imageDataStorage[path] != nullptr)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 //StorageÇ…éwíËÇ≥ÇÍÇΩDescritporInfoÇ™Ç∑Ç≈Ç…ë∂ç›Ç∑ÇÈÇ©Ç«Ç§Ç©Çï‘Ç∑
 bool Storage::containDescriptorInfo(std::bitset<8> layoutBit)
 {
@@ -102,4 +119,9 @@ bool Storage::containDescriptorInfo(std::bitset<8> layoutBit)
 std::shared_ptr<FbxModel> Storage::getFbxModel(OBJECT obj)
 {
 	return fbxModelStorage[obj];
+}
+
+std::shared_ptr<ImageData> Storage::getImageData(std::string path)
+{
+	return imageDataStorage[path];
 }

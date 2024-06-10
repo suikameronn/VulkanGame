@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
-
+#include <windows.h>
+#include "resource1.h"
 #include"Storage.h"
 
 enum OBJECT;
@@ -20,17 +21,17 @@ private:
 
 	//画像ファイルのパスを入れる
 	std::string imagePath;
-	ImageData* imageData = nullptr;
 
 	int vertSize = 0;
 	int indexSize = 0;
 
 	Assimp::Importer importer;
-	Meshes* meshes;
-	Material* material;
 
 	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
 	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
+	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
+
+	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 public:
 	static FileManager* GetInstance()
@@ -54,5 +55,4 @@ public:
 	}
 
 	std::shared_ptr<FbxModel> loadModel(OBJECT obj);
-	ImageData* loadModelImage(std::string filePath);
 };

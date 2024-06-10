@@ -1,7 +1,15 @@
 #pragma once
+
+#define STB_IMAGE_IMPLEMENTATION
+#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include<iostream>
 #include<vector>
+#include<vulkan/vulkan.h>
 #include<glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
 class ImageData
 {
@@ -58,6 +66,15 @@ public:
 	}
 };
 
+struct TextureData
+{
+	uint32_t mipLevel;
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView view;
+	VkSampler sampler;
+};
+
 class Material
 {
 private:
@@ -70,13 +87,16 @@ private:
 	glm::vec3 transmissive;
 
 	//テクスチャのもととなる画像データへのポインタ
-	ImageData* texture = nullptr;
+	std::shared_ptr<ImageData> image = nullptr;
+	TextureData* textureData = nullptr;
 
 public:
 
 	Material();
 	Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
 		, glm::vec3* emissive, float* shininess, glm::vec3* transmissive);
+
+	~Material();
 
 	void setDiffuse(glm::vec3* diffuse) { this->diffuse = *diffuse; }
 	void setAmbient(glm::vec3* ambient) { this->ambient = *ambient; }
@@ -92,6 +112,8 @@ public:
 	float getShininess() { return shininess; }
 	glm::vec3 getTransmissive() { return transmissive; }
 
-	void setImageData(ImageData* image);
-	ImageData* getImageData();
+	void setImageData(std::shared_ptr<ImageData> image);
+	std::shared_ptr<ImageData> getImageData();
+	TextureData* getTextureData() { return textureData; }
+	bool hasImageData();
 };

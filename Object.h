@@ -22,6 +22,10 @@ protected:
 	glm::vec3 position;
 
 public:
+
+	Object();
+	virtual ~Object() {};
+
 	bool spherePos;
 
 	bool uniformBufferChange;
@@ -39,7 +43,4 @@ public:
 	void setSpherePos(glm::vec3 center,float r, float theta, float phi);
 
 	virtual void Update();
-
-	Object();
-	virtual ~Object() {};
 };

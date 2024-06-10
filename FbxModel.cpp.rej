@@ -1,0 +1,14 @@
+diff a/FbxModel.cpp b/FbxModel.cpp	(rejected hunks)
+@@ -19,12 +19,6 @@
+ 	return meshes.size();
+ }
+ 
+-
+-std::shared_ptr<Material> FbxModel::accessMaterial()
+-{
+-	return material;
+-}
+-
+ /*
+ 
+ //�A�j���[�V�����̍s�����߂�

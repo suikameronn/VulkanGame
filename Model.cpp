@@ -34,16 +34,6 @@ Model::~Model()
 		vkFreeMemory(device, mappedBuffers[i].uniformBufferMemory, nullptr);
 		mappedBuffers[i].uniformBufferMapped = nullptr;
 	}
-
-	for (uint32_t i = 0; i < getSize<std::vector<TextureData>>(textureDatas); i++)
-	{
-		vkDestroySampler(device, textureDatas[i].sampler, nullptr);
-		vkDestroyImageView(device, textureDatas[i].view, nullptr);
-		vkDestroyImage(device, textureDatas[i].image, nullptr);
-		vkFreeMemory(device, textureDatas[i].memory, nullptr);
-	}
-
-	//delete material;
 }
 
 void Model::setFbxModel(std::shared_ptr<FbxModel> model)
@@ -87,11 +77,6 @@ BufferObject* Model::getPointBuffer(uint32_t i)
 MappedBuffer* Model::getMappedBuffer(uint32_t i)
 {
 	return &mappedBuffers[i];
-}
-
-TextureData* Model::getTextureData(uint32_t i)
-{
-	return &textureDatas[i];
 }
 
 std::bitset<8> Model::getLayoutBit()

@@ -165,6 +165,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="VulkanBase.h" />
@@ -172,6 +173,12 @@
   <ItemGroup>
     <Text Include="classDesign.txt" />
     <Text Include="scene.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VulkanGame1.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\Buche de Noel.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

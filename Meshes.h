@@ -1,8 +1,7 @@
 #pragma once
 
-#include <glm/gtx/hash.hpp>
 #include <functional>
-
+#include"Material.h"
 
 //’¸“_\‘¢‘Ì‚ª‚Â
 struct BoneData
@@ -41,13 +40,19 @@ protected:
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
+	std::shared_ptr<Material> material;
+
 	glm::vec3 avePosition;
 
 public:
 
+	~Meshes();
+
 	void pushBackVertex(Vertex* v);
 	void pushBackIndex(uint32_t i);
-	
+	void setMaterial(std::shared_ptr<Material> material);
+	const std::shared_ptr<Material> getMaterial() { return material; }
+
 	std::vector<Vertex>::iterator getVertItr();
 	std::vector<uint32_t>::iterator getIndiItr();
 
