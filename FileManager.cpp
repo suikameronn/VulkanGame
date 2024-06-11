@@ -19,7 +19,7 @@ std::string FileManager::getModelPath(OBJECT obj)
         modelPath = "models/viking_room.obj";
         return modelPath;
     case OBJECT::FBXTEST:
-        modelPath = "models/Buche_de_Noel_Cut.fbx";
+        modelPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\models\\Buche_de_Noel.fbx";
         return modelPath;
     }
 }
@@ -38,16 +38,18 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
+        aiProcess_FlipWindingOrder |
         aiProcess_SortByPType);
 
     if (scene == nullptr)
     {
-        throw std::runtime_error("scene error");
+        std::cout << "aaaaaaaaaaaa" << std::endl;
     }
 
     processNode(scene->mRootNode,scene,fbxModel);
 
     storage->addModel(obj,fbxModel);
+
     return storage->getFbxModel(obj);
 }
 
@@ -83,7 +85,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
 
         if (mesh->mTextureCoords[0])
         {
-            vertex.texCoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+            vertex.texCoord = glm::vec2(mesh->mTextureCoords[0][i].x, -mesh->mTextureCoords[0][i].y);
         }
         else
         {

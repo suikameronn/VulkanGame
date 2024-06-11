@@ -7,6 +7,8 @@
 
 #include<iostream>
 #include<vector>
+#include<algorithm>
+
 #include<vulkan/vulkan.h>
 #include<glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
