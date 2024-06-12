@@ -26,6 +26,8 @@ public:
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 
+	void cleanupVulkan();
+
 	uint32_t getMeshesSize();
 
 	void setAnimLoop(bool loop);

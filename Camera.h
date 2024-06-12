@@ -8,8 +8,6 @@ private:
 	float viewAngle;
 	float viewPointSpeed;
 
-	float theta, phi;
-
 public:
 
 	glm::mat3 mat;

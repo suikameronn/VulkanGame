@@ -66,19 +66,33 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
-        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
-        for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
         {
-            std::vector<std::shared_ptr<Model>>::iterator beginVec;
-            std::vector<std::shared_ptr<Model>>::iterator endVec;
-            Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
-            for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
+            std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
+            std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
+            Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
+            for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
             {
-                vecItr->reset();
+                std::vector<std::shared_ptr<Model>>::iterator beginVec;
+                std::vector<std::shared_ptr<Model>>::iterator endVec;
+                Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
+                for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
+                {
+
+                    vecItr->reset();
+                }
             }
         }
+
+        {
+            std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator begin;
+            std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator end;
+            Storage::GetInstance()->accessFbxModel(begin, end);
+            for (auto itr = begin; itr != end; itr++)
+            {
+                itr->second->cleanupVulkan();
+            }
+        }
+
 
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoBegin;
         std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoEnd;
@@ -1089,9 +1103,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f));
+        ubo.view *= camera->getQuatMat();
         ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
         ubo.proj[1][1] *= -1;
 
+        /*
         glm::mat3 mat;
         mat[0][0] = ubo.view[1][1] * ubo.view[2][2] - ubo.view[2][1] * ubo.view[1][2];
         mat[0][1] = ubo.view[1][2] * ubo.view[2][0] - ubo.view[0][1] * ubo.view[2][2];
@@ -1103,6 +1119,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
         mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
         //ubo.normal = mat;
+        */
 
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {

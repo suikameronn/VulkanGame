@@ -12,7 +12,9 @@ const uint32_t HEIGHT = 1000;
 GLFWwindow* window;
 
 int main() {
+#ifdef _DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
+#endif
 
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -21,8 +23,6 @@ int main() {
 
     GameManager* gameManager = GameManager::GetInstance();
     gameManager->initGame();
-
-    std::cout << "main function" << _CrtDumpMemoryLeaks() << std::endl;
 
     return EXIT_SUCCESS;
 }

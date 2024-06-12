@@ -81,6 +81,9 @@ public:
 	void accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
 		std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2);
 
+	void accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr,
+		std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr2);
+
 	bool containModel(OBJECT obj);
 	bool containImageData(std::string path);
 	bool containDescriptorInfo(std::bitset<8> layoutBit);

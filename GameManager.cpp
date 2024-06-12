@@ -6,7 +6,7 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()
 {
-    frameDuration = (1.0f / (fps * 2)) * 1000;
+    frameDuration = (1.0f / fps) * 1000.0f;
 
     VulkanBase::GetInstance()->initVulkan();
 
@@ -58,7 +58,6 @@ void GameManager::mainGameLoop()
         {
             std::cout << "fps down" << std::endl;
         }
-        
 
         Controller::GetInstance()->initInput();
         glfwPollEvents();

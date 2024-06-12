@@ -19,12 +19,17 @@ uint32_t FbxModel::getMeshesSize()
 	return meshes.size();
 }
 
-/*
-std::shared_ptr<Material> FbxModel::accessMaterial()
+void FbxModel::cleanupVulkan()
 {
-	return material;
+	for (auto itr = meshes.begin(); itr != meshes.end(); itr++)
+	{
+		std::shared_ptr<Material> material = (*itr)->getMaterial();
+		if (material->hasImageData())
+		{
+			material->cleanUpVulkan();
+		}
+	}
 }
-*/
 
 /*
 

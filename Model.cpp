@@ -13,8 +13,17 @@ Model::Model()
 
 	otherObject = nullptr;
 	spherePos = false;
-	theta = 0.1f;
-	phi = 0.1f;
+	theta = 0.0f;
+	phi = 0.0f;
+
+	theta2 = theta;
+	phi2 = phi;
+
+	current = { 1.0, 0.0, 0.0, 0.0 };
+	after = { 1.0, 0.0, 0.0, 0.0 };
+	target = { 1.0,0.0,0.0,0.0 };
+	quatMat = glm::mat4(1.0);
+
 	rotateSpeed = 0.1f;
 }
 

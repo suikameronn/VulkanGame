@@ -4,18 +4,30 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
+#define PI 3.14159265359
+
 #include<iostream>
-#include<glm/glm.hpp>
 #include<vector>
 #include<math.h>
+
+#include<glm/glm.hpp>
+#include<glm/ext.hpp>
 
 class Object
 {
 protected:
 
 	Object* otherObject;
-	float theta, phi;
+	float theta, phi,theta2,phi2;
+
 	float rotateSpeed;
+	float length;
+
+	glm::quat current;
+	glm::quat after;
+	glm::quat target;
+	glm::mat4 quatMat;
+	void convertQuatMat();
 
 	void move();
 
@@ -39,6 +51,9 @@ public:
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
+
+	float convertRadian(float degree);
+	glm::mat4 getQuatMat();
 
 	void setSpherePos(glm::vec3 center,float r, float theta, float phi);
 

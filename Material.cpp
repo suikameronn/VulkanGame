@@ -27,14 +27,19 @@ Material::Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
 
 Material::~Material()
 {
-	/*
+
+}
+
+void Material::cleanUpVulkan()
+{
 	auto device = VulkanBase::GetInstance()->GetDevice();
 
 	vkDestroySampler(device, textureData->sampler, nullptr);
 	vkDestroyImageView(device, textureData->view, nullptr);
 	vkDestroyImage(device, textureData->image, nullptr);
 	vkFreeMemory(device, textureData->memory, nullptr);
-	*/
+
+	delete textureData;
 }
 
 void Material::setImageData(std::shared_ptr<ImageData> image)

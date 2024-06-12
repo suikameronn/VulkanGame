@@ -55,6 +55,13 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, Descrip
 	end = descriptorStorage.end();
 }
 
+void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr,
+	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr2)
+{
+	itr = fbxModelStorage.begin();
+	itr2 = fbxModelStorage.end();
+}
+
 //StorageのCameraにアクセスする
 Camera* Storage::accessCamera()
 {

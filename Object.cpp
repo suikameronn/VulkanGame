@@ -12,9 +12,19 @@ Object::Object()
 
 	otherObject = nullptr;
 	spherePos = false;
-	theta = 30.0f;
-	phi = 30.0f;
+
 	rotateSpeed = 0.1f;
+	length = 1.0f;
+
+	current = { 1.0, 0.0, 0.0, 0.0 };
+	after = { 1.0, 0.0, 0.0, 0.0 };
+	target = { 1.0,0.0,0.0,0.0 };
+	quatMat = glm::mat4(1.0);
+}
+
+float Object::convertRadian(float degree)
+{
+	return degree * (PI / 180);
 }
 
 void Object::bindObject(Object* obj)
@@ -37,10 +47,55 @@ glm::vec3 Object::getPosition()
 	return position;
 }
 
-void Object::setSpherePos(glm::vec3 center,float r, float theta, float phi)
+void Object::convertQuatMat()
 {
-	glm::vec3 pos = { r * sin(phi) * cos(theta) ,r * cos(phi),-r * sin(phi) * sin(theta) };
+	quatMat = glm::mat4_cast(target);
+}
 
-	pos += center;
-	setPosition(pos);
+glm::mat4 Object::getQuatMat()
+{
+	return quatMat;
+}
+
+
+
+void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
+{
+	//phi = convertRadian(phi);
+	//theta = convertRadian(theta);
+
+	//glm::vec3 pos = { r * sin(phi) * cos(theta) ,r * cos(phi),-r * sin(phi) * sin(theta) };
+
+	
+
+	float tmp = theta - theta2;
+	float tmp2 = phi - phi2;
+
+	std::cout << tmp << " " << tmp2 << std::endl;
+	std::cout << " " << std::endl;
+
+	if (tmp > 0.0 || tmp2 > 0.0)
+	{
+		float length = sqrt(tmp * tmp + tmp2 * tmp2);
+
+		float ar = length;
+		float as = sin(ar) / length;
+		glm::quat after = { cos(ar), tmp2 * as, tmp * as, 0.0 };
+
+		std::cout << current.w << " " << current.x << " " << current.y << " " << current.z << " " << std::endl;
+
+		target = glm::cross(after, current);
+
+		//std::cout << target.w << " " << target.x << " " << target.y << " " << target.z << " " << std::endl;
+
+		convertQuatMat();
+	}
+	else
+	{
+		current = target;
+		//std::cout << "zero" << std::endl;
+	}
+
+	//pos += center;
+	//setPosition(pos);
 }

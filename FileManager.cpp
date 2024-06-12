@@ -19,7 +19,7 @@ std::string FileManager::getModelPath(OBJECT obj)
         modelPath = "models/viking_room.obj";
         return modelPath;
     case OBJECT::FBXTEST:
-        modelPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\models\\Buche_de_Noel.fbx";
+        modelPath = "models\\Buche_de_Noel.fbx";
         return modelPath;
     }
 }

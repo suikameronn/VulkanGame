@@ -100,6 +100,8 @@ public:
 
 	~Material();
 
+	void cleanUpVulkan();
+
 	void setDiffuse(glm::vec3* diffuse) { this->diffuse = *diffuse; }
 	void setAmbient(glm::vec3* ambient) { this->ambient = *ambient; }
 	void setSpecular(glm::vec3* specular) { this->specular = *specular; }

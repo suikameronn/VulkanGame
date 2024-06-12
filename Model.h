@@ -69,8 +69,6 @@ public:
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();
 
-	//Material* getMaterial();
-
 	void setDescriptorInfo(DescriptorInfo* info);
 	void setDescriptorSet(VkDescriptorSet* descriptorSet);
 

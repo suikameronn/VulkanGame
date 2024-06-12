@@ -12,6 +12,15 @@ Camera::Camera()
 
 	theta = 95.8f;
 	phi = 30.0f;
+
+	theta2 = theta;
+	phi2 = phi;
+
+	current = { 1.0, 0.0, 0.0, 0.0 };
+	after = { 1.0, 0.0, 0.0, 0.0 };
+	target = { 1.0,0.0,0.0,0.0 };
+	quatMat = glm::mat4(1.0);
+
 	viewAngle = 45;
 	viewPointSpeed = 0.01f;
 }
@@ -50,11 +59,13 @@ void Camera::Update()
 		{
 			phi -= viewPointSpeed;
 		}
-
-		if (phi > 28.4f && phi < 31.3f)
+		else
 		{
-			setSpherePos(otherObject->getPosition(), 1.0f, theta, phi);
+			phi2 = phi;
+			theta2 = theta;
 		}
+
+		setSpherePos(otherObject->getPosition(), 1.0f, theta, phi);
 	}
 	else
 	{
