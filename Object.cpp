@@ -77,25 +77,16 @@ void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
 	if (tmp > 0.0 || tmp2 > 0.0)
 	{
 		float length = sqrt(tmp * tmp + tmp2 * tmp2);
-
-		float ar = length;
-		float as = sin(ar) / length;
-		glm::quat after = { cos(ar), tmp2 * as, tmp * as, 0.0 };
-
-		std::cout << current.w << " " << current.x << " " << current.y << " " << current.z << " " << std::endl;
+		float as = sin(length) / length;
+		glm::quat after = { cos(length), tmp2 * as, tmp * as, 0.0 };
 
 		target = glm::cross(after, current);
 
-		//std::cout << target.w << " " << target.x << " " << target.y << " " << target.z << " " << std::endl;
 
 		convertQuatMat();
 	}
 	else
 	{
 		current = target;
-		//std::cout << "zero" << std::endl;
 	}
-
-	//pos += center;
-	//setPosition(pos);
 }

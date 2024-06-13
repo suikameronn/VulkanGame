@@ -5,6 +5,9 @@
 # Prerequisites
 *.d
 
+*.fbx
+*.png
+
 # Compiled Object files
 *.slo
 *.lo
