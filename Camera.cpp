@@ -43,23 +43,32 @@ void Camera::Update()
 	{
 		auto controller = Controller::GetInstance();
 
+		bool input = false;
 		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
 		{
 			theta -= viewPointSpeed;
+			input = true;
 		}
-		else if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
+		
+		if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
 		{
 			theta += viewPointSpeed;
+			input = true;
 		}
-		else if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
+		
+		if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
 		{
 			phi += viewPointSpeed;
+			input = true;
 		}
-		else if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
+		
+		if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
 		{
 			phi -= viewPointSpeed;
+			input = true;
 		}
-		else
+		
+		if(!input)
 		{
 			phi2 = phi;
 			theta2 = theta;

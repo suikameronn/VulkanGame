@@ -61,20 +61,11 @@ glm::mat4 Object::getQuatMat()
 
 void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
 {
-	//phi = convertRadian(phi);
-	//theta = convertRadian(theta);
-
-	//glm::vec3 pos = { r * sin(phi) * cos(theta) ,r * cos(phi),-r * sin(phi) * sin(theta) };
-
-	
 
 	float tmp = theta - theta2;
 	float tmp2 = phi - phi2;
 
-	std::cout << tmp << " " << tmp2 << std::endl;
-	std::cout << " " << std::endl;
-
-	if (tmp > 0.0 || tmp2 > 0.0)
+	if (tmp != 0.0 || tmp2 != 0.0)
 	{
 		float length = sqrt(tmp * tmp + tmp2 * tmp2);
 		float as = sin(length) / length;
