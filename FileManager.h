@@ -15,12 +15,7 @@ private:
 
 	FileManager();
 
-	//ファイルのパスを入れる
-	std::string modelPath;
-	std::string getModelPath(OBJECT obj);
-
-	//画像ファイルのパスを入れる
-	std::string imagePath;
+	int getModelResource(std::string path);
 
 	int vertSize = 0;
 	int indexSize = 0;
@@ -31,6 +26,7 @@ private:
 	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
+	void loadFbxModel(std::string filePath, void** ptr, int& size);
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 public:

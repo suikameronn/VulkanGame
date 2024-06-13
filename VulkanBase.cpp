@@ -1725,7 +1725,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::setModelData(Model* model)
     {
-
         /*頂点、インデックスバッファーを持たせる*/
         createMeshesData(model);
 

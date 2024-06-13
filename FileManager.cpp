@@ -11,16 +11,13 @@ FileManager::FileManager()
     indexSize = 0;
 }
 
-std::string FileManager::getModelPath(OBJECT obj)
+int FileManager::getModelResource(std::string path)
 {
-    switch (obj)
+    switch (path)
     {
-    case OBJECT::MODELTEST:
-        modelPath = "models/viking_room.obj";
-        return modelPath;
-    case OBJECT::FBXTEST:
-        modelPath = "models\\Buche_de_Noel.fbx";
-        return modelPath;
+    case "Buche de Noel.fbx":
+        return IDR_MODEL1;
+
     }
 }
 
@@ -34,17 +31,16 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     FbxModel* fbxModel = new FbxModel();
 
-    const aiScene* scene = importer.ReadFile(getModelPath(obj), 
+    void* ptr = nullptr;
+    int size = 0;
+    loadFbxModel(getModelPath(obj), &ptr,size);
+
+    const aiScene* scene = importer.ReadFileFromMemory(ptr,size,
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
         aiProcess_FlipWindingOrder |
         aiProcess_SortByPType);
-
-    if (scene == nullptr)
-    {
-        std::cout << "aaaaaaaaaaaa" << std::endl;
-    }
 
     processNode(scene->mRootNode,scene,fbxModel);
 
@@ -150,9 +146,37 @@ std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScen
     return material;
 }
 
+void FileManager::loadFbxModel(std::string filePath,void** ptr,int& size)
+{
+    HRESULT hr = S_OK;
+    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDR_MODEL1), L"MODEL");
+    hr = (hrsrc ? S_OK : E_FAIL);
+
+    HGLOBAL handle = NULL;
+    if (SUCCEEDED(hr)) {
+        handle = LoadResource(NULL, hrsrc);
+        hr = (handle ? S_OK : E_FAIL);
+    }
+
+    if (SUCCEEDED(hr)) {
+        *ptr = (void*)LockResource(handle);
+        hr = (*ptr ? S_OK : E_FAIL);
+    }
+
+    if (SUCCEEDED(hr)) {
+        size = SizeofResource(NULL, hrsrc);
+        hr = (size ? S_OK : E_FAIL);
+    }
+}
+
 std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
 {
     Storage* storage = Storage::GetInstance();
+
+    if (storage->containImageData(filePath))
+    {
+        return storage->getImageData(filePath);
+    }
 
     HRESULT hr = S_OK;
     HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDB_PNG1), L"PNG");
