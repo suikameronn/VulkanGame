@@ -134,11 +134,34 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="models\Buche_de_Noel.fbx" />
+    <None Include="models\unitychan.fbx" />
+    <None Include="models\unitychan_fbx7binary.fbx" />
+  </ItemGroup>
+  <ItemGroup>
     <Image Include="textures\Buche de Noel.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="models\Buche_de_Noel.fbx" />
+    <Image Include="textures\body_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\eye_iris_L_00.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\eye_iris_R_00.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\eyeline_00.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\face_00.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\hair_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\skin_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -6,14 +6,13 @@
 
 enum OBJECT
 {
-	MODELTEST = 0,
-	FBXTEST = 1000
+	FBXTEST = 101,
+	UNITYCHAN_NO_ANIM
 };
 
 enum IMAGE
 {
 	IMAGETEST = 0,
-	BUCHDENOEL
 };
 
 class ImageData;

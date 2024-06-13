@@ -178,10 +178,19 @@
     <ResourceCompile Include="VulkanGame1.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="textures\Buche de Noel.png" />
+    <None Include="models\Buche_de_Noel.fbx" />
+    <None Include="models\unitychan.fbx" />
+    <None Include="models\unitychan_fbx7binary.fbx" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="models\Buche_de_Noel.fbx" />
+    <Image Include="textures\body_01.png" />
+    <Image Include="textures\Buche de Noel.png" />
+    <Image Include="textures\eyeline_00.png" />
+    <Image Include="textures\eye_iris_L_00.png" />
+    <Image Include="textures\eye_iris_R_00.png" />
+    <Image Include="textures\face_00.png" />
+    <Image Include="textures\hair_01.png" />
+    <Image Include="textures\skin_01.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

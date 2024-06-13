@@ -15,7 +15,7 @@ private:
 
 	FileManager();
 
-	int getModelResource(std::string path);
+	int getModelResource(OBJECT obj);
 
 	int vertSize = 0;
 	int indexSize = 0;
@@ -26,7 +26,9 @@ private:
 	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene);
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
-	void loadFbxModel(std::string filePath, void** ptr, int& size);
+	void loadFbxModel(int id, void** ptr, int& size);
+	
+	int getImageID(std::string path);
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 public:

@@ -26,7 +26,7 @@ void Scene::parseScene()
 
 	{
 		Model* model = new Model();
-		model->setFbxModel(FileManager::GetInstance()->loadModel(FBXTEST));
+		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		player->setObject(model);
 

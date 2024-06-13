@@ -7,17 +7,17 @@ FileManager* FileManager::fileManager = nullptr;
 
 FileManager::FileManager()
 {
-
     indexSize = 0;
 }
 
-int FileManager::getModelResource(std::string path)
+int FileManager::getModelResource(OBJECT obj)
 {
-    switch (path)
+    switch (obj)
     {
-    case "Buche de Noel.fbx":
+    case FBXTEST:
         return IDR_MODEL1;
-
+    case UNITYCHAN_NO_ANIM:
+        return IDR_MODEL2;
     }
 }
 
@@ -33,7 +33,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     void* ptr = nullptr;
     int size = 0;
-    loadFbxModel(getModelPath(obj), &ptr,size);
+    loadFbxModel(getModelResource(obj), &ptr,size);
 
     const aiScene* scene = importer.ReadFileFromMemory(ptr,size,
         aiProcess_CalcTangentSpace |
@@ -146,10 +146,10 @@ std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScen
     return material;
 }
 
-void FileManager::loadFbxModel(std::string filePath,void** ptr,int& size)
+void FileManager::loadFbxModel(int id,void** ptr,int& size)
 {
     HRESULT hr = S_OK;
-    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDR_MODEL1), L"MODEL");
+    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), L"MODEL");
     hr = (hrsrc ? S_OK : E_FAIL);
 
     HGLOBAL handle = NULL;
@@ -169,6 +169,44 @@ void FileManager::loadFbxModel(std::string filePath,void** ptr,int& size)
     }
 }
 
+int FileManager::getImageID(std::string path)
+{
+    if (path == "Buche de Noel.png")
+    {
+        return IDB_PNG1;
+    }
+    else if(path == "body_01.png")
+    {
+        return IDB_PNG2;
+    }
+    else if (path == "eye_iris_L_00.png")
+    {
+        return IDB_PNG3;
+    }
+    else if (path == "eye_iris_R_00.png")
+    {
+        return IDB_PNG4;
+    }
+    else if (path == "eyeline_00.png")
+    {
+        return IDB_PNG5;
+    }
+    else if (path == "face_00.png")
+    {
+        return IDB_PNG6;
+    }
+    else if (path == "hair_01.png")
+    {
+        return IDB_PNG7;
+    }
+    else if (path == "skin_01.png")
+    {
+        return IDB_PNG8;
+    }
+
+    return -1;
+}
+
 std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
 {
     Storage* storage = Storage::GetInstance();
@@ -177,6 +215,8 @@ std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
     {
         return storage->getImageData(filePath);
     }
+
+    int id = getImageID(filePath);
 
     HRESULT hr = S_OK;
     HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDB_PNG1), L"PNG");

@@ -1725,6 +1725,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::setModelData(Model* model)
     {
+
         /*頂点、インデックスバッファーを持たせる*/
         createMeshesData(model);
 
@@ -1739,7 +1740,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorInfo(model);
 
         /*ディスクリプタ用のメモリを空ける*/
-        allocateDescriptorSets(model);
+        allocateDescriptorSets(model);//マテリアルが複数ある場合エラー
 
         /*ディスクリプタセットを作る*/
         createDescriptorSets(model);
