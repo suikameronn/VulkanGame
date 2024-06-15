@@ -12,6 +12,7 @@
 
 #include<glm/glm.hpp>
 #include<glm/ext.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Object
 {
@@ -57,5 +58,6 @@ public:
 
 	void setSpherePos(glm::vec3 center,float r, float theta, float phi);
 
+	virtual void updateTransformMatrix() {};
 	virtual void Update();
 };

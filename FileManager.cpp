@@ -18,6 +18,8 @@ int FileManager::getModelResource(OBJECT obj)
         return IDR_MODEL1;
     case UNITYCHAN_NO_ANIM:
         return IDR_MODEL2;
+    case GROUND1:
+        return IDR_MODEL3;
     }
 }
 
@@ -244,6 +246,10 @@ int FileManager::getImageID(std::string path)
     else if (path == "cheek_00.tga")
     {
         return IDB_PNG9;
+    }
+    else if (path == "Nature_Texture_01.png")
+    {
+        return IDB_PNG10;
     }
 
     return -1;

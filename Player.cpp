@@ -9,14 +9,14 @@ Player::Player()
 	rotateSpeed = 0;
 }
 
-void Player::setObject(Model* obj)
+void Player::setObject(Model* m)
 {
-	object = obj;
+	model = m;
 }
 
-Object* Player::getObject()
+Model* Player::getModel()
 {
-	return object;
+	return model;
 }
 
 void Player::inputKeys()
@@ -52,7 +52,7 @@ void Player::Update()
 	glm::vec3 pos = { 0,0,0 };
 	pos = moveDirec * speed;
 
-	pos += object->getPosition();
+	pos += model->getPosition();
 
-	object->setPosition(pos);
+	model->setPosition(pos);
 }

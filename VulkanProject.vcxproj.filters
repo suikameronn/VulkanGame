@@ -140,6 +140,7 @@
     <None Include="model3.bin">
       <Filter>リソース ファイル</Filter>
     </None>
+    <None Include="models\Ground_01.fbx" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\Buche de Noel.png">
@@ -170,6 +171,12 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="textures\cheek_00.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\NaturePackLite_Texture_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\Nature_Texture_01.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

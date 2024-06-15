@@ -5,7 +5,7 @@
 class Player
 {
 private:
-	Object* object;
+	Model* model;
 	float speed;
 	int rotateSpeed;
 
@@ -19,7 +19,7 @@ private:
 public:
 	Player();
 	void setObject(Model* obj);
-	Object* getObject();
+	Model* getModel();
 
 	void Update();
 };

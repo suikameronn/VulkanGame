@@ -8,6 +8,11 @@ Model::Model()
 	position = { 0,0,0 };
 	posOffSet = { 0,0,0 };
 
+	rotate.radian = 0.0f;
+	rotate.direction = glm::vec3(0.0f, 1.0f, 1.0f);
+
+	scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
@@ -98,6 +103,11 @@ VkDescriptorSet* Model::getDescriptorSet(uint32_t i)
 	return &descriptorSets[i];
 }
 
+glm::mat4 Model::getTransformMatrix()
+{
+	return transformMatrix;
+}
+
 void Model::Update()
 {
 	glm::vec3 pos = { 0,0,0 };
@@ -105,9 +115,15 @@ void Model::Update()
 
 	//setPosition(pos);
 
-	glm::vec3 offset = { 0.0f,0.0f,10.0f};
 	theta += rotateSpeed;
 	phi = 30.0f;
 
 	setSpherePos(pos, 5.0f, theta, phi);
+}
+
+void Model::updateTransformMatrix()
+{
+	transformMatrix = glm::translate(glm::mat4(1.0), position)
+		* glm::rotate(glm::mat4(1.0), rotate.radian, rotate.direction)
+		* glm::scale(scale);
 }

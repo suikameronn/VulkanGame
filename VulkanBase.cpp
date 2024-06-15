@@ -1108,9 +1108,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             setMaterial(model->getMeshes(i)->getMaterial(), &ubo);
 
-            ubo.model = glm::translate(glm::mat4(1.0f), model->getPosition()) *
-                glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(/*-90.0f*/0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(/*-90.0f*/0.0f), glm::vec3(0.0f, 1.0f, 0.0f))
-                * glm::scale(glm::vec3(0.1, 0.1, 0.1));
+            ubo.model = model->getTransformMatrix();
 
             ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f)) * camera->getQuatMat();
             ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);

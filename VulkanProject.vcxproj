@@ -180,6 +180,7 @@
   <ItemGroup>
     <None Include="model3.bin" />
     <None Include="models\Buche_de_Noel.fbx" />
+    <None Include="models\Ground_01.fbx" />
     <None Include="models\unitychan.fbx" />
     <None Include="models\unitychan_fbx7binary.fbx" />
   </ItemGroup>
@@ -193,6 +194,8 @@
     <Image Include="textures\eye_iris_R_00.png" />
     <Image Include="textures\face_00.png" />
     <Image Include="textures\hair_01.png" />
+    <Image Include="textures\NaturePackLite_Texture_01.png" />
+    <Image Include="textures\Nature_Texture_01.png" />
     <Image Include="textures\skin_01.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

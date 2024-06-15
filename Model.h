@@ -46,10 +46,20 @@ struct MappedBuffer
 	void* uniformBufferMapped;
 };
 
+struct Rotate
+{
+	float radian;
+	glm::vec3 direction;
+};
+
 class Model:public Object
 {
 protected:
 	std::bitset<8> layoutBit;
+
+	glm::mat4 transformMatrix;
+	Rotate rotate;
+	glm::vec3 scale;
 
 	std::shared_ptr<FbxModel> fbxModel;
 
@@ -79,5 +89,8 @@ public:
 	std::bitset<8> getLayoutBit();
 	VkDescriptorSet* getDescriptorSet(uint32_t i);
 
+	glm::mat4 getTransformMatrix();
+
+	void updateTransformMatrix() override;
 	void Update() override;
 };

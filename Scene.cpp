@@ -31,6 +31,10 @@ void Scene::parseScene()
 		player->setObject(model);
 
 		camera->bindObject(model);
+
+		Model* m = new Model();
+		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
+		sceneSet["aa"] = m;
 	}
 
 	/*
@@ -70,10 +74,13 @@ void Scene::setModels()
 {
 	Storage::GetInstance()->setCamera(camera.get());
 
+	player->getModel()->updateTransformMatrix();
+
 	//描画するモデルのポインタを積んでいく
-	Storage::GetInstance()->addModel(static_cast<Model*>(player->getObject()));
+	Storage::GetInstance()->addModel(player->getModel());
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
+		itr->second->updateTransformMatrix();
 		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));
 	}
 }
