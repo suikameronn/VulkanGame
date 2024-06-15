@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -178,13 +178,16 @@
     <ResourceCompile Include="VulkanGame1.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="model3.bin" />
     <None Include="models\Buche_de_Noel.fbx" />
     <None Include="models\unitychan.fbx" />
     <None Include="models\unitychan_fbx7binary.fbx" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="bitmap1.bmp" />
     <Image Include="textures\body_01.png" />
     <Image Include="textures\Buche de Noel.png" />
+    <Image Include="textures\cheek_00.png" />
     <Image Include="textures\eyeline_00.png" />
     <Image Include="textures\eye_iris_L_00.png" />
     <Image Include="textures\eye_iris_R_00.png" />

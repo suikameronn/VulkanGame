@@ -4,8 +4,8 @@ Camera::Camera()
 {
 	uniformBufferChange = true;
 
-	position = { 0,0.0f,1.0f };
-	posOffSet = { 0.0f,0.0f,2.0f };
+	position = { 0,0.0f,0.0f };
+	posOffSet = { 0.0f,10.0f,30.0f };
 
 	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
@@ -22,7 +22,7 @@ Camera::Camera()
 	quatMat = glm::mat4(1.0);
 
 	viewAngle = 45;
-	viewPointSpeed = 0.01f;
+	viewPointSpeed = 0.1f;
 }
 
 void Camera::setViewAngle(float f)

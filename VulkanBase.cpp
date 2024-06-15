@@ -490,7 +490,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         
-        std::array<VkVertexInputAttributeDescription,3> attributeDescriptions;
+        std::array<VkVertexInputAttributeDescription,4> attributeDescriptions;
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -506,12 +506,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
-        /*
         attributeDescriptions[3].binding = 0;
         attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[3].offset = offsetof(Vertex, normal);
-        */
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -547,6 +545,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
+        colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
         VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -1082,47 +1086,48 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    /*
-    void VulkanBase::setMaterial(std::shared_ptr<Material> material)
+    
+    void VulkanBase::setMaterial(std::shared_ptr<Material> material,UniformBufferObject* ubo)
     {
-        ubo.diffuse = glm::vec3{ 0.5 };
-        ubo.ambient = glm::vec3{ 2.0 };
-        ubo.specular = glm::vec3{ 2.0 };
-        ubo.emissive = glm::vec3{ 0.0 };
-        ubo.transmissive = glm::vec3{ 0.0 };
-        ubo.shininess = 30.0;
+        ubo->diffuse = material->getDiffuse();
+        ubo->ambient = material->getAmbient();
+        ubo->specular = material->getSpecular();
+        ubo->emissive = material->getEmissive();
+        ubo->transmissive = material->getTransmissive();
+        ubo->shininess = material->getShininess();
     }
-    */
+    
 
     void VulkanBase::updateUniformBuffer(Model* model) {
 
         Camera* camera = Storage::GetInstance()->accessCamera();
 
-        UniformBufferObject ubo;
-        ubo.model = glm::translate(glm::mat4(1.0f),model->getPosition()) * 
-            glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f));
-        ubo.view *= camera->getQuatMat();
-        ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
-        ubo.proj[1][1] *= -1;
-
-        /*
-        glm::mat3 mat;
-        mat[0][0] = ubo.view[1][1] * ubo.view[2][2] - ubo.view[2][1] * ubo.view[1][2];
-        mat[0][1] = ubo.view[1][2] * ubo.view[2][0] - ubo.view[0][1] * ubo.view[2][2];
-        mat[0][2] = ubo.view[0][1] * ubo.view[1][2] - ubo.view[1][1] * ubo.view[0][2];
-        mat[1][0] = ubo.view[1][2] * ubo.view[0][2] - ubo.view[2][2] * ubo.view[0][1];
-        mat[1][1] = ubo.view[2][2] * ubo.view[0][0] - ubo.view[0][2] * ubo.view[0][2];
-        mat[1][2] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[1][2] * ubo.view[0][0];
-        mat[2][0] = ubo.view[0][1] * ubo.view[2][1] - ubo.view[0][2] * ubo.view[1][1];
-        mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
-        mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
-        //ubo.normal = mat;
-        */
-
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
+            UniformBufferObject ubo;
+
+            setMaterial(model->getMeshes(i)->getMaterial(), &ubo);
+
+            ubo.model = glm::translate(glm::mat4(1.0f), model->getPosition()) *
+                glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(/*-90.0f*/0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), /*time * */glm::radians(/*-90.0f*/0.0f), glm::vec3(0.0f, 1.0f, 0.0f))
+                * glm::scale(glm::vec3(0.1, 0.1, 0.1));
+
+            ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f)) * camera->getQuatMat();
+            ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+            ubo.proj[1][1] *= 1;
+
+            glm::mat3 mat;
+            mat[0][0] = ubo.view[1][1] * ubo.view[2][2] - ubo.view[2][1] * ubo.view[1][2];
+            mat[0][1] = ubo.view[1][2] * ubo.view[2][0] - ubo.view[0][1] * ubo.view[2][2];
+            mat[0][2] = ubo.view[0][1] * ubo.view[1][2] - ubo.view[1][1] * ubo.view[0][2];
+            mat[1][0] = ubo.view[1][2] * ubo.view[0][2] - ubo.view[2][2] * ubo.view[0][1];
+            mat[1][1] = ubo.view[2][2] * ubo.view[0][0] - ubo.view[0][2] * ubo.view[0][2];
+            mat[1][2] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[1][2] * ubo.view[0][0];
+            mat[2][0] = ubo.view[0][1] * ubo.view[2][1] - ubo.view[0][2] * ubo.view[1][1];
+            mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
+            mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
+            ubo.normal = mat;
+
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
         }
     }
@@ -1706,7 +1711,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
             {
                 model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
-                return;
+                continue;
             }
 
             /*ディスクリプタレイアウトを持たせる*/

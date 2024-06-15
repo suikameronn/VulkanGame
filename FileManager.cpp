@@ -39,7 +39,6 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         aiProcess_CalcTangentSpace |
         aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
-        aiProcess_FlipWindingOrder |
         aiProcess_SortByPType);
 
     processNode(scene->mRootNode,scene,fbxModel);
@@ -113,21 +112,32 @@ std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScen
     
     aiColor3D diffuse{};
     aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+    v = glm::vec3(diffuse.r, diffuse.g, diffuse.b);
+    material->setDiffuse(&v);
 
     aiColor3D ambient{};
     aiMat->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
+    v = glm::vec3(ambient.r, ambient.g, ambient.b);
+    material->setAmbient(&v);
 
     aiColor3D specular{};
     aiMat->Get(AI_MATKEY_COLOR_SPECULAR, specular);
+    v = glm::vec3(specular.r, specular.g, specular.b);
+    material->setSpecular(&v);
 
     aiColor3D emissive{};
     aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissive);
+    v = glm::vec3(emissive.r, emissive.g, emissive.b);
+    material->setEmissive(&v);
 
     float shininess;
     aiMat->Get(AI_MATKEY_SHININESS, shininess);
+    material->setShininess(&shininess);
 
     aiColor3D transparent{};
     aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, transparent);
+    v = glm::vec3(transparent.r,transparent.g,transparent.b);
+    material->setDiffuse(&v);
 
     if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
@@ -169,39 +179,71 @@ void FileManager::loadFbxModel(int id,void** ptr,int& size)
     }
 }
 
+std::string FileManager::extractFileName(std::string path)
+{
+    std::string symbol = "\\";
+    int symbolLength = symbol.length();
+    int pathLength = path.length();
+    if (pathLength < symbolLength)
+    {
+        throw std::runtime_error("extractFilePath:: symbol is longer than path");
+    }
+
+    int pos = 0,tmp = 0;
+    while (true)
+    {
+        tmp = path.find(symbol);
+        if (tmp < pathLength && tmp >= 0)
+        {
+            pos = tmp;
+            path = path.substr(pos + symbolLength);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return path;
+}
+
 int FileManager::getImageID(std::string path)
 {
     if (path == "Buche de Noel.png")
     {
         return IDB_PNG1;
     }
-    else if(path == "body_01.png")
+    else if(path == "body_01.tga")
     {
         return IDB_PNG2;
     }
-    else if (path == "eye_iris_L_00.png")
+    else if (path == "eye_iris_L_00.tga")
     {
         return IDB_PNG3;
     }
-    else if (path == "eye_iris_R_00.png")
+    else if (path == "eye_iris_R_00.tga")
     {
         return IDB_PNG4;
     }
-    else if (path == "eyeline_00.png")
+    else if (path == "eyeline_00.tga")
     {
         return IDB_PNG5;
     }
-    else if (path == "face_00.png")
+    else if (path == "face_00.tga")
     {
         return IDB_PNG6;
     }
-    else if (path == "hair_01.png")
+    else if (path == "hair_01.tga")
     {
         return IDB_PNG7;
     }
-    else if (path == "skin_01.png")
+    else if (path == "skin_01.tga")
     {
         return IDB_PNG8;
+    }
+    else if (path == "cheek_00.tga")
+    {
+        return IDB_PNG9;
     }
 
     return -1;
@@ -216,10 +258,10 @@ std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
         return storage->getImageData(filePath);
     }
 
-    int id = getImageID(filePath);
+    int id = getImageID(extractFileName(filePath));
 
     HRESULT hr = S_OK;
-    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(IDB_PNG1), L"PNG");
+    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), L"PNG");
     hr = (hrsrc ? S_OK : E_FAIL);
 
     HGLOBAL handle = NULL;

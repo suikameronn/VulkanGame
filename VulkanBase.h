@@ -51,7 +51,6 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    /*
     alignas(16) glm::mat3 normal;
     alignas(16) glm::vec3 diffuse;
     alignas(16) glm::vec3 ambient;
@@ -59,7 +58,6 @@ struct UniformBufferObject {
     alignas(16) glm::vec3 emissive;
     alignas(16) glm::vec3 transmissive;
     float shininess;
-    */
 };
 
 class VulkanBase
@@ -183,6 +181,7 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
+    void setMaterial(std::shared_ptr<Material> material, UniformBufferObject* ubo);
     void updateUniformBuffer(Model* model);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);

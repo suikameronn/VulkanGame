@@ -438,3 +438,14 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/c++,visualstudio
+bitmap1.bmp
+shaders/Notexture.frag.spv
+shaders/Notexture.spv
+textures/body_01.tga
+textures/cheek_00.tga
+textures/eye_iris_L_00.tga
+textures/eye_iris_R_00.tga
+textures/eyeline_00.tga
+textures/face_00.tga
+textures/hair_01.tga
+textures/skin_01.tga

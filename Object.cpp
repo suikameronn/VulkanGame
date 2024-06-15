@@ -7,7 +7,7 @@ Object::Object()
 	position = { 0,0,0 };
 	posOffSet = { 0,0,0 };
 
-	forward = glm::vec3{ 0,0,1 };
+	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
 
 	otherObject = nullptr;
@@ -57,8 +57,6 @@ glm::mat4 Object::getQuatMat()
 	return quatMat;
 }
 
-
-
 void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
 {
 
@@ -80,4 +78,6 @@ void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
 	{
 		current = target;
 	}
+
+	setPosition(center + posOffSet);
 }

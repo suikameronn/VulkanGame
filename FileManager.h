@@ -28,6 +28,7 @@ private:
 
 	void loadFbxModel(int id, void** ptr, int& size);
 	
+	std::string extractFileName(std::string path);
 	int getImageID(std::string path);
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 

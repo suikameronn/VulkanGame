@@ -137,6 +137,9 @@
     <None Include="models\Buche_de_Noel.fbx" />
     <None Include="models\unitychan.fbx" />
     <None Include="models\unitychan_fbx7binary.fbx" />
+    <None Include="model3.bin">
+      <Filter>リソース ファイル</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\Buche de Noel.png">
@@ -161,6 +164,12 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="textures\skin_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bitmap1.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\cheek_00.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

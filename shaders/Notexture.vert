@@ -20,22 +20,17 @@ layout(location = 3) in vec3 inNormal;
 
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec3 Idiff;
-layout(location = 2) out vec3 Ispec;
 
-const vec4 Lpos = vec4(0.0,0.0,5.0,1.0);
+const vec4 Lpos = vec4(0.0,0.5,5.0,0.0);
 const vec3 Lamb = vec3(0.2);
 const vec3 Lspec = vec3(1.0);
-const vec3 Ldiff = vec3(10.0);
+const vec3 Ldiff = vec3(1.0);
 
 void main() {
-    vec4 P = ubo.view * ubo.model * vec4(inPosition,1.0);
-    vec3 L = normalize((Lpos * P.w - P * Lpos.w).xyz);
-    vec3 N = normalize(ubo.normal * inNormal);
-    vec3 Iamb = ubo.ambient * Lamb;
-    Idiff = max(dot(N,L),0.0) * ubo.diffuse * Ldiff + Iamb;
-    vec3 V = -normalize(P.xyz);
-    vec3 R = reflect(-L,N);
-    Ispec = pow(max(dot(R,V),0.0),ubo.shininess) * ubo.specular * Lspec + Idiff;
-    gl_Position = ubo.proj * P;
-    fragColor = inColor;
+	vec4 P = ubo.view * ubo.model * vec4(inPosition,0);
+	vec3 N = normalize(ubo.normal * inNormal);
+	vec3 L = normalize((Lpos * P.w - P * Lpos.w).xyz);
+	Idiff = max(dot(N,L),0.0) * ubo.diffuse * Ldiff;
+	gl_Position = ubo.proj * P;
+	fragColor = vec3(0.0);
 }
