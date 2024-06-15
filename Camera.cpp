@@ -5,7 +5,7 @@ Camera::Camera()
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,0.0f };
-	posOffSet = { 0.0f,10.0f,30.0f };
+	posOffSet = { 0.0f,10.0f,10.0f };
 
 	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
