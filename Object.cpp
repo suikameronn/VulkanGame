@@ -1,4 +1,5 @@
 #include"Object.h"
+#include"Controller.h"
 
 Object::Object()
 {
@@ -7,11 +8,14 @@ Object::Object()
 	position = { 0,0,0 };
 	posOffSet = { 0,0,0 };
 
-	forward = glm::vec3{ 0,0,-1 };
+	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
 	otherObject = nullptr;
 	spherePos = false;
+
+	controllable = false;
+	speed = 10.0f;
 
 	rotateSpeed = 0.1f;
 	length = 1.0f;
@@ -32,9 +36,42 @@ void Object::bindObject(Object* obj)
 	otherObject = obj;
 }
 
+glm::vec3 Object::inputMove()
+{
+	glm::vec3 moveDirec;
+	auto controller = Controller::GetInstance();
+
+	if (controller->getKey(GLFW_KEY_W))
+	{
+		moveDirec = forward;
+	}
+	else if (controller->getKey(GLFW_KEY_A))
+	{
+		moveDirec = -right;
+	}
+	else if (controller->getKey(GLFW_KEY_D))
+	{
+		moveDirec = right;
+	}
+	else if (controller->getKey(GLFW_KEY_S))
+	{
+		moveDirec = -forward;
+	}
+	else
+	{
+		moveDirec = { 0,0,0 };
+	}
+
+	return moveDirec;
+}
+
 void Object::Update()
 {
-
+	if (controllable)
+	{
+		glm::vec3 moveDirec = inputMove();
+		setPosition(this->position + moveDirec * speed);
+	}
 }
 
 void Object::setPosition(glm::vec3 pos)
@@ -57,7 +94,7 @@ glm::mat4 Object::getQuatMat()
 	return quatMat;
 }
 
-void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
+void Object::setSpherePos(float theta, float phi)
 {
 
 	float tmp = theta - theta2;
@@ -78,6 +115,4 @@ void Object::setSpherePos(glm::vec3 center, float r, float theta, float phi)
 	{
 		current = target;
 	}
-
-	setPosition(center + posOffSet);
 }

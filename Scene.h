@@ -20,7 +20,6 @@ private:
 	std::unordered_map<std::string, Object*> sceneSet;
 
 	std::unique_ptr<Camera> camera;
-	std::unique_ptr<Player> player;
 
 	void parseScene();
 

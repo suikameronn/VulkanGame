@@ -34,10 +34,15 @@ protected:
 
 	glm::vec3 position;
 
+	glm::vec3 inputMove();
+
 public:
 
 	Object();
 	virtual ~Object() {};
+
+	bool controllable;
+	float speed;
 
 	bool spherePos;
 
@@ -56,7 +61,7 @@ public:
 	float convertRadian(float degree);
 	glm::mat4 getQuatMat();
 
-	void setSpherePos(glm::vec3 center,float r, float theta, float phi);
+	void setSpherePos(float theta, float phi);
 
 	virtual void updateTransformMatrix() {};
 	virtual void Update();

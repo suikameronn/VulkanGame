@@ -2,7 +2,6 @@
 
 Scene::Scene()
 {
-	player = std::make_unique<Player>();
 	camera = std::make_unique<Camera>();
 
 	parseScene();
@@ -28,9 +27,11 @@ void Scene::parseScene()
 		Model* model = new Model();
 		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
 		//モデルを読み込む関数
-		player->setObject(model);
+		model->controllable = true;
+		sceneSet["aaaaa"] = model;
 
 		camera->bindObject(model);
+		//camera->spherePos = true;
 
 		Model* m = new Model();
 		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
@@ -59,8 +60,12 @@ bool Scene::UpdateScene()
 		itr->second->Update();
 	}
 
-	player->Update();
 	camera->Update();
+
+	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
+	{
+		itr->second->updateTransformMatrix();
+	}
 
 	return exit;
 }
@@ -74,10 +79,7 @@ void Scene::setModels()
 {
 	Storage::GetInstance()->setCamera(camera.get());
 
-	player->getModel()->updateTransformMatrix();
-
 	//描画するモデルのポインタを積んでいく
-	Storage::GetInstance()->addModel(player->getModel());
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		itr->second->updateTransformMatrix();

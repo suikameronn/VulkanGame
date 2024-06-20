@@ -5,9 +5,9 @@ Camera::Camera()
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,0.0f };
-	posOffSet = { 0.0f,10.0f,10.0f };
+	posOffSet = { 0.0f,0.0f,50.0f };
 
-	forward = glm::vec3{ 0,0,-1 };
+	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
 	theta = 95.8f;
@@ -41,8 +41,6 @@ void Camera::Update()
 
 	if (otherObject)
 	{
-		auto controller = Controller::GetInstance();
-
 		bool input = false;
 		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
 		{
@@ -68,34 +66,17 @@ void Camera::Update()
 			input = true;
 		}
 		
-		if(!input)
+		if (!input)
 		{
 			phi2 = phi;
 			theta2 = theta;
 		}
 
-		setSpherePos(otherObject->getPosition(), 1.0f, theta, phi);
+		setSpherePos(theta, phi);
+		setPosition(this->getBindObject()->getPosition() + posOffSet * glm::mat3(quatMat));
 	}
 	else
 	{
-		auto controller = Controller::GetInstance();
-
-		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
-		{
-			theta -= viewPointSpeed;
-		}
-		else if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
-		{
-			theta += viewPointSpeed;
-		}
-		else if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
-		{
-			phi += viewPointSpeed;
-		}
-		else if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
-		{
-			phi -= viewPointSpeed;
-		}
 	}
 }
 

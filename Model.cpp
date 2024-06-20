@@ -9,7 +9,7 @@ Model::Model()
 	posOffSet = { 0,0,0 };
 
 	rotate.radian = 0.0f;
-	rotate.direction = glm::vec3(0.0f, 1.0f, 1.0f);
+	rotate.direction = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
@@ -110,15 +110,17 @@ glm::mat4 Model::getTransformMatrix()
 
 void Model::Update()
 {
-	glm::vec3 pos = { 0,0,0 };
 
+	if (controllable)
+	{
+		glm::vec3 moveDirec = inputMove();
+		setPosition(this->position + moveDirec * speed);
+	}
 
-	//setPosition(pos);
-
-	theta += rotateSpeed;
-	phi = 30.0f;
-
-	setSpherePos(pos, 5.0f, theta, phi);
+	if (spherePos && this->getBindObject())
+	{
+		setSpherePos(theta, phi);
+	}
 }
 
 void Model::updateTransformMatrix()
