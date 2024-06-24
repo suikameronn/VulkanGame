@@ -7,8 +7,8 @@ Camera::Camera()
 	position = { 0,0.0f,0.0f };
 	posOffSet = { 0.0f,0.0f,50.0f };
 
-	forward = glm::vec3{ 0,0,1 };
-	right = glm::vec3{ 1,0,0 };
+	forward = glm::vec4{ 0,0,1,0 };
+	right = glm::vec4{ 1,0,0,0 };
 
 	theta = 95.8f;
 	phi = 30.0f;
