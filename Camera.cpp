@@ -73,7 +73,7 @@ void Camera::Update()
 		}
 
 		setSpherePos(theta, phi);
-		setPosition(this->getBindObject()->getPosition() + posOffSet * glm::mat3(quatMat));
+		setPosition(this->getBindObject()->getPosition() + posOffSet);
 	}
 	else
 	{
