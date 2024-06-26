@@ -143,7 +143,7 @@ void Object::setSpherePos(float theta, float phi)
 
 	this->position = rotateQuatPosition(this->position, this->right, phi);
 
-	this->position = glm::normalize(this->position) * 50.0f;
+	this->position = glm::normalize(this->position) * 200.0f;
 
 	std::cout << position.x << " " << position.y << " " << position.z << std::endl;
 }

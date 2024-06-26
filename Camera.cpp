@@ -46,30 +46,30 @@ void Camera::Update()
 		bool input = false;
 		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
 		{
-			theta -= viewPointSpeed;
+			theta = -viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
 		{
-			theta += viewPointSpeed;
+			theta = viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
 		{
-			phi += viewPointSpeed;
+			phi = viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
 		{
-			phi -= viewPointSpeed;
+			phi = -viewPointSpeed;
 			input = true;
 		}
 
-		setSpherePos(glm::radians(theta), glm::radians(phi));
-		//setPosition(this->getBindObject()->getPosition() + posOffSet * glm::mat3(quatMat));
+		this->position.x += theta;
+		this->position.y += phi;
 	}
 	else
 	{
