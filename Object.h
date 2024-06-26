@@ -24,15 +24,6 @@ protected:
 	float rotateSpeed;
 	float length;
 
-	glm::quat current;
-	glm::quat after;
-	glm::quat target;
-
-	glm::mat4 quatMat;
-	void convertQuatMat();
-	glm::quat makeQuat(glm::vec3 axis, float rad);
-	glm::vec3 rotateQuatPosition(glm::vec3 pos, glm::vec3 axis, float rad);
-
 	void move();
 
 	glm::vec3 position;

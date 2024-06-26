@@ -16,13 +16,8 @@ Camera::Camera()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	current = { 1.0, 0.0, 0.0, 0.0 };
-	after = { 1.0, 0.0, 0.0, 0.0 };
-	target = { 1.0,0.0,0.0,0.0 };
-	quatMat = glm::mat4(1.0);
-
 	viewAngle = 45;
-	viewPointSpeed = 20.0f;
+	viewPointSpeed = 1.0f;
 }
 
 void Camera::setViewAngle(float f)
@@ -39,37 +34,46 @@ void Camera::Update()
 {
 	auto controller = Controller::GetInstance();
 
-	theta = 0;
-	phi = 0;
 	if (otherObject)
 	{
 		bool input = false;
 		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
 		{
-			theta = -viewPointSpeed;
+			theta -= viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
 		{
-			theta = viewPointSpeed;
+			theta += viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
 		{
-			phi = viewPointSpeed;
+			phi += viewPointSpeed;
 			input = true;
 		}
 		
 		if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
 		{
-			phi = -viewPointSpeed;
+			phi -= viewPointSpeed;
 			input = true;
 		}
 
-		this->position.x += theta;
-		this->position.y += phi;
+		if (phi >= 90.0f)
+		{
+			phi = 89.0f;
+		}
+		else if (phi <= -90.0f)
+		{
+			phi = -89.0f;
+		}
+
+		if (input)
+		{
+			setSpherePos(glm::radians(theta), glm::radians(phi));
+		}
 	}
 	else
 	{

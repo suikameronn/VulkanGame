@@ -21,11 +21,6 @@ Model::Model()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	current = { 1.0, 0.0, 0.0, 0.0 };
-	after = { 1.0, 0.0, 0.0, 0.0 };
-	target = { 1.0,0.0,0.0,0.0 };
-	quatMat = glm::mat4(1.0);
-
 	rotateSpeed = 0.1f;
 }
 
