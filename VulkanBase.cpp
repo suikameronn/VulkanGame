@@ -1110,7 +1110,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             ubo.model = model->getTransformMatrix();
 
-            ubo.view = glm::translate(camera->getPosition());
+            ubo.view = glm::translate(camera->getPosition() - camera->getViewTarget());
             ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
             ubo.proj[1][1] *= 1;
 
