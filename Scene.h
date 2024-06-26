@@ -1,5 +1,7 @@
 #pragma once
 
+#include<lua.hpp>
+
 #include <iostream>
 #include <vector>
 #include<unordered_map>

@@ -45,14 +45,15 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     processNode(scene->mRootNode,scene,fbxModel);
 
+    fbxModel->calcAveragePos();
+
     storage->addModel(obj,fbxModel);
 
     return storage->getFbxModel(obj);
 }
 
-void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel* model)
+void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model)
 {
-
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -66,7 +67,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene,FbxModel*
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene,model);
+        processNode(node->mChildren[i], scene, model);
     }
 }
 

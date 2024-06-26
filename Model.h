@@ -91,6 +91,8 @@ public:
 
 	glm::mat4 getTransformMatrix();
 
+	glm::vec3 getAverageLocalPos();
+
 	void updateTransformMatrix() override;
 	void Update() override;
 };

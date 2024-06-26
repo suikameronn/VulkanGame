@@ -19,7 +19,7 @@ class Object
 protected:
 
 	Object* otherObject;
-	float theta, phi,theta2,phi2;
+	float theta, phi;
 
 	float rotateSpeed;
 	float length;

@@ -16,9 +16,6 @@ Camera::Camera()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	theta2 = theta;
-	phi2 = phi;
-
 	current = { 1.0, 0.0, 0.0, 0.0 };
 	after = { 1.0, 0.0, 0.0, 0.0 };
 	target = { 1.0,0.0,0.0,0.0 };
@@ -69,12 +66,6 @@ void Camera::Update()
 		{
 			phi -= viewPointSpeed;
 			input = true;
-		}
-		
-		if (!input)
-		{
-			phi2 = phi;
-			theta2 = theta;
 		}
 
 		setSpherePos(glm::radians(theta), glm::radians(phi));

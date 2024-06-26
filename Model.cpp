@@ -21,9 +21,6 @@ Model::Model()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	theta2 = theta;
-	phi2 = phi;
-
 	current = { 1.0, 0.0, 0.0, 0.0 };
 	after = { 1.0, 0.0, 0.0, 0.0 };
 	target = { 1.0,0.0,0.0,0.0 };
@@ -108,6 +105,11 @@ glm::mat4 Model::getTransformMatrix()
 	return transformMatrix;
 }
 
+glm::vec3 Model::getAverageLocalPos()
+{
+	return fbxModel->getAverageLocalPos();
+}
+
 void Model::Update()
 {
 
@@ -125,7 +127,7 @@ void Model::Update()
 
 void Model::updateTransformMatrix()
 {
-	transformMatrix = glm::translate(glm::mat4(1.0), position)
+	transformMatrix = glm::translate(glm::mat4(1.0), position - getAverageLocalPos())
 		* glm::rotate(glm::mat4(1.0), rotate.radian, rotate.direction)
 		* glm::scale(scale);
 }

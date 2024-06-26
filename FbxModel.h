@@ -18,6 +18,8 @@ private:
 	bool loopAnim;
 	bool finish;
 
+	glm::vec3 averageLocalPos;
+
 public:
 
 	FbxModel();
@@ -29,6 +31,9 @@ public:
 	void cleanupVulkan();
 
 	uint32_t getMeshesSize();
+	glm::vec3 getAverageLocalPos();
+
+	void calcAveragePos();
 
 	void setAnimLoop(bool loop);
 
