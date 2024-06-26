@@ -4,14 +4,17 @@ Camera::Camera()
 {
 	uniformBufferChange = true;
 
-	position = { 0,0.0f,0.0f };
+	position = { 0,0.0f,5.0f };
 	posOffSet = { 0.0f,0.0f,50.0f };
 
 	forward = glm::vec4{ 0,0,1,0 };
 	right = glm::vec4{ 1,0,0,0 };
+	up = glm::vec3{ 0,1,0 };
 
-	theta = 95.8f;
-	phi = 30.0f;
+	axis = glm::vec3{ 0,1,0 };
+
+	theta = 0.0f;
+	phi = 0.0f;
 
 	theta2 = theta;
 	phi2 = phi;
@@ -22,7 +25,7 @@ Camera::Camera()
 	quatMat = glm::mat4(1.0);
 
 	viewAngle = 45;
-	viewPointSpeed = 0.1f;
+	viewPointSpeed = 20.0f;
 }
 
 void Camera::setViewAngle(float f)
@@ -39,6 +42,8 @@ void Camera::Update()
 {
 	auto controller = Controller::GetInstance();
 
+	theta = 0;
+	phi = 0;
 	if (otherObject)
 	{
 		bool input = false;
@@ -72,8 +77,8 @@ void Camera::Update()
 			theta2 = theta;
 		}
 
-		setSpherePos(theta, phi);
-		setPosition(this->getBindObject()->getPosition() + posOffSet * glm::mat3(quatMat));
+		setSpherePos(glm::radians(theta), glm::radians(phi));
+		//setPosition(this->getBindObject()->getPosition() + posOffSet * glm::mat3(quatMat));
 	}
 	else
 	{

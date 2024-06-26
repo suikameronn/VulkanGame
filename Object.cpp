@@ -94,25 +94,62 @@ glm::mat4 Object::getQuatMat()
 	return quatMat;
 }
 
+glm::quat Object::makeQuat(glm::vec3 axis, float rad)
+{
+	glm::quat quaternion;
+	float halfSin, halfCos;
+
+	quaternion = { 0,0,0,0 };
+	axis = glm::normalize(axis);
+
+	halfSin = sinf(rad * 0.5f);
+	halfCos = cosf(rad * 0.5f);
+
+	quaternion.w = halfCos;
+	quaternion.x = axis.x * halfSin;
+	quaternion.y = axis.y * halfSin;
+	quaternion.z = axis.z * halfSin;
+
+	return quaternion;
+}
+
+glm::vec3 Object::rotateQuatPosition(glm::vec3 pos, glm::vec3 axis, float rad)
+{
+	glm::quat complexNumber, complexConjugateNumber;
+	glm::quat posQuat = glm::quat{ 0,pos.x,pos.y,pos.z };
+	glm::vec3 resultPos;
+
+	if (axis == glm::vec3(0, 0, 0) || rad == 0)
+	{
+		return pos;
+	}
+
+	complexNumber = makeQuat(axis, rad);
+	complexConjugateNumber = makeQuat(axis, -rad);
+
+	posQuat = complexNumber * posQuat;
+	posQuat = posQuat * complexConjugateNumber;
+
+	resultPos.x = posQuat.x;
+	resultPos.y = posQuat.y;
+	resultPos.z = posQuat.z;
+
+	return resultPos;
+}
+
 void Object::setSpherePos(float theta, float phi)
 {
+	this->position = rotateQuatPosition(this->position, this->up, theta);
 
-	float tmp = theta - theta2;
-	float tmp2 = phi - phi2;
+	/*
+	glm::vec3 pos = glm::normalize(position);
+	axis.x = pos.y * up.z - pos.z * up.y;
+	axis.y = pos.z * up.x - pos.x * up.z;
+	axis.z = pos.x * up.y - pos.y * up.x;
+	*/
 
-	if (tmp != 0.0 || tmp2 != 0.0)
-	{
-		float length = sqrt(tmp * tmp + tmp2 * tmp2);
-		float as = sin(length) / length;
-		glm::quat after = { cos(length), tmp2 * as, tmp * as, 0.0 };
+	this->position = rotateQuatPosition(this->position, this->right, phi);
+	this->up = rotateQuatPosition(this->up, this->right, phi);
 
-		target = glm::cross(after, current);
-
-
-		convertQuatMat();
-	}
-	else
-	{
-		current = target;
-	}
+	std::cout << position.x << " " << position.y << " " << position.z << std::endl;
 }
