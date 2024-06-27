@@ -72,7 +72,6 @@ protected:
 public:
 
 	Model();
-	~Model();
 
 	void setFbxModel(std::shared_ptr<FbxModel> model);
 
@@ -95,4 +94,6 @@ public:
 
 	void updateTransformMatrix() override;
 	void Update() override;
+
+	void cleanupVulkan();
 };

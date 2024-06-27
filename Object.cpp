@@ -1,4 +1,5 @@
 #include"Object.h"
+#include"Camera.h"
 #include"Controller.h"
 
 Object::Object()
@@ -6,12 +7,13 @@ Object::Object()
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };
-	posOffSet = { 0,0,0 };
+	posOffSet = 0.0f;
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
-	otherObject = nullptr;
+	parentObject = nullptr;
+	childObjects.clear();
 	spherePos = false;
 
 	controllable = false;
@@ -21,20 +23,60 @@ Object::Object()
 	length = 1.0f;
 }
 
-float Object::convertRadian(float degree)
-{
-	return degree * (PI / 180);
-}
-
 void Object::bindObject(Object* obj)
 {
-	otherObject = obj;
+	if (obj == nullptr)
+	{
+#ifdef _DEBUG
+		throw std::runtime_error("bindObject(Object* obj): bindObject is nullptr");
+#endif
+
+		return;
+	}
+
+	childObjects.push_back(obj);
+
+	obj->setParentObject(this);
+}
+
+void Object::bindObject(std::shared_ptr<Camera> camera)
+{
+	if (bindCamera != nullptr)
+	{
+#ifdef _DEBUG
+		throw std::runtime_error("bindObject(Camera* camera): bindCamera not nullptr");
+#endif
+		return;
+	}
+
+	bindCamera = std::shared_ptr<Camera>(camera);
+	camera->setParentObject(this);
+}
+
+void Object::setParentObject(Object* obj)
+{
+	if (obj == nullptr)
+	{
+#ifdef _DEBUG
+		throw std::runtime_error("setParentObject: obj is nullptr");
+#endif
+
+		return;
+	}
+
+	parentObject = obj;
 }
 
 glm::vec3 Object::inputMove()
 {
 	glm::vec3 moveDirec;
 	auto controller = Controller::GetInstance();
+
+	if (bindCamera)
+	{
+		forward = bindCamera->forward;
+		right = bindCamera->right;
+	}
 
 	if (controller->getKey(GLFW_KEY_W))
 	{
@@ -71,9 +113,15 @@ void Object::Update()
 
 void Object::setPosition(glm::vec3 pos)
 {
-	if (otherObject != nullptr)
-	{
 
+	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
+	{
+		(*itr)->setPosition((*itr)->getPosition() + (pos - position));
+	}
+	
+	if (bindCamera)
+	{
+		bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
 	}
 
 	position = pos;
@@ -87,7 +135,7 @@ glm::vec3 Object::getPosition()
 void Object::setSpherePos(float theta, float phi)
 {
 	glm::vec3 pos;
-	pos = { 200.0f * cos(theta) * cos(phi),200.0f * sin(phi),200.0f * sin(theta) * cos(phi) };
+	pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
 
 	setPosition(pos);
 }

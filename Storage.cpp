@@ -29,16 +29,16 @@ void Storage::addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info)
 }
 
 //StorageにCameraを追加する
-void Storage::setCamera(Camera* c)
+void Storage::setCamera(std::shared_ptr<Camera> c)
 {
 	camera = c;
 }
 
 //StorageにModelを追加する
-void Storage::addModel(Model* model)
+void Storage::addModel(std::shared_ptr<Model> model)
 {
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[model->getDescriptorInfo(0)].push_back(std::shared_ptr<Model>(model));
+	sceneModelStorage[model->getDescriptorInfo(0)].push_back(model);
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
@@ -63,7 +63,7 @@ void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<FbxModel
 }
 
 //StorageのCameraにアクセスする
-Camera* Storage::accessCamera()
+std::shared_ptr<Camera> Storage::accessCamera()
 {
 	return camera;
 }

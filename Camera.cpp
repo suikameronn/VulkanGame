@@ -1,11 +1,12 @@
 #include"Camera.h"
+#include"VulkanBase.h"
 
 Camera::Camera()
 {
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,5.0f };
-	posOffSet = { 0.0f,0.0f,50.0f };
+	posOffSet = 200.0f;
 
 	forward = glm::vec4{ 0,0,1,0 };
 	right = glm::vec4{ 1,0,0,0 };
@@ -16,13 +17,22 @@ Camera::Camera()
 	theta = 0.0f;
 	phi = 0.0f;
 
+	parentObject = nullptr;
+	childObjects.clear();
+
 	viewAngle = 45;
 	viewPointSpeed = 1.0f;
+
+	setPosition(glm::vec3(0, 0, posOffSet));
+
+	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 1000.0f);
 }
 
 void Camera::setViewAngle(float f)
 {
 	viewAngle = f;
+
+	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 1000.0f);
 }
 
 float Camera::getViewAngle()
@@ -34,7 +44,7 @@ void Camera::Update()
 {
 	auto controller = Controller::GetInstance();
 
-	if (otherObject)
+	if (parentObject)
 	{
 		bool input = false;
 		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
@@ -70,21 +80,24 @@ void Camera::Update()
 			phi = -89.0f;
 		}
 
-		if (input)
-		{
-			setSpherePos(glm::radians(theta), glm::radians(phi));
-		}
+		setSpherePos(glm::radians(theta), glm::radians(phi));
+		calcViewMat();
 	}
 	else
 	{
 	}
 }
 
+void Camera::calcViewMat()
+{
+	viewMat = glm::lookAt(this->position, this->parentObject->getPosition(), glm::vec3(0, 1, 0));
+}
+
 glm::vec3 Camera::getViewTarget()
 {
-	if (otherObject)
+	if (parentObject)
 	{
-		return otherObject->getPosition();
+		return parentObject->getPosition();
 	}
 	else
 	{

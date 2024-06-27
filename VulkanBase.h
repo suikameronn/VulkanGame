@@ -147,8 +147,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(Model* model, VkDescriptorSetLayout& descriptorSetLayout);
-    void createGraphicsPipeline(Model* model, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createDescriptorSetLayout(std::shared_ptr<Model> model, VkDescriptorSetLayout& descriptorSetLayout);
+    void createGraphicsPipeline(std::shared_ptr<Model> model, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -167,12 +167,12 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(Model* model);
-    void createIndexBuffer(Model* model);
-    void createUniformBuffer(Model* model);
-    void createDescriptorPool(Model* model,VkDescriptorPool& pool);
-    void allocateDescriptorSets(Model* model);
-    void createDescriptorSets(Model* model);
+    void createVertexBuffer(std::shared_ptr<Model> model);
+    void createIndexBuffer(std::shared_ptr<Model> model);
+    void createUniformBuffer(std::shared_ptr<Model> model);
+    void createDescriptorPool(std::shared_ptr<Model> model,VkDescriptorPool& pool);
+    void allocateDescriptorSets(std::shared_ptr<Model> model);
+    void createDescriptorSets(std::shared_ptr<Model> model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -182,7 +182,7 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
     void setMaterial(std::shared_ptr<Material> material, UniformBufferObject* ubo);
-    void updateUniformBuffer(Model* model);
+    void updateUniformBuffer(std::shared_ptr<Model> model);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -195,9 +195,9 @@ private:
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
 
-    void createMeshesData(Model* model);
-    void createTextureData(Model* model);
-    void createDescriptorInfo(Model* model);
+    void createMeshesData(std::shared_ptr<Model> model);
+    void createTextureData(std::shared_ptr<Model> model);
+    void createDescriptorInfo(std::shared_ptr<Model> model);
 
 public:
 
@@ -245,7 +245,9 @@ public:
         return device;
     }
 
-    void setModelData(Model* model);
+    void setModelData(std::shared_ptr<Model> model);
+    float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
+
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

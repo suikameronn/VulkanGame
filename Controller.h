@@ -2,8 +2,6 @@
 #include<iostream>
 #include<GLFW/glfw3.h>
 
-#include"Object.h"
-
 extern GLFWwindow* window;
 
 enum

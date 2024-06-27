@@ -19,9 +19,9 @@ class Scene
 {
 private:
 	//ここにシーンのオブジェクトの名前とモデルが保存される
-	std::unordered_map<std::string, Object*> sceneSet;
+	std::unordered_map<std::string, std::shared_ptr<Model>> sceneSet;
 
-	std::unique_ptr<Camera> camera;
+	std::shared_ptr<Camera> camera;
 
 	void parseScene();
 
@@ -33,5 +33,5 @@ public:
 
 	bool UpdateScene();
 
-	Model* getSceneModelData(std::string name);
+	std::shared_ptr<Model> getSceneModelData(std::string name);
 };

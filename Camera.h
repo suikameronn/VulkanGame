@@ -8,9 +8,11 @@ private:
 	float viewAngle;
 	float viewPointSpeed;
 
+	void calcViewMat();
 public:
 
-	glm::mat3 mat;
+	glm::mat4 viewMat;
+	glm::mat4 perspectiveMat;
 
 	Camera();
 

@@ -37,7 +37,7 @@ private:
 
 	std::unordered_map<std::bitset<8>, DescriptorInfo*> descriptorStorage;
 
-	Camera* camera;
+	std::shared_ptr<Camera> camera;
 	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>,Hash> sceneModelStorage;
 
 	Storage() {};
@@ -64,8 +64,8 @@ public:
 	void addImageData(std::string, ImageData* image);
 	void addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info);
 
-	void setCamera(Camera* c);
-	void addModel(Model* model);
+	void setCamera(std::shared_ptr<Camera> c);
+	void addModel(std::shared_ptr<Model> model);
 
 	std::shared_ptr<FbxModel> getFbxModel(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
@@ -74,7 +74,7 @@ public:
 	void accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
 		std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& end);
 
-	Camera* accessCamera();
+	std::shared_ptr<Camera> accessCamera();
 
 	void accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
 		std::vector<std::shared_ptr<Model>>::iterator& itr, std::vector<std::shared_ptr<Model>>::iterator& itr2);

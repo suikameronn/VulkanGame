@@ -2,7 +2,7 @@
 
 Scene::Scene()
 {
-	camera = std::make_unique<Camera>();
+	camera = std::make_shared<Camera>();
 
 	parseScene();
 
@@ -24,16 +24,16 @@ void Scene::parseScene()
 	}
 
 	{
-		Model* model = new Model();
+		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
 		//モデルを読み込む関数
 		model->controllable = true;
 		sceneSet["aaaaa"] = model;
 
-		camera->bindObject(model);
+		sceneSet["aaaaa"]->bindObject(camera);
 		//camera->spherePos = true;
 
-		Model* m = new Model();
+		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
 		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
 		sceneSet["aa"] = m;
 	}
@@ -70,20 +70,20 @@ bool Scene::UpdateScene()
 	return exit;
 }
 
-Model* Scene::getSceneModelData(std::string name)
+std::shared_ptr<Model> Scene::getSceneModelData(std::string name)
 {
-	return static_cast<Model*>(sceneSet[name]);
+	return sceneSet[name];
 }
 
 void Scene::setModels()
 {
-	Storage::GetInstance()->setCamera(camera.get());
+	Storage::GetInstance()->setCamera(camera);
 
 	//描画するモデルのポインタを積んでいく
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		itr->second->updateTransformMatrix();
-		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));
+		Storage::GetInstance()->addModel(itr->second);
 	}
 }
 
@@ -97,6 +97,6 @@ void Scene::setModels(std::string name)
 			continue;
 		}
 
-		Storage::GetInstance()->addModel(static_cast<Model*>(itr->second));
+		Storage::GetInstance()->addModel(itr->second);
 	}
 }

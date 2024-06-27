@@ -6,7 +6,7 @@ Model::Model()
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };
-	posOffSet = { 0,0,0 };
+	posOffSet = 0.0f;
 
 	rotate.radian = 0.0f;
 	rotate.direction = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -16,7 +16,8 @@ Model::Model()
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
-	otherObject = nullptr;
+	parentObject = nullptr;
+	childObjects.clear();
 	spherePos = false;
 	theta = 0.0f;
 	phi = 0.0f;
@@ -24,7 +25,7 @@ Model::Model()
 	rotateSpeed = 0.1f;
 }
 
-Model::~Model()
+void Model::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
 
@@ -114,7 +115,7 @@ void Model::Update()
 		setPosition(this->position + moveDirec * speed);
 	}
 
-	if (spherePos && this->getBindObject())
+	if (spherePos)
 	{
 		setSpherePos(theta, phi);
 	}

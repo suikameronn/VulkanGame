@@ -48,8 +48,8 @@ public:
 	void FinishInstance()
 	{
 		Controller::GetInstance()->FinishController();
-		VulkanBase::GetInstance()->FinishVulkanBase();
 		FileManager::GetInstance()->FinishFileManger();
+		VulkanBase::GetInstance()->FinishVulkanBase();
 		Storage::GetInstance()->FinishStorage();
 
 		delete gameManager;

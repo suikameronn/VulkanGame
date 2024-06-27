@@ -77,8 +77,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
                 for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
                 {
-
-                    vecItr->reset();
+                    (*vecItr)->cleanupVulkan();
                 }
             }
         }
@@ -435,7 +434,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(Model* model,VkDescriptorSetLayout &descriptorSetLayout) {
+    void VulkanBase::createDescriptorSetLayout(std::shared_ptr<Model> model,VkDescriptorSetLayout &descriptorSetLayout) {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -461,7 +460,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(Model* model,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
+    void VulkanBase::createGraphicsPipeline(std::shared_ptr<Model> model,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -1020,7 +1019,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::createVertexBuffer(Model* model) 
+    void VulkanBase::createVertexBuffer(std::shared_ptr<Model> model) 
     {
         uint32_t i;
         for (i = 0; i < model->getMeshesSize(); i++)
@@ -1047,7 +1046,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createIndexBuffer(Model* model) 
+    void VulkanBase::createIndexBuffer(std::shared_ptr<Model> model) 
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
@@ -1072,7 +1071,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createUniformBuffer(Model* model)
+    void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -1098,9 +1097,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
     
 
-    void VulkanBase::updateUniformBuffer(Model* model) {
+    void VulkanBase::updateUniformBuffer(std::shared_ptr<Model> model) {
 
-        Camera* camera = Storage::GetInstance()->accessCamera();
+        std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
 
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
@@ -1109,27 +1108,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             setMaterial(model->getMeshes(i)->getMaterial(), &ubo);
 
             ubo.model = model->getTransformMatrix();
-            ubo.view = glm::lookAt(camera->getPosition(), camera->getViewTarget(), glm::vec3(0, 1, 0));
-            ubo.proj = glm::perspective(camera->getViewAngle(), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-            ubo.proj[1][1] *= 1;
-
-            glm::mat3 mat;
-            mat[0][0] = ubo.view[1][1] * ubo.view[2][2] - ubo.view[2][1] * ubo.view[1][2];
-            mat[0][1] = ubo.view[1][2] * ubo.view[2][0] - ubo.view[0][1] * ubo.view[2][2];
-            mat[0][2] = ubo.view[0][1] * ubo.view[1][2] - ubo.view[1][1] * ubo.view[0][2];
-            mat[1][0] = ubo.view[1][2] * ubo.view[0][2] - ubo.view[2][2] * ubo.view[0][1];
-            mat[1][1] = ubo.view[2][2] * ubo.view[0][0] - ubo.view[0][2] * ubo.view[0][2];
-            mat[1][2] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[1][2] * ubo.view[0][0];
-            mat[2][0] = ubo.view[0][1] * ubo.view[2][1] - ubo.view[0][2] * ubo.view[1][1];
-            mat[2][1] = ubo.view[0][2] * ubo.view[0][1] - ubo.view[0][0] * ubo.view[2][1];
-            mat[2][2] = ubo.view[0][0] * ubo.view[1][1] - ubo.view[0][1] * ubo.view[0][1];
-            ubo.normal = mat;
+            ubo.view = camera->viewMat;
+            ubo.proj = camera->perspectiveMat;
 
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
         }
     }
 
-    void VulkanBase::createDescriptorPool(Model* model, VkDescriptorPool& pool)
+    void VulkanBase::createDescriptorPool(std::shared_ptr<Model> model, VkDescriptorPool& pool)
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1148,7 +1134,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::allocateDescriptorSets(Model* model)
+    void VulkanBase::allocateDescriptorSets(std::shared_ptr<Model> model)
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
@@ -1176,7 +1162,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSets(Model* model)
+    void VulkanBase::createDescriptorSets(std::shared_ptr<Model> model)
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
@@ -1444,7 +1430,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             {
                 if((*model)->uniformBufferChange)
                 {
-                    updateUniformBuffer(model->get());
+                    updateUniformBuffer(*model);
                 }
             }
         }
@@ -1681,13 +1667,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return true;
     }
 
-    void VulkanBase::createMeshesData(Model* model)
+    void VulkanBase::createMeshesData(std::shared_ptr<Model> model)
     {
         createVertexBuffer(model);
         createIndexBuffer(model);
     }
 
-    void VulkanBase::createTextureData(Model* model)
+    void VulkanBase::createTextureData(std::shared_ptr<Model> model)
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
@@ -1699,7 +1685,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorInfo(Model* model)
+    void VulkanBase::createDescriptorInfo(std::shared_ptr<Model> model)
     {
         auto layoutBit = model->getLayoutBit();
 
@@ -1725,7 +1711,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::setModelData(Model* model)
+    void VulkanBase::setModelData(std::shared_ptr<Model> model)
     {
 
         /*頂点、インデックスバッファーを持たせる*/

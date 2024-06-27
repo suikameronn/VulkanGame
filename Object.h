@@ -14,12 +14,17 @@
 #include<glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+class Camera;
+
 class Object
 {
 protected:
 
-	Object* otherObject;
+	Object* parentObject;
+	std::vector<Object*> childObjects;
 	float theta, phi;
+
+	std::shared_ptr<Camera> bindCamera;
 
 	float rotateSpeed;
 	float length;
@@ -33,7 +38,6 @@ protected:
 public:
 
 	Object();
-	virtual ~Object() {};
 
 	bool controllable;
 	float speed;
@@ -42,7 +46,7 @@ public:
 
 	bool uniformBufferChange;
 
-	glm::vec3 posOffSet;
+	float posOffSet;
 	glm::vec3 forward;
 	glm::vec3 right;
 	glm::vec3 up;
@@ -50,13 +54,11 @@ public:
 	glm::vec3 axis;
 
 	void bindObject(Object* obj);
-	Object* getBindObject() { return otherObject; }
+	void bindObject(std::shared_ptr<Camera> camera);
+	void setParentObject(Object* obj);
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
-
-	float convertRadian(float degree);
-	glm::mat4 getQuatMat();
 
 	void setSpherePos(float theta, float phi);
 
