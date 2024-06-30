@@ -59,7 +59,6 @@ protected:
 
 	glm::mat4 transformMatrix;
 	Rotate rotate;
-	glm::vec3 scale;
 
 	std::shared_ptr<FbxModel> fbxModel;
 
@@ -72,6 +71,8 @@ protected:
 public:
 
 	Model();
+
+	glm::vec3 scale;
 
 	void setFbxModel(std::shared_ptr<FbxModel> model);
 

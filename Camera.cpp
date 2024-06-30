@@ -8,8 +8,8 @@ Camera::Camera()
 	position = { 0,0.0f,5.0f };
 	posOffSet = 200.0f;
 
-	forward = glm::vec4{ 0,0,1,0 };
-	right = glm::vec4{ 1,0,0,0 };
+	forward = glm::vec3{ 0,0,1};
+	right = glm::vec3{ 1,0,0};
 	up = glm::vec3{ 0,1,0 };
 
 	axis = glm::vec3{ 0,1,0 };

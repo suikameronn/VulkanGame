@@ -80,7 +80,7 @@ glm::vec3 Object::inputMove()
 
 	if (controller->getKey(GLFW_KEY_W))
 	{
-		moveDirec = forward;
+		moveDirec = -forward;
 	}
 	else if (controller->getKey(GLFW_KEY_A))
 	{
@@ -92,7 +92,7 @@ glm::vec3 Object::inputMove()
 	}
 	else if (controller->getKey(GLFW_KEY_S))
 	{
-		moveDirec = -forward;
+		moveDirec = forward;
 	}
 	else
 	{
@@ -116,12 +116,12 @@ void Object::setPosition(glm::vec3 pos)
 
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
-		(*itr)->setPosition((*itr)->getPosition() + (pos - position));
+		//(*itr)->setPosition((*itr)->getPosition() + (pos - position));
 	}
 	
 	if (bindCamera)
 	{
-		bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
+		//bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
 	}
 
 	position = pos;
@@ -136,6 +136,10 @@ void Object::setSpherePos(float theta, float phi)
 {
 	glm::vec3 pos;
 	pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
+	pos += parentObject->getPosition();
+
+	this->forward = glm::normalize(glm::vec3(pos - this->parentObject->getPosition()));
+	this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
 
 	setPosition(pos);
 }
