@@ -102,6 +102,14 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
         }
     }
 
+    for (unsigned int i = 0; i < mesh->mNumBones; i++)
+    {
+        uint32_t boneIndex;
+        std::string boneName(mesh->mBones[i]->mName.data);
+
+        if()
+    }
+
     return meshes;
 }
 

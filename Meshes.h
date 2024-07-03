@@ -3,11 +3,13 @@
 #include <functional>
 #include"Material.h"
 
+const int NUM_BONES_PER_VEREX = 4;
+
 //’¸“_\‘¢‘Ì‚ª‚Â
 struct BoneData
 {
-	uint32_t id;
-	float weight;
+	uint32_t* id;
+	float* weight;
 };
 
 struct Vertex {
