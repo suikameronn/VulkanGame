@@ -35,7 +35,7 @@ void Scene::parseScene()
 
 		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
 		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
-		m->scale = glm::vec3(10, 0, 10);
+		m->scale = glm::vec3(10, 30, 10);
 		sceneSet["aa"] = m;
 	}
 
