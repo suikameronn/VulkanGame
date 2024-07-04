@@ -102,6 +102,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
         }
     }
 
+
     uint32_t m_NumBones = 0;
     std::map<std::string, int> m_BoneMapping;
     for (unsigned int i = 0; i < mesh->mNumBones; i++)
