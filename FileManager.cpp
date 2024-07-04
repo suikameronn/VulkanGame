@@ -102,6 +102,20 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
         }
     }
 
+    uint32_t m_NumBones = 0;
+    std::map<std::string, int> m_BoneMapping;
+    for (unsigned int i = 0; i < mesh->mNumBones; i++)
+    {
+        uint32_t boneIndex;
+        std::string boneName(mesh->mBones[i]->mName.data);
+
+        if (m_BoneMapping.find(boneName) == m_BoneMapping.end())//もし読み取ったボーンノードがまだ記録されていなければ
+        {
+            boneIndex = m_NumBones;
+            m_NumBones++;
+        }
+    }
+
     return meshes;
 }
 

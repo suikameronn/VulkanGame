@@ -3,11 +3,13 @@
 #include <functional>
 #include"Material.h"
 
+const int NUM_BONES_PER_VEREX = 4;
+
 //’¸“_\‘¢‘Ì‚ª‚Â
 struct BoneData
 {
-	uint32_t id;
-	float weight;
+	uint32_t* id;
+	float* weight;
 };
 
 struct Vertex {
@@ -39,6 +41,7 @@ protected:
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
+	std::vector<BoneData> bones;
 
 	std::shared_ptr<Material> material;
 
