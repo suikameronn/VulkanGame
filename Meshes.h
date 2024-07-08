@@ -8,8 +8,33 @@ const int NUM_BONES_PER_VEREX = 4;
 //’¸“_\‘¢‘Ì‚ª‚Â
 struct BoneData
 {
-	uint32_t* id;
-	float* weight;
+	std::vector<uint32_t> ids;
+	std::vector<float> weights;
+
+	void addBoneData(uint32_t boneID, float weight)
+	{
+		for (uint32_t i = 0; i < ids.size(); i++)
+		{
+			if (weights[i] == 0.0f)
+			{
+				ids[i] = boneID;
+				weights[i] = weight;
+
+				return;
+			}
+		}
+	}
+};
+
+struct BoneInfo
+{
+	glm::mat4 offsetMatrix;
+	glm::mat4 finalTransformation;
+
+	BoneInfo(const glm::mat4 offset)
+	{
+		offsetMatrix = offset;
+	}
 };
 
 struct Vertex {

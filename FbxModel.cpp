@@ -54,6 +54,34 @@ void FbxModel::cleanupVulkan()
 	}
 }
 
+int FbxModel::setBoneToMap(std::string boneName)
+{
+	if (m_BoneNameToIndexMap.find(boneName) == m_BoneNameToIndexMap.end())
+	{
+		int index = m_BoneNameToIndexMap.size();
+		m_BoneNameToIndexMap[boneName] = index;
+		return index;
+	}
+	else
+	{
+		return m_BoneNameToIndexMap[boneName];
+	}
+}
+
+void FbxModel::setBoneInfo(int id,const glm::mat4 mat)
+{
+	if (id == m_BoneInfo.size())
+	{
+		BoneInfo bi(mat);
+		m_BoneInfo.push_back(bi);
+	}
+}
+
+void FbxModel::addBoneData(int vertID, int boneID, float weight)
+{
+	m_Bones[vertID].addBoneData(boneID, weight);
+}
+
 /*
 
 //アニメーションの行列を求める

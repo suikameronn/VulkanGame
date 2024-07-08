@@ -10,6 +10,19 @@ FileManager::FileManager()
     indexSize = 0;
 }
 
+glm::mat4 FileManager::aiMatrix4x4ToGlm(const aiMatrix4x4* from)
+{
+    glm::mat4 to;
+
+
+    to[0][0] = (GLfloat)from->a1; to[0][1] = (GLfloat)from->b1;  to[0][2] = (GLfloat)from->c1; to[0][3] = (GLfloat)from->d1;
+    to[1][0] = (GLfloat)from->a2; to[1][1] = (GLfloat)from->b2;  to[1][2] = (GLfloat)from->c2; to[1][3] = (GLfloat)from->d2;
+    to[2][0] = (GLfloat)from->a3; to[2][1] = (GLfloat)from->b3;  to[2][2] = (GLfloat)from->c3; to[2][3] = (GLfloat)from->d3;
+    to[3][0] = (GLfloat)from->a4; to[3][1] = (GLfloat)from->b4;  to[3][2] = (GLfloat)from->c4; to[3][3] = (GLfloat)from->d4;
+
+    return to;
+}
+
 int FileManager::getModelResource(OBJECT obj)
 {
     switch (obj)
@@ -54,10 +67,13 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
 void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model)
 {
+    int meshNumVertices = 0;
+
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Meshes* meshes = processAiMesh(mesh, scene);
+        Meshes* meshes = processAiMesh(mesh, scene,meshNumVertices,model);
+        meshNumVertices += mesh->mNumVertices;
 
         std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
         meshes->setMaterial(material);
@@ -71,7 +87,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     }
 }
 
-Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
+Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene,uint32_t meshNumVertices, FbxModel* model)
 {
     Meshes* meshes = new Meshes();
 
@@ -93,31 +109,39 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene)
         meshes->pushBackVertex(&vertex);
     }
 
-    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-    {
-        aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; j++)
-        {
-            meshes->pushBackIndex(face.mIndices[j]);
-        }
-    }
-
-
-    uint32_t m_NumBones = 0;
-    std::map<std::string, int> m_BoneMapping;
-    for (unsigned int i = 0; i < mesh->mNumBones; i++)
-    {
-        uint32_t boneIndex;
-        std::string boneName(mesh->mBones[i]->mName.data);
-
-        if (m_BoneMapping.find(boneName) == m_BoneMapping.end())//もし読み取ったボーンノードがまだ記録されていなければ
-        {
-            boneIndex = m_NumBones;
-            m_NumBones++;
-        }
-    }
+    processMeshBones(mesh, meshNumVertices,model);
 
     return meshes;
+}
+
+void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices, FbxModel* model)
+{
+    for (uint32_t i = 0; i < mesh->mNumBones; i++)
+    {
+        loadSingleBone(mesh->mBones[i], meshNumVertices,model);
+    }
+}
+
+void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model)
+{
+    int boneID = getBoneID(bone,model);
+
+    glm::mat4 offset = aiMatrix4x4ToGlm(&bone->mOffsetMatrix);
+    model->setBoneInfo(boneID, offset);
+
+    for (uint32_t i = 0; i < bone->mNumWeights; i++)
+    {
+        const aiVertexWeight& vw = bone->mWeights[i];
+        uint32_t globalVertexID = meshNumVertices + bone->mWeights[i].mVertexId;
+        model->addBoneData(globalVertexID, boneID, vw.mWeight);
+    }
+}
+
+int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
+{
+    std::string boneName(bone->mName.C_Str());
+
+    return model->setBoneToMap(boneName);
 }
 
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)

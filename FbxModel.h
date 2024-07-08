@@ -20,6 +20,10 @@ private:
 
 	glm::vec3 averageLocalPos;
 
+	std::unordered_map<std::string, int> m_BoneNameToIndexMap;
+	std::vector<BoneInfo> m_BoneInfo;
+	std::vector<BoneData> m_Bones;
+
 public:
 
 	FbxModel();
@@ -34,6 +38,10 @@ public:
 	glm::vec3 getAverageLocalPos();
 
 	void calcAveragePos();
+
+	int setBoneToMap(std::string boneName);
+	void setBoneInfo(int id,const glm::mat4 mat);
+	void addBoneData(int vertID, int boneID, float weight);
 
 	void setAnimLoop(bool loop);
 
