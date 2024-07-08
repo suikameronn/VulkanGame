@@ -14,11 +14,10 @@ glm::mat4 FileManager::aiMatrix4x4ToGlm(const aiMatrix4x4* from)
 {
     glm::mat4 to;
 
-
-    to[0][0] = (GLfloat)from->a1; to[0][1] = (GLfloat)from->b1;  to[0][2] = (GLfloat)from->c1; to[0][3] = (GLfloat)from->d1;
-    to[1][0] = (GLfloat)from->a2; to[1][1] = (GLfloat)from->b2;  to[1][2] = (GLfloat)from->c2; to[1][3] = (GLfloat)from->d2;
-    to[2][0] = (GLfloat)from->a3; to[2][1] = (GLfloat)from->b3;  to[2][2] = (GLfloat)from->c3; to[2][3] = (GLfloat)from->d3;
-    to[3][0] = (GLfloat)from->a4; to[3][1] = (GLfloat)from->b4;  to[3][2] = (GLfloat)from->c4; to[3][3] = (GLfloat)from->d4;
+    to[0][0] = from->a1; to[0][1] = from->b1;  to[0][2] = from->c1; to[0][3] = from->d1;
+    to[1][0] = from->a2; to[1][1] = from->b2;  to[1][2] = from->c2; to[1][3] = from->d2;
+    to[2][0] = from->a3; to[2][1] = from->b3;  to[2][2] = from->c3; to[2][3] = from->d3;
+    to[3][0] = from->a4; to[3][1] = from->b4;  to[3][2] = from->c4; to[3][3] = from->d4;
 
     return to;
 }
@@ -69,6 +68,13 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
 {
     int meshNumVertices = 0;
 
+    int allVertices = 0;
+    for (uint32_t i = 0; i < scene->mNumMeshes; i++)
+    {
+        allVertices += scene->mMeshes[i]->mNumVertices;
+    }
+    model->ReserveBones(allVertices);
+
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -110,6 +116,15 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene,uint3
     }
 
     processMeshBones(mesh, meshNumVertices,model);
+
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned int j = 0; j < face.mNumIndices; j++)
+        {
+            meshes->pushBackIndex(face.mIndices[j]);
+        }
+    }
 
     return meshes;
 }
