@@ -14,6 +14,21 @@ void Animation::setBoneTransform(std::vector < std::vector<glm::mat4>> transform
 	this->transforms = transforms;
 }
 
+void Animation::setAnimationRotKey(std::map<float, aiQuaternion>& keyTimeQuat)
+{
+	animationRotKey.push_back(keyTimeQuat);
+}
+
+void Animation::setAnimationScaleKey(std::map<float, glm::vec3>& keyTimeScale)
+{
+	animationScaleKey.push_back(keyTimeScale);
+}
+
+void Animation::setAnimationPositionKey(std::map<float, glm::vec3>& keyTimePosition)
+{
+	animationPositionKey.push_back(keyTimePosition);
+}
+
 void Animation::StartAnim()
 {
 	play = true;

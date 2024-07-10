@@ -82,6 +82,11 @@ void FbxModel::addBoneData(int vertID, int boneID, float weight)
 	m_Bones[vertID].addBoneData(boneID, weight);
 }
 
+int FbxModel::getBoneNum()
+{
+	return m_BoneInfo.size();
+}
+
 /*
 
 //アニメーションの行列を求める

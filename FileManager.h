@@ -4,6 +4,7 @@
 #include<map>
 #include "resource1.h"
 #include"Storage.h"
+#include"Animation.h"
 
 enum OBJECT;
 
@@ -30,6 +31,10 @@ private:
 	int getBoneID(const aiBone* bone, FbxModel* model);
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
+	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, aiMatrix4x4 matrix, std::shared_ptr<Animation> animation,FbxModel* model);
+	void loadAnimation(const aiScene* scene,FbxModel* model);
+
 	void loadFbxModel(int id, void** ptr, int& size);
 	
 	std::string extractFileName(std::string path);
@@ -37,6 +42,7 @@ private:
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 	glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4* from);
+	glm::vec3 aiVec3DToGLM(const aiVector3D* vec);
 
 public:
 	static FileManager* GetInstance()

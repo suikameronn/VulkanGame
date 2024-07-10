@@ -10,6 +10,11 @@ FileManager::FileManager()
     indexSize = 0;
 }
 
+glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D* vec)
+{
+    return glm::vec3(vec->x, vec->y, vec->z);
+}
+
 glm::mat4 FileManager::aiMatrix4x4ToGlm(const aiMatrix4x4* from)
 {
     glm::mat4 to;
@@ -56,6 +61,11 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         aiProcess_SortByPType);
 
     processNode(scene->mRootNode,scene,fbxModel);
+
+    if (scene->mNumAnimations > 0)
+    {
+        //loadAnimation(scene, fbxModel);
+    }
 
     fbxModel->calcAveragePos();
 
@@ -115,7 +125,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene,uint3
         meshes->pushBackVertex(&vertex);
     }
 
-    processMeshBones(mesh, meshNumVertices,model);
+    //processMeshBones(mesh, meshNumVertices,model);
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
@@ -159,6 +169,70 @@ int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
     return model->setBoneToMap(boneName);
 }
 
+const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)
+{
+    for (uint32_t i = 0; i < pAnimation->mNumChannels; i++)
+    {
+        const aiNodeAnim* pNodeAnim = pAnimation->mChannels[i];
+
+        if (std::string(pNodeAnim->mNodeName.data) == nodeName)
+        {
+            return pNodeAnim;
+        }
+    }
+
+    return nullptr;
+}
+
+void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, aiMatrix4x4 matrix, std::shared_ptr<Animation> animation,FbxModel* model)
+{
+    std::string nodeName(node->mName.data);
+    const aiAnimation* pAnimation = scene->mAnimations[0];
+
+    aiMatrix4x4 NodeTransformation(node->mTransformation);
+    const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
+
+    if (pNodeAnim)
+    {
+        std::map<float, glm::vec3> keyTimeVec3;
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
+        {
+            keyTimeVec3[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
+        }
+        animation->setAnimationScaleKey(keyTimeVec3);
+
+        std::map<float, aiQuaternion> keyTimeQuat;
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
+        {
+            keyTimeQuat[pNodeAnim->mRotationKeys[i + 1].mTime] = pNodeAnim->mRotationKeys->mValue;
+        }
+        animation->setAnimationRotKey(keyTimeQuat);
+
+        keyTimeVec3.clear();
+
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
+        {
+            keyTimeVec3[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
+        }
+        animation->setAnimationPositionKey(keyTimeVec3);
+    }
+
+    if(model->)
+}
+
+void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
+{
+    std::shared_ptr<Animation> animation = 
+        std::shared_ptr<Animation>(new Animation(
+            scene->mAnimations[0]->mTicksPerSecond
+        ,scene->mAnimations[0]->mDuration
+        ,model->getBoneNum()));
+
+    aiMatrix4x4 identity;
+
+    ReadNodeHeirarchy(scene,scene->mRootNode, identity, animation,model);
+}
+
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)
 {
     std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
@@ -166,7 +240,7 @@ std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScen
     aiMaterial* aiMat = scene->mMaterials[index];
 
     glm::vec3 v;
-    
+
     aiColor3D diffuse{};
     aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
     v = glm::vec3(diffuse.r, diffuse.g, diffuse.b);
