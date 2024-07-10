@@ -75,6 +75,9 @@
     <ClCompile Include="FbxModel.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>ソース ファイル\LoadModel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -118,6 +121,9 @@
     </ClInclude>
     <ClInclude Include="resource1.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

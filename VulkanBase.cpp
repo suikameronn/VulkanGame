@@ -1095,7 +1095,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         ubo->transmissive = material->getTransmissive();
         ubo->shininess = material->getShininess();
     }
-    
 
     void VulkanBase::updateUniformBuffer(std::shared_ptr<Model> model) {
 
