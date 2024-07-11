@@ -32,7 +32,9 @@ private:
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
 	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, aiMatrix4x4 matrix, std::shared_ptr<Animation> animation,FbxModel* model);
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> rootNode,FbxModel* model);
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> parentNode,
+		std::shared_ptr<AnimNode> childNode, FbxModel* model);
 	void loadAnimation(const aiScene* scene,FbxModel* model);
 
 	void loadFbxModel(int id, void** ptr, int& size);

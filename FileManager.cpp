@@ -64,7 +64,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     if (scene->mNumAnimations > 0)
     {
-        //loadAnimation(scene, fbxModel);
+        loadAnimation(scene, fbxModel);
     }
 
     fbxModel->calcAveragePos();
@@ -125,7 +125,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh,const aiScene* scene,uint3
         meshes->pushBackVertex(&vertex);
     }
 
-    //processMeshBones(mesh, meshNumVertices,model);
+    processMeshBones(mesh, meshNumVertices,model);
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
@@ -184,7 +184,8 @@ const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::
     return nullptr;
 }
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, aiMatrix4x4 matrix, std::shared_ptr<Animation> animation,FbxModel* model)
+void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
+    , std::shared_ptr<AnimNode> parentNode, std::shared_ptr<AnimNode> currentNode, FbxModel* model)
 {
     std::string nodeName(node->mName.data);
     const aiAnimation* pAnimation = scene->mAnimations[0];
@@ -194,30 +195,76 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, aiMatrix4
 
     if (pNodeAnim)
     {
-        std::map<float, glm::vec3> keyTimeVec3;
+        std::map<float, glm::vec3> keyTimeScale;
         for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
         {
-            keyTimeVec3[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
+            keyTimeScale[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
         }
-        animation->setAnimationScaleKey(keyTimeVec3);
 
         std::map<float, aiQuaternion> keyTimeQuat;
         for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
         {
             keyTimeQuat[pNodeAnim->mRotationKeys[i + 1].mTime] = pNodeAnim->mRotationKeys->mValue;
         }
-        animation->setAnimationRotKey(keyTimeQuat);
 
-        keyTimeVec3.clear();
-
+        std::map<float, glm::vec3> keyTimePos;
         for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
         {
-            keyTimeVec3[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
+            keyTimePos[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
         }
-        animation->setAnimationPositionKey(keyTimeVec3);
+
+        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
+        currentNode = std::shared_ptr<AnimNode>(new AnimNode(parentNode,nodeName, animKeyData,node->mNumChildren));
     }
 
-    if(model->)
+    currentNode->resizeChildren(node->mNumChildren);
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        std::shared_ptr<AnimNode> childNode;
+        currentNode->setChild(i, childNode);
+        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, childNode, model);
+    }
+}
+
+void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, std::shared_ptr<AnimNode> rootNode,FbxModel* model)
+{
+    std::string nodeName(node->mName.data);
+    const aiAnimation* pAnimation = scene->mAnimations[0];
+
+    aiMatrix4x4 NodeTransformation(node->mTransformation);
+    const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
+
+    if (pNodeAnim)
+    {
+        std::map<float, glm::vec3> keyTimeScale;
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
+        {
+            keyTimeScale[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
+        }
+
+        std::map<float, aiQuaternion> keyTimeQuat;
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
+        {
+            keyTimeQuat[pNodeAnim->mRotationKeys[i + 1].mTime] = pNodeAnim->mRotationKeys->mValue;
+        }
+
+        std::map<float, glm::vec3> keyTimePos;
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
+        {
+            keyTimePos[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
+        }
+
+        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
+        rootNode = std::shared_ptr<AnimNode>(new AnimNode(nullptr, nodeName,animKeyData, node->mNumChildren));
+    }
+
+    rootNode->resizeChildren(node->mNumChildren);
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        std::shared_ptr<AnimNode> childNode;
+        rootNode->setChild(i, childNode);
+        ReadNodeHeirarchy(scene,node->mChildren[i],rootNode,childNode,model);
+    }
 }
 
 void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
@@ -228,9 +275,11 @@ void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
         ,scene->mAnimations[0]->mDuration
         ,model->getBoneNum()));
 
-    aiMatrix4x4 identity;
+    std::shared_ptr<AnimNode> rootNode;
 
-    ReadNodeHeirarchy(scene,scene->mRootNode, identity, animation,model);
+    animation->setRootNode(rootNode);
+
+    ReadNodeHeirarchy(scene,scene->mRootNode, rootNode,model);
 }
 
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)
