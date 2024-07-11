@@ -6,6 +6,7 @@
 
 #include"Meshes.h"
 #include"Material.h"
+#include"Animation.h"
 
 class FbxModel
 {
@@ -23,6 +24,8 @@ private:
 	std::unordered_map<std::string, int> m_BoneNameToIndexMap;
 	std::vector<BoneInfo> m_BoneInfo;
 	std::vector<BoneData> m_Bones;
+
+	std::unordered_map<std::string,std::shared_ptr<Animation>> animations;
 
 public:
 
@@ -45,6 +48,8 @@ public:
 	int setBoneToMap(std::string boneName);
 	void setBoneInfo(int id,const glm::mat4 mat);
 	void addBoneData(int vertID, int boneID, float weight);
+
+	void setAnimation(std::string name, std::shared_ptr<Animation> animatio);
 
 	void setAnimLoop(bool loop);
 

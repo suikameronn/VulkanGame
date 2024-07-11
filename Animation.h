@@ -16,20 +16,32 @@ struct AnimationKeyData
 class AnimNode
 {
 private:
+	bool animNode;
+
 	std::shared_ptr<AnimNode> parent;
 	std::vector<std::shared_ptr<AnimNode>> children;
 
 	std::string name;
 	AnimationKeyData animKeyData;
+	glm::mat4 matrix;
 
 public:
 
 	AnimNode(std::shared_ptr<AnimNode> parentNode,std::string nodeName,AnimationKeyData data, unsigned int childrenCount)
 	{
+		animNode = true;
 		parent = parentNode;
 		name = nodeName;
 		animKeyData = data;
 		children.resize(childrenCount);
+	}
+
+	AnimNode(std::shared_ptr<AnimNode> parentNode, std::string nodeName, glm::mat4 mat,unsigned int childrenCount)
+	{
+		animNode = false;
+		parent = parentNode;
+		name = nodeName;
+		matrix = mat;
 	}
 
 	void resizeChildren(int childNum)

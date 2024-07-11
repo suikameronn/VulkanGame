@@ -185,8 +185,10 @@ const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::
 }
 
 void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
-    , std::shared_ptr<AnimNode> parentNode, std::shared_ptr<AnimNode> currentNode, FbxModel* model)
+    , std::shared_ptr<AnimNode> parentNode, unsigned int i, FbxModel* model)
 {
+    std::shared_ptr<AnimNode> currentNode;
+
     std::string nodeName(node->mName.data);
     const aiAnimation* pAnimation = scene->mAnimations[0];
 
@@ -216,18 +218,25 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
         AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
         currentNode = std::shared_ptr<AnimNode>(new AnimNode(parentNode,nodeName, animKeyData,node->mNumChildren));
     }
+    else
+    {
+        currentNode = std::shared_ptr<AnimNode>(new AnimNode(parentNode, nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren));
+    }
 
     currentNode->resizeChildren(node->mNumChildren);
+    parentNode->setChild(i, currentNode);
+
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
-        std::shared_ptr<AnimNode> childNode;
-        currentNode->setChild(i, childNode);
-        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, childNode, model);
+        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
     }
 }
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, std::shared_ptr<AnimNode> rootNode,FbxModel* model)
+void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
+    , std::shared_ptr<AnimNode> parentNode, FbxModel* model)
 {
+    std::shared_ptr<AnimNode> currentNode;
+
     std::string nodeName(node->mName.data);
     const aiAnimation* pAnimation = scene->mAnimations[0];
 
@@ -255,15 +264,19 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene,aiNode* node, std::shar
         }
 
         AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-        rootNode = std::shared_ptr<AnimNode>(new AnimNode(nullptr, nodeName,animKeyData, node->mNumChildren));
+        currentNode = std::shared_ptr<AnimNode>(new AnimNode(parentNode, nodeName, animKeyData, node->mNumChildren));
+    }
+    else
+    {
+        currentNode = std::shared_ptr<AnimNode>(new AnimNode(parentNode, nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren));
     }
 
-    rootNode->resizeChildren(node->mNumChildren);
+    parentNode = currentNode;
+
+    currentNode->resizeChildren(node->mNumChildren);
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
-        std::shared_ptr<AnimNode> childNode;
-        rootNode->setChild(i, childNode);
-        ReadNodeHeirarchy(scene,node->mChildren[i],rootNode,childNode,model);
+        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
     }
 }
 
@@ -279,7 +292,9 @@ void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
 
     animation->setRootNode(rootNode);
 
-    ReadNodeHeirarchy(scene,scene->mRootNode, rootNode,model);
+    ReadNodeHeirarchy(scene,scene->mRootNode,rootNode,model);
+
+    model->setAnimation("walk",animation);
 }
 
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)

@@ -1,10 +1,16 @@
 #pragma once
+
 #include<iostream>
 #include <windows.h>
 #include<map>
 #include "resource1.h"
 #include"Storage.h"
 #include"Animation.h"
+
+#ifdef _DEBUG
+#define	new	new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#endif
+
 
 enum OBJECT;
 
@@ -32,9 +38,10 @@ private:
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
 	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> rootNode,FbxModel* model);
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> parentNode,
-		std::shared_ptr<AnimNode> childNode, FbxModel* model);
+		unsigned int i, FbxModel* model);
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> parentNode,
+		FbxModel* model);
 	void loadAnimation(const aiScene* scene,FbxModel* model);
 
 	void loadFbxModel(int id, void** ptr, int& size);

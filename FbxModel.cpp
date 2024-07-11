@@ -87,6 +87,11 @@ int FbxModel::getBoneNum()
 	return m_BoneInfo.size();
 }
 
+void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)
+{
+	animations[name] = animation;
+}
+
 /*
 
 //アニメーションの行列を求める
