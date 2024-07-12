@@ -18,7 +18,6 @@ class AnimNode
 private:
 	bool animNode;
 
-	AnimNode* parent;
 	uint32_t childrenCount;
 	std::vector<AnimNode*> children;
 
@@ -28,19 +27,17 @@ private:
 
 public:
 
-	AnimNode(AnimNode* parentNode,std::string nodeName,AnimationKeyData data, unsigned int cCount)
+	AnimNode(std::string nodeName,AnimationKeyData data, unsigned int cCount)
 	{
 		animNode = true;
-		parent = parentNode;
 		name = nodeName;
 		animKeyData = data;
 		children.resize(cCount);
 	}
 
-	AnimNode(AnimNode* parentNode, std::string nodeName, glm::mat4 mat,unsigned int cCount)
+	AnimNode(std::string nodeName, glm::mat4 mat,unsigned int cCount)
 	{
 		animNode = false;
-		parent = parentNode;
 		name = nodeName;
 		matrix = mat;
 	}

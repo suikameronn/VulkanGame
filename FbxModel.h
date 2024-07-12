@@ -22,8 +22,8 @@ private:
 	glm::vec3 averageLocalPos;
 
 	std::unordered_map<std::string, int> m_BoneNameToIndexMap;
-	std::vector<BoneInfo> m_BoneInfo;
-	std::vector<BoneData> m_Bones;
+	//std::vector<BoneInfo> m_BoneInfo;
+	//std::vector<BoneData> m_Bones;
 
 	std::unordered_map<std::string,std::shared_ptr<Animation>> animations;
 
@@ -33,7 +33,7 @@ public:
 
 	void addMeshes(Meshes* mesh);
 
-	void ReserveBones(int vertices) { m_Bones.resize(vertices); }
+	void ReserveBones(int vertices) { /*m_Bones.resize(vertices);*/ }
 	int getBoneNum();
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);

@@ -26,7 +26,7 @@ private:
 	Assimp::Importer importer;
 
 	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
-	Meshes* processAiMesh(const aiMesh* node, const aiScene* scene,uint32_t meshIndex, FbxModel* model);
+	Meshes* processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model);
 	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model);
 	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model);
 	int getBoneID(const aiBone* bone, FbxModel* model);
@@ -66,6 +66,7 @@ public:
 
 	~FileManager()
 	{
+
 		fileManager = nullptr;
 	}
 
