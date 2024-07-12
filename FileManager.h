@@ -7,11 +7,6 @@
 #include"Storage.h"
 #include"Animation.h"
 
-#ifdef _DEBUG
-#define	new	new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
-
 enum OBJECT;
 
 enum IMAGE;
@@ -38,10 +33,10 @@ private:
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
 	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> parentNode,
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
 		unsigned int i, FbxModel* model);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, std::shared_ptr<AnimNode> parentNode,
-		FbxModel* model);
+	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
+		FbxModel* model,std::shared_ptr<Animation> animation);
 	void loadAnimation(const aiScene* scene,FbxModel* model);
 
 	void loadFbxModel(int id, void** ptr, int& size);

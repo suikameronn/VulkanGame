@@ -49,7 +49,7 @@ public:
 	void setBoneInfo(int id,const glm::mat4 mat);
 	void addBoneData(int vertID, int boneID, float weight);
 
-	void setAnimation(std::string name, std::shared_ptr<Animation> animatio);
+	void setAnimation(std::string name, std::shared_ptr<Animation> animation);
 
 	void setAnimLoop(bool loop);
 
