@@ -23,9 +23,9 @@ void Storage::addImageData(std::string path,ImageData* image)
 }
 
 //StorageにDescriptorInfoを追加する
-void Storage::addDescriptorInfo(std::bitset<8> layoutBit, DescriptorInfo* info)
+void Storage::addDescriptorInfo(uint32_t imageDataCount, DescriptorInfo& info)
 {
-	descriptorStorage[layoutBit] = info;
+	descriptorStorage[imageDataCount] = info;
 }
 
 //StorageにCameraを追加する
@@ -37,19 +37,20 @@ void Storage::setCamera(std::shared_ptr<Camera> c)
 //StorageにModelを追加する
 void Storage::addModel(std::shared_ptr<Model> model)
 {
+	DescriptorInfo info{};
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage[model->getDescriptorInfo(0)].push_back(model);
+	sceneModelStorage.push_back(model);
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
-DescriptorInfo* Storage::accessDescriptorInfo(std::bitset<8> layoutBit)
+DescriptorInfo* Storage::accessDescriptorInfo(uint32_t imageDataCount)
 {
-	return descriptorStorage[layoutBit];
+	return &descriptorStorage[imageDataCount];
 }
 
 //StorageからDescriptorInfoのマップへの参照を返す
-void Storage::accessDescriptorInfoItr(std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& begin,
-	std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator& end)
+void Storage::accessDescriptorInfoItr(std::unordered_map<uint32_t, DescriptorInfo>::iterator& begin,
+	std::unordered_map<uint32_t, DescriptorInfo>::iterator& end)
 {
 	begin = descriptorStorage.begin();
 	end = descriptorStorage.end();
@@ -66,22 +67,6 @@ void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<FbxModel
 std::shared_ptr<Camera> Storage::accessCamera()
 {
 	return camera;
-}
-
-//Storageから指定された個別のグループのvectorの参照を返す
-void Storage::accessModelVector(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator current,
-	std::vector<std::shared_ptr<Model>>::iterator& itr,std::vector<std::shared_ptr<Model>>::iterator& itr2)
-{
-	itr = current->second.begin();
-	itr2 = current->second.end();
-}
-
-//Storageから指定された全体のunordered_mapの参照を返す
-void Storage::accessModelUnMap(std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr,
-	std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator* itr2)
-{
-	*itr = sceneModelStorage.begin();
-	*itr2 = sceneModelStorage.end();
 }
 
 //Storageに指定されあFbxModelが既に存在しているかどうかを返す
@@ -110,9 +95,9 @@ bool Storage::containImageData(std::string path)
 }
 
 //Storageに指定されたDescritporInfoがすでに存在するかどうかを返す
-bool Storage::containDescriptorInfo(std::bitset<8> layoutBit)
+bool Storage::containDescriptorInfo(uint32_t imageDataCount)
 {
-	if (descriptorStorage[layoutBit] != nullptr)
+	if (descriptorStorage.find(imageDataCount) != descriptorStorage.end())
 	{
 		return true;
 	}

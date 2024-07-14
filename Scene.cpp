@@ -28,6 +28,7 @@ void Scene::parseScene()
 		model->setFbxModel(FileManager::GetInstance()->loadModel(FRAG));
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		model->controllable = true;
+		model->scale = glm::vec3(10,10,10);
 		sceneSet["aaaaa"] = model;
 
 		sceneSet["aaaaa"]->bindObject(camera);

@@ -55,7 +55,7 @@ struct Rotate
 class Model:public Object
 {
 protected:
-	std::bitset<8> layoutBit;
+	uint32_t imageDataCount;
 
 	glm::mat4 transformMatrix;
 	Rotate rotate;
@@ -64,9 +64,6 @@ protected:
 
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
-
-	std::vector<DescriptorInfo*> descriptorInfos;
-	std::vector<VkDescriptorSet> descriptorSets;//VkDescriptorPoolÇ™îjä¸Ç≥ÇÍÇÍÇŒé©ìÆÇ≈è¡Ç≥ÇÍÇÈÅB
 
 public:
 
@@ -79,15 +76,12 @@ public:
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();
 
-	void setDescriptorInfo(DescriptorInfo* info);
-	void setDescriptorSet(VkDescriptorSet* descriptorSet);
-
-	DescriptorInfo* getDescriptorInfo(uint32_t i);
+	void setDescriptorSet(DescSetData* descSetData);
 
 	BufferObject* getPointBuffer(uint32_t i);
 	MappedBuffer* getMappedBuffer(uint32_t i);
-	std::bitset<8> getLayoutBit();
-	VkDescriptorSet* getDescriptorSet(uint32_t i);
+	uint32_t getimageDataCount();
+	DescSetData* getDescriptorSet();
 
 	glm::mat4 getTransformMatrix();
 

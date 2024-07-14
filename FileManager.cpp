@@ -123,6 +123,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     {
         Vertex vertex;
         vertex.pos = glm::vec3(mesh->mVertices[i].x, -mesh->mVertices[i].y, mesh->mVertices[i].z);
+        vertex.color = glm::vec3(255, 255, 255);
         vertex.normal = glm::vec3(mesh->mNormals[i].x, -mesh->mNormals[i].y, mesh->mNormals[i].z);
 
         if (mesh->mTextureCoords[0])

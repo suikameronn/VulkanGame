@@ -124,8 +124,6 @@ private:
     UniformBufferObject ubo{};
 
     int descriptorSetCount;
-    VkDescriptorSet descriptorSet;
-    DescriptorInfo info;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -147,8 +145,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(std::shared_ptr<Model> model, VkDescriptorSetLayout& descriptorSetLayout);
-    void createGraphicsPipeline(std::shared_ptr<Model> model, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createDescriptorSetLayout(uint32_t imageDataCount, VkDescriptorSetLayout& descriptorSetLayout);
+    void createGraphicsPipeline(uint32_t imageDataCount, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -170,7 +168,7 @@ private:
     void createVertexBuffer(std::shared_ptr<Model> model);
     void createIndexBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Model> model);
-    void createDescriptorPool(std::shared_ptr<Model> model,VkDescriptorPool& pool);
+    void createDescriptorPool(uint32_t imageDataCount,VkDescriptorPool& pool);
     void allocateDescriptorSets(std::shared_ptr<Model> model);
     void createDescriptorSets(std::shared_ptr<Model> model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);

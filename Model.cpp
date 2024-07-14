@@ -61,21 +61,6 @@ uint32_t Model::getMeshesSize()
 	return this->fbxModel->getMeshesSize();
 }
 
-void Model::setDescriptorInfo(DescriptorInfo* info)
-{
-	descriptorInfos.push_back(info);
-}
-
-void Model::setDescriptorSet(VkDescriptorSet* descriptorSet)
-{
-	this->descriptorSets.push_back(*descriptorSet);
-}
-
-DescriptorInfo* Model::getDescriptorInfo(uint32_t i)
-{
-	return descriptorInfos[i];
-}
-
 BufferObject* Model::getPointBuffer(uint32_t i)
 {
 	return &pointBuffers[i];
@@ -86,14 +71,9 @@ MappedBuffer* Model::getMappedBuffer(uint32_t i)
 	return &mappedBuffers[i];
 }
 
-std::bitset<8> Model::getLayoutBit()
+uint32_t Model::getimageDataCount()
 {
-	return layoutBit;
-}
-
-VkDescriptorSet* Model::getDescriptorSet(uint32_t i)
-{
-	return &descriptorSets[i];
+	return imageDataCount;
 }
 
 glm::mat4 Model::getTransformMatrix()

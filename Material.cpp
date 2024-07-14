@@ -48,6 +48,7 @@ void Material::setImageData(std::shared_ptr<ImageData> image)
 {
 	imageDataCount++;
 	this->image = image;
+	descSetData.texCount = imageDataCount;
 	textureData = new TextureData;
 }
 

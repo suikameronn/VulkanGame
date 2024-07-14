@@ -77,6 +77,12 @@ struct TextureData
 	VkSampler sampler;
 };
 
+struct DescSetData
+{
+	uint32_t texCount;
+	VkDescriptorSet decriptorSet;
+};
+
 class Material
 {
 private:
@@ -94,6 +100,8 @@ private:
 
 	uint32_t imageDataCount;
 
+	DescSetData descSetData;
+
 public:
 
 	Material();
@@ -110,6 +118,9 @@ public:
 	void setEmissive(glm::vec3* emissive) { this->emissive = *emissive; }
 	void setShininess(float* shininess) { this->shininess = *shininess; }
 	void setTransmissive(glm::vec3* transmissive) { this->transmissive = *transmissive; }
+
+	void setDescriptorSet(VkDescriptorSet set) { descSetData.decriptorSet = set; }
+	DescSetData* getDescSetData() { return &descSetData; }
 
 	glm::vec3 getDiffuse() { return diffuse; }
 	glm::vec3 getAmbient() { return ambient; }

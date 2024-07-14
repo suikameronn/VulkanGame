@@ -594,3 +594,6 @@ Assimp/include/assimp/Compiler/pushpack1.h
 Assimp/include/assimp/port/AndroidJNI/AndroidJNIIOSystem.h
 Assimp/include/assimp/port/AndroidJNI/BundledAssetIOSystem.h
 shaders/Notexture.vert.spv
+models/Flag_Pole_dae.dae
+models/Flag_Pole_dxf.dxf
+models/flag_pole_obj.mtl

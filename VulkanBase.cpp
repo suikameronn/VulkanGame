@@ -66,20 +66,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
+        Storage* storage = Storage::GetInstance();
+        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-            std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
-            std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
-            Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
-            for (auto mapItr = beginMap; mapItr != endMap; mapItr++)
-            {
-                std::vector<std::shared_ptr<Model>>::iterator beginVec;
-                std::vector<std::shared_ptr<Model>>::iterator endVec;
-                Storage::GetInstance()->accessModelVector(mapItr, beginVec, endVec);
-                for (auto vecItr = beginVec; vecItr != endVec; vecItr++)
-                {
-                    (*vecItr)->cleanupVulkan();
-                }
-            }
+            (*model)->cleanupVulkan();
         }
 
         {
@@ -93,15 +83,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
 
-        std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoBegin;
-        std::unordered_map<std::bitset<8>, DescriptorInfo*>::iterator infoEnd;
+        std::unordered_map<uint32_t, DescriptorInfo>::iterator infoBegin;
+        std::unordered_map<uint32_t, DescriptorInfo>::iterator infoEnd;
         Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
         for (auto itr = infoBegin; itr != infoEnd; itr++)
         {
-            vkDestroyDescriptorPool(device, itr->second->pool, nullptr);
-            vkDestroyPipeline(device, itr->second->pipeline, nullptr);
-            vkDestroyPipelineLayout(device, itr->second->pLayout, nullptr);
-            vkDestroyDescriptorSetLayout(device, itr->second->layout, nullptr);
+            vkDestroyDescriptorPool(device, itr->second.pool, nullptr);
+            vkDestroyPipeline(device, itr->second.pipeline, nullptr);
+            vkDestroyPipelineLayout(device, itr->second.pLayout, nullptr);
+            vkDestroyDescriptorSetLayout(device, itr->second.layout, nullptr);
         }
 
         vkDestroyRenderPass(device, renderPass, nullptr);
@@ -434,7 +424,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(std::shared_ptr<Model> model,VkDescriptorSetLayout &descriptorSetLayout) {
+    void VulkanBase::createDescriptorSetLayout(uint32_t imageDataCount,VkDescriptorSetLayout &descriptorSetLayout) {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(imageDataCount + 1);
+        
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -442,14 +434,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        bindings[0] = uboLayoutBinding;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+        for (int i = 0; i < imageDataCount; i++)
+        {
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding = 1;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            bindings[i + 1] = samplerLayoutBinding;
+        }
+
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = bindings.size();
@@ -460,9 +458,22 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(std::shared_ptr<Model> model,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
+    void VulkanBase::createGraphicsPipeline(uint32_t imageDataCount,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
+
+        std::string vertFile;
+        std::string fragFile;
+        if (imageDataCount > 0)
+        {
+            vertFile = "shaders/vert.spv";
+            fragFile = "shaders/frag.spv";
+        }
+        else
+        {
+            vertFile = "shaders/Notexture.vert.spv";
+            fragFile = "shaders/Notexture.frag.spv";
+        }
+        auto vertShaderCode = readFile(vertFile);
+        auto fragShaderCode = readFile(fragFile);
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1114,7 +1125,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorPool(std::shared_ptr<Model> model, VkDescriptorPool& pool)
+    void VulkanBase::createDescriptorPool(uint32_t imageDataCount, VkDescriptorPool& pool)
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1137,14 +1148,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
-            VkDescriptorSetLayout* layouts = &model->getDescriptorInfo(i)->layout;
-            VkDescriptorPool* pool = &model->getDescriptorInfo(i)->pool;
+            uint32_t imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
+            DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(imageDataCount);
 
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = *pool;
+            allocInfo.descriptorPool = info->pool;
             allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = layouts;
+            allocInfo.pSetLayouts = &info->layout;
+
+            VkDescriptorSet descriptorSet;
 
             if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
             {
@@ -1157,7 +1170,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             }
             descriptorSetCount++;
 
-            model->setDescriptorSet(&descriptorSet);
+            model->getMeshes(i)->getMaterial()->setDescriptorSet(descriptorSet);
         }
     }
 
@@ -1178,7 +1191,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 descriptorWrites.resize(2);
 
                 descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = *model->getDescriptorSet(i);
+                descriptorWrites[0].dstSet = material->getDescSetData()->decriptorSet;
                 descriptorWrites[0].dstBinding = 0;
                 descriptorWrites[0].dstArrayElement = 0;
                 descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1191,7 +1204,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 imageInfo.sampler = model->getMeshes(i)->getMaterial()->getTextureData()->sampler;
 
                 descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet = *model->getDescriptorSet(i);
+                descriptorWrites[1].dstSet = material->getDescSetData()->decriptorSet;
                 descriptorWrites[1].dstBinding = 1;
                 descriptorWrites[1].dstArrayElement = 0;
                 descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1203,7 +1216,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 descriptorWrites.resize(1);
 
                 descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = *model->getDescriptorSet(i);
+                descriptorWrites[0].dstSet = material->getDescSetData()->decriptorSet;
                 descriptorWrites[0].dstBinding = 0;
                 descriptorWrites[0].dstArrayElement = 0;
                 descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1334,12 +1347,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
-        Storage::GetInstance()->accessModelUnMap(&beginMap,&endMap);
-        for (auto modelGroup = beginMap; modelGroup != endMap; modelGroup++)
+        Storage* storage = Storage::GetInstance();
+        std::shared_ptr<Material> material;
+        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelGroup->first->pipeline);
+            for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
+            {
+                material = (*model)->getMeshes(i)->getMaterial();
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(material->getImageDataCount())->pipeline);
 
                 VkViewport viewport{};
                 viewport.x = 0.0f;
@@ -1357,22 +1372,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 VkDeviceSize offsets[] = { 0 };
 
-                std::vector<std::shared_ptr<Model>>::iterator beginVec;
-                std::vector<std::shared_ptr<Model>>::iterator endVec;
-                Storage::GetInstance()->accessModelVector(modelGroup, beginVec, endVec);
-                for (auto model = beginVec; model != endVec; model++)
-                {
-                    for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
-                    {
-                        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer(i)->vertBuffer, offsets);
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer(i)->vertBuffer, offsets);
 
-                        vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer(i)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer(i)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*model)->getDescriptorInfo(i)->pLayout, 0, 1, (*model)->getDescriptorSet(i), 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    storage->accessDescriptorInfo(material->getImageDataCount())->pLayout, 0, 1, &material->getDescSetData()->decriptorSet, 0, nullptr);
 
-                        vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
-                    }
-                }
+                vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
+            }
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -1417,20 +1425,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator beginMap;
-        std::unordered_map<DescriptorInfo*, std::vector<std::shared_ptr<Model>>, Hash>::iterator endMap;
-        Storage::GetInstance()->accessModelUnMap(&beginMap, &endMap);
-        for (auto itr = beginMap; itr != endMap; itr++)
+        Storage* storage = Storage::GetInstance();
+        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-            std::vector<std::shared_ptr<Model>>::iterator beginVec;
-            std::vector<std::shared_ptr<Model>>::iterator endVec;
-            Storage::GetInstance()->accessModelVector(itr, beginVec, endVec);
-            for (auto model = beginVec; model != endVec; model++)
+            if ((*model)->uniformBufferChange)
             {
-                if((*model)->uniformBufferChange)
-                {
-                    updateUniformBuffer(*model);
-                }
+                updateUniformBuffer(*model);
             }
         }
 
@@ -1678,35 +1678,40 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             std::shared_ptr<Material> material = model->getMeshes(i)->getMaterial();
 
-            createTextureImage(material);
-            createTextureImageView(material);
-            createTextureSampler(material);
+            if (material->hasImageData())
+            {
+                createTextureImage(material);
+                createTextureImageView(material);
+                createTextureSampler(material);
+            }
         }
     }
 
     void VulkanBase::createDescriptorInfo(std::shared_ptr<Model> model)
     {
-        auto layoutBit = model->getLayoutBit();
+        uint32_t imageDataCount;
 
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
-            if (Storage::GetInstance()->containDescriptorInfo(layoutBit))
+            imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
+
+            if (Storage::GetInstance()->containDescriptorInfo(imageDataCount))
             {
-                model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
                 continue;
             }
 
+            DescriptorInfo info{};
+
             /*ディスクリプタレイアウトを持たせる*/
-            createDescriptorSetLayout(model, info.layout);
+            createDescriptorSetLayout(imageDataCount, info.layout);
 
             /*ディスクリプタプールを作る*/
-            createDescriptorPool(model, info.pool);
+            createDescriptorPool(imageDataCount, info.pool);
 
             /*グラフィックスパイプラインを作る*/
-            createGraphicsPipeline(model, info.layout, info.pLayout, info.pipeline);
+            createGraphicsPipeline(imageDataCount, info.layout, info.pLayout, info.pipeline);
 
-            Storage::GetInstance()->addDescriptorInfo(layoutBit, &info);
-            model->setDescriptorInfo(Storage::GetInstance()->accessDescriptorInfo(layoutBit));
+            Storage::GetInstance()->addDescriptorInfo(imageDataCount, info);
         }
     }
 
