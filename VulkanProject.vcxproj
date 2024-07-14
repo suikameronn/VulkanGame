@@ -73,6 +73,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>false</VcpkgEnableManifest>
+    <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -108,14 +109,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>OpenGL\include;VulkanSDK\1.3.275.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;VulkanSDK\1.3.275.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;x64\assimp-vc143-mt.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -126,7 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>OpenGL\include;VulkanSDK\1.3.275.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;VulkanSDK\1.3.275.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -134,8 +135,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;VulkanSDK\1.3.275.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;x64\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -181,13 +182,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="model3.bin" />
+    <None Include="model5.bin" />
+    <None Include="model6.bin" />
     <None Include="models\Buche_de_Noel.fbx" />
+    <None Include="models\Flag_Pole.fbx" />
     <None Include="models\Ground_01.fbx" />
     <None Include="models\unitychan.fbx" />
     <None Include="models\unitychan_fbx7binary.fbx" />
+    <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="bitmap1.bmp" />
+    <Image Include="textures\Add_your_Flag.png" />
+    <Image Include="textures\body_01 - コピー.png" />
     <Image Include="textures\body_01.png" />
     <Image Include="textures\Buche de Noel.png" />
     <Image Include="textures\cheek_00.png" />
@@ -198,6 +205,7 @@
     <Image Include="textures\hair_01.png" />
     <Image Include="textures\NaturePackLite_Texture_01.png" />
     <Image Include="textures\Nature_Texture_01.png" />
+    <Image Include="textures\png11.png" />
     <Image Include="textures\skin_01.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

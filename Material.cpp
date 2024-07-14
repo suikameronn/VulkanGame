@@ -11,6 +11,8 @@ Material::Material()
 	this->shininess = 0.0;
 	this->transmissive = glm::vec3(1.0, 1.0, 1.0);
 
+	imageDataCount = 0;
+
 	//texture = new ImageData();
 }
 
@@ -44,6 +46,7 @@ void Material::cleanUpVulkan()
 
 void Material::setImageData(std::shared_ptr<ImageData> image)
 {
+	imageDataCount++;
 	this->image = image;
 	textureData = new TextureData;
 }

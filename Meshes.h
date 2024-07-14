@@ -64,7 +64,7 @@ protected:
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	std::vector<BoneData> bones;
+	//std::vector<BoneData> bones;
 
 	std::shared_ptr<Material> material;
 
@@ -87,6 +87,8 @@ public:
 
 	uint32_t getVerticesSize();
 	uint32_t getIndicesSize();
+
+	uint32_t getTextureCount() { material->getImageDataCount(); }
 
 	void vertResize(uint32_t size);
 	void indexResize(uint32_t size);

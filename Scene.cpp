@@ -25,7 +25,7 @@ void Scene::parseScene()
 
 	{
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
-		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
+		model->setFbxModel(FileManager::GetInstance()->loadModel(FRAG));
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		model->controllable = true;
 		sceneSet["aaaaa"] = model;
@@ -33,10 +33,12 @@ void Scene::parseScene()
 		sceneSet["aaaaa"]->bindObject(camera);
 		//camera->spherePos = true;
 
+		/*
 		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
 		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
 		m->scale = glm::vec3(10, 30, 10);
 		sceneSet["aa"] = m;
+		*/
 	}
 
 	/*

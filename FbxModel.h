@@ -1,8 +1,8 @@
 #pragma once
 
-#include <assimp/Importer.hpp>      // C++ importer interface
-#include <assimp/scene.h>           // Output data structure
-#include <assimp/postprocess.h>     // Post processing flags
+#include"assimp/Importer.hpp"      // C++ importer interface
+#include"assimp/scene.h"          // Output data structure
+#include"assimp/postprocess.h"     // Post processing flags
 
 #include"Meshes.h"
 #include"Material.h"
@@ -22,10 +22,12 @@ private:
 	glm::vec3 averageLocalPos;
 
 	std::unordered_map<std::string, int> m_BoneNameToIndexMap;
-	//std::vector<BoneInfo> m_BoneInfo;
-	//std::vector<BoneData> m_Bones;
+	std::vector<BoneInfo> m_BoneInfo;
+	std::vector<BoneData> m_Bones;
 
 	std::unordered_map<std::string,std::shared_ptr<Animation>> animations;
+
+	uint32_t imageDataCount;
 
 public:
 
@@ -33,7 +35,7 @@ public:
 
 	void addMeshes(Meshes* mesh);
 
-	void ReserveBones(int vertices) { /*m_Bones.resize(vertices);*/ }
+	void reserveBones(int vertices) { m_Bones.resize(vertices); }
 	int getBoneNum();
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
@@ -47,11 +49,15 @@ public:
 
 	int setBoneToMap(std::string boneName);
 	void setBoneInfo(int id,const glm::mat4 mat);
+
 	void addBoneData(int vertID, int boneID, float weight);
 
 	void setAnimation(std::string name, std::shared_ptr<Animation> animation);
 
 	void setAnimLoop(bool loop);
+
+	void setImageDataCount(uint32_t count) { imageDataCount = count; }
+	uint32_t getImageDataCount() { return imageDataCount; }
 
 	//アニメーションを適用させるための行列を取得する
 	glm::mat4* getAnimationMatrix(glm::mat4 mat);

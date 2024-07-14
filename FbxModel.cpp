@@ -70,23 +70,21 @@ int FbxModel::setBoneToMap(std::string boneName)
 
 void FbxModel::setBoneInfo(int id,const glm::mat4 mat)
 {
-	/*
 	if (id == m_BoneInfo.size())
 	{
 		BoneInfo bi(mat);
 		m_BoneInfo.push_back(bi);
 	}
-	*/
 }
 
 void FbxModel::addBoneData(int vertID, int boneID, float weight)
 {
-	//m_Bones[vertID].addBoneData(boneID, weight);
+	m_Bones[vertID].addBoneData(boneID, weight);
 }
 
 int FbxModel::getBoneNum()
 {
-	return 0;//m_BoneInfo.size();
+	return m_BoneInfo.size();
 }
 
 void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)

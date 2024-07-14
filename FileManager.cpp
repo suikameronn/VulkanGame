@@ -37,6 +37,8 @@ int FileManager::getModelResource(OBJECT obj)
         return IDR_MODEL2;
     case GROUND1:
         return IDR_MODEL3;
+    case FRAG:
+        return IDR_MODEL4;
     }
 }
 
@@ -60,11 +62,19 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType);
 
+    int allVertices = 0;
+    for (uint32_t i = 0; i < scene->mNumMeshes; i++)
+    {
+        allVertices += scene->mMeshes[i]->mNumVertices;
+    }
+    fbxModel->reserveBones(allVertices);
+
     processNode(scene->mRootNode, scene, fbxModel);
+    imageDataCount = 0;
 
     if (scene->mNumAnimations > 0)
     {
-        //loadAnimation(scene, fbxModel);
+        loadAnimation(scene, fbxModel);
     }
 
     importer.FreeScene();
@@ -80,13 +90,6 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
 {
     int meshNumVertices = 0;
 
-    int allVertices = 0;
-    for (uint32_t i = 0; i < scene->mNumMeshes; i++)
-    {
-        allVertices += scene->mMeshes[i]->mNumVertices;
-    }
-    //model->ReserveBones(allVertices);
-
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -94,6 +97,11 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
         meshNumVertices += mesh->mNumVertices;
 
         std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
+        if (material->hasImageData())
+        {
+            imageDataCount++;
+        }
+
         meshes->setMaterial(material);
         model->addMeshes(meshes);
     }
@@ -103,6 +111,8 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     {
         processNode(node->mChildren[i], scene, model);
     }
+
+    model->setImageDataCount(imageDataCount);
 }
 
 Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model)
@@ -127,7 +137,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
         meshes->pushBackVertex(&vertex);
     }
 
-    //processMeshBones(mesh, meshNumVertices,model);
+    processMeshBones(mesh, meshNumVertices,model);
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
@@ -141,7 +151,6 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     return meshes;
 }
 
-/*
 void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices, FbxModel* model)
 {
     for (uint32_t i = 0; i < mesh->mNumBones; i++)
@@ -149,12 +158,12 @@ void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices,
         loadSingleBone(mesh->mBones[i], meshNumVertices,model);
     }
 }
-*/
 
-/*
+
 void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model)
 {
-    int boneID = getBoneID(bone,model);
+
+    int boneID = getBoneID(bone, model);
 
     glm::mat4 offset = aiMatrix4x4ToGlm(&bone->mOffsetMatrix);
     model->setBoneInfo(boneID, offset);
@@ -166,18 +175,14 @@ void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, F
         model->addBoneData(globalVertexID, boneID, vw.mWeight);
     }
 }
-*/
 
-/*
 int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
 {
     std::string boneName(bone->mName.C_Str());
 
     return model->setBoneToMap(boneName);
 }
-*/
 
-/*
 const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)
 {
     for (uint32_t i = 0; i < pAnimation->mNumChannels; i++)
@@ -192,9 +197,7 @@ const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::
 
     return nullptr;
 }
-*/
 
-/*
 void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
     , AnimNode* parentNode, unsigned int i, FbxModel* model)
 {
@@ -242,9 +245,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
         ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
     }
 }
-*/
 
-/*
 void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
     , AnimNode* parentNode, FbxModel* model,std::shared_ptr<Animation> animation)
 {
@@ -294,9 +295,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
         ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
     }
 }
-*/
 
-/*
 void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
 {
     std::shared_ptr<Animation> animation =
@@ -311,7 +310,6 @@ void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
 
     model->setAnimation("walk",animation);
 }
-*/
 
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)
 {
@@ -459,6 +457,10 @@ int FileManager::getImageID(std::string path)
     else if (path == "Nature_Texture_01.png")
     {
         return IDB_PNG10;
+    }
+    else
+    {
+        return IDB_PNG4;
     }
 
     return -1;

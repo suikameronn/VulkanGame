@@ -92,6 +92,8 @@ private:
 	std::shared_ptr<ImageData> image = nullptr;
 	TextureData* textureData = nullptr;
 
+	uint32_t imageDataCount;
+
 public:
 
 	Material();
@@ -120,4 +122,5 @@ public:
 	std::shared_ptr<ImageData> getImageData();
 	TextureData* getTextureData() { return textureData; }
 	bool hasImageData();
+	uint32_t getImageDataCount() { return imageDataCount; }
 };

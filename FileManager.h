@@ -22,6 +22,7 @@ private:
 
 	int vertSize = 0;
 	int indexSize = 0;
+	uint32_t imageDataCount = 0;
 
 	Assimp::Importer importer;
 
