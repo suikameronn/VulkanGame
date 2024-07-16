@@ -92,7 +92,7 @@ private:
 	glm::vec3 specular;
 	glm::vec3 emissive;
 	float shininess;
-	glm::vec3 transmissive;
+	float transmissive;
 
 	//テクスチャのもととなる画像データへのポインタ
 	std::shared_ptr<ImageData> image = nullptr;
@@ -106,7 +106,7 @@ public:
 
 	Material();
 	Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
-		, glm::vec3* emissive, float* shininess, glm::vec3* transmissive);
+		, glm::vec3* emissive, float* shininess, float* transmissive);
 
 	~Material();
 
@@ -117,7 +117,7 @@ public:
 	void setSpecular(glm::vec3* specular) { this->specular = *specular; }
 	void setEmissive(glm::vec3* emissive) { this->emissive = *emissive; }
 	void setShininess(float* shininess) { this->shininess = *shininess; }
-	void setTransmissive(glm::vec3* transmissive) { this->transmissive = *transmissive; }
+	void setTransmissive(float* transmissive) { this->transmissive = *transmissive; }
 
 	void setDescriptorSet(VkDescriptorSet set) { descSetData.decriptorSet = set; }
 	DescSetData* getDescSetData() { return &descSetData; }
@@ -127,7 +127,7 @@ public:
 	glm::vec3 getSpecular() { return specular; }
 	glm::vec3 getEmissive() { return emissive; }
 	float getShininess() { return shininess; }
-	glm::vec3 getTransmissive() { return transmissive; }
+	float getTransmissive() { return transmissive; }
 
 	void setImageData(std::shared_ptr<ImageData> image);
 	std::shared_ptr<ImageData> getImageData();

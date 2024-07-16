@@ -1115,9 +1115,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             UniformBufferObject ubo;
 
-            setMaterial(model->getMeshes(i)->getMaterial(), &ubo);
+            std::shared_ptr<Meshes> mesh = model->getMeshes(i);
 
-            ubo.model = model->getTransformMatrix();
+            setMaterial(mesh->getMaterial(), &ubo);
+
+            ubo.model = model->getTransformMatrix() * mesh->getLocalTransform();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
 

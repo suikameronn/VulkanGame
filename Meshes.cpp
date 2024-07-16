@@ -60,3 +60,13 @@ void Meshes::indexResize(uint32_t size)
 {
 	indices.resize(size);
 }
+
+void Meshes::setLocalTransform(glm::mat4 transform)
+{
+	localTransform = transform;
+}
+
+glm::mat4 Meshes::getLocalTransform()
+{
+	return localTransform;
+}

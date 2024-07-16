@@ -66,6 +66,8 @@ protected:
 	std::vector<uint32_t> indices;
 	//std::vector<BoneData> bones;
 
+	glm::mat4 localTransform;
+
 	std::shared_ptr<Material> material;
 
 	glm::vec3 avePosition;
@@ -92,4 +94,7 @@ public:
 
 	void vertResize(uint32_t size);
 	void indexResize(uint32_t size);
+
+	void setLocalTransform(glm::mat4 transform);
+	glm::mat4 getLocalTransform();
 };

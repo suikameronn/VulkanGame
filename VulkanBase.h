@@ -56,7 +56,7 @@ struct UniformBufferObject {
     alignas(16) glm::vec3 ambient;
     alignas(16) glm::vec3 specular;
     alignas(16) glm::vec3 emissive;
-    alignas(16) glm::vec3 transmissive;
+    float transmissive;
     float shininess;
 };
 

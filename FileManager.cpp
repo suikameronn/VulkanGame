@@ -94,6 +94,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         Meshes* meshes = processAiMesh(mesh, scene, meshNumVertices, model);
+        meshes->setLocalTransform(aiMatrix4x4ToGlm(&node->mTransformation));
         meshNumVertices += mesh->mNumVertices;
 
         std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
@@ -123,7 +124,6 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     {
         Vertex vertex;
         vertex.pos = glm::vec3(mesh->mVertices[i].x, -mesh->mVertices[i].y, mesh->mVertices[i].z);
-        vertex.color = glm::vec3(255, 255, 255);
         vertex.normal = glm::vec3(mesh->mNormals[i].x, -mesh->mNormals[i].y, mesh->mNormals[i].z);
 
         if (mesh->mTextureCoords[0])
@@ -320,34 +320,35 @@ std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScen
 
     glm::vec3 v;
 
-    aiColor3D diffuse{};
-    aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+    aiColor4D diffuse{};
+    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_DIFFUSE, &diffuse);
     v = glm::vec3(diffuse.r, diffuse.g, diffuse.b);
     material->setDiffuse(&v);
 
-    aiColor3D ambient{};
-    aiMat->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
+    aiColor4D ambient{};
+    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_AMBIENT, &ambient);
     v = glm::vec3(ambient.r, ambient.g, ambient.b);
     material->setAmbient(&v);
 
-    aiColor3D specular{};
-    aiMat->Get(AI_MATKEY_COLOR_SPECULAR, specular);
+    aiColor4D specular{};
+    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_SPECULAR, &specular);
     v = glm::vec3(specular.r, specular.g, specular.b);
     material->setSpecular(&v);
 
-    aiColor3D emissive{};
-    aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissive);
+    aiColor4D emissive{};
+    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_EMISSIVE, &emissive);
     v = glm::vec3(emissive.r, emissive.g, emissive.b);
     material->setEmissive(&v);
 
-    float shininess;
-    aiMat->Get(AI_MATKEY_SHININESS, shininess);
-    material->setShininess(&shininess);
+    aiColor4D shininess;
+    aiGetMaterialColor(aiMat,AI_MATKEY_SHININESS, &shininess);
+    float shine = shininess[3];
+    material->setShininess(&shine);
 
-    aiColor3D transparent{};
-    aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, transparent);
-    v = glm::vec3(transparent.r, transparent.g, transparent.b);
-    material->setDiffuse(&v);
+    aiColor4D transparent{};
+    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_TRANSPARENT, &transparent);
+    float trans = transparent[3];
+    material->setTransmissive(&trans);
 
     if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
