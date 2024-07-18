@@ -57,10 +57,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     loadFbxModel(getModelResource(obj), &ptr, size);
 
     const aiScene* scene = importer.ReadFileFromMemory(ptr, size,
-        aiProcess_CalcTangentSpace |
-        aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType);
+        aiProcess_Triangulate);
 
     int allVertices = 0;
     for (uint32_t i = 0; i < scene->mNumMeshes; i++)
@@ -69,7 +66,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     }
     fbxModel->reserveBones(allVertices);
 
-    processNode(scene->mRootNode, scene, fbxModel);
+    processNode(scene->mRootNode, scene, fbxModel,0);
     imageDataCount = 0;
 
     if (scene->mNumAnimations > 0)
@@ -86,16 +83,16 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     return storage->getFbxModel(obj);
 }
 
-void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model)
+void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model,int allVertNum)
 {
-    int meshNumVertices = 0;
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Meshes* meshes = processAiMesh(mesh, scene, meshNumVertices, model);
+        Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
+
         meshes->setLocalTransform(aiMatrix4x4ToGlm(&node->mTransformation));
-        meshNumVertices += mesh->mNumVertices;
+        allVertNum += mesh->mNumVertices;
 
         std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
         if (material->hasImageData())
@@ -110,7 +107,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene, model);
+        processNode(node->mChildren[i], scene, model,allVertNum);
     }
 
     model->setImageDataCount(imageDataCount);
@@ -459,6 +456,10 @@ int FileManager::getImageID(std::string path)
     else if (path == "Nature_Texture_01.png")
     {
         return IDB_PNG10;
+    }
+    else if (path == "FO_SKIN1.tga")
+    {
+        return IDB_PNG11;
     }
     else
     {

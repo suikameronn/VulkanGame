@@ -132,6 +132,11 @@ glm::vec3 Object::getPosition()
 	return position;
 }
 
+glm::mat4 Object::getTransformMatrix()
+{
+	return transformMatrix;
+}
+
 void Object::setSpherePos(float theta, float phi)
 {
 	glm::vec3 pos;

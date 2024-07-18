@@ -27,7 +27,7 @@ void FbxModel::calcAveragePos()
 	for (auto itr = meshes.begin(); itr != meshes.end(); itr++)
 	{
 		Vertex* v = (*itr)->getVertexPoint();
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < (*itr)->getVerticesSize(); i++)
 		{
 			averageLocalPos += v[i].pos;
 			vertexCount++;

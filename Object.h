@@ -53,6 +53,8 @@ public:
 
 	glm::vec3 axis;
 
+	glm::mat4 transformMatrix;
+
 	void bindObject(Object* obj);
 	void bindObject(std::shared_ptr<Camera> camera);
 	void setParentObject(Object* obj);
@@ -60,7 +62,11 @@ public:
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
 
+	virtual glm::vec3 getAverageLocalPos() { return this->position; }
+
 	void setSpherePos(float theta, float phi);
+
+	glm::mat4 getTransformMatrix();
 
 	virtual void updateTransformMatrix() {};
 	virtual void Update();

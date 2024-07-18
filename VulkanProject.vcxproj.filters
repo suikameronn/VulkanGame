@@ -147,6 +147,14 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="models\Ground_01.fbx" />
+    <None Include="model5.bin">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="model6.bin">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="models\Flag_Pole.fbx" />
+    <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\Buche de Noel.png">
@@ -183,6 +191,18 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="textures\Nature_Texture_01.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\Add_your_Flag.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\body_01 - コピー.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\png11.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="textures\FO_SKIN1.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

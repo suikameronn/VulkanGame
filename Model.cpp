@@ -76,11 +76,6 @@ uint32_t Model::getimageDataCount()
 	return imageDataCount;
 }
 
-glm::mat4 Model::getTransformMatrix()
-{
-	return transformMatrix;
-}
-
 glm::vec3 Model::getAverageLocalPos()
 {
 	return fbxModel->getAverageLocalPos();

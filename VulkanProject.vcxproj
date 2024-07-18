@@ -202,6 +202,7 @@
     <Image Include="textures\eye_iris_L_00.png" />
     <Image Include="textures\eye_iris_R_00.png" />
     <Image Include="textures\face_00.png" />
+    <Image Include="textures\FO_SKIN1.png" />
     <Image Include="textures\hair_01.png" />
     <Image Include="textures\NaturePackLite_Texture_01.png" />
     <Image Include="textures\Nature_Texture_01.png" />

@@ -57,7 +57,6 @@ class Model:public Object
 protected:
 	uint32_t imageDataCount;
 
-	glm::mat4 transformMatrix;
 	Rotate rotate;
 
 	std::shared_ptr<FbxModel> fbxModel;
@@ -83,9 +82,7 @@ public:
 	uint32_t getimageDataCount();
 	DescSetData* getDescriptorSet();
 
-	glm::mat4 getTransformMatrix();
-
-	glm::vec3 getAverageLocalPos();
+	glm::vec3 getAverageLocalPos() override;
 
 	void updateTransformMatrix() override;
 	void Update() override;
