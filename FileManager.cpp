@@ -91,7 +91,9 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
 
-        meshes->setLocalTransform(aiMatrix4x4ToGlm(&node->mTransformation));
+        glm::mat4 localMat = aiMatrix4x4ToGlm(&node->mTransformation);
+        localMat[3][1] *= -1;
+        meshes->setLocalTransform(localMat);
         allVertNum += mesh->mNumVertices;
 
         std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
@@ -457,7 +459,7 @@ int FileManager::getImageID(std::string path)
     {
         return IDB_PNG10;
     }
-    else if (path == "FO_SKIN1.tga")
+    else if (path == "Add_your_Flag.png")
     {
         return IDB_PNG11;
     }

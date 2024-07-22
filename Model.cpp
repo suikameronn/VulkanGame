@@ -5,6 +5,7 @@ Model::Model()
 {
 	uniformBufferChange = true;
 
+	pivot = { 0,0,0 };
 	position = { 0,0,0 };
 	posOffSet = 0.0f;
 
@@ -46,6 +47,7 @@ void Model::cleanupVulkan()
 void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 {
 	fbxModel = model;
+	pivot = model->getAverageLocalPos();
 
 	pointBuffers.resize(model->getMeshesSize());
 	mappedBuffers.resize(model->getMeshesSize());
@@ -76,11 +78,6 @@ uint32_t Model::getimageDataCount()
 	return imageDataCount;
 }
 
-glm::vec3 Model::getAverageLocalPos()
-{
-	return fbxModel->getAverageLocalPos();
-}
-
 void Model::Update()
 {
 
@@ -98,7 +95,7 @@ void Model::Update()
 
 void Model::updateTransformMatrix()
 {
-	transformMatrix = glm::translate(glm::mat4(1.0), position - getAverageLocalPos())
+	transformMatrix = glm::translate(glm::mat4(1.0), position - glm::vec3(0,-50,0))
 		* glm::rotate(glm::mat4(1.0), rotate.radian, rotate.direction)
 		* glm::scale(scale);
 }

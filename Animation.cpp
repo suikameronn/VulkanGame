@@ -27,9 +27,11 @@ void Animation::DeleteAnimTree(AnimNode* node)
 	delete node;
 }
 
-void Animation::setBoneTransform(std::vector < std::vector<glm::mat4>> transforms)
+void Animation::getBoneTransform(float animTime,std::vector < std::vector<glm::mat4>>& transforms)
 {
-	this->transforms = transforms;
+	glm::mat4 mat = rootNode->getAnimMatrix(animTime);
+
+
 }
 
 void Animation::StartAnim()

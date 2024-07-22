@@ -13,27 +13,26 @@ struct BoneData
 
 	void addBoneData(uint32_t boneID, float weight)
 	{
-		for (uint32_t i = 0; i < ids.size(); i++)
-		{
-			if (weights[i] == 0.0f)
-			{
-				ids[i] = boneID;
-				weights[i] = weight;
+		ids.push_back(boneID);
+		weights.push_back(weight);
 
-				return;
-			}
-		}
+		return;
 	}
 };
 
 struct BoneInfo
 {
 	glm::mat4 offsetMatrix;
-	glm::mat4 finalTransformation;
+	glm::mat4 finalTransform;
 
 	BoneInfo(const glm::mat4 offset)
 	{
 		offsetMatrix = offset;
+	}
+
+	void setFinalTransform(glm::mat4 mat)
+	{
+		finalTransform = mat;
 	}
 };
 
@@ -42,6 +41,8 @@ struct Vertex {
 	glm::vec3 color;
 	glm::vec2 texCoord;
 	glm::vec3 normal;
+
+	BoneData bone;
 
 	bool operator==(const Vertex& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
@@ -64,7 +65,6 @@ protected:
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	//std::vector<BoneData> bones;
 
 	glm::mat4 localTransform;
 

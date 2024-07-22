@@ -31,6 +31,7 @@ protected:
 
 	void move();
 
+	glm::vec3 pivot;
 	glm::vec3 position;
 
 	glm::vec3 inputMove();
@@ -59,10 +60,9 @@ public:
 	void bindObject(std::shared_ptr<Camera> camera);
 	void setParentObject(Object* obj);
 
+	virtual glm::vec3 getPivot() { return pivot; }
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
-
-	virtual glm::vec3 getAverageLocalPos() { return this->position; }
 
 	void setSpherePos(float theta, float phi);
 

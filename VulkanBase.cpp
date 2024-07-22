@@ -1119,7 +1119,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             setMaterial(mesh->getMaterial(), &ubo);
 
-            ubo.model = model->getTransformMatrix() * mesh->getLocalTransform();
+            ubo.model = model->getTransformMatrix() *  * mesh->getLocalTransform();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
 

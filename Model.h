@@ -82,8 +82,6 @@ public:
 	uint32_t getimageDataCount();
 	DescSetData* getDescriptorSet();
 
-	glm::vec3 getAverageLocalPos() override;
-
 	void updateTransformMatrix() override;
 	void Update() override;
 

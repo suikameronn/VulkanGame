@@ -7,6 +7,7 @@ Object::Object()
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };
+	pivot = position;
 	posOffSet = 0.0f;
 
 	forward = glm::vec3{ 0,0,1 };
