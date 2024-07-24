@@ -22,17 +22,29 @@ struct BoneData
 
 struct BoneInfo
 {
-	glm::mat4 offsetMatrix;
-	glm::mat4 finalTransform;
+	std::vector<glm::mat4> offsetMatrix;
+	std::vector<glm::mat4> finalTransform;
 
-	BoneInfo(const glm::mat4 offset)
+	void setOffsetMatrix(uint32_t index, glm::mat4 matrix)
 	{
-		offsetMatrix = offset;
+		if (index < offsetMatrix.size())
+		{
+			offsetMatrix[index] = matrix;
+		}
 	}
 
-	void setFinalTransform(glm::mat4 mat)
+	void setFinalTransform(uint32_t index, glm::mat4 matrix)
 	{
-		finalTransform = mat;
+		if (index < finalTransform.size())
+		{
+			finalTransform[index] = matrix;
+		}
+	}
+
+	void resizeBoneInfo(uint32_t size)
+	{
+		offsetMatrix.resize(size);
+		finalTransform.resize(size);
 	}
 };
 

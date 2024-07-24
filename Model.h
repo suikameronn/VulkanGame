@@ -64,7 +64,7 @@ protected:
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
 
-	std::vector<BoneInfo> boneInfo;
+	BoneInfo boneInfo;
 
 	std::string playAnimName;
 

@@ -52,17 +52,13 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 	pointBuffers.resize(model->getMeshesSize());
 	mappedBuffers.resize(model->getMeshesSize());
 
-	boneInfo.resize(model->getBoneNum());
-	for (int i = 0; i < model->getBoneNum(); i++)
-	{
-		BoneInfo info(model->getBoneOffset(i));
-		boneInfo[i] = info;
-	}
+	boneInfo.resizeBoneInfo(model->getBoneNum());
+	std::copy()
 }
 
 void Model::playAnimation()
 {
-
+	
 }
 
 bool Model::setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform)
