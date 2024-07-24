@@ -59,13 +59,6 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     const aiScene* scene = importer.ReadFileFromMemory(ptr, size,
         aiProcess_Triangulate);
 
-    int allVertices = 0;
-    for (uint32_t i = 0; i < scene->mNumMeshes; i++)
-    {
-        allVertices += scene->mMeshes[i]->mNumVertices;
-    }
-    fbxModel->reserveBones(allVertices);
-
     processNode(scene->mRootNode, scene, fbxModel,0);
     imageDataCount = 0;
 
@@ -133,11 +126,14 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
         {
             vertex.texCoord = glm::vec2(0.0f, 0.0f);
         }
-
         meshes->pushBackVertex(&vertex);
     }
 
-    processMeshBones(mesh, meshNumVertices,model);
+    if (mesh->mNumBones > 0)
+    {
+        meshes->resizeBoneData(mesh->mNumVertices);
+        processMeshBones(mesh, meshNumVertices, model, meshes);
+    }
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
@@ -151,28 +147,23 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     return meshes;
 }
 
-void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices, FbxModel* model)
+void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices, FbxModel* model,Meshes* meshes)
 {
     for (uint32_t i = 0; i < mesh->mNumBones; i++)
     {
-        loadSingleBone(mesh->mBones[i], meshNumVertices,model);
+        loadSingleBone(mesh->mBones[i], meshNumVertices,model,meshes);
     }
 }
 
-
-void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model)
+void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model, Meshes* meshes)
 {
-
     int boneID = getBoneID(bone, model);
-
     glm::mat4 offset = aiMatrix4x4ToGlm(&bone->mOffsetMatrix);
     model->setBoneInfo(boneID, offset);
 
     for (uint32_t i = 0; i < bone->mNumWeights; i++)
     {
-        const aiVertexWeight& vw = bone->mWeights[i];
-        uint32_t globalVertexID = meshNumVertices + bone->mWeights[i].mVertexId;
-        model->addBoneData(globalVertexID, boneID, vw.mWeight);
+        meshes->addBoneData(i,boneID, bone->mWeights[i].mWeight);
     }
 }
 
@@ -180,7 +171,7 @@ int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
 {
     std::string boneName(bone->mName.C_Str());
 
-    return model->setBoneToMap(boneName);
+    return model->getBoneToMap(boneName);
 }
 
 const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)

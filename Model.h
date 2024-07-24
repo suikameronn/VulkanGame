@@ -64,6 +64,10 @@ protected:
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
 
+	std::vector<BoneInfo> boneInfo;
+
+	std::string playAnimName;
+
 public:
 
 	Model();
@@ -71,6 +75,9 @@ public:
 	glm::vec3 scale;
 
 	void setFbxModel(std::shared_ptr<FbxModel> model);
+
+	void playAnimation();
+	bool setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform);
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();

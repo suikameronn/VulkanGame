@@ -54,7 +54,17 @@ void FbxModel::cleanupVulkan()
 	}
 }
 
-int FbxModel::setBoneToMap(std::string boneName)
+bool FbxModel::containBone(std::string nodeName)
+{
+	if (m_BoneNameToIndexMap.find(nodeName) != m_BoneNameToIndexMap.end())
+	{
+		return true;
+	}
+
+	return false;
+}
+
+int FbxModel::getBoneToMap(std::string boneName)
 {
 	if (m_BoneNameToIndexMap.find(boneName) == m_BoneNameToIndexMap.end())
 	{
@@ -70,21 +80,20 @@ int FbxModel::setBoneToMap(std::string boneName)
 
 void FbxModel::setBoneInfo(int id,const glm::mat4 mat)
 {
-	if (id == m_BoneInfo.size())
+	if (id == boneOffsets.size())
 	{
-		BoneInfo bi(mat);
-		m_BoneInfo.push_back(bi);
+		boneOffsets.push_back(mat);
 	}
-}
-
-void FbxModel::addBoneData(int vertID, int boneID, float weight)
-{
-	m_Bones[vertID].addBoneData(boneID, weight);
 }
 
 int FbxModel::getBoneNum()
 {
-	return m_BoneInfo.size();
+	return boneOffsets.size();
+}
+
+glm::mat4 FbxModel::getBoneOffset(int index)
+{
+	return boneOffsets[index];
 }
 
 void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)

@@ -70,3 +70,9 @@ glm::mat4 Meshes::getLocalTransform()
 {
 	return localTransform;
 }
+
+void Meshes::addBoneData(uint32_t index,uint32_t infoID, float weight)
+{
+	BoneData bone(infoID, weight);
+	bones[index].push_back(bone);
+}

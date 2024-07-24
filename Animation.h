@@ -44,6 +44,11 @@ public:
 		matrix = mat;
 	}
 
+	std::string getNodeName()
+	{
+		return name;
+	}
+
 	glm::mat4 aiMatrix3x3ToGlm(const aiMatrix3x3& from)
 	{
 		glm::mat4 to;
@@ -241,6 +246,5 @@ public:
 	void StartAnim();
 	void PauseAnim();
 
-	void getBoneTransform(float animTime,std::vector < std::vector<glm::mat4>>& transforms);
-	std::vector<glm::mat4> &getBoneTransform();
+	bool getBoneTransform(float animTime,glm::mat4 transforms);
 };

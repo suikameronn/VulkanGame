@@ -8,15 +8,15 @@ const int NUM_BONES_PER_VEREX = 4;
 //í∏ì_ç\ë¢ëÃÇ™éùÇ¬
 struct BoneData
 {
-	std::vector<uint32_t> ids;
-	std::vector<float> weights;
+	uint32_t infoID;
+	float weight;
 
-	void addBoneData(uint32_t boneID, float weight)
+	BoneData() {};
+
+	BoneData(uint32_t infoID, float weight)
 	{
-		ids.push_back(boneID);
-		weights.push_back(weight);
-
-		return;
+		this->infoID = infoID;
+		this->weight = weight;
 	}
 };
 
@@ -41,8 +41,6 @@ struct Vertex {
 	glm::vec3 color;
 	glm::vec2 texCoord;
 	glm::vec3 normal;
-
-	BoneData bone;
 
 	bool operator==(const Vertex& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
@@ -72,6 +70,8 @@ protected:
 
 	glm::vec3 avePosition;
 
+	std::vector<std::vector<BoneData>> bones;
+
 public:
 
 	~Meshes();
@@ -97,4 +97,7 @@ public:
 
 	void setLocalTransform(glm::mat4 transform);
 	glm::mat4 getLocalTransform();
+
+	void addBoneData(uint32_t index,uint32_t infoID, float weight);
+	void resizeBoneData(uint32_t vertNum) { bones.resize(vertNum); }
 };
