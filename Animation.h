@@ -8,6 +8,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
+class Model;
+
 struct AnimationKeyData
 {
 	std::unordered_map<float, glm::vec3> animationScaleKey;
@@ -191,10 +193,8 @@ public:
 		return Start + Factor * Delta;//比率から計算する
 	}
 
-	glm::mat4 getAnimMatrix(float animTime)
+	glm::mat4 getAnimMatrix(float animTime,glm::mat4& transform)
 	{
-		glm::mat4 transform;
-
 		//補間などを計算して、平行移動と回転、スケーリングの行列を合成した行列を返す
 		if (animNode)
 		{
@@ -207,28 +207,24 @@ public:
 			glm::vec3 position = calcInterpolatedPos(animTime);
 			glm::mat4 posMat = glm::translate(glm::mat4(), position);
 
-			transform = scaleMat * quatMat * posMat;
+			transform = transform * posMat * quatMat * scaleMat;
 		}
 		else
 		{
-			transform = matrix;
+			transform = transform * matrix;
 		}
 
 		return transform;
 	}
 };
 
+class FbxModel;
+
 class Animation
 {
 private:
-	bool play = false;
-
 	float timeTick;
 	float duration;
-	float timeSeconds;
-	float animationTime;
-
-	std::vector<std::vector<glm::mat4>> transforms;
 
 	AnimNode* rootNode;
 
@@ -243,8 +239,6 @@ public:
 		this->rootNode = rootNode;
 	}
 
-	void StartAnim();
-	void PauseAnim();
-
-	bool getBoneTransform(float animTime,glm::mat4 transforms);
+	void setFinalTransform(float animationTime, std::vector<glm::mat4>& boneFinalTransforms, FbxModel* model);
+	void setFinalTransform(float animationTime,std::vector<glm::mat4>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix,FbxModel* model);
 };

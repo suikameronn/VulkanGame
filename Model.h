@@ -66,6 +66,8 @@ protected:
 
 	BoneInfo boneInfo;
 
+	bool playAnim;
+	float animTime;
 	std::string playAnimName;
 
 public:

@@ -1351,6 +1351,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         Storage* storage = Storage::GetInstance();
         std::shared_ptr<Material> material;
+
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
             for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)

@@ -35,6 +35,8 @@ public:
 	void addMeshes(Meshes* mesh);
 
 	int getBoneNum();
+	std::vector<glm::mat4>::iterator getBoneOffsetBegin() { return boneOffsets.begin(); }
+	std::vector<glm::mat4>::iterator getBoneOffsetEnd() { return boneOffsets.end(); }
 	glm::mat4 getBoneOffset(int index);
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
@@ -51,8 +53,8 @@ public:
 	void setBoneInfo(int id,const glm::mat4 mat);
 
 	void setAnimation(std::string name, std::shared_ptr<Animation> animation);
-
 	void setAnimLoop(bool loop);
+	void updateAnimation(float animationTime,std::string animationName, std::vector<glm::mat4>& transforms);
 
 	void setImageDataCount(uint32_t count) { imageDataCount = count; }
 	uint32_t getImageDataCount() { return imageDataCount; }

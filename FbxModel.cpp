@@ -101,6 +101,11 @@ void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animati
 	animations[name] = animation;
 }
 
+void FbxModel::updateAnimation(float animationTime,std::string animationName, std::vector<glm::mat4>& transforms)
+{
+	animations[animationName]->setFinalTransform(animationTime, transforms,this);
+}
+
 /*
 
 //アニメーションの行列を求める

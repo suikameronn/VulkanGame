@@ -52,6 +52,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::mat3 normal;
+    alignas(16) glm::mat4 boneTransform[100];
     alignas(16) glm::vec3 diffuse;
     alignas(16) glm::vec3 ambient;
     alignas(16) glm::vec3 specular;

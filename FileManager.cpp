@@ -59,7 +59,8 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     const aiScene* scene = importer.ReadFileFromMemory(ptr, size,
         aiProcess_Triangulate);
 
-    processNode(scene->mRootNode, scene, fbxModel,0);
+    allVertNum = 0;
+    processNode(scene->mRootNode, scene, fbxModel);
     imageDataCount = 0;
 
     if (scene->mNumAnimations > 0)
@@ -76,7 +77,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     return storage->getFbxModel(obj);
 }
 
-void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model,int allVertNum)
+void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model)
 {
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
@@ -102,7 +103,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene, model,allVertNum);
+        processNode(node->mChildren[i], scene, model);
     }
 
     model->setImageDataCount(imageDataCount);
@@ -163,7 +164,7 @@ void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, F
 
     for (uint32_t i = 0; i < bone->mNumWeights; i++)
     {
-        meshes->addBoneData(i,boneID, bone->mWeights[i].mWeight);
+        meshes->addBoneData(bone->mWeights[i].mVertexId, boneID, bone->mWeights[i].mWeight);
     }
 }
 

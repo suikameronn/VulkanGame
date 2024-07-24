@@ -23,6 +23,8 @@ Model::Model()
 	theta = 0.0f;
 	phi = 0.0f;
 
+	playAnim = false;
+
 	rotateSpeed = 0.1f;
 }
 
@@ -53,20 +55,19 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 	mappedBuffers.resize(model->getMeshesSize());
 
 	boneInfo.resizeBoneInfo(model->getBoneNum());
-	std::copy()
-}
-
-void Model::playAnimation()
-{
-	
+	std::copy(model->getBoneOffsetBegin(), model->getBoneOffsetEnd(), boneInfo.offsetMatrix.begin());
 }
 
 bool Model::setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform)
 {
 	if (fbxModel->containBone(nodeName))
 	{
-		boneInfo[fbxModel->getBoneToMap(nodeName)].finalTransform = transform;
+		boneInfo.finalTransform[fbxModel->getBoneToMap(nodeName)] = transform;
+		
+		return true;
 	}
+
+	return false;
 }
 
 std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
@@ -94,8 +95,17 @@ uint32_t Model::getimageDataCount()
 	return imageDataCount;
 }
 
+void Model::playAnimation()
+{
+	fbxModel->updateAnimation(animTime, playAnimName, boneInfo.finalTransform);
+}
+
 void Model::Update()
 {
+	if (playAnim)
+	{
+		playAnimation();
+	}
 
 	if (controllable)
 	{

@@ -22,11 +22,12 @@ private:
 
 	int vertSize = 0;
 	int indexSize = 0;
+	uint32_t allVertNum = 0;
 	uint32_t imageDataCount = 0;
 
 	Assimp::Importer importer;
 
-	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model,int allVertNum);
+	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
 	Meshes* processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model);
 	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);

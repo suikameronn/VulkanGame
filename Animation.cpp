@@ -1,12 +1,11 @@
 #include"Animation.h"
 
+#include"FbxModel.h"
+
 Animation::Animation(float timeTick, float duration,int boneNum)
 {
 	this->timeTick = timeTick;
 	this->duration = duration;
-	this->timeSeconds = 0.0f;
-
-	transforms = std::vector<std::vector<glm::mat4>>(boneNum, std::vector<glm::mat4>(4));
 }
 
 Animation::~Animation()
@@ -27,23 +26,38 @@ void Animation::DeleteAnimTree(AnimNode* node)
 	delete node;
 }
 
-void Animation::getBoneTransform(float animTime,glm::mat4 transform)
+void Animation::setFinalTransform(float animationTime, std::vector<glm::mat4>& boneFinalTransforms, AnimNode* node, glm::mat4 parentMatrix, FbxModel* model)
 {
-	glm::mat4 mat = rootNode->getAnimMatrix(animTime);
+	node->getAnimMatrix(animationTime, parentMatrix);
 
+	if (model->containBone(node->getName()))
+	{
+		boneFinalTransforms[model->getBoneToMap(node->getName())] = parentMatrix;
+	}
 
+	for (uint32_t i = 0; i < node->getChildrenCount(); i++)
+	{
+		setFinalTransform(animationTime,boneFinalTransforms, node->getChildren(i), parentMatrix, model);
+	}
 }
 
-void Animation::StartAnim()
+void Animation::setFinalTransform(float animationTime, std::vector<glm::mat4>& boneFinalTransforms, FbxModel* model)
 {
-	play = true;
+	glm::mat4 identity;
+	rootNode->getAnimMatrix(animationTime,identity);
+
+	if (model->containBone(rootNode->getName()))
+	{
+		boneFinalTransforms[model->getBoneToMap(rootNode->getName())] = identity;
+	}
+
+	for (uint32_t i = 0; i < rootNode->getChildrenCount(); i++)
+	{
+		setFinalTransform(animationTime,boneFinalTransforms, rootNode->getChildren(i), identity, model);
+	}
 }
 
-void Animation::PauseAnim()
-{
-	play = false;
-}
-
+/*
 std::vector<glm::mat4>& Animation::getBoneTransform()
 {
 	animationTime = fmod(timeSeconds * timeTick,duration);
@@ -56,3 +70,4 @@ std::vector<glm::mat4>& Animation::getBoneTransform()
 	}
 
 }
+*/
