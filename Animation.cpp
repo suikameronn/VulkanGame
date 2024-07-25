@@ -43,7 +43,7 @@ void Animation::setFinalTransform(float animationTime, std::vector<glm::mat4>& b
 
 void Animation::setFinalTransform(float animationTime, std::vector<glm::mat4>& boneFinalTransforms, FbxModel* model)
 {
-	glm::mat4 identity;
+	glm::mat4 identity(1.0f);
 	rootNode->getAnimMatrix(animationTime,identity);
 
 	if (model->containBone(rootNode->getName()))

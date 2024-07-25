@@ -99,7 +99,7 @@ public:
 	{
 		for (auto itr = animKeyData.animationScaleKey.begin(); itr != animKeyData.animationScaleKey.end(); itr++)
 		{
-			if (itr->first <= animTime)
+			if (itr->first <= animTime + 1.0)
 			{
 				return itr;
 			}
@@ -110,7 +110,7 @@ public:
 	{
 		for (auto itr = animKeyData.animationRotKey.begin(); itr != animKeyData.animationRotKey.end(); itr++)
 		{
-			if (itr->first <= animTime)
+			if (itr->first <= animTime + 1.0)
 			{
 				return itr;
 			}
@@ -121,7 +121,7 @@ public:
 	{
 		for (auto itr = animKeyData.animationPositionKey.begin(); itr != animKeyData.animationPositionKey.end(); itr++)
 		{
-			if (itr->first <= animTime)
+			if (itr->first <= animTime + 1.0)
 			{
 				return itr;
 			}

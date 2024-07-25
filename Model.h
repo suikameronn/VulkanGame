@@ -68,7 +68,7 @@ protected:
 
 	bool playAnim;
 	float animTime;
-	std::string playAnimName;
+	std::string playAnimName = "walk";
 
 public:
 
@@ -80,6 +80,7 @@ public:
 
 	void playAnimation();
 	bool setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform);
+	std::vector<glm::mat4> getBoneInfoFinalTransform();
 
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();

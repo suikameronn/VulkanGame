@@ -1123,6 +1123,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
 
+            ubo.boneMatrix = model->getBoneInfoFinalTransform();
+
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
         }
     }

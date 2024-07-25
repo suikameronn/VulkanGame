@@ -132,7 +132,6 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
 
     if (mesh->mNumBones > 0)
     {
-        meshes->resizeBoneData(mesh->mNumVertices);
         processMeshBones(mesh, meshNumVertices, model, meshes);
     }
 

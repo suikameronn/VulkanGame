@@ -70,6 +70,11 @@ bool Model::setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform)
 	return false;
 }
 
+std::vector<glm::mat4> Model::getBoneInfoFinalTransform()
+{
+	return boneInfo.finalTransform;
+}
+
 std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
 {
 	return this->fbxModel->getMeshes(i);
@@ -102,7 +107,7 @@ void Model::playAnimation()
 
 void Model::Update()
 {
-	if (playAnim)
+	if (/*playAnim*/true)
 	{
 		playAnimation();
 	}

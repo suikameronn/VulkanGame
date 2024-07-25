@@ -54,8 +54,17 @@ struct Vertex {
 	glm::vec2 texCoord;
 	glm::vec3 normal;
 
+	std::vector<uint32_t> boneIDs;
+	std::vector<float> weights;
+
 	bool operator==(const Vertex& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
+
+	void addBoneData(uint32_t boneID, float weight)
+	{
+		this->boneIDs.push_back(boneID);
+		this->weights.push_back(weight);
 	}
 };
 
@@ -81,8 +90,6 @@ protected:
 	std::shared_ptr<Material> material;
 
 	glm::vec3 avePosition;
-
-	std::vector<std::vector<BoneData>> bones;
 
 public:
 
@@ -111,5 +118,4 @@ public:
 	glm::mat4 getLocalTransform();
 
 	void addBoneData(uint32_t index,uint32_t infoID, float weight);
-	void resizeBoneData(uint32_t vertNum) { bones.resize(vertNum); }
 };
