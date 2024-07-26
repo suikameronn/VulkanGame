@@ -9,7 +9,7 @@ enum OBJECT
 	FBXTEST = 101,
 	UNITYCHAN_NO_ANIM,
 	GROUND1,
-	FRAG,
+	FRAG
 };
 
 enum IMAGE

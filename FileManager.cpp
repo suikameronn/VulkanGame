@@ -164,6 +164,7 @@ void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, F
     for (uint32_t i = 0; i < bone->mNumWeights; i++)
     {
         meshes->addBoneData(bone->mWeights[i].mVertexId, boneID, bone->mWeights[i].mWeight);
+        std::cout << bone->mWeights[i].mVertexId << std::endl;
     }
 }
 

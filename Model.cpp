@@ -102,7 +102,7 @@ uint32_t Model::getimageDataCount()
 
 void Model::playAnimation()
 {
-	fbxModel->updateAnimation(animTime, playAnimName, boneInfo.finalTransform);
+	fbxModel->updateAnimation(24.0f, playAnimName, boneInfo.finalTransform);
 }
 
 void Model::Update()

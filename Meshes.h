@@ -66,6 +66,13 @@ struct Vertex {
 		this->boneIDs.push_back(boneID);
 		this->weights.push_back(weight);
 	}
+
+#define _DEBUG
+	int getBoneDataSize()
+	{
+		return boneIDs.size();
+	}
+#define endif
 };
 
 namespace std {

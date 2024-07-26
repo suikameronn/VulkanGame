@@ -500,7 +500,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         
-        std::array<VkVertexInputAttributeDescription,4> attributeDescriptions;
+        std::array<VkVertexInputAttributeDescription,6> attributeDescriptions;
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -520,6 +520,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[3].offset = offsetof(Vertex, normal);
+
+        attributeDescriptions[4].binding = 0;
+        attributeDescriptions[4].location = 4;
+        attributeDescriptions[4].format = VK_FORMAT_R32_UINT;
+        attributeDescriptions[4].offset = offsetof(Vertex, normal);
+
+        attributeDescriptions[5].binding = 0;
+        attributeDescriptions[5].location = 5;
+        attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[5].offset = offsetof(Vertex, normal);
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -1122,7 +1132,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             ubo.model = model->getTransformMatrix() * mesh->getLocalTransform();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
-
+            
             ubo.boneMatrix = model->getBoneInfoFinalTransform();
 
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
