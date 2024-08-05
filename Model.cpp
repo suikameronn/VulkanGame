@@ -107,7 +107,7 @@ void Model::playAnimation()
 
 void Model::Update()
 {
-	if (/*playAnim*/true)
+	if (false)
 	{
 		playAnimation();
 	}

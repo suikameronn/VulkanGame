@@ -2,7 +2,7 @@
 
 #include"FbxModel.h"
 
-Animation::Animation(float timeTick, float duration,int boneNum)
+Animation::Animation(float timeTick, float duration)
 {
 	this->timeTick = timeTick;
 	this->duration = duration;

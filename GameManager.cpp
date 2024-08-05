@@ -8,7 +8,7 @@ void GameManager::initGame()
 {
     frameDuration = (1.0f / fps) * 1000.0f;
 
-    VulkanBase::GetInstance()->initVulkan();
+    VulkanBase::GetInstance()->initVulkan(limitBoneDataSize);
 
     Controller::GetInstance();
 

@@ -72,6 +72,8 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     fbxModel->calcAveragePos();
 
+    loadAnimations(fbxModel);
+
     storage->addModel(obj, fbxModel);
 
     return storage->getFbxModel(obj);
@@ -127,11 +129,12 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
         {
             vertex.texCoord = glm::vec2(0.0f, 0.0f);
         }
-        meshes->pushBackVertex(&vertex);
+        meshes->pushBackVertex(vertex);
     }
 
     if (mesh->mNumBones > 0)
     {
+        model->setBoneInfo(0, glm::mat4(1.0f));
         processMeshBones(mesh, meshNumVertices, model, meshes);
     }
 
@@ -157,14 +160,13 @@ void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices,
 
 void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model, Meshes* meshes)
 {
-    int boneID = getBoneID(bone, model);
+    int boneID = getBoneID(bone, model) + 1;
     glm::mat4 offset = aiMatrix4x4ToGlm(&bone->mOffsetMatrix);
     model->setBoneInfo(boneID, offset);
 
     for (uint32_t i = 0; i < bone->mNumWeights; i++)
     {
         meshes->addBoneData(bone->mWeights[i].mVertexId, boneID, bone->mWeights[i].mWeight);
-        std::cout << bone->mWeights[i].mVertexId << std::endl;
     }
 }
 
@@ -288,13 +290,24 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
     }
 }
 
+//何らかの方式で複数のパスとそれに付随するアニメーション名を渡す(未実装)
+void FileManager::loadAnimations(FbxModel* fbxModel)
+{
+    void* ptr = nullptr;
+    int size = 0;
+    loadFbxModel(163, &ptr, size);
+
+    const aiScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_SortByPType);
+
+    loadAnimation(scene,fbxModel);
+}
+
 void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
 {
     std::shared_ptr<Animation> animation =
         std::shared_ptr<Animation>(new Animation(
             scene->mAnimations[0]->mTicksPerSecond
-        ,scene->mAnimations[0]->mDuration
-        ,model->getBoneNum()));
+        ,scene->mAnimations[0]->mDuration));
 
     AnimNode* rootNode = nullptr;
 

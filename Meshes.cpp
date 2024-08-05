@@ -1,14 +1,15 @@
 #include"Meshes.h"
 #include"VulkanBase.h"
+#include"GameManager.h"
 
 Meshes::~Meshes()
 {
 
 }
 
-void Meshes::pushBackVertex(Vertex* v)
+void Meshes::pushBackVertex(Vertex& v)
 {
-	vertices.push_back(*v);
+	vertices.push_back(v);
 }
 
 void Meshes::pushBackIndex(uint32_t i)

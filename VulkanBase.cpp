@@ -20,8 +20,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //VulkanÇÃèâä˙âª
-    void VulkanBase::initVulkan() {
+    void VulkanBase::initVulkan(uint32_t limit) {
         descriptorSetCount = 0;
+        limitVertexBoneDataSize = limit;
 
         createInstance();
         setupDebugMessenger();
@@ -458,7 +459,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(uint32_t imageDataCount,VkDescriptorSetLayout& layout,VkPipelineLayout& pLayout,VkPipeline& pipeline) {
+    void VulkanBase::createGraphicsPipeline(uint32_t imageDataCount, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
 
         std::string vertFile;
         std::string fragFile;
@@ -499,7 +500,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindingDescription.binding = 0;
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        
+
+        /*
         std::array<VkVertexInputAttributeDescription,6> attributeDescriptions;
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -530,6 +532,42 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         attributeDescriptions[5].location = 5;
         attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[5].offset = offsetof(Vertex, normal);
+        */
+
+
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+        attributeDescriptions.resize(4);
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+        attributeDescriptions[3].binding = 0;
+        attributeDescriptions[3].location = 3;
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = offsetof(Vertex, normal);
+
+        /*
+        attributeDescriptions[4].binding = 0;
+        attributeDescriptions[4].location = 4;
+        attributeDescriptions[4].format = VK_FORMAT_R32_UINT;
+        attributeDescriptions[4].offset = offsetof(Vertex, boneIDs);
+
+        attributeDescriptions[5].binding = 0;
+        attributeDescriptions[5].location = 5;
+        attributeDescriptions[5].format = VK_FORMAT_R32_SFLOAT;
+        attributeDescriptions[5].offset = offsetof(Vertex, weights);
+        */
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());

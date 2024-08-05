@@ -279,7 +279,7 @@ private:
 
 public:
 
-	Animation(float timeInTick,float duration,int boneNum);
+	Animation(float timeInTick,float duration);
 	~Animation();
 	void DeleteAnimTree(AnimNode* node);
 

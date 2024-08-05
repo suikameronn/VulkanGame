@@ -1,7 +1,9 @@
 #pragma once
-
+#include <array>
 #include <functional>
 #include"Material.h"
+
+#define MAXBONEINFO 250
 
 const int NUM_BONES_PER_VEREX = 4;
 
@@ -24,6 +26,12 @@ struct BoneInfo
 {
 	std::vector<glm::mat4> offsetMatrix;
 	std::vector<glm::mat4> finalTransform;
+
+	BoneInfo()
+	{
+		offsetMatrix.push_back(glm::mat4(1.0f));
+		finalTransform.push_back(glm::mat4(1.0f));
+	}
 
 	void setOffsetMatrix(uint32_t index, glm::mat4 matrix)
 	{
@@ -54,27 +62,39 @@ struct Vertex {
 	glm::vec2 texCoord;
 	glm::vec3 normal;
 
-	std::vector<uint32_t> boneIDs;
-	std::vector<float> weights;
+	uint32_t index;
+	std::array<uint32_t, MAXBONEINFO> boneIDs;
+	std::array<float, MAXBONEINFO> weights;
 
-	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
-	}
+	Vertex()
+	{
+		for (uint32_t i = 0; i < MAXBONEINFO; i++)
+		{
+			boneIDs[i] = 0;
+			weights[i] = 0.0f;
+		}
 
+		index = 1;
+	};
+	
 	void addBoneData(uint32_t boneID, float weight)
 	{
-		this->boneIDs.push_back(boneID);
-		this->weights.push_back(weight);
+		if (index < MAXBONEINFO)
+		{
+			boneIDs[index] = boneID;
+			weights[index] = weight;
+
+			index++;
+		}
 	}
 
-#define _DEBUG
 	int getBoneDataSize()
 	{
-		return boneIDs.size();
+		return index - 1;
 	}
-#define endif
 };
 
+/*
 namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
@@ -84,6 +104,7 @@ namespace std {
 		}
 	};
 }
+*/
 
 class Meshes
 {
@@ -102,7 +123,7 @@ public:
 
 	~Meshes();
 
-	void pushBackVertex(Vertex* v);
+	void pushBackVertex(Vertex& v);
 	void pushBackIndex(uint32_t i);
 	void setMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> getMaterial() { return material; }

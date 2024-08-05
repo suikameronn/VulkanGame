@@ -42,6 +42,7 @@ private:
 	void loadAnimation(const aiScene* scene,FbxModel* model);
 
 	void loadFbxModel(int id, void** ptr, int& size);
+	void loadAnimations(FbxModel* fbxModel);
 	
 	std::string extractFileName(std::string path);
 	int getImageID(std::string path);

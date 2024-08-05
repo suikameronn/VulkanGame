@@ -20,6 +20,7 @@
 #define IDB_BITMAP1                     158
 #define IDR_MODEL4                      161
 #define IDB_PNG11						162
+#define IDR_MODEL5						163
 
 // Next default values for new objects
 // 

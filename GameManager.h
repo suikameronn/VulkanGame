@@ -32,6 +32,9 @@ private:
 	GameManager() {};
 
 public:
+
+	const uint32_t limitBoneDataSize = 500;
+
 	static GameManager* GetInstance()
 	{
 		if (!gameManager)

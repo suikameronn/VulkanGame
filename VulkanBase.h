@@ -67,6 +67,7 @@ private:
     static VulkanBase* vulkanBase;
 
     VulkanBase() {};
+    VulkanBase(uint32_t limit) { limitVertexBoneDataSize = limit; };
 
     const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -88,6 +89,7 @@ private:
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
+    uint32_t limitVertexBoneDataSize;
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -222,6 +224,11 @@ public:
         }
     }
 
+    uint32_t getLimitVertexBoneDataSize()
+    {
+        return limitVertexBoneDataSize;
+    }
+
     static void FinishVulkanBase()
     {
         delete vulkanBase;
@@ -236,7 +243,7 @@ public:
 
     bool framebufferResized = false;
 
-    void initVulkan();
+    void initVulkan(uint32_t limit);
     void render();
 
     VkDevice getDevice()
