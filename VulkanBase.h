@@ -51,14 +51,22 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat3 normal;
-    alignas(16) std::vector<glm::mat4> boneMatrix;
+    //alignas(16) glm::mat3 normal;
+    alignas(16) std::array<glm::mat4,251> boneMatrix;
+    /*
     alignas(16) glm::vec3 diffuse;
     alignas(16) glm::vec3 ambient;
     alignas(16) glm::vec3 specular;
     alignas(16) glm::vec3 emissive;
     float transmissive;
     float shininess;
+    */
+};
+
+struct AnimationUBO
+{
+    alignas(16) std::array<int,251> boneIDs;
+    alignas(16) std::array<float,251> weights;
 };
 
 class VulkanBase

@@ -1,7 +1,8 @@
 #pragma once
 
+#include<array>
 #include<vector>
-#include<unordered_map>
+#include<map>
 #include<memory>
 #include <assimp/scene.h>           // Output data structure
 #include<glm/glm.hpp>
@@ -12,9 +13,9 @@ class Model;
 
 struct AnimationKeyData
 {
-	std::unordered_map<float, glm::vec3> animationScaleKey;
-	std::unordered_map<float, aiQuaternion> animationRotKey;
-	std::unordered_map<float, glm::vec3> animationPositionKey;
+	std::map<float, glm::vec3> animationScaleKey;
+	std::map<float, aiQuaternion> animationRotKey;
+	std::map<float, glm::vec3> animationPositionKey;
 };
 
 class AnimNode
@@ -37,6 +38,7 @@ public:
 		name = nodeName;
 		animKeyData = data;
 		children.resize(cCount);
+		childrenCount = cCount;
 	}
 
 	AnimNode(std::string nodeName, glm::mat4 mat,unsigned int cCount)
@@ -44,6 +46,7 @@ public:
 		animNode = false;
 		name = nodeName;
 		matrix = mat;
+		childrenCount = cCount;
 	}
 
 	std::string getNodeName()
@@ -95,43 +98,70 @@ public:
 		return nullptr;
 	}
 
-	std::unordered_map<float, glm::vec3>::iterator findScale(float animTime)
+	void findScale(float animTime,float& t1,float& t2)
 	{
-		for (auto itr = animKeyData.animationScaleKey.begin(); itr != animKeyData.animationScaleKey.end(); itr++)
+		auto end = animKeyData.animationScaleKey.end();
+		end--;
+
+		for (auto itr = animKeyData.animationScaleKey.begin(); itr != end; itr++)
 		{
-			if (itr->first <= animTime)
+			auto next = itr;
+			next++;
+
+			if (animTime < next->first)
 			{
-				return itr;
+				t1 = itr->first;
+				t2 = next->first;
+				return;
 			}
 		}
 
-		return animKeyData.animationScaleKey.end();
+		t1 = -1.0f;
+		t2 = -1.0f;
 	}
 
-	std::unordered_map<float, aiQuaternion>::iterator findRotate(float animTime)
+	void findRotate(float animTime, float& t1, float& t2)
 	{
-		for (auto itr = animKeyData.animationRotKey.begin(); itr != animKeyData.animationRotKey.end(); itr++)
+		auto end = animKeyData.animationRotKey.end();
+		end--;
+
+		for (auto itr = animKeyData.animationRotKey.begin(); itr != end; itr++)
 		{
-			if (itr->first <= animTime)
+			auto next = itr;
+			next++;
+
+			if (animTime < next->first)
 			{
-				return itr;
+				t1 = itr->first;
+				t2 = next->first;
+				return;
 			}
 		}
 
-		return animKeyData.animationRotKey.end();
+		t1 = -1.0f;
+		t2 = -1.0f;
 	}
 
-	std::unordered_map<float, glm::vec3>::iterator findPosition(float animTime)
+	void findPosition(float animTime, float& t1, float& t2)
 	{
-		for (auto itr = animKeyData.animationPositionKey.begin(); itr != animKeyData.animationPositionKey.end(); itr++)
+		auto end = animKeyData.animationPositionKey.end();
+		end--;
+
+		for (auto itr = animKeyData.animationPositionKey.begin(); itr != end; itr++)
 		{
-			if (itr->first <= animTime)
+			auto next = itr;
+			next++;
+
+			if (animTime < next->first)
 			{
-				return itr;
+				t1 = itr->first;
+				t2 = next->first;
+				return;
 			}
 		}
 
-		return animKeyData.animationPositionKey.end();
+		t1 = -1.0f;
+		t2 = -1.0f;
 	}
 
 	glm::vec3 calcInterpolatedScaling(float animTime)
@@ -141,30 +171,31 @@ public:
 			return animKeyData.animationScaleKey.begin()->second;
 		}
 
-		auto ScalingItr = findScale(animTime);//現在の時刻に最も近いノードを探す
-		
-		if (ScalingItr != animKeyData.animationScaleKey.end())
-		{
-			auto NextScalingItr = ScalingItr++;//そのノードの一つ後のノードを探す
+		float t1, t2;
 
-			float t1 = ScalingItr->first;//そのノードの時間を取得
-			float t2 = NextScalingItr->first;
+		findScale(animTime,t1,t2);//現在の時刻に最も近いノードを探す
+
+		if (t1 >= 0.0f)
+		{
+
 			float DeltaTime = t2 - t1;//時間の差分を取得
 			float Factor = (animTime - t1) / DeltaTime;//時間の差分をとる、現在の時間と直前のノードの時間を取得して、直前のノードと直後のノードの間のどれくらいの場所にいるのかを調べる
 
-			const glm::vec3 Start = ScalingItr->second;//スケーリングの値をとる
-			const glm::vec3 End = NextScalingItr->second;//スケーリングの値をとる
+			const glm::vec3 Start = animKeyData.animationScaleKey[t1];//スケーリングの値をとる
+			const glm::vec3 End = animKeyData.animationScaleKey[t2];//スケーリングの値をとる
 			glm::vec3 Delta = End - Start;//差分とる
 			return Start + Factor * Delta;//比率から計算する
 		}
 		else//最初のキーフレームよりも前の時間
 		{
+
 			float t2 = animKeyData.animationScaleKey.begin()->first;
 			float Factor = 1 - (t2 - animTime) / t2;
 
 			const glm::vec3 Start = glm::vec3(1.0, 1.0, 1.0);
 			const glm::vec3 End = animKeyData.animationScaleKey.begin()->second;
 			glm::vec3 Delta = End - Start;
+
 			return Start + Factor * Delta;
 		}
 	}
@@ -176,17 +207,17 @@ public:
 			return animKeyData.animationRotKey.begin()->second;
 		}
 
-		auto RotationItr = findRotate(animTime);
+		float t1, t2;
+
+		findRotate(animTime,t1,t2);
 		
-		if (RotationItr != animKeyData.animationRotKey.end())
+		if (t1 >= 0.0f)
 		{
-			auto NextRotationItr = RotationItr++;
+			float DeltaTime = t2 - t1;
+			float Factor = (animTime - t1) / DeltaTime;
 
-			float DeltaTime = NextRotationItr->first - RotationItr->first;
-			float Factor = (animTime - RotationItr->first) / DeltaTime;
-
-			const aiQuaternion& StartRotationQ = RotationItr->second;
-			const aiQuaternion& EndRotationQ = NextRotationItr->second;
+			const aiQuaternion StartRotationQ = animKeyData.animationRotKey[t1];
+			const aiQuaternion EndRotationQ = animKeyData.animationRotKey[t2];
 
 			aiQuaternion Out;
 			aiQuaternion::Interpolate(Out, StartRotationQ, EndRotationQ, Factor);
@@ -214,19 +245,17 @@ public:
 			return animKeyData.animationPositionKey.begin()->second;
 		}
 
-		auto PositionItr = findPosition(animTime);//現在の時刻に最も近いノードを探す
-		
-		if (PositionItr != animKeyData.animationPositionKey.end())
-		{
-			auto NextPositionItr = PositionItr++;//そのノードの一つ後のノードを探す
+		float t1, t2;
 
-			float t1 = PositionItr->first;//そのノードの時間を取得
-			float t2 = NextPositionItr->first;
+		findPosition(animTime,t1,t2);//現在の時刻に最も近いノードを探す
+		
+		if (t1 >= 0.0f)
+		{
 			float DeltaTime = t2 - t1;//時間の差分を取得
 			float Factor = (animTime - t1) / DeltaTime;//時間の差分をとる、現在の時間と直前のノードの時間を取得して、直前のノードと直後のノードの間のどれくらいの場所にいるのかを調べる
 
-			const glm::vec3 Start = PositionItr->second;//スケーリングの値をとる
-			const glm::vec3 End = NextPositionItr->second;//スケーリングの値をとる
+			const glm::vec3 Start = animKeyData.animationPositionKey[t1];//スケーリングの値をとる
+			const glm::vec3 End = animKeyData.animationPositionKey[t2];//スケーリングの値をとる
 			glm::vec3 Delta = End - Start;//差分とる
 			return Start + Factor * Delta;//比率から計算する
 		}
@@ -253,32 +282,69 @@ public:
 			aiQuaternion quat = calcInterpolatedQuat(animTime);
 			glm::mat4 quatMat = aiMatrix3x3ToGlm(quat.GetMatrix());
 
+
 			glm::vec3 position = calcInterpolatedPos(animTime);
 			glm::mat4 posMat = glm::translate(glm::mat4(1.0f), position);
 
-			transform = transform * posMat * quatMat * scaleMat;
+			return transform * posMat * quatMat * scaleMat;
 		}
 		else
 		{
-			transform = transform * matrix;
+			return transform * matrix;
 		}
+	}
+};
 
-		return transform;
+struct BoneInfo
+{
+	std::vector<glm::mat4> offsetMatrix;
+
+	BoneInfo()
+	{
+		offsetMatrix.push_back(glm::mat4(1.0f));
+	}
+
+	void setOffsetMatrix(uint32_t index, glm::mat4 matrix)
+	{
+		if (index < offsetMatrix.size())
+		{
+			offsetMatrix[index] = matrix;
+		}
+	}
+
+	void resizeBoneInfo(uint32_t size)
+	{
+		offsetMatrix.resize(size);
 	}
 };
 
 class FbxModel;
 
+class Pose
+{
+private:
+	std::array<glm::mat4, 251> boneMatrix;
+
+public:
+	void setPoseMatrix(std::array<glm::mat4, 251>& matrix);
+
+	void setFinalTransform(std::array<glm::mat4, 251>& boneFinalTransforms);
+};
+
 class Animation
 {
 private:
+
 	float timeTick;
 	float duration;
 
 	AnimNode* rootNode;
 
+	glm::mat4 inverseGlobalTransform;
+
 public:
 
+	Animation();
 	Animation(float timeInTick,float duration);
 	~Animation();
 	void DeleteAnimTree(AnimNode* node);
@@ -288,6 +354,7 @@ public:
 		this->rootNode = rootNode;
 	}
 
-	void setFinalTransform(float animationTime, std::vector<glm::mat4>& boneFinalTransforms, FbxModel* model);
-	void setFinalTransform(float animationTime,std::vector<glm::mat4>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix,FbxModel* model);
+	void setGlobalInverseTransform(glm::mat4 mat) { inverseGlobalTransform = mat; }
+	void setFinalTransform(float animationTime, std::array<glm::mat4, 251>& boneFinalTransforms, FbxModel* model);
+	void setFinalTransform(float animationTime, std::array<glm::mat4, 251>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix, FbxModel* model);
 };

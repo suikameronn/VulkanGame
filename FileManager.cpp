@@ -74,6 +74,8 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 
     loadAnimations(fbxModel);
 
+    //loadPoses(fbxModel);
+
     storage->addModel(obj, fbxModel);
 
     return storage->getFbxModel(obj);
@@ -88,7 +90,6 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
         Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
 
         glm::mat4 localMat = aiMatrix4x4ToGlm(&node->mTransformation);
-        localMat[3][1] *= -1;
         meshes->setLocalTransform(localMat);
         allVertNum += mesh->mNumVertices;
 
@@ -107,6 +108,8 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
     {
         processNode(node->mChildren[i], scene, model);
     }
+
+    model->setTotalVertexNum(allVertNum);
 
     model->setImageDataCount(imageDataCount);
 }
@@ -134,6 +137,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
 
     if (mesh->mNumBones > 0)
     {
+        std::shared_ptr<Animation> animation = std::shared_ptr<Animation>(new Animation());
         model->setBoneInfo(0, glm::mat4(1.0f));
         processMeshBones(mesh, meshNumVertices, model, meshes);
     }
@@ -160,7 +164,7 @@ void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices,
 
 void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model, Meshes* meshes)
 {
-    int boneID = getBoneID(bone, model) + 1;
+    int boneID = getBoneID(bone, model);
     glm::mat4 offset = aiMatrix4x4ToGlm(&bone->mOffsetMatrix);
     model->setBoneInfo(boneID, offset);
 
@@ -173,6 +177,13 @@ void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, F
 int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
 {
     std::string boneName(bone->mName.C_Str());
+
+    return model->getBoneToMap(boneName);
+}
+
+int FileManager::getBoneID(const aiSkeletonBone* bone, FbxModel* model)
+{
+    std::string boneName(bone->mNode->mName.C_Str());
 
     return model->getBoneToMap(boneName);
 }
@@ -205,22 +216,22 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
 
     if (pNodeAnim)
     {
-        std::unordered_map<float, glm::vec3> keyTimeScale;
-        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
+        std::map<float, glm::vec3> keyTimeScale;
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
         {
-            keyTimeScale[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
+            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
         }
 
-        std::unordered_map<float, aiQuaternion> keyTimeQuat;
-        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
+        std::map<float, aiQuaternion> keyTimeQuat;
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
         {
-            keyTimeQuat[pNodeAnim->mRotationKeys[i + 1].mTime] = pNodeAnim->mRotationKeys->mValue;
+            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
         }
 
-        std::unordered_map<float, glm::vec3> keyTimePos;
-        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
+        std::map<float, glm::vec3> keyTimePos;
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
         {
-            keyTimePos[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
+            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
         }
 
         AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
@@ -253,22 +264,22 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
 
     if (pNodeAnim)
     {
-        std::unordered_map<float, glm::vec3> keyTimeScale;
-        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
+        std::map<float, glm::vec3> keyTimeScale;
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
         {
-            keyTimeScale[pNodeAnim->mScalingKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i + 1].mValue);
+            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
         }
 
-        std::unordered_map<float, aiQuaternion> keyTimeQuat;
-        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
+        std::map<float, aiQuaternion> keyTimeQuat;
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
         {
-            keyTimeQuat[pNodeAnim->mRotationKeys[i + 1].mTime] = pNodeAnim->mRotationKeys->mValue;
+            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
         }
 
-        std::unordered_map<float, glm::vec3> keyTimePos;
-        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
+        std::map<float, glm::vec3> keyTimePos;
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
         {
-            keyTimePos[pNodeAnim->mPositionKeys[i + 1].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i + 1].mValue);
+            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
         }
 
         AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
@@ -279,15 +290,13 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
         currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
     }
 
-    animation->setRootNode(currentNode);
-
-    parentNode = currentNode;
-
     currentNode->resizeChildren(node->mNumChildren);
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
         ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
     }
+
+    animation->setRootNode(currentNode);
 }
 
 //何らかの方式で複数のパスとそれに付随するアニメーション名を渡す(未実装)
@@ -309,11 +318,76 @@ void FileManager::loadAnimation(const aiScene* scene,FbxModel* model)
             scene->mAnimations[0]->mTicksPerSecond
         ,scene->mAnimations[0]->mDuration));
 
+    animation->setGlobalInverseTransform(aiMatrix4x4ToGlm(&scene->mRootNode->mTransformation.Inverse()));
+
     AnimNode* rootNode = nullptr;
 
     ReadNodeHeirarchy(scene,scene->mRootNode,rootNode,model,animation);
 
     model->setAnimation("walk",animation);
+}
+
+void FileManager::loadPoses(FbxModel* fbxModel)
+{
+    void* ptr = nullptr;
+    int size = 0;
+    loadFbxModel(164, &ptr, size);
+
+    const aiScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_SortByPType | aiProcess_PopulateArmatureData);
+
+    loadPose(scene, fbxModel);
+}
+
+void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 251>& matrixArray, FbxModel* fbxModel)
+{
+    std::string nodeName(node->mName.data);
+
+    aiMatrix4x4 NodeTransformation(node->mTransformation);
+
+    matrix = matrix * NodeTransformation;
+
+    if (fbxModel->containBone(nodeName))
+    {
+        int boneID = fbxModel->getBoneToMap(nodeName);
+        matrixArray[boneID] = aiMatrix4x4ToGlm(&matrix) * fbxModel->getBoneOffset(boneID);
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        ReadNodeHeirarchy(scene, node->mChildren[i], matrix,matrixArray,fbxModel);
+    }
+}
+
+void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 251>& matrixArray, FbxModel* fbxModel)
+{
+    std::string nodeName(node->mName.data);
+
+    aiMatrix4x4 NodeTransformation(node->mTransformation);
+
+    if (fbxModel->containBone(nodeName))
+    {
+        int boneID = fbxModel->getBoneToMap(nodeName);
+        matrixArray[boneID] = aiMatrix4x4ToGlm(&NodeTransformation) * fbxModel->getBoneOffset(boneID);
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        ReadNodeHeirarchy(scene, node->mChildren[i],NodeTransformation,matrixArray,fbxModel);
+    }
+}
+
+void FileManager::loadPose(const aiScene* scene, FbxModel* fbxModel)
+{
+    std::shared_ptr<Pose> pose = std::shared_ptr<Pose>(new Pose());
+
+    std::array<glm::mat4, 251> boneMatrixArray;
+    std::fill(boneMatrixArray.begin(), boneMatrixArray.end(), glm::mat4(1.0f));
+
+    ReadNodeHeirarchy(scene, scene->mRootNode, boneMatrixArray,fbxModel);
+
+    pose->setPoseMatrix(boneMatrixArray);
+
+    fbxModel->setPose("idle", pose);
 }
 
 std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)

@@ -54,6 +54,36 @@ void FbxModel::cleanupVulkan()
 	}
 }
 
+void FbxModel::setPose(std::string name, std::shared_ptr<Pose> pose)
+{
+	poses[name] = pose;
+}
+
+void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)
+{
+	animations[name] = animation;
+}
+
+std::array<glm::mat4, 251> FbxModel::getAnimationMatrix()
+{
+	std::array<glm::mat4, 251> transforms;
+	std::fill(transforms.begin(), transforms.end(), glm::mat4(0.0f));
+
+	poses["idle"]->setFinalTransform(transforms);
+
+	return transforms;
+}
+
+std::array<glm::mat4,251> FbxModel::getAnimationMatrix(float animationTime,std::string animationName)
+{
+	std::array<glm::mat4, 251> transforms;
+	std::fill(transforms.begin(), transforms.end(), glm::mat4(1.0f));
+
+	animations[animationName]->setFinalTransform(animationTime, transforms,this);
+
+	return transforms;
+}
+
 bool FbxModel::containBone(std::string nodeName)
 {
 	if (m_BoneNameToIndexMap.find(nodeName) != m_BoneNameToIndexMap.end())
@@ -70,40 +100,30 @@ int FbxModel::getBoneToMap(std::string boneName)
 	{
 		int index = m_BoneNameToIndexMap.size();
 		m_BoneNameToIndexMap[boneName] = index;
-		return index;
+		return index + 1;
 	}
 	else
 	{
-		return m_BoneNameToIndexMap[boneName];
+		return m_BoneNameToIndexMap[boneName] + 1;
 	}
 }
 
-void FbxModel::setBoneInfo(int id,const glm::mat4 mat)
+void FbxModel::setBoneInfo(int id, const glm::mat4 mat)
 {
-	if (id == boneOffsets.size())
+	if (id == boneInfo.offsetMatrix.size())
 	{
-		boneOffsets.push_back(mat);
+		boneInfo.offsetMatrix.push_back(mat);
 	}
 }
 
 int FbxModel::getBoneNum()
 {
-	return boneOffsets.size();
+	return boneInfo.offsetMatrix.size();
 }
 
 glm::mat4 FbxModel::getBoneOffset(int index)
 {
-	return boneOffsets[index];
-}
-
-void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)
-{
-	animations[name] = animation;
-}
-
-void FbxModel::updateAnimation(float animationTime,std::string animationName, std::vector<glm::mat4>& transforms)
-{
-	animations[animationName]->setFinalTransform(animationTime, transforms,this);
+	return boneInfo.offsetMatrix[index];
 }
 
 /*

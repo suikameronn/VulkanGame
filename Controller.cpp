@@ -27,7 +27,7 @@ void Controller::initInput()
 void Controller::mousePos(double x, double y)
 {
 #ifdef _DEBUG
-	std::cout << "mousePos" << " " << x << " " << y << std::endl;
+	//std::cout << "mousePos" << " " << x << " " << y << std::endl;
 #endif
 
 	mPos.x = x;
@@ -37,7 +37,7 @@ void Controller::mousePos(double x, double y)
 void Controller::mouseScroll(double x, double y)
 {
 #ifdef _DEBUG
-	std::cout << "mouseScroll" << " " << x << " " << y << std::endl;
+	//std::cout << "mouseScroll" << " " << x << " " << y << std::endl;
 #endif
 
 	mScroll.y = y;
@@ -46,7 +46,7 @@ void Controller::mouseScroll(double x, double y)
 void Controller::charFun(unsigned int charInfo)
 {
 #ifdef _DEBUG
-	std::cout << "charFun" << " " << charInfo << std::endl;
+	//std::cout << "charFun" << " " << charInfo << std::endl;
 #endif
 
 	keyChar.charInfo = charInfo;
@@ -55,7 +55,7 @@ void Controller::charFun(unsigned int charInfo)
 void Controller::keyFun(int key, int scancode, int action, int mods)
 {
 #ifdef _DEBUG
-	std::cout << "keyFun" << " " <<key << " " << scancode << " " << action << " " << mods << std::endl;
+	//std::cout << "keyFun" << " " <<key << " " << scancode << " " << action << " " << mods << std::endl;
 #endif
 
 	keyInput.key = key;

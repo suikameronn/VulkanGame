@@ -3,58 +3,9 @@
 #include <functional>
 #include"Material.h"
 
-#define MAXBONEINFO 250
+#define MAXBONEINFO 8
 
-const int NUM_BONES_PER_VEREX = 4;
-
-//’¸“_\‘¢‘Ì‚ªŽ‚Â
-struct BoneData
-{
-	uint32_t infoID;
-	float weight;
-
-	BoneData() {};
-
-	BoneData(uint32_t infoID, float weight)
-	{
-		this->infoID = infoID;
-		this->weight = weight;
-	}
-};
-
-struct BoneInfo
-{
-	std::vector<glm::mat4> offsetMatrix;
-	std::vector<glm::mat4> finalTransform;
-
-	BoneInfo()
-	{
-		offsetMatrix.push_back(glm::mat4(1.0f));
-		finalTransform.push_back(glm::mat4(1.0f));
-	}
-
-	void setOffsetMatrix(uint32_t index, glm::mat4 matrix)
-	{
-		if (index < offsetMatrix.size())
-		{
-			offsetMatrix[index] = matrix;
-		}
-	}
-
-	void setFinalTransform(uint32_t index, glm::mat4 matrix)
-	{
-		if (index < finalTransform.size())
-		{
-			finalTransform[index] = matrix;
-		}
-	}
-
-	void resizeBoneInfo(uint32_t size)
-	{
-		offsetMatrix.resize(size);
-		finalTransform.resize(size);
-	}
-};
+const int NUM_BONES_PER_VEREX = 8;
 
 struct Vertex {
 	glm::vec3 pos;
@@ -63,34 +14,53 @@ struct Vertex {
 	glm::vec3 normal;
 
 	uint32_t index;
-	std::array<uint32_t, MAXBONEINFO> boneIDs;
-	std::array<float, MAXBONEINFO> weights;
+	std::array<int, MAXBONEINFO> boneID1;
+	std::array<int, MAXBONEINFO> boneID2;
+
+	std::array<float, MAXBONEINFO> weight1;
+	std::array<float, MAXBONEINFO> weight2;
 
 	Vertex()
 	{
-		for (uint32_t i = 0; i < MAXBONEINFO; i++)
+		pos = glm::vec3(0.0);
+		color = glm::vec3(0.0);
+		texCoord = glm::vec2(0.0);
+		normal = glm::vec3(0.0);
+
+		index = 0;
+
+		for (uint32_t i = 0; i < MAXBONEINFO / 2; i++)
 		{
-			boneIDs[i] = 0;
-			weights[i] = 0.0f;
+			boneID1[i] = 0;
+			weight1[i] = -1.0f;
 		}
 
-		index = 1;
+		for (uint32_t i = 0; i < MAXBONEINFO / 2; i++)
+		{
+			boneID2[i] = 0;
+			weight2[i] = -1.0f;
+		}
 	};
 	
 	void addBoneData(uint32_t boneID, float weight)
 	{
 		if (index < MAXBONEINFO)
 		{
-			boneIDs[index] = boneID;
-			weights[index] = weight;
+			if (index < 4)
+			{
+				boneID1[index] = boneID;
+				weight1[index] = weight;
 
-			index++;
+				index++;
+			}
+			else
+			{
+				boneID2[index] = boneID;
+				weight2[index] = weight;
+
+				index++;
+			}
 		}
-	}
-
-	int getBoneDataSize()
-	{
-		return index - 1;
 	}
 };
 

@@ -7,6 +7,8 @@
 #include"Storage.h"
 #include"Animation.h"
 
+#include"Assimp/Base64.hpp"
+
 enum OBJECT;
 
 enum IMAGE;
@@ -32,16 +34,24 @@ private:
 	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	int getBoneID(const aiBone* bone, FbxModel* model);
+	int getBoneID(const aiSkeletonBone* bone, FbxModel* model);
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
 	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
 		unsigned int i, FbxModel* model);
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
-		FbxModel* model,std::shared_ptr<Animation> animation);
+		FbxModel* model, std::shared_ptr<Animation> animation);
+	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 251>& matrix,FbxModel* fbxModel);
+	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 251>& matrixArray,FbxModel* fbxModel);
+
+
+	void loadPose(const aiScene* scene, FbxModel* fbxModel);
 	void loadAnimation(const aiScene* scene,FbxModel* model);
 
 	void loadFbxModel(int id, void** ptr, int& size);
+
+	void loadPoses(FbxModel* fbxModel);
 	void loadAnimations(FbxModel* fbxModel);
 	
 	std::string extractFileName(std::string path);

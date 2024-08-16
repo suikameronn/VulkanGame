@@ -6,7 +6,7 @@ Camera::Camera()
 	uniformBufferChange = true;
 
 	position = { 0,0.0f,5.0f };
-	posOffSet = 200.0f;
+	posOffSet = 50.0f;
 
 	forward = glm::vec3{ 0,0,1};
 	right = glm::vec3{ 1,0,0};
@@ -25,14 +25,14 @@ Camera::Camera()
 
 	setPosition(glm::vec3(0, 0, posOffSet));
 
-	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 1000.0f);
+	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 10000.0f);
 }
 
 void Camera::setViewAngle(float f)
 {
 	viewAngle = f;
 
-	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 1000.0f);
+	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 10000.0f);
 }
 
 float Camera::getViewAngle()
@@ -90,7 +90,6 @@ void Camera::Update()
 
 void Camera::calcViewMat()
 {
-	std::cout << this->parentObject->getPosition().x << " " << this->parentObject->getPosition().y << " " << this->parentObject->getPosition().z << std::endl;
 	viewMat = glm::lookAt(this->position, this->parentObject->getPosition(), glm::vec3(0, 1, 0));
 }
 

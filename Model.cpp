@@ -23,9 +23,11 @@ Model::Model()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	playAnim = false;
+	playAnim = true;
 
 	rotateSpeed = 0.1f;
+
+	deltaTime = 0.0;
 }
 
 void Model::cleanupVulkan()
@@ -51,28 +53,16 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 	fbxModel = model;
 	pivot = model->getAverageLocalPos();
 
-	pointBuffers.resize(model->getMeshesSize());
-	mappedBuffers.resize(model->getMeshesSize());
-
-	boneInfo.resizeBoneInfo(model->getBoneNum());
-	std::copy(model->getBoneOffsetBegin(), model->getBoneOffsetEnd(), boneInfo.offsetMatrix.begin());
-}
-
-bool Model::setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform)
-{
-	if (fbxModel->containBone(nodeName))
+	if (fbxModel->animationNum() > 0)
 	{
-		boneInfo.finalTransform[fbxModel->getBoneToMap(nodeName)] = transform;
-		
-		return true;
+		pointBuffers.resize(model->getMeshesSize() + fbxModel->getTotalVertexNum());
+		mappedBuffers.resize(model->getMeshesSize() + fbxModel->getTotalVertexNum());
 	}
-
-	return false;
-}
-
-std::vector<glm::mat4> Model::getBoneInfoFinalTransform()
-{
-	return boneInfo.finalTransform;
+	else
+	{
+		pointBuffers.resize(model->getMeshesSize());
+		mappedBuffers.resize(model->getMeshesSize());
+	}
 }
 
 std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
@@ -102,12 +92,43 @@ uint32_t Model::getimageDataCount()
 
 void Model::playAnimation()
 {
-	fbxModel->updateAnimation(24.0f, playAnimName, boneInfo.finalTransform);
+	if (true)
+	{
+		if (deltaTime > 48.0f)
+		{
+			startTime = clock();
+		}
+
+		currentTime = clock();
+
+		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
+
+		deltaTime *= 10.0f;
+	}
+}
+
+std::array<glm::mat4,251> Model::getBoneInfoFinalTransform()
+{
+	if (playAnim)
+	{
+		//std::cout << deltaTime << std::endl;
+		return fbxModel->getAnimationMatrix(deltaTime, playAnimName);
+	}
+
+	return fbxModel->getAnimationMatrix();//èâä˙épê®ÇÃÉ{Å[ÉìÇï‘Ç∑
+}
+
+void Model::startAnimation(std::string name)
+{
+	playAnim = true;
+	playAnimName = name;
+
+	startTime = clock();
 }
 
 void Model::Update()
 {
-	if (false)
+	if (true)
 	{
 		playAnimation();
 	}
@@ -126,7 +147,7 @@ void Model::Update()
 
 void Model::updateTransformMatrix()
 {
-	transformMatrix = glm::translate(glm::mat4(1.0), position - glm::vec3(0,-50,0))
+	transformMatrix = glm::translate(glm::mat4(1.0), position)
 		* glm::rotate(glm::mat4(1.0), rotate.radian, rotate.direction)
 		* glm::scale(scale);
 }

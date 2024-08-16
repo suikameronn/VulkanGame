@@ -2,9 +2,11 @@
 #include<vector>
 #include<bitset>
 #include<vulkan/vulkan.h>
+#include <time.h>
 
 #include"Object.h"
 #include"FbxModel.h"
+#include"Animation.h"
 
 template<typename T>
 uint32_t getSize(T v)
@@ -64,10 +66,12 @@ protected:
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
 
-	BoneInfo boneInfo;
-
 	bool playAnim;
-	float animTime;
+
+	clock_t startTime;
+	clock_t currentTime;
+	double deltaTime;
+
 	std::string playAnimName = "walk";
 
 public:
@@ -76,12 +80,15 @@ public:
 
 	glm::vec3 scale;
 
+	int hasAnimation() { return fbxModel->animationNum(); }
 	void setFbxModel(std::shared_ptr<FbxModel> model);
 
+	void startAnimation(std::string name);
 	void playAnimation();
-	bool setBoneInfoFinalTransform(std::string nodeName,glm::mat4 transform);
-	std::vector<glm::mat4> getBoneInfoFinalTransform();
+	bool hasPlayingAnimation() { return playAnim; }
+	std::array<glm::mat4,251> getBoneInfoFinalTransform();
 
+	uint32_t getTotalVertexNum() { return fbxModel->getTotalVertexNum(); }
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();
 
