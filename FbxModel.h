@@ -28,6 +28,7 @@ private:
 
 	uint32_t imageDataCount;
 
+	glm::mat4 globalInverseTransform;
 	BoneInfo boneInfo;
 	std::unordered_map<std::string, int> m_BoneNameToIndexMap;
 
@@ -58,13 +59,16 @@ public:
 	int getBoneToMap(std::string boneName);
 	void setBoneInfo(int id, const glm::mat4 mat);
 
+	void setGlobalInverseTransform(glm::mat4 mat) { globalInverseTransform = mat; }
+	glm::mat4 getGlobalInverseTransform() { return globalInverseTransform; }
+
 	int animationNum() { return animations.size(); }
 	void setPose(std::string name, std::shared_ptr<Pose> pose);
 	void setAnimation(std::shared_ptr<Animation> animation);
 	void setAnimation(std::string name, std::shared_ptr<Animation> animation);
 	void setAnimLoop(bool loop);
-	std::array<glm::mat4, 251> getAnimationMatrix();
-	std::array<glm::mat4, 251> getAnimationMatrix(float animationTime,std::string animationName);
+	std::array<glm::mat4, 250> getAnimationMatrix();
+	std::array<glm::mat4, 250> getAnimationMatrix(float animationTime,std::string animationName);
 
 	void setImageDataCount(uint32_t count) { imageDataCount = count; }
 	uint32_t getImageDataCount() { return imageDataCount; }

@@ -190,7 +190,8 @@ Vulkanでのレンダリングに必要なもの
 4.モデルのマテリアルなどの各種設定と、それに合わせた、DescriptorSetLayoutとDescriptorPoolを引数に渡して、DescriptorSetを作成する。
 なお、これには、テクスチャの違う場合は、それに応じた個数を作らなければならない
 
-5.描画時、まずグラフィックスパイプラインを設定して、頂点、インデックス、DescriptorSetsと指定して、最後に、vkCmdDrawIndexed()を実行する。
+5.描画時、まずグラフィックスパイプラインを設定して、頂点、インデックス、DescriptorSetsと指定して、最後に、vkCmd
+Indexed()を実行する。
 
 
 1.に必要なもの

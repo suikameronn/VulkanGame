@@ -536,7 +536,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
 
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-        attributeDescriptions.resize(8);
+        attributeDescriptions.resize(6);
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -564,18 +564,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         attributeDescriptions[5].binding = 0;
         attributeDescriptions[5].location = 5;
-        attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SINT;
-        attributeDescriptions[5].offset = offsetof(Vertex, boneID2);
-
-        attributeDescriptions[6].binding = 0;
-        attributeDescriptions[6].location = 6;
-        attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[6].offset = offsetof(Vertex, weight1);
-
-        attributeDescriptions[7].binding = 0;
-        attributeDescriptions[7].location = 7;
-        attributeDescriptions[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[7].offset = offsetof(Vertex, weight2);
+        attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[5].offset = offsetof(Vertex, weight1);
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -1168,6 +1158,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
 
+        std::array array = model->getBoneInfoFinalTransform();
+
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
             UniformBufferObject ubo;
@@ -1176,10 +1168,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             setMaterial(mesh->getMaterial(), &ubo);
 
-            ubo.model = model->getTransformMatrix() * mesh->getLocalTransform();
+            ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
-            ubo.boneMatrix = model->getBoneInfoFinalTransform();
+            ubo.boneMatrix = array;
 
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
         }

@@ -86,7 +86,7 @@ public:
 	void startAnimation(std::string name);
 	void playAnimation();
 	bool hasPlayingAnimation() { return playAnim; }
-	std::array<glm::mat4,251> getBoneInfoFinalTransform();
+	std::array<glm::mat4,250> getBoneInfoFinalTransform();
 
 	uint32_t getTotalVertexNum() { return fbxModel->getTotalVertexNum(); }
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);

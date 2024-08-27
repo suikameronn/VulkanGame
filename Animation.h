@@ -8,6 +8,7 @@
 #include<glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 class Model;
 
@@ -56,13 +57,7 @@ public:
 
 	glm::mat4 aiMatrix3x3ToGlm(const aiMatrix3x3& from)
 	{
-		glm::mat4 to(1.0f);
-
-		to[0][0] = from.a1; to[0][1] = from.b1;  to[0][2] = from.c1;
-		to[1][0] = from.a2; to[1][1] = from.b2;  to[1][2] = from.c2;
-		to[2][0] = from.a3; to[2][1] = from.b3;  to[2][2] = from.c3;
-
-		return to;
+		return glm::transpose(glm::make_mat3(&from.a1));
 	}
 
 	void resizeChildren(int childNum)
@@ -192,6 +187,10 @@ public:
 			float t2 = animKeyData.animationScaleKey.begin()->first;
 			float Factor = 1 - (t2 - animTime) / t2;
 
+			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
+				Factor = 1.f;
+			}
+
 			const glm::vec3 Start = glm::vec3(1.0, 1.0, 1.0);
 			const glm::vec3 End = animKeyData.animationScaleKey.begin()->second;
 			glm::vec3 Delta = End - Start;
@@ -229,6 +228,10 @@ public:
 			float t2 = animKeyData.animationRotKey.begin()->first;
 			float Factor = 1 - (t2 - animTime) / t2;
 
+			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
+				Factor = 1.f;
+			}
+
 			const aiQuaternion& StartRotationQ = aiQuaternion(1.0,0.0,0.0,0.0);
 			const aiQuaternion& EndRotationQ = animKeyData.animationRotKey.begin()->second;
 			aiQuaternion Out;
@@ -263,6 +266,10 @@ public:
 		{
 			float t2 = animKeyData.animationPositionKey.begin()->first;
 			float Factor = 1 - (t2 - animTime) / t2;
+			
+			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
+				Factor = 1.f;
+			}
 
 			const glm::vec3 Start = glm::vec3(0.0, 0.0, 0.0);
 			const glm::vec3 End = animKeyData.animationPositionKey.begin()->second;
@@ -298,24 +305,6 @@ public:
 struct BoneInfo
 {
 	std::vector<glm::mat4> offsetMatrix;
-
-	BoneInfo()
-	{
-		offsetMatrix.push_back(glm::mat4(1.0f));
-	}
-
-	void setOffsetMatrix(uint32_t index, glm::mat4 matrix)
-	{
-		if (index < offsetMatrix.size())
-		{
-			offsetMatrix[index] = matrix;
-		}
-	}
-
-	void resizeBoneInfo(uint32_t size)
-	{
-		offsetMatrix.resize(size);
-	}
 };
 
 class FbxModel;
@@ -323,12 +312,12 @@ class FbxModel;
 class Pose
 {
 private:
-	std::array<glm::mat4, 251> boneMatrix;
+	std::array<glm::mat4, 250> boneMatrix;
 
 public:
-	void setPoseMatrix(std::array<glm::mat4, 251>& matrix);
+	void setPoseMatrix(std::array<glm::mat4, 250>& matrix);
 
-	void setFinalTransform(std::array<glm::mat4, 251>& boneFinalTransforms);
+	void setFinalTransform(std::array<glm::mat4, 250>& boneFinalTransforms);
 };
 
 class Animation
@@ -355,6 +344,6 @@ public:
 	}
 
 	void setGlobalInverseTransform(glm::mat4 mat) { inverseGlobalTransform = mat; }
-	void setFinalTransform(float animationTime, std::array<glm::mat4, 251>& boneFinalTransforms, FbxModel* model);
-	void setFinalTransform(float animationTime, std::array<glm::mat4, 251>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix, FbxModel* model);
+	void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms, FbxModel* model);
+	void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix, FbxModel* model);
 };

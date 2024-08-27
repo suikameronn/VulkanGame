@@ -3,9 +3,9 @@
 #include <functional>
 #include"Material.h"
 
-#define MAXBONEINFO 8
+#define MAXBONEINFO 4
 
-const int NUM_BONES_PER_VEREX = 8;
+const int NUM_BONES_PER_VEREX = 4;
 
 struct Vertex {
 	glm::vec3 pos;
@@ -15,10 +15,8 @@ struct Vertex {
 
 	uint32_t index;
 	std::array<int, MAXBONEINFO> boneID1;
-	std::array<int, MAXBONEINFO> boneID2;
 
 	std::array<float, MAXBONEINFO> weight1;
-	std::array<float, MAXBONEINFO> weight2;
 
 	Vertex()
 	{
@@ -29,36 +27,23 @@ struct Vertex {
 
 		index = 0;
 
-		for (uint32_t i = 0; i < MAXBONEINFO / 2; i++)
+		for (uint32_t i = 0; i < MAXBONEINFO; i++)
 		{
 			boneID1[i] = 0;
-			weight1[i] = -1.0f;
-		}
-
-		for (uint32_t i = 0; i < MAXBONEINFO / 2; i++)
-		{
-			boneID2[i] = 0;
-			weight2[i] = -1.0f;
+			weight1[i] = 0.0f;
 		}
 	};
 	
 	void addBoneData(uint32_t boneID, float weight)
 	{
-		if (index < MAXBONEINFO)
+		for (int i = 0; i < MAXBONEINFO; ++i)
 		{
-			if (index < 4)
+			if (weight1[i] == 0.0f)
 			{
-				boneID1[index] = boneID;
-				weight1[index] = weight;
+				boneID1[i] = boneID;
+				weight1[i] = weight;
 
-				index++;
-			}
-			else
-			{
-				boneID2[index] = boneID;
-				weight2[index] = weight;
-
-				index++;
+				return;
 			}
 		}
 	}

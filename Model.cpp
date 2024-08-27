@@ -94,7 +94,7 @@ void Model::playAnimation()
 {
 	if (true)
 	{
-		if (deltaTime > 48.0f)
+		if (deltaTime > 30.0f)
 		{
 			startTime = clock();
 		}
@@ -103,13 +103,13 @@ void Model::playAnimation()
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
 
-		deltaTime *= 10.0f;
+		std::cout << deltaTime << std::endl;
 	}
 }
 
-std::array<glm::mat4,251> Model::getBoneInfoFinalTransform()
+std::array<glm::mat4,250> Model::getBoneInfoFinalTransform()
 {
-	if (playAnim)
+	if (1)
 	{
 		//std::cout << deltaTime << std::endl;
 		return fbxModel->getAnimationMatrix(deltaTime, playAnimName);

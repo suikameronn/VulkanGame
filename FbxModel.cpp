@@ -64,19 +64,21 @@ void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animati
 	animations[name] = animation;
 }
 
-std::array<glm::mat4, 251> FbxModel::getAnimationMatrix()
+std::array<glm::mat4, 250> FbxModel::getAnimationMatrix()
 {
-	std::array<glm::mat4, 251> transforms;
+	std::array<glm::mat4, 250> transforms;
 	std::fill(transforms.begin(), transforms.end(), glm::mat4(0.0f));
 
-	poses["idle"]->setFinalTransform(transforms);
+	//std::copy(boneInfo.offsetMatrix.begin(), boneInfo.offsetMatrix.end(), transforms.begin());
+
+	//poses["idle"]->setFinalTransform(transforms);
 
 	return transforms;
 }
 
-std::array<glm::mat4,251> FbxModel::getAnimationMatrix(float animationTime,std::string animationName)
+std::array<glm::mat4,250> FbxModel::getAnimationMatrix(float animationTime,std::string animationName)
 {
-	std::array<glm::mat4, 251> transforms;
+	std::array<glm::mat4, 250> transforms;
 	std::fill(transforms.begin(), transforms.end(), glm::mat4(1.0f));
 
 	animations[animationName]->setFinalTransform(animationTime, transforms,this);
@@ -100,11 +102,11 @@ int FbxModel::getBoneToMap(std::string boneName)
 	{
 		int index = m_BoneNameToIndexMap.size();
 		m_BoneNameToIndexMap[boneName] = index;
-		return index + 1;
+		return index;
 	}
 	else
 	{
-		return m_BoneNameToIndexMap[boneName] + 1;
+		return m_BoneNameToIndexMap[boneName];
 	}
 }
 

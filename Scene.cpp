@@ -28,11 +28,11 @@ void Scene::parseScene()
 		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		model->controllable = true;
-		model->scale = glm::vec3(0.5, 0.5, 0.5);
+		model->scale = glm::vec3(0.2, 0.2, 0.2);
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindObject(camera);
 
-		glm::vec3 p = glm::vec3(0, -60, 0);
+		glm::vec3 p = glm::vec3(0, 0, 0);
 		sceneSet["aaaaa"]->setPosition(p);
 		camera->spherePos = true;
 

@@ -24,17 +24,19 @@ private:
 
 	int vertSize = 0;
 	int indexSize = 0;
+	int meshIdx = 0;
 	uint32_t allVertNum = 0;
 	uint32_t imageDataCount = 0;
 
 	Assimp::Importer importer;
 
-	void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
+	//void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
+	void processNode(const aiScene* scene, FbxModel* model);
 	Meshes* processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model);
 	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	int getBoneID(const aiBone* bone, FbxModel* model);
-	int getBoneID(const aiSkeletonBone* bone, FbxModel* model);
+	int getBoneID(const std::string boneName, FbxModel* model);
 	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
 
 	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
@@ -42,8 +44,8 @@ private:
 		unsigned int i, FbxModel* model);
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
 		FbxModel* model, std::shared_ptr<Animation> animation);
-	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 251>& matrix,FbxModel* fbxModel);
-	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 251>& matrixArray,FbxModel* fbxModel);
+	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 250>& matrix,FbxModel* fbxModel);
+	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,FbxModel* fbxModel);
 
 
 	void loadPose(const aiScene* scene, FbxModel* fbxModel);
