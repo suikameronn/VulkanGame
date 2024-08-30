@@ -94,7 +94,7 @@ void Model::playAnimation()
 {
 	if (true)
 	{
-		if (deltaTime > 30.0f)
+		if (deltaTime > 60.0f)
 		{
 			startTime = clock();
 		}

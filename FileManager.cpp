@@ -81,6 +81,7 @@ void FileManager::processNode(const aiScene* scene, FbxModel* model)
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
     {
         const aiMesh* mesh = scene->mMeshes[i];
+
         Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
 
         allVertNum += mesh->mNumVertices;
@@ -163,7 +164,8 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     }
     else
     {
-        std::string newBoneName = "meshIdx" + std::to_string(meshIdx);
+        
+        std::string newBoneName = mesh->mName.data;
         int boneID = getBoneID(newBoneName, model);
         model->setBoneInfo(boneID, glm::mat4(1.0f));
 
@@ -244,52 +246,65 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
 
     std::string nodeName(node->mName.data);
 
-    for (int i = 0; i < node->mNumMeshes; i++)
-    {
-        int meshIdx = node->mMeshes[i];
-        std::string boneName = "meshIdx" + std::to_string(meshIdx);
-        std::cout << boneName << std::endl;
-        nodeName = boneName;
-    }
-
     const aiAnimation* pAnimation = scene->mAnimations[0];
 
-    aiMatrix4x4 NodeTransformation(node->mTransformation);
-    const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
-
-    if (pNodeAnim)
+    if (node->mNumMeshes > 0)
     {
-        std::map<float, glm::vec3> keyTimeScale;
-        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
+        for (int i = 0; i < pAnimation->mNumMorphMeshChannels; ++i)
         {
-            aiVector3D vec = aiVector3D(pNodeAnim->mScalingKeys[i].mValue.x, pNodeAnim->mScalingKeys[i].mValue.y, pNodeAnim->mScalingKeys[i].mValue.z);
-            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&vec);
-        }
+            if (nodeName + "*0" == pAnimation->mMorphMeshChannels[i]->mName.C_Str())
+            {
+                std::map<float, glm::mat4> morphMeshKeys;
+                for (int j = 0; j < pAnimation->mMorphMeshChannels[i]->mNumKeys; ++j)
+                {
+                    std::cout << pAnimation->mMorphMeshChannels[i]->mName.data << std::endl;
+                    std::cout << pAnimation->mMorphMeshChannels[i]->mKeys[j].mTime << std::endl;
 
-        std::map<float, aiQuaternion> keyTimeQuat;
-        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
-        {
-            aiQuaternion qua = aiQuaternion(pNodeAnim->mRotationKeys[i].mValue.w, pNodeAnim->mRotationKeys[i].mValue.x, pNodeAnim->mRotationKeys[i].mValue.y , pNodeAnim->mRotationKeys[i].mValue.z);
-            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = qua;
+                }
+            }
         }
-
-        std::map<float, glm::vec3> keyTimePos;
-        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
-        {
-            aiVector3D vec = aiVector3D(pNodeAnim->mPositionKeys[i].mValue.x,pNodeAnim->mPositionKeys[i].mValue.y, pNodeAnim->mPositionKeys[i].mValue.z);
-            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&vec);
-        }
-
-        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-        currentNode = new AnimNode(nodeName, animKeyData,node->mNumChildren);
     }
     else
     {
-        currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+        aiMatrix4x4 NodeTransformation(node->mTransformation);
+        const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
+
+        if (pNodeAnim)
+        {
+            std::map<float, glm::vec3> keyTimeScale;
+            for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
+            {
+                aiVector3D vec = aiVector3D(pNodeAnim->mScalingKeys[i].mValue.x, pNodeAnim->mScalingKeys[i].mValue.y, pNodeAnim->mScalingKeys[i].mValue.z);
+                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&vec);
+            }
+
+            std::map<float, aiQuaternion> keyTimeQuat;
+            for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
+            {
+                aiQuaternion qua = aiQuaternion(pNodeAnim->mRotationKeys[i].mValue.w, pNodeAnim->mRotationKeys[i].mValue.x, pNodeAnim->mRotationKeys[i].mValue.y, pNodeAnim->mRotationKeys[i].mValue.z);
+                keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = qua;
+            }
+
+            std::map<float, glm::vec3> keyTimePos;
+            for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
+            {
+                aiVector3D vec = aiVector3D(pNodeAnim->mPositionKeys[i].mValue.x, pNodeAnim->mPositionKeys[i].mValue.y, pNodeAnim->mPositionKeys[i].mValue.z);
+                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&vec);
+            }
+
+            AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
+            currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+        }
+        else
+        {
+            currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+        }
     }
 
-    currentNode->resizeChildren(node->mNumChildren);
-    parentNode->setChild(childIdx, currentNode);
+    currentNode = nullptr;
+
+    //currentNode->resizeChildren(node->mNumChildren);
+    //parentNode->setChild(childIdx, currentNode);
 
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
@@ -304,45 +319,56 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
 
     std::string nodeName(node->mName.data);
 
-    for (int i = 0; i < node->mNumMeshes; i++)
-    {
-        int meshIdx = node->mMeshes[i];
-        std::string meshName = scene->mMeshes[meshIdx]->mName.C_Str();
-        std::string boneName = "meshIdx" + std::to_string(meshIdx);
-        nodeName = boneName;
-    }
-
     const aiAnimation* pAnimation = scene->mAnimations[0];
 
-    aiMatrix4x4 NodeTransformation(node->mTransformation);
-    const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
-
-    if (pNodeAnim)
+    if (node->mNumMeshes > 0)
     {
-        std::map<float, glm::vec3> keyTimeScale;
-        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
+        for (int i = 0; i < pAnimation->mNumMorphMeshChannels; ++i)
         {
-            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
-        }
+            if (nodeName + "*0" == pAnimation->mMorphMeshChannels[i]->mName.C_Str())
+            {
+                std::map<float, glm::mat4> morphMeshKeys;
+                for (int j = 0; j < pAnimation->mMorphMeshChannels[i]->mNumKeys; ++j)
+                {
+                    std::cout << pAnimation->mMorphMeshChannels[i]->mName.data << std::endl;
+                    std::cout << pAnimation->mMorphMeshChannels[i]->mKeys[j].mTime << std::endl;
 
-        std::map<float, aiQuaternion> keyTimeQuat;
-        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
-        {
-            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
+                }
+            }
         }
-
-        std::map<float, glm::vec3> keyTimePos;
-        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
-        {
-            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
-        }
-
-        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-        currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
     }
     else
     {
-        currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+        aiMatrix4x4 NodeTransformation(node->mTransformation);
+        const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
+
+        if (pNodeAnim)
+        {
+            std::map<float, glm::vec3> keyTimeScale;
+            for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
+            {
+                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
+            }
+
+            std::map<float, aiQuaternion> keyTimeQuat;
+            for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
+            {
+                keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
+            }
+
+            std::map<float, glm::vec3> keyTimePos;
+            for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
+            {
+                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
+            }
+
+            AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
+            currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+        }
+        else
+        {
+            currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+        }
     }
 
     currentNode->resizeChildren(node->mNumChildren);
