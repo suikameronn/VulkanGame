@@ -320,6 +320,12 @@ public:
 	void setFinalTransform(std::array<glm::mat4, 250>& boneFinalTransforms);
 };
 
+struct VertexMorphInfo
+{
+	std::array<unsigned int, 3> values;
+	std::array<float, 3> weights;
+};
+
 class Animation
 {
 private:

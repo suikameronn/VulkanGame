@@ -109,7 +109,7 @@ void Model::playAnimation()
 
 std::array<glm::mat4,250> Model::getBoneInfoFinalTransform()
 {
-	if (1)
+	if (0)
 	{
 		//std::cout << deltaTime << std::endl;
 		return fbxModel->getAnimationMatrix(deltaTime, playAnimName);

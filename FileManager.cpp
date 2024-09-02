@@ -55,7 +55,7 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     allVertNum = 0;
     meshIdx = 0;
     fbxModel->setGlobalInverseTransform(aiMatrix4x4ToGlm(&scene->mRootNode->mTransformation.Inverse()));
-    processNode(scene, fbxModel);
+    processNode(scene->mRootNode,scene, fbxModel);
     imageDataCount = 0;
 
     if (scene->mNumAnimations > 0)
@@ -76,8 +76,9 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     return storage->getFbxModel(obj);
 }
 
-void FileManager::processNode(const aiScene* scene, FbxModel* model)
+void FileManager::processNode(const aiNode* node,const aiScene* scene, FbxModel* model)
 {
+    /*
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
     {
         const aiMesh* mesh = scene->mMeshes[i];
@@ -94,6 +95,27 @@ void FileManager::processNode(const aiScene* scene, FbxModel* model)
 
         meshes->setMaterial(material);
         model->addMeshes(meshes);
+    }
+    */
+
+    for (uint32_t i = 0; i < node->mNumMeshes; i++)
+    {
+        Meshes* meshes = processAiMesh(node, i, scene, allVertNum, model);
+
+        std::shared_ptr<Material> material = processAiMaterial(scene->mMeshes[node->mMeshes[i]]->mMaterialIndex, scene);
+        if (material->hasImageData())
+        {
+            imageDataCount++;
+        }
+
+        meshes->setMaterial(material);
+
+        model->addMeshes(meshes);
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        processNode(node->mChildren[i], scene, model);
     }
 
     model->setTotalVertexNum(allVertNum);
@@ -137,9 +159,11 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
 }
 */
 
-Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model)
+Meshes* FileManager::processAiMesh(const aiNode* node,const int index, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model)
 {
     Meshes* meshes = new Meshes();
+
+    const aiMesh* mesh = scene->mMeshes[node->mMeshes[index]];
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
@@ -164,8 +188,7 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
     }
     else
     {
-        
-        std::string newBoneName = mesh->mName.data;
+        std::string newBoneName = node->mName.data;
         int boneID = getBoneID(newBoneName, model);
         model->setBoneInfo(boneID, glm::mat4(1.0f));
 
@@ -248,18 +271,31 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
 
     const aiAnimation* pAnimation = scene->mAnimations[0];
 
-    if (node->mNumMeshes > 0)
+    if (node->mNumMeshes == 1)
     {
+        VertexMorphInfo info;
+
         for (int i = 0; i < pAnimation->mNumMorphMeshChannels; ++i)
         {
             if (nodeName + "*0" == pAnimation->mMorphMeshChannels[i]->mName.C_Str())
             {
-                std::map<float, glm::mat4> morphMeshKeys;
-                for (int j = 0; j < pAnimation->mMorphMeshChannels[i]->mNumKeys; ++j)
-                {
-                    std::cout << pAnimation->mMorphMeshChannels[i]->mName.data << std::endl;
-                    std::cout << pAnimation->mMorphMeshChannels[i]->mKeys[j].mTime << std::endl;
+                std::map<float, std::vector<float>> morphMeshKeys;
 
+                aiMeshMorphKey* key;
+                int numKeys = pAnimation->mMorphMeshChannels[i]->mNumKeys;
+                for (int j = 0; j < numKeys; ++j)
+                { 
+                    key = &pAnimation->mMorphMeshChannels[i]->mKeys[j];
+                    morphMeshKeys[key->mTime].resize(scene->mMeshes[node->mMeshes[0]]->mNumVertices);
+
+                    std::cout << scene->mMeshes[node->mMeshes[0]]->mNumAnimMeshes << std::endl;
+
+                    for (int k = 0; k < scene->mMeshes[node->mMeshes[0]]->mNumVertices; ++k)
+                    {
+                        //std::cout << key->mValues[k] << " " << key->mValues[k + 1] << " " << key->mValues[k + 2] << std::endl;
+                        info.values = std::array<unsigned int, 3>{key->mValues[k], key->mValues[k + 1], key->mValues[k + 2]};
+                        info.weights = std::array<float, 3>{static_cast<float>(key->mWeights[k]), static_cast<float>(key->mWeights[k + 1]), static_cast<float>(key->mWeights[k + 2])};
+                    }
                 }
             }
         }
@@ -301,10 +337,10 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
         }
     }
 
-    currentNode = nullptr;
+    currentNode = new AnimNode(nodeName, glm::mat4(1.0f), node->mNumChildren);
 
-    //currentNode->resizeChildren(node->mNumChildren);
-    //parentNode->setChild(childIdx, currentNode);
+    currentNode->resizeChildren(node->mNumChildren);
+    parentNode->setChild(childIdx, currentNode);
 
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
@@ -330,8 +366,8 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
                 std::map<float, glm::mat4> morphMeshKeys;
                 for (int j = 0; j < pAnimation->mMorphMeshChannels[i]->mNumKeys; ++j)
                 {
-                    std::cout << pAnimation->mMorphMeshChannels[i]->mName.data << std::endl;
-                    std::cout << pAnimation->mMorphMeshChannels[i]->mKeys[j].mTime << std::endl;
+                    //std::cout << pAnimation->mMorphMeshChannels[i]->mName.data << std::endl;
+                    //std::cout << pAnimation->mMorphMeshChannels[i]->mKeys[j].mTime << std::endl;
 
                 }
             }
@@ -363,15 +399,18 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
             }
 
             AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-            currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+            //currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
         }
         else
         {
-            currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+            //currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
         }
     }
 
+    currentNode = new AnimNode(nodeName, glm::mat4(1.0f), node->mNumChildren);
+
     currentNode->resizeChildren(node->mNumChildren);
+
     for (uint32_t i = 0; i < node->mNumChildren; i++)
     {
         ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, model);
