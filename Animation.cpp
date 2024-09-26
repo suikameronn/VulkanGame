@@ -56,6 +56,9 @@ void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250
 
 void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,FbxModel* model)
 {
+	animationTime = animationTime * timeTick;
+	animationTime = fmod(animationTime, duration);
+
 	glm::mat4 identity(1.0f);
 	glm::mat4 rootNodeMatrix = rootNode->getAnimMatrix(animationTime,identity);
 

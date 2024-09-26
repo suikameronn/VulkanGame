@@ -85,11 +85,18 @@ void Camera::Update()
 	}
 	else
 	{
+		calcViewMat();
 	}
 }
 
 void Camera::calcViewMat()
 {
+	if (!parentObject)
+	{
+		viewMat = glm::lookAt(this->position, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0, 1, 0));
+		return;
+	}
+
 	viewMat = glm::lookAt(this->position, this->parentObject->getPosition(), glm::vec3(0, 1, 0));
 }
 

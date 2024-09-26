@@ -149,6 +149,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AnimController.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Colider.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="FbxModel.cpp" />
     <ClCompile Include="FileManager.cpp" />
@@ -167,7 +168,9 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="AnimController.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Colider.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="EnumList.h" />
     <ClInclude Include="FbxModel.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="GameManager.h" />

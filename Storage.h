@@ -4,13 +4,7 @@
 #include<bitset>
 #include<unordered_map>
 
-enum OBJECT
-{
-	FBXTEST = 101,
-	UNITYCHAN_NO_ANIM,
-	GROUND1,
-	FRAG
-};
+#include"EnumList.h"
 
 enum IMAGE
 {
@@ -34,6 +28,7 @@ class Storage
 {
 private:
 	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>> fbxModelStorage;
+	std::unordered_map<OBJECT, std::shared_ptr<Animation>> fbxAnimationStorage;
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
 	std::unordered_map<uint32_t, DescriptorInfo> descriptorStorage;
@@ -65,6 +60,7 @@ public:
 	std::vector<std::shared_ptr<Model>>::iterator sceneModelEnd() { return sceneModelStorage.end(); }
 
 	void addModel(OBJECT obj, FbxModel* geo);
+	void addAnimation(OBJECT obj, Animation* animation);
 	void addImageData(std::string, ImageData* image);
 	void addDescriptorInfo(uint32_t imageDataCount, DescriptorInfo& info);
 
@@ -72,6 +68,7 @@ public:
 	void addModel(std::shared_ptr<Model> model);
 
 	std::shared_ptr<FbxModel> getFbxModel(OBJECT obj);
+	std::shared_ptr<Animation> getAnimation(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
 
 	DescriptorInfo* accessDescriptorInfo(uint32_t imageDataCount);
@@ -84,6 +81,7 @@ public:
 		std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr2);
 
 	bool containModel(OBJECT obj);
+	bool containAnimation(OBJECT obj);
 	bool containImageData(std::string path);
 	bool containDescriptorInfo(uint32_t imageDataCount);
 

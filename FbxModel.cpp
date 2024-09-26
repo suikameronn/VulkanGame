@@ -2,7 +2,20 @@
 
 FbxModel::FbxModel()
 {
-	averageLocalPos = { 0,0,0 };
+}
+
+void FbxModel::setMinMaxVertexPos(glm::vec3 min, glm::vec3 max)
+{
+	minPos = min;
+	maxPos = max;
+
+	pivot = glm::vec3((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
+}
+
+void FbxModel::getMinMaxVertexPos(glm::vec3& min, glm::vec3& max)
+{
+	min = minPos;
+	max = maxPos;
 }
 
 void FbxModel::addMeshes(Meshes* mesh)
@@ -18,28 +31,6 @@ std::shared_ptr<Meshes> FbxModel::getMeshes(uint32_t i)
 uint32_t FbxModel::getMeshesSize()
 {
 	return meshes.size();
-}
-
-void FbxModel::calcAveragePos()
-{
-	int vertexCount = 0;
-	
-	for (auto itr = meshes.begin(); itr != meshes.end(); itr++)
-	{
-		Vertex* v = (*itr)->getVertexPoint();
-		for (int i = 0; i < (*itr)->getVerticesSize(); i++)
-		{
-			averageLocalPos += v[i].pos;
-			vertexCount++;
-		}
-	}
-
-	averageLocalPos /= vertexCount;
-}
-
-glm::vec3 FbxModel::getAverageLocalPos()
-{
-	return averageLocalPos;
 }
 
 void FbxModel::cleanupVulkan()
@@ -59,9 +50,9 @@ void FbxModel::setPose(std::string name, std::shared_ptr<Pose> pose)
 	poses[name] = pose;
 }
 
-void FbxModel::setAnimation(std::string name, std::shared_ptr<Animation> animation)
+void FbxModel::setAnimation(ACTION action, std::shared_ptr<Animation> animation)
 {
-	animations[name] = animation;
+	animations[action] = animation;
 }
 
 std::array<glm::mat4, 250> FbxModel::getAnimationMatrix()
@@ -76,12 +67,12 @@ std::array<glm::mat4, 250> FbxModel::getAnimationMatrix()
 	return transforms;
 }
 
-std::array<glm::mat4,250> FbxModel::getAnimationMatrix(float animationTime,std::string animationName)
+std::array<glm::mat4,250> FbxModel::getAnimationMatrix(float animationTime,ACTION action)
 {
 	std::array<glm::mat4, 250> transforms;
 	std::fill(transforms.begin(), transforms.end(), glm::mat4(1.0f));
 
-	animations[animationName]->setFinalTransform(animationTime, transforms,this);
+	animations[action]->setFinalTransform(animationTime, transforms,this);
 
 	return transforms;
 }
@@ -102,6 +93,9 @@ int FbxModel::getBoneToMap(std::string boneName)
 	{
 		int index = m_BoneNameToIndexMap.size();
 		m_BoneNameToIndexMap[boneName] = index;
+
+		std::cout << index << std::endl;
+
 		return index;
 	}
 	else

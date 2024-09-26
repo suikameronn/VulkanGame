@@ -20,20 +20,29 @@ void Scene::parseScene()
 	for (int i = 0; i < test; i++)
 	{
 		parth[i].first = i;
-		parth[i].second = FBXTEST;
+		parth[i].second = OBJECT::FBXTEST;
 	}
 
 	{
+		FileManager* fileManager = FileManager::GetInstance();
+
+		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
+		fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
+		fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
-		model->setFbxModel(FileManager::GetInstance()->loadModel(UNITYCHAN_NO_ANIM));
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
+		model->setFbxModel(fbxModel);
+		//model->controllable = true;
+		model->rotate.x = 0.0f;//’PˆÊ‚ÍŠp“x
+		model->rotate.y = 0.0f;
+		model->rotate.z = 0.0f;
+		model->scale = glm::vec3(3.2, 3.2, 3.2);
 		model->controllable = true;
-		model->scale = glm::vec3(0.2, 0.2, 0.2);
+		model->setColider(BOX);
+		model->setPosition(glm::vec3(0.1f,0.1f,0.1f));
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindObject(camera);
 
-		glm::vec3 p = glm::vec3(0, 0, 0);
-		sceneSet["aaaaa"]->setPosition(p);
 		camera->spherePos = true;
 
 		/*

@@ -14,6 +14,8 @@
 #include<glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include"EnumList.h"
+
 class Camera;
 
 class Object
@@ -29,12 +31,11 @@ protected:
 	float rotateSpeed;
 	float length;
 
-	void move();
-
 	glm::vec3 pivot;
+	glm::mat4 pivotMatrix;
 	glm::vec3 position;
 
-	glm::vec3 inputMove();
+	virtual glm::vec3 inputMove();
 
 public:
 
@@ -60,9 +61,10 @@ public:
 	void bindObject(std::shared_ptr<Camera> camera);
 	void setParentObject(Object* obj);
 
-	virtual glm::vec3 getPivot() { return pivot; }
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
+
+	virtual glm::vec3 getPivot() { return pivot; }
 
 	void setSpherePos(float theta, float phi);
 

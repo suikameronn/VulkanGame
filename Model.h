@@ -4,9 +4,11 @@
 #include<vulkan/vulkan.h>
 #include <time.h>
 
+#include"EnumList.h"
 #include"Object.h"
 #include"FbxModel.h"
 #include"Animation.h"
+#include"Colider.h"
 
 template<typename T>
 uint32_t getSize(T v)
@@ -50,16 +52,27 @@ struct MappedBuffer
 
 struct Rotate
 {
-	float radian;
-	glm::vec3 direction;
+	float x;
+	float y;
+	float z;
+
+	float getRadian(float deg)
+	{
+		return deg * (PI / 180.0f);
+	}
+
+	glm::mat4 getRotateMatrix()
+	{
+		return glm::rotate(glm::mat4(1.0f), getRadian(z), glm::vec3(0.0f, 0.0f, 1.0f))
+			* glm::rotate(glm::mat4(1.0f), getRadian(y), glm::vec3(0.0f, -1.0f, 0.0f))
+			* glm::rotate(glm::mat4(1.0f), getRadian(x), glm::vec3(1.0f, 0.0f, 0.0f));
+	}
 };
 
 class Model:public Object
 {
 protected:
 	uint32_t imageDataCount;
-
-	Rotate rotate;
 
 	std::shared_ptr<FbxModel> fbxModel;
 
@@ -72,18 +85,27 @@ protected:
 	clock_t currentTime;
 	double deltaTime;
 
-	std::string playAnimName = "walk";
+	ACTION action;
+
+	glm::vec3 inputMove() override;
+
+	std::shared_ptr<Colider> colider;
 
 public:
 
 	Model();
 
+	Rotate rotate;
 	glm::vec3 scale;
+	glm::vec3 getPivot() override { return fbxModel->getPivot(); }
+
 
 	int hasAnimation() { return fbxModel->animationNum(); }
 	void setFbxModel(std::shared_ptr<FbxModel> model);
+	void setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action);
+	void changeAction(ACTION act);
 
-	void startAnimation(std::string name);
+	void startAnimation();
 	void playAnimation();
 	bool hasPlayingAnimation() { return playAnim; }
 	std::array<glm::mat4,250> getBoneInfoFinalTransform();
@@ -98,6 +120,9 @@ public:
 	MappedBuffer* getMappedBuffer(uint32_t i);
 	uint32_t getimageDataCount();
 	DescSetData* getDescriptorSet();
+
+	void setColider(COLIDER colider);
+	bool hasColider();
 
 	void updateTransformMatrix() override;
 	void Update() override;

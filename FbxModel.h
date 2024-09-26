@@ -4,6 +4,7 @@
 #include"assimp/scene.h"          // Output data structure
 #include"assimp/postprocess.h"     // Post processing flags
 
+#include"EnumList.h"
 #include"Meshes.h"
 #include"Material.h"
 #include"Animation.h"
@@ -21,10 +22,12 @@ private:
 	bool loopAnim;
 	bool finish;
 
-	glm::vec3 averageLocalPos;
+	glm::vec3 minPos;
+	glm::vec3 maxPos;
+	glm::vec3 pivot;
 
 	std::unordered_map<std::string, std::shared_ptr<Pose>> poses;
-	std::unordered_map<std::string,std::shared_ptr<Animation>> animations;
+	std::unordered_map<ACTION,std::shared_ptr<Animation>> animations;
 
 	uint32_t imageDataCount;
 
@@ -35,6 +38,10 @@ private:
 public:
 
 	FbxModel();
+	
+	void setMinMaxVertexPos(glm::vec3 min, glm::vec3 max);
+	void getMinMaxVertexPos(glm::vec3& min, glm::vec3& max);
+	glm::vec3 getPivot() { return pivot; }
 
 	void addMeshes(Meshes* mesh);
 
@@ -46,9 +53,6 @@ public:
 	uint32_t getTotalVertexNum() { return totalVertNum; }
 
 	uint32_t getMeshesSize();
-	glm::vec3 getAverageLocalPos();
-
-	void calcAveragePos();
 
 	int getBoneNum();
 	std::vector<glm::mat4>::iterator getBoneOffsetBegin() { return boneInfo.offsetMatrix.begin(); }
@@ -65,14 +69,11 @@ public:
 	int animationNum() { return animations.size(); }
 	void setPose(std::string name, std::shared_ptr<Pose> pose);
 	void setAnimation(std::shared_ptr<Animation> animation);
-	void setAnimation(std::string name, std::shared_ptr<Animation> animation);
+	void setAnimation(ACTION action, std::shared_ptr<Animation> animation);
 	void setAnimLoop(bool loop);
 	std::array<glm::mat4, 250> getAnimationMatrix();
-	std::array<glm::mat4, 250> getAnimationMatrix(float animationTime,std::string animationName);
+	std::array<glm::mat4, 250> getAnimationMatrix(float animationTime,ACTION action);
 
 	void setImageDataCount(uint32_t count) { imageDataCount = count; }
 	uint32_t getImageDataCount() { return imageDataCount; }
-
-	//アニメーションを適用させるための行列を取得する
-	glm::mat4* getAnimationMatrix(glm::mat4 mat);
 };

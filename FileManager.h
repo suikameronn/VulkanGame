@@ -4,12 +4,12 @@
 #include <windows.h>
 #include<map>
 #include "resource1.h"
+
+#include"EnumList.h"
 #include"Storage.h"
 #include"Animation.h"
 
 #include"Assimp/Base64.hpp"
-
-enum OBJECT;
 
 enum IMAGE;
 
@@ -22,16 +22,21 @@ private:
 
 	int getModelResource(OBJECT obj);
 
-	int vertSize = 0;
-	int indexSize = 0;
-	int meshIdx = 0;
-	uint32_t allVertNum = 0;
 	uint32_t imageDataCount = 0;
+
+	uint32_t allVertNum;
+	glm::vec3 minPos;
+	glm::vec3 maxPos;
+
+	std::vector<OBJECT> loadAnimationFiles;
 
 	Assimp::Importer importer;
 
+	std::string splitFileName(std::string filePath);
+
 	//void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
-	void processNode(const aiScene* scene, FbxModel* model);
+	void processNode(/*const aiScene* scene, FbxModel* model*/const aiNode* node, const aiScene* scene, FbxModel* model);
+	void calcMinMaxVertexPos(glm::vec3 pos);
 	Meshes* processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model);
 	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
 	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
@@ -43,18 +48,17 @@ private:
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
 		unsigned int i, FbxModel* model);
 	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
-		FbxModel* model, std::shared_ptr<Animation> animation);
+		FbxModel* model, Animation* animation);
 	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 250>& matrix,FbxModel* fbxModel);
 	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,FbxModel* fbxModel);
 
 
 	void loadPose(const aiScene* scene, FbxModel* fbxModel);
-	void loadAnimation(const aiScene* scene,FbxModel* model);
+	void loadAnimation(const aiScene* scene,FbxModel* model,Animation* animation);
 
 	void loadFbxModel(int id, void** ptr, int& size);
 
 	void loadPoses(FbxModel* fbxModel);
-	void loadAnimations(FbxModel* fbxModel);
 	
 	std::string extractFileName(std::string path);
 	int getImageID(std::string path);
@@ -86,4 +90,5 @@ public:
 	}
 
 	std::shared_ptr<FbxModel> loadModel(OBJECT obj);
+	std::shared_ptr<Animation> loadAnimations(FbxModel* fbxModel, OBJECT obj);
 };

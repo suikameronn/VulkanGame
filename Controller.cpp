@@ -62,7 +62,6 @@ void Controller::keyFun(int key, int scancode, int action, int mods)
 	keyInput.scancode = scancode;
 	keyInput.action = action;
 	keyInput.mods = mods;
-
 }
 
 void Controller::setMousePos(double x, double y)

@@ -3,9 +3,9 @@
 #include <functional>
 #include"Material.h"
 
-#define MAXBONEINFO 4
+#define MAXBONEINFO 8//ãÙêîÇÃÇ›
 
-const int NUM_BONES_PER_VEREX = 4;
+const int vec4Size = 4;
 
 struct Vertex {
 	glm::vec3 pos;
@@ -14,9 +14,11 @@ struct Vertex {
 	glm::vec3 normal;
 
 	uint32_t index;
-	std::array<int, MAXBONEINFO> boneID1;
+	std::array<int, vec4Size> boneID1;
+	std::array<int, vec4Size> boneID2;
 
-	std::array<float, MAXBONEINFO> weight1;
+	std::array<float, vec4Size> weight1;
+	std::array<float, vec4Size> weight2;
 
 	Vertex()
 	{
@@ -27,21 +29,39 @@ struct Vertex {
 
 		index = 0;
 
-		for (uint32_t i = 0; i < MAXBONEINFO; i++)
+		for (uint32_t i = 0; i < vec4Size; i++)
 		{
 			boneID1[i] = 0;
 			weight1[i] = 0.0f;
 		}
+
+		for (uint32_t i = 0; i < vec4Size; i++)
+		{
+			boneID2[i] = 0;
+			weight2[i] = 0.0f;
+		}
+
 	};
 	
 	void addBoneData(uint32_t boneID, float weight)
 	{
-		for (int i = 0; i < MAXBONEINFO; ++i)
+		for (int i = 0; i < vec4Size; ++i)
 		{
 			if (weight1[i] == 0.0f)
 			{
 				boneID1[i] = boneID;
 				weight1[i] = weight;
+
+				return;
+			}
+		}
+
+		for (int i = 0; i < vec4Size; ++i)
+		{
+			if (weight2[i] == 0.0f)
+			{
+				boneID2[i] = boneID;
+				weight2[i] = weight;
 
 				return;
 			}

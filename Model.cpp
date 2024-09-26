@@ -9,9 +9,6 @@ Model::Model()
 	position = { 0,0,0 };
 	posOffSet = 0.0f;
 
-	rotate.radian = 0.0f;
-	rotate.direction = glm::vec3(0.0f, 1.0f, 0.0f);
-
 	scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	forward = glm::vec3{ 0,0,1 };
@@ -28,6 +25,10 @@ Model::Model()
 	rotateSpeed = 0.1f;
 
 	deltaTime = 0.0;
+
+	action = ACTION::IDLE;
+
+	colider = nullptr;
 }
 
 void Model::cleanupVulkan()
@@ -51,7 +52,8 @@ void Model::cleanupVulkan()
 void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 {
 	fbxModel = model;
-	pivot = model->getAverageLocalPos();
+	pivot = model->getPivot();
+	pivotMatrix = glm::translate(-pivot);
 
 	if (fbxModel->animationNum() > 0)
 	{
@@ -63,6 +65,11 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 		pointBuffers.resize(model->getMeshesSize());
 		mappedBuffers.resize(model->getMeshesSize());
 	}
+}
+
+void Model::setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action)
+{
+
 }
 
 std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
@@ -94,7 +101,7 @@ void Model::playAnimation()
 {
 	if (true)
 	{
-		if (deltaTime > 60.0f)
+		if (deltaTime > 40.0f)
 		{
 			startTime = clock();
 		}
@@ -102,8 +109,6 @@ void Model::playAnimation()
 		currentTime = clock();
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
-
-		std::cout << deltaTime << std::endl;
 	}
 }
 
@@ -112,16 +117,15 @@ std::array<glm::mat4,250> Model::getBoneInfoFinalTransform()
 	if (1)
 	{
 		//std::cout << deltaTime << std::endl;
-		return fbxModel->getAnimationMatrix(deltaTime, playAnimName);
+		return fbxModel->getAnimationMatrix(deltaTime, action);
 	}
 
 	return fbxModel->getAnimationMatrix();//‰ŠúŽp¨‚Ìƒ{[ƒ“‚ð•Ô‚·
 }
 
-void Model::startAnimation(std::string name)
+void Model::startAnimation()
 {
 	playAnim = true;
-	playAnimName = name;
 
 	startTime = clock();
 }
@@ -147,7 +151,78 @@ void Model::Update()
 
 void Model::updateTransformMatrix()
 {
-	transformMatrix = glm::translate(glm::mat4(1.0), position)
-		* glm::rotate(glm::mat4(1.0), rotate.radian, rotate.direction)
-		* glm::scale(scale);
+	//transformMatrix = pivotMatrix;
+	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
+}
+
+void Model::changeAction(ACTION act)
+{
+	action = act;
+}
+
+glm::vec3 Model::inputMove()
+{
+	glm::vec3 moveDirec;
+	auto controller = Controller::GetInstance();
+
+	if (bindCamera)
+	{
+		forward = bindCamera->forward;
+		right = bindCamera->right;
+	}
+
+	if (controller->getKey(GLFW_KEY_W))
+	{
+		moveDirec = -forward;
+		changeAction(ACTION::WALK);
+		rotate.y = 90.0f;
+	}
+	else if (controller->getKey(GLFW_KEY_A))
+	{
+		moveDirec = -right;
+		changeAction(ACTION::WALK);
+		rotate.y = 0.0f;
+	}
+	else if (controller->getKey(GLFW_KEY_D))
+	{
+		moveDirec = right;
+		changeAction(ACTION::WALK);
+		rotate.y = 180.0f;
+	}
+	else if (controller->getKey(GLFW_KEY_S))
+	{
+		moveDirec = forward;
+		changeAction(ACTION::WALK);
+		rotate.y = 270.0f;
+	}
+	else
+	{
+		moveDirec = { 0,0,0 };
+		changeAction(ACTION::IDLE);
+	}
+
+	return moveDirec;
+}
+
+void Model::setColider(COLIDER col)
+{
+	glm::vec3 min, max;
+	switch (col)
+	{
+	case BOX:
+		fbxModel->getMinMaxVertexPos(min, max);
+		colider = std::shared_ptr<Colider>(new Colider(min, max));
+	}
+}
+
+bool Model::hasColider()
+{
+	if (colider)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

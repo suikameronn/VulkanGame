@@ -22,6 +22,8 @@
 #define IDB_PNG11						162
 #define IDR_MODEL5						163
 #define IDR_MODEL6						164
+#define IDR_MODEL7						165
+#define IDR_MODEL8						166
 
 // Next default values for new objects
 // 

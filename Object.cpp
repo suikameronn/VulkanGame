@@ -119,10 +119,10 @@ void Object::setPosition(glm::vec3 pos)
 	{
 		//(*itr)->setPosition((*itr)->getPosition() + (pos - position));
 	}
-	
+
 	if (bindCamera)
 	{
-		//bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
+		bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
 	}
 
 	position = pos;
@@ -140,12 +140,15 @@ glm::mat4 Object::getTransformMatrix()
 
 void Object::setSpherePos(float theta, float phi)
 {
-	glm::vec3 pos;
-	pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
-	pos += parentObject->getPosition();
+	if (theta != 0.0f || phi != 0.0f)
+	{
+		glm::vec3 pos;
+		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
+		pos += parentObject->getPosition();
 
-	this->forward = glm::normalize(glm::vec3(pos - this->parentObject->getPosition()));
-	this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
+		this->forward = glm::normalize(glm::vec3(pos - this->parentObject->getPosition()));
+		this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
 
-	setPosition(pos);
+		setPosition(pos);
+	}
 }

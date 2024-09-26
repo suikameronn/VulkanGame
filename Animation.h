@@ -10,6 +10,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include<iostream>
+
 class Model;
 
 struct AnimationKeyData
@@ -179,12 +181,17 @@ public:
 			const glm::vec3 Start = animKeyData.animationScaleKey[t1];//スケーリングの値をとる
 			const glm::vec3 End = animKeyData.animationScaleKey[t2];//スケーリングの値をとる
 			glm::vec3 Delta = End - Start;//差分とる
+
 			return Start + Factor * Delta;//比率から計算する
 		}
 		else//最初のキーフレームよりも前の時間
 		{
+			t2 = animKeyData.animationScaleKey.begin()->first;
+			if (t2 <= 0.0f)
+			{
+				t2 = 1.0f;
+			}
 
-			float t2 = animKeyData.animationScaleKey.begin()->first;
 			float Factor = 1 - (t2 - animTime) / t2;
 
 			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
@@ -225,7 +232,12 @@ public:
 		}
 		else//最初のキーフレームよりも前の時間
 		{
-			float t2 = animKeyData.animationRotKey.begin()->first;
+			t2 = animKeyData.animationRotKey.begin()->first;
+			if (t2 <= 0.0f)
+			{
+				t2 = 1.0f;
+			}
+
 			float Factor = 1 - (t2 - animTime) / t2;
 
 			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
@@ -264,7 +276,12 @@ public:
 		}
 		else//最初のキーフレームよりも前の時間
 		{
-			float t2 = animKeyData.animationPositionKey.begin()->first;
+			t2 = animKeyData.animationPositionKey.begin()->first;
+			if (t2 <= 0.0f)
+			{
+				t2 = 1.0f;
+			}
+
 			float Factor = 1 - (t2 - animTime) / t2;
 			
 			if (!(Factor >= 0.0f && Factor <= 1.0f)) {
