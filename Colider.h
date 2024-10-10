@@ -1,67 +1,23 @@
 #pragma once
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include<glm/glm.hpp>
-#include<glm/ext.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include<memory>
-#include<vector>
+#include<array>
 
 #include"Object.h"
 #include"EnumList.h"
-
-struct BufferObject
-{
-	VkBuffer vertBuffer;
-	VkDeviceMemory vertHandler;
-
-	VkBuffer indeBuffer;
-	VkDeviceMemory indeHandler;
-};
-
-struct DescriptorInfo
-{
-	VkDescriptorSetLayout layout;
-	VkDescriptorPool pool;
-	VkPipelineLayout pLayout;
-	VkPipeline pipeline;
-
-	bool operator==(const DescriptorInfo& a) const
-	{
-		return layout == a.layout;
-	}
-
-	bool operator!=(const DescriptorInfo& a) const
-	{
-		return !(layout == a.layout);
-	}
-};
-
-struct MappedBuffer
-{
-	VkBuffer uniformBuffer;
-	VkDeviceMemory uniformBufferMemory;
-	void* uniformBufferMapped;
-};
-
-struct ColiderVertex
-{
-	glm::vec3 pos;
-};
 
 struct Simplex
 {
 private:
 	std::array<glm::vec3, 4> points;
-	int size;
 
 public:
+	int size;
 
 	Simplex()
 	{
 		size = 0;
-		points = { glm::vec3(0.0f,0.0f,0.0f),glm::vec3(0.0f,0.0f,0.0f) ,glm::vec3(0.0f,0.0f,0.0f) ,glm::vec3(0.0f,0.0f,0.0f) };
+		glm::vec3 zero = glm::vec3(0.0f, 0.0f, 0.0f);
+		points = { zero };
 	}
 
 	void push_front(glm::vec3 v)
@@ -81,7 +37,6 @@ public:
 	}
 
 	glm::vec3& operator[](int i) { return points[i]; }
-	int size() const { return size; }
 };
 
 class Colider

@@ -16,8 +16,41 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include"EnumList.h"
+#include"Controller.h"
 
-class Camera;
+struct BufferObject
+{
+	VkBuffer vertBuffer;
+	VkDeviceMemory vertHandler;
+
+	VkBuffer indeBuffer;
+	VkDeviceMemory indeHandler;
+};
+
+struct DescriptorInfo
+{
+	VkDescriptorSetLayout layout;
+	VkDescriptorPool pool;
+	VkPipelineLayout pLayout;
+	VkPipeline pipeline;
+
+	bool operator==(const DescriptorInfo& a) const
+	{
+		return layout == a.layout;
+	}
+
+	bool operator!=(const DescriptorInfo& a) const
+	{
+		return !(layout == a.layout);
+	}
+};
+
+struct MappedBuffer
+{
+	VkBuffer uniformBuffer;
+	VkDeviceMemory uniformBufferMemory;
+	void* uniformBufferMapped;
+};
 
 struct DescSetData
 {
@@ -29,16 +62,14 @@ struct DescSetData
 class Object
 {
 protected:
-
-	Object* parentObject;
-	std::vector<Object*> childObjects;
+	std::weak_ptr<Object> cameraObj;
+	std::vector<std::weak_ptr<Object>> childObjects;
 	float theta, phi;
-
-	std::shared_ptr<Camera> bindCamera;
 
 	float rotateSpeed;
 	float length;
 
+	glm::vec3 parentPos;
 	glm::vec3 position;
 
 	virtual glm::vec3 inputMove();
@@ -63,9 +94,10 @@ public:
 
 	glm::mat4 transformMatrix;
 
-	void bindObject(Object* obj);
-	void bindObject(std::shared_ptr<Camera> camera);
-	void setParentObject(Object* obj);
+	void bindObject(std::weak_ptr<Object> obj);
+	void bindCamera(std::weak_ptr<Object> camera);
+	void sendPosToChildren();
+	void setParentPos(glm::vec3 parentPos);
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();

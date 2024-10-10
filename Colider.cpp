@@ -84,7 +84,7 @@ void Colider::reflectMovement(glm::mat4& transform)
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 {
-	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1, 0, 0));
+	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0,0.0,0.0));
 
 	Simplex simplex;
 	simplex.push_front(support);
@@ -107,7 +107,6 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 			return true;
 		}
 	}
-
 
 	return false;
 }
@@ -199,9 +198,9 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 	glm::vec3 ac = c - a;
 	glm::vec3 point = -a;
 
-	glm::vec3 triangleCross = glm::cross(ab, ac);
+	glm::vec3 triangleCross = glm::cross(ab,ac);
 	
-	if (sameDirection(cross(triangleCross, ac), point))
+	if (sameDirection(glm::cross(triangleCross, ac), point))
 	{
 		if (sameDirection(ac, point))
 		{
@@ -223,12 +222,12 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 		{
 			if (sameDirection(triangleCross, point))
 			{
-				dir = glm::normalize(triangleCross);
+				dir = triangleCross;
 			}
 			else
 			{
 				simplex = { a,c,b };
-				dir = glm::normalize(-triangleCross);
+				dir = -triangleCross;
 			}
 		}
 	}
@@ -272,7 +271,7 @@ bool Colider::Tetrahedron(Simplex& simplex, glm::vec3 dir)
 
 bool Colider::nextSimplex(Simplex& simplex, glm::vec3 dir)
 {
-	switch (simplex.size()) {
+	switch (simplex.size) {
 		case 2: return Line(simplex, dir);
 		case 3: return Triangle(simplex, dir);
 		case 4: return Tetrahedron(simplex, dir);

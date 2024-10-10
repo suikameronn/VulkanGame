@@ -71,10 +71,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
             (*model)->cleanupVulkan();
+
+            /*
             if ((*model)->hasColider())
             {
                 (*model)->getColider()->cleanupVulkan();
             }
+            */
         }
 
         {
@@ -1566,7 +1569,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
             }
-            
             
             if ((*model)->hasColider())
             {

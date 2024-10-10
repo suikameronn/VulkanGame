@@ -7,7 +7,6 @@
 
 #include"EnumList.h"
 #include"Storage.h"
-#include"Animation.h"
 
 #include"Assimp/Base64.hpp"
 

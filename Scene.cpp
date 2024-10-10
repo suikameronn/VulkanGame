@@ -40,9 +40,9 @@ void Scene::parseScene()
 		model->scale = glm::vec3(3.2, 3.2, 3.2);
 		model->controllable = true;
 		model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
-		model->setPosition(glm::vec3(0.1f,0.1f,0.1f));
+		model->setPosition(glm::vec3(50.1f,50.1f,50.1f));
 		sceneSet["aaaaa"] = model;
-		sceneSet["aaaaa"]->bindObject(camera);
+		sceneSet["aaaaa"]->bindCamera(std::weak_ptr<Object>(camera));
 
 		camera->spherePos = true;
 		
@@ -84,6 +84,11 @@ bool Scene::UpdateScene()
 
 	camera->Update();
 
+	if (sceneSet["aaaaa"]->getColider()->Intersect(sceneSet["aa"]->getColider()))
+	{
+		std::cout << "aaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+	}
+
 	return exit;
 }
 
@@ -118,6 +123,7 @@ void Scene::setModels(std::string name)
 	}
 }
 
+/*
 void Scene::IntersectsColiders()
 {
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
@@ -146,3 +152,4 @@ void Scene::IntersectsColiders()
 		}
 	}
 }
+*/

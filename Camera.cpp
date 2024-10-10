@@ -16,7 +16,6 @@ Camera::Camera()
 	theta = 0.0f;
 	phi = 0.0f;
 
-	parentObject = nullptr;
 	childObjects.clear();
 
 	viewAngle = 45;
@@ -43,70 +42,50 @@ void Camera::Update()
 {
 	auto controller = Controller::GetInstance();
 
-	if (parentObject)
+	bool input = false;
+	if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
 	{
-		bool input = false;
-		if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
-		{
-			theta -= viewPointSpeed;
-			input = true;
-		}
-		
-		if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
-		{
-			theta += viewPointSpeed;
-			input = true;
-		}
-		
-		if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
-		{
-			phi += viewPointSpeed;
-			input = true;
-		}
-		
-		if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
-		{
-			phi -= viewPointSpeed;
-			input = true;
-		}
-
-		if (phi >= 90.0f)
-		{
-			phi = 89.0f;
-		}
-		else if (phi <= -90.0f)
-		{
-			phi = -89.0f;
-		}
-
-		setSpherePos(glm::radians(theta), glm::radians(phi));
-		calcViewMat();
+		theta -= viewPointSpeed;
+		input = true;
 	}
-	else
+
+	if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
 	{
-		calcViewMat();
+		theta += viewPointSpeed;
+		input = true;
 	}
+
+	if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
+	{
+		phi += viewPointSpeed;
+		input = true;
+	}
+
+	if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
+	{
+		phi -= viewPointSpeed;
+		input = true;
+	}
+
+	if (phi >= 90.0f)
+	{
+		phi = 89.0f;
+	}
+	else if (phi <= -90.0f)
+	{
+		phi = -89.0f;
+	}
+
+	setSpherePos(glm::radians(theta), glm::radians(phi));
+	calcViewMat();
 }
 
 void Camera::calcViewMat()
 {
-	if (!parentObject)
-	{
-		viewMat = glm::lookAt(this->position, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0, 1, 0));
-		return;
-	}
-
-	viewMat = glm::lookAt(this->position, this->parentObject->getPosition(), glm::vec3(0, 1, 0));
+	viewMat = glm::lookAt(this->position, parentPos, glm::vec3(0, 1, 0));
 }
 
 glm::vec3 Camera::getViewTarget()
 {
-	if (parentObject)
-	{
-		return parentObject->getPosition();
-	}
-	else
-	{
-		return position;
-	}
+	return parentPos;
 }

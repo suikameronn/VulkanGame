@@ -13,7 +13,6 @@ Model::Model()
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
-	parentObject = nullptr;
 	childObjects.clear();
 	spherePos = false;
 	theta = 0.0f;
@@ -45,6 +44,11 @@ void Model::cleanupVulkan()
 		vkDestroyBuffer(device, mappedBuffers[i].uniformBuffer, nullptr);
 		vkFreeMemory(device, mappedBuffers[i].uniformBufferMemory, nullptr);
 		mappedBuffers[i].uniformBufferMapped = nullptr;
+	}
+
+	if (colider)
+	{
+		colider->cleanupVulkan();
 	}
 }
 
@@ -150,7 +154,14 @@ void Model::updateTransformMatrix()
 {
 	//transformMatrix = pivotMatrix;
 	//pivot = glm::vec4(pivot,0.f) * glm::scale(glm::mat4(1.0f), scale);
-	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
+	glm::mat4 transRotate = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix();
+	
+	transformMatrix = transRotate * glm::scale(glm::mat4(1.0f),scale);
+
+	if (colider)
+	{
+		colider->reflectMovement(transRotate);
+	}
 }
 
 void Model::changeAction(ACTION act)
@@ -168,10 +179,10 @@ glm::vec3 Model::inputMove()
 	glm::vec3 moveDirec;
 	auto controller = Controller::GetInstance();
 
-	if (bindCamera)
+	if (!cameraObj.expired())
 	{
-		forward = bindCamera->forward;
-		right = bindCamera->right;
+		forward = cameraObj.lock()->forward;
+		right = cameraObj.lock()->right;
 	}
 
 	if (controller->getKey(GLFW_KEY_W))

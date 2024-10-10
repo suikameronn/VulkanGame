@@ -1,6 +1,4 @@
 #include"Object.h"
-#include"Camera.h"
-#include"Controller.h"
 
 Object::Object()
 {
@@ -12,7 +10,6 @@ Object::Object()
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
-	parentObject = nullptr;
 	childObjects.clear();
 	spherePos = false;
 
@@ -23,9 +20,9 @@ Object::Object()
 	length = 1.0f;
 }
 
-void Object::bindObject(Object* obj)
+void Object::bindObject(std::weak_ptr<Object> obj)
 {
-	if (obj == nullptr)
+	if (obj.expired())
 	{
 #ifdef _DEBUG
 		throw std::runtime_error("bindObject(Object* obj): bindObject is nullptr");
@@ -36,35 +33,14 @@ void Object::bindObject(Object* obj)
 
 	childObjects.push_back(obj);
 
-	obj->setParentObject(this);
+	sendPosToChildren();
 }
 
-void Object::bindObject(std::shared_ptr<Camera> camera)
+void Object::bindCamera(std::weak_ptr<Object> camera)
 {
-	if (bindCamera != nullptr)
-	{
-#ifdef _DEBUG
-		throw std::runtime_error("bindObject(Camera* camera): bindCamera not nullptr");
-#endif
-		return;
-	}
+	cameraObj = camera;
 
-	bindCamera = std::shared_ptr<Camera>(camera);
-	camera->setParentObject(this);
-}
-
-void Object::setParentObject(Object* obj)
-{
-	if (obj == nullptr)
-	{
-#ifdef _DEBUG
-		throw std::runtime_error("setParentObject: obj is nullptr");
-#endif
-
-		return;
-	}
-
-	parentObject = obj;
+	sendPosToChildren();
 }
 
 glm::vec3 Object::inputMove()
@@ -72,10 +48,10 @@ glm::vec3 Object::inputMove()
 	glm::vec3 moveDirec;
 	auto controller = Controller::GetInstance();
 
-	if (bindCamera)
+	if (cameraObj.expired())
 	{
-		forward = bindCamera->forward;
-		right = bindCamera->right;
+		forward = cameraObj.lock()->forward;
+		right = cameraObj.lock()->right;
 	}
 
 	if (controller->getKey(GLFW_KEY_W))
@@ -114,17 +90,8 @@ void Object::Update()
 void Object::setPosition(glm::vec3 pos)
 {
 
-	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
-	{
-		//(*itr)->setPosition((*itr)->getPosition() + (pos - position));
-	}
-
-	if (bindCamera)
-	{
-		//bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
-	}
-
 	position = pos;
+	sendPosToChildren();
 }
 
 glm::vec3 Object::getPosition()
@@ -143,11 +110,32 @@ void Object::setSpherePos(float theta, float phi)
 	{
 		glm::vec3 pos;
 		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
-		pos += parentObject->getPosition();
+		pos += parentPos;
 
-		this->forward = glm::normalize(glm::vec3(pos - this->parentObject->getPosition()));
+		this->forward = glm::normalize(glm::vec3(pos - parentPos));
 		this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
 
 		setPosition(pos);
 	}
+}
+
+void Object::sendPosToChildren()
+{
+	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
+	{
+		if (!itr->expired())
+		{
+			itr->lock()->setParentPos(this->position);
+		}
+	}
+
+	if (!cameraObj.expired())
+	{
+		cameraObj.lock()->setParentPos(this->position);
+	}
+}
+
+void Object::setParentPos(glm::vec3 pos)
+{
+	parentPos = pos;
 }

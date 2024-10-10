@@ -34,7 +34,7 @@ public:
 
 	bool UpdateScene();
 
-	void IntersectsColiders();
+	//void IntersectsColiders();
 
 	std::shared_ptr<Model> getSceneModelData(std::string name);
 };

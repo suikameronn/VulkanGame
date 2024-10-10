@@ -1,6 +1,4 @@
 #include"Meshes.h"
-#include"VulkanBase.h"
-#include"GameManager.h"
 
 Meshes::~Meshes()
 {

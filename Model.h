@@ -4,9 +4,7 @@
 #include <time.h>
 
 #include"EnumList.h"
-#include"Object.h"
 #include"FbxModel.h"
-#include"Animation.h"
 #include"Colider.h"
 
 template<typename T>
@@ -88,6 +86,7 @@ public:
 	uint32_t getimageDataCount();
 	DescSetData* getDescriptorSet();
 
+	
 	void setColider(COLIDER shape,float right,float left,float top,float bottom, float front, float back);
 	void setColider(COLIDER shape);
 	bool hasColider();
