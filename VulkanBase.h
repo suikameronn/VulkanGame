@@ -1,5 +1,6 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLFW_INCLUDE_VULKAN
 
 #include "GLFW/glfw3.h"
@@ -132,8 +133,6 @@ private:
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
 
-    UniformBufferObject ubo{};
-
     int descriptorSetCount;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -156,8 +155,8 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(uint32_t imageDataCount, VkDescriptorSetLayout& descriptorSetLayout);
-    void createGraphicsPipeline(uint32_t imageDataCount, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createDescriptorSetLayout(PrimitiveTextureCount ptc, VkDescriptorSetLayout& descriptorSetLayout);
+    void createGraphicsPipeline(PrimitiveTextureCount ptc, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -177,9 +176,11 @@ private:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void createVertexBuffer(std::shared_ptr<Model> model);
+    void createVertexBuffer(std::shared_ptr<Colider> colider);
     void createIndexBuffer(std::shared_ptr<Model> model);
+    void createIndexBuffer(std::shared_ptr<Colider> colider);
     void createUniformBuffer(std::shared_ptr<Model> model);
-    void createDescriptorPool(uint32_t imageDataCount,VkDescriptorPool& pool);
+    void createDescriptorPool(PrimitiveTextureCount ptc,VkDescriptorPool& pool);
     void allocateDescriptorSets(std::shared_ptr<Model> model);
     void createDescriptorSets(std::shared_ptr<Model> model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);

@@ -5,7 +5,6 @@ Model::Model()
 {
 	uniformBufferChange = true;
 
-	pivot = { 0,0,0 };
 	position = { 0,0,0 };
 	posOffSet = 0.0f;
 
@@ -52,8 +51,6 @@ void Model::cleanupVulkan()
 void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 {
 	fbxModel = model;
-	pivot = model->getPivot();
-	pivotMatrix = glm::translate(-pivot);
 
 	if (fbxModel->animationNum() > 0)
 	{
@@ -114,7 +111,7 @@ void Model::playAnimation()
 
 std::array<glm::mat4,250> Model::getBoneInfoFinalTransform()
 {
-	if (1)
+	if (fbxModel->animationNum() > 0)
 	{
 		//std::cout << deltaTime << std::endl;
 		return fbxModel->getAnimationMatrix(deltaTime, action);
@@ -132,7 +129,7 @@ void Model::startAnimation()
 
 void Model::Update()
 {
-	if (true)
+	if (fbxModel->animationNum() > 0)
 	{
 		playAnimation();
 	}
@@ -152,12 +149,18 @@ void Model::Update()
 void Model::updateTransformMatrix()
 {
 	//transformMatrix = pivotMatrix;
+	//pivot = glm::vec4(pivot,0.f) * glm::scale(glm::mat4(1.0f), scale);
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 }
 
 void Model::changeAction(ACTION act)
 {
 	action = act;
+}
+
+void Model::changeAction()
+{
+	action = defaultAction;
 }
 
 glm::vec3 Model::inputMove()
@@ -198,20 +201,29 @@ glm::vec3 Model::inputMove()
 	else
 	{
 		moveDirec = { 0,0,0 };
-		changeAction(ACTION::IDLE);
+		changeAction();
 	}
 
 	return moveDirec;
 }
 
-void Model::setColider(COLIDER col)
+void Model::setColider(COLIDER shape, float right, float left, float top, float bottom, float front, float back)
 {
-	glm::vec3 min, max;
-	switch (col)
+	switch (shape)
 	{
 	case BOX:
-		fbxModel->getMinMaxVertexPos(min, max);
-		colider = std::shared_ptr<Colider>(new Colider(min, max));
+		colider = std::shared_ptr<Colider>(new Colider(position,right,left,top,bottom,front,back));
+	}
+}
+
+void Model::setColider(COLIDER shape)
+{
+	glm::vec3 min, max;
+	fbxModel->getMinMaxVertexPos(min, max);
+	switch (shape)
+	{
+	case BOX:
+		colider = std::shared_ptr<Colider>(new Colider(position, min, max));
 	}
 }
 

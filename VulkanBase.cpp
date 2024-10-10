@@ -71,6 +71,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
             (*model)->cleanupVulkan();
+            if ((*model)->hasColider())
+            {
+                (*model)->getColider()->cleanupVulkan();
+            }
         }
 
         {
@@ -84,8 +88,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
 
-        std::unordered_map<uint32_t, DescriptorInfo>::iterator infoBegin;
-        std::unordered_map<uint32_t, DescriptorInfo>::iterator infoEnd;
+        std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoBegin;
+        std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoEnd;
         Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
         for (auto itr = infoBegin; itr != infoEnd; itr++)
         {
@@ -425,8 +429,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(uint32_t imageDataCount,VkDescriptorSetLayout &descriptorSetLayout) {
-        std::vector<VkDescriptorSetLayoutBinding> bindings(imageDataCount + 1);
+    void VulkanBase::createDescriptorSetLayout(PrimitiveTextureCount ptc,VkDescriptorSetLayout &descriptorSetLayout) {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(ptc.imageDataCount + 1);
         
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -437,7 +441,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         bindings[0] = uboLayoutBinding;
 
-        for (int i = 0; i < imageDataCount; i++)
+        for (int i = 0; i < ptc.imageDataCount; i++)
         {
             VkDescriptorSetLayoutBinding samplerLayoutBinding{};
             samplerLayoutBinding.binding = 1;
@@ -459,19 +463,28 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(uint32_t imageDataCount, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
+    void VulkanBase::createGraphicsPipeline(PrimitiveTextureCount ptc, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
 
         std::string vertFile;
         std::string fragFile;
-        if (imageDataCount > 0)
+
+        if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
-            vertFile = "shaders/vert.spv";
-            fragFile = "shaders/frag.spv";
+            if (ptc.imageDataCount > 0)
+            {
+                vertFile = "shaders/vert.spv";
+                fragFile = "shaders/frag.spv";
+            }
+            else
+            {
+                vertFile = "shaders/Notexture.vert.spv";
+                fragFile = "shaders/Notexture.frag.spv";
+            }
         }
-        else
+        else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
-            vertFile = "shaders/Notexture.vert.spv";
-            fragFile = "shaders/Notexture.frag.spv";
+            vertFile = "shaders/line.vert.spv";
+            fragFile = "shaders/line.frag.spv";
         }
         auto vertShaderCode = readFile(vertFile);
         auto fragShaderCode = readFile(fragFile);
@@ -498,50 +511,65 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-        attributeDescriptions.resize(8);
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+        if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        {
+            bindingDescription.stride = sizeof(Vertex);
 
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
+            attributeDescriptions.resize(8);
+            attributeDescriptions[0].binding = 0;
+            attributeDescriptions[0].location = 0;
+            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+            attributeDescriptions[1].binding = 0;
+            attributeDescriptions[1].location = 1;
+            attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-        attributeDescriptions[3].binding = 0;
-        attributeDescriptions[3].location = 3;
-        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[3].offset = offsetof(Vertex, normal);
+            attributeDescriptions[2].binding = 0;
+            attributeDescriptions[2].location = 2;
+            attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
-        attributeDescriptions[4].binding = 0;
-        attributeDescriptions[4].location = 4;
-        attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
-        attributeDescriptions[4].offset = offsetof(Vertex, boneID1);
+            attributeDescriptions[3].binding = 0;
+            attributeDescriptions[3].location = 3;
+            attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[3].offset = offsetof(Vertex, normal);
 
-        attributeDescriptions[5].binding = 0;
-        attributeDescriptions[5].location = 5;
-        attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[5].offset = offsetof(Vertex, weight1);
+            attributeDescriptions[4].binding = 0;
+            attributeDescriptions[4].location = 4;
+            attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
+            attributeDescriptions[4].offset = offsetof(Vertex, boneID1);
 
-        attributeDescriptions[6].binding = 0;
-        attributeDescriptions[6].location = 6;
-        attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SINT;
-        attributeDescriptions[6].offset = offsetof(Vertex, boneID2);
+            attributeDescriptions[5].binding = 0;
+            attributeDescriptions[5].location = 5;
+            attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            attributeDescriptions[5].offset = offsetof(Vertex, weight1);
 
-        attributeDescriptions[7].binding = 0;
-        attributeDescriptions[7].location = 7;
-        attributeDescriptions[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[7].offset = offsetof(Vertex, weight2);
+            attributeDescriptions[6].binding = 0;
+            attributeDescriptions[6].location = 6;
+            attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SINT;
+            attributeDescriptions[6].offset = offsetof(Vertex, boneID2);
+
+            attributeDescriptions[7].binding = 0;
+            attributeDescriptions[7].location = 7;
+            attributeDescriptions[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            attributeDescriptions[7].offset = offsetof(Vertex, weight2);
+        }
+        else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+        {
+            bindingDescription.stride = sizeof(glm::vec3);
+
+            attributeDescriptions.resize(1);
+
+            attributeDescriptions[0].binding = 0;
+            attributeDescriptions[0].location = 0;
+            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[0].offset = 0;
+        }
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -550,7 +578,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.topology = ptc.topology;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineViewportStateCreateInfo viewportState{};
@@ -1079,6 +1107,28 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    void VulkanBase::createVertexBuffer(std::shared_ptr<Colider> colider)
+    {
+        VkDeviceSize bufferSize = sizeof(*colider->getColiderVertices()) * colider->getColiderVerticesSize();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, colider->getColiderVertices(), (size_t)bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBuffer()->vertBuffer, colider->getPointBuffer()->vertHandler);
+
+        //vertexBuffer配列にコピーしていく(vector型)
+        copyBuffer(stagingBuffer, colider->getPointBuffer()->vertBuffer, bufferSize);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
+    }
+
     void VulkanBase::createIndexBuffer(std::shared_ptr<Model> model) 
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
@@ -1104,6 +1154,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    void VulkanBase::createIndexBuffer(std::shared_ptr<Colider> colider)
+    {
+        VkDeviceSize bufferSize = sizeof(*colider->getColiderIndices()) * colider->getColiderIndicesSize();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, colider->getColiderIndices(), (size_t)bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBuffer()->indeBuffer, colider->getPointBuffer()->indeHandler);
+
+        copyBuffer(stagingBuffer, colider->getPointBuffer()->indeBuffer, bufferSize);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
+    }
+
     void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1111,6 +1182,17 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
             MappedBuffer* mappedBuffer = model->getMappedBuffer(i);
+
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+
+            vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+        }
+
+        if (model->hasColider())
+        {
+            std::shared_ptr<Colider> colider = model->getColider();
+
+            MappedBuffer* mappedBuffer = colider->getMappedBuffer();
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
@@ -1151,15 +1233,29 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
         }
+
+        if (model->hasColider())
+        {
+            std::shared_ptr<Colider> colider = model->getColider();
+
+            UniformBufferObject ubo;
+
+            ubo.model = model->getTransformMatrix();
+            ubo.view = camera->viewMat;
+            ubo.proj = camera->perspectiveMat;
+            ubo.boneMatrix = array;
+
+            memcpy(colider->getMappedBuffer()->uniformBufferMapped, &ubo, sizeof(ubo));
+        }
     }
 
-    void VulkanBase::createDescriptorPool(uint32_t imageDataCount, VkDescriptorPool& pool)
+    void VulkanBase::createDescriptorPool(PrimitiveTextureCount ptc, VkDescriptorPool& pool)
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(100);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(100);
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1176,8 +1272,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
-            uint32_t imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
-            DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(imageDataCount);
+            PrimitiveTextureCount ptc;
+            ptc.imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
+            ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+            DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
 
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1199,6 +1298,36 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             descriptorSetCount++;
 
             model->getMeshes(i)->getMaterial()->setDescriptorSet(descriptorSet);
+        }
+
+        if (model->hasColider())
+        {
+            PrimitiveTextureCount ptc;
+            ptc.imageDataCount = 0;
+            ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+            DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
+
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = info->pool;
+            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+            allocInfo.pSetLayouts = &info->layout;
+
+            VkDescriptorSet descriptorSet;
+
+            if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            if (descriptorSetCount > 100)
+            {
+                throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+            }
+            descriptorSetCount++;
+
+            model->getColider()->setDescriptorSet(descriptorSet);
         }
     }
 
@@ -1253,6 +1382,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             }
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+        if (model->hasColider())
+        {
+            std::shared_ptr<Colider> colider = model->getColider();
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = colider->getMappedBuffer()->uniformBuffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBufferObject);
+
+            VkWriteDescriptorSet descriptorWrite{};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = colider->getDescSetData().decriptorSet;
+            descriptorWrite.dstBinding = 0;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pBufferInfo = &bufferInfo;
+
+            vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
         }
     }
 
@@ -1378,12 +1528,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         std::shared_ptr<Material> material;
 
+        
+        PrimitiveTextureCount ptc;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
+            
             for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
             {
                 material = (*model)->getMeshes(i)->getMaterial();
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(material->getImageDataCount())->pipeline);
+                ptc.imageDataCount = material->getImageDataCount();
+                ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
 
                 VkViewport viewport{};
                 viewport.x = 0.0f;
@@ -1406,10 +1562,46 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer(i)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    storage->accessDescriptorInfo(material->getImageDataCount())->pLayout, 0, 1, &material->getDescSetData()->decriptorSet, 0, nullptr);
+                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &material->getDescSetData()->decriptorSet, 0, nullptr);
 
                 vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
             }
+            
+            
+            if ((*model)->hasColider())
+            {
+                std::shared_ptr<Colider> colider = (*model)->getColider();
+                ptc.imageDataCount = 0;
+                ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
+
+                VkViewport viewport{};
+                viewport.x = 0.0f;
+                viewport.y = 0.0f;
+                viewport.width = (float)swapChainExtent.width;
+                viewport.height = (float)swapChainExtent.height;
+                viewport.minDepth = 0.0f;
+                viewport.maxDepth = 1.0f;
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+                VkRect2D scissor{};
+                scissor.offset = { 0, 0 };
+                scissor.extent = swapChainExtent;
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+                VkDeviceSize offsets[] = { 0 };
+
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBuffer()->vertBuffer, offsets);
+
+                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBuffer()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().decriptorSet, 0, nullptr);
+
+                vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
+            }
+            
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -1699,6 +1891,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         createVertexBuffer(model);
         createIndexBuffer(model);
+
+        if (model->hasColider())
+        {
+            createVertexBuffer(model->getColider());
+            createIndexBuffer(model->getColider());
+        }
     }
 
     void VulkanBase::createTextureData(std::shared_ptr<Model> model)
@@ -1719,12 +1917,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createDescriptorInfo(std::shared_ptr<Model> model)
     {
         uint32_t imageDataCount;
+        PrimitiveTextureCount ptc;
+        ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
         for (uint32_t i = 0; i < model->getMeshesSize(); i++)
         {
-            imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
+            ptc.imageDataCount = model->getMeshes(i)->getMaterial()->getImageDataCount();
 
-            if (Storage::GetInstance()->containDescriptorInfo(imageDataCount))
+            if (Storage::GetInstance()->containDescriptorInfo(ptc))
             {
                 continue;
             }
@@ -1732,15 +1932,39 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             DescriptorInfo info{};
 
             /*ディスクリプタレイアウトを持たせる*/
-            createDescriptorSetLayout(imageDataCount, info.layout);
+            createDescriptorSetLayout(ptc, info.layout);
 
             /*ディスクリプタプールを作る*/
-            createDescriptorPool(imageDataCount, info.pool);
+            createDescriptorPool(ptc, info.pool);
 
             /*グラフィックスパイプラインを作る*/
-            createGraphicsPipeline(imageDataCount, info.layout, info.pLayout, info.pipeline);
+            createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
 
-            Storage::GetInstance()->addDescriptorInfo(imageDataCount, info);
+            Storage::GetInstance()->addDescriptorInfo(ptc, info);
+        }
+
+        if (model->hasColider())
+        {
+            ptc.imageDataCount = 0;
+            ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+            if (Storage::GetInstance()->containDescriptorInfo(ptc))
+            {
+                return;
+            }
+
+            DescriptorInfo info{};
+
+            /*ディスクリプタレイアウトを持たせる*/
+            createDescriptorSetLayout(ptc, info.layout);
+
+            /*ディスクリプタプールを作る*/
+            createDescriptorPool(ptc, info.pool);
+
+            /*グラフィックスパイプラインを作る*/
+            createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
+
+            Storage::GetInstance()->addDescriptorInfo(ptc, info);
         }
     }
 

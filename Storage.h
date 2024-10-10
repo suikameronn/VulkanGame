@@ -13,7 +13,30 @@ enum IMAGE
 
 class ImageData;
 
-struct Hash {
+struct PrimitiveTextureCount
+{
+	uint32_t imageDataCount;
+	VkPrimitiveTopology topology;
+
+	/*
+	bool operator==(PrimitiveTextureCount& another)
+	{
+		return (imageDataCount == another.imageDataCount) && (topology == another.topology);
+	}
+
+	bool operator!=(PrimitiveTextureCount& another)
+	{
+		return !((imageDataCount == another.imageDataCount) && (topology == another.topology));
+	}
+	*/
+};
+
+inline bool operator==(const PrimitiveTextureCount& lhs, const PrimitiveTextureCount& rhs) {
+	return lhs.imageDataCount == rhs.imageDataCount && lhs.topology == rhs.topology;
+}
+
+struct Hash 
+{
 	size_t operator()(const DescriptorInfo info) const {
 		size_t a = std::hash<VkDescriptorSetLayout>()(info.layout);
 		size_t b = std::hash<VkPipeline>()(info.pipeline);
@@ -21,6 +44,14 @@ struct Hash {
 		size_t d = std::hash<VkDescriptorPool>()(info.pool);
 
 		return a ^ b ^ c ^ d;
+	}
+
+	size_t operator()(const PrimitiveTextureCount& ptc) const
+	{
+		size_t a = std::hash<uint32_t>()(ptc.imageDataCount);
+		size_t b = std::hash<VkPrimitiveTopology>()(ptc.topology);
+
+		return a ^ b;
 	}
 };
 
@@ -31,7 +62,7 @@ private:
 	std::unordered_map<OBJECT, std::shared_ptr<Animation>> fbxAnimationStorage;
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
-	std::unordered_map<uint32_t, DescriptorInfo> descriptorStorage;
+	std::unordered_map<PrimitiveTextureCount, DescriptorInfo,Hash> descriptorStorage;
 
 	std::shared_ptr<Camera> camera;
 	std::vector<std::shared_ptr<Model>> sceneModelStorage;
@@ -62,7 +93,7 @@ public:
 	void addModel(OBJECT obj, FbxModel* geo);
 	void addAnimation(OBJECT obj, Animation* animation);
 	void addImageData(std::string, ImageData* image);
-	void addDescriptorInfo(uint32_t imageDataCount, DescriptorInfo& info);
+	void addDescriptorInfo(PrimitiveTextureCount ptc, DescriptorInfo& info);
 
 	void setCamera(std::shared_ptr<Camera> c);
 	void addModel(std::shared_ptr<Model> model);
@@ -71,9 +102,9 @@ public:
 	std::shared_ptr<Animation> getAnimation(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
 
-	DescriptorInfo* accessDescriptorInfo(uint32_t imageDataCount);
-	void accessDescriptorInfoItr(std::unordered_map<uint32_t, DescriptorInfo>::iterator& begin,
-		std::unordered_map<uint32_t, DescriptorInfo>::iterator& end);
+	DescriptorInfo* accessDescriptorInfo(PrimitiveTextureCount ptc);
+	void accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& begin,
+		std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& end);
 
 	std::shared_ptr<Camera> accessCamera();
 
@@ -83,7 +114,7 @@ public:
 	bool containModel(OBJECT obj);
 	bool containAnimation(OBJECT obj);
 	bool containImageData(std::string path);
-	bool containDescriptorInfo(uint32_t imageDataCount);
+	bool containDescriptorInfo(PrimitiveTextureCount ptc);
 
 	static void FinishStorage()
 	{

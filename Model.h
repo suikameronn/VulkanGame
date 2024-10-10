@@ -1,7 +1,6 @@
 #pragma once
 #include<vector>
 #include<bitset>
-#include<vulkan/vulkan.h>
 #include <time.h>
 
 #include"EnumList.h"
@@ -15,40 +14,6 @@ uint32_t getSize(T v)
 {
 	return v.size();
 }
-
-struct BufferObject
-{
-	VkBuffer vertBuffer;
-	VkDeviceMemory vertHandler;
-
-	VkBuffer indeBuffer;
-	VkDeviceMemory indeHandler;
-};
-
-struct DescriptorInfo
-{
-	VkDescriptorSetLayout layout;
-	VkDescriptorPool pool;
-	VkPipelineLayout pLayout;
-	VkPipeline pipeline;
-
-	bool operator==(const DescriptorInfo& a) const
-	{
-		return layout == a.layout;
-	}
-
-	bool operator!=(const DescriptorInfo& a) const
-	{
-		return !(layout == a.layout);
-	}
-};
-
-struct MappedBuffer
-{
-	VkBuffer uniformBuffer;
-	VkDeviceMemory uniformBufferMemory;
-	void* uniformBufferMapped;
-};
 
 struct Rotate
 {
@@ -86,10 +51,14 @@ protected:
 	double deltaTime;
 
 	ACTION action;
+	ACTION defaultAction;
 
 	glm::vec3 inputMove() override;
 
 	std::shared_ptr<Colider> colider;
+
+	void changeAction();
+	void changeAction(ACTION act);
 
 public:
 
@@ -97,14 +66,12 @@ public:
 
 	Rotate rotate;
 	glm::vec3 scale;
-	glm::vec3 getPivot() override { return fbxModel->getPivot(); }
-
 
 	int hasAnimation() { return fbxModel->animationNum(); }
 	void setFbxModel(std::shared_ptr<FbxModel> model);
 	void setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action);
-	void changeAction(ACTION act);
 
+	void setDefaultAction(ACTION act) { defaultAction = act; }
 	void startAnimation();
 	void playAnimation();
 	bool hasPlayingAnimation() { return playAnim; }
@@ -121,8 +88,10 @@ public:
 	uint32_t getimageDataCount();
 	DescSetData* getDescriptorSet();
 
-	void setColider(COLIDER colider);
+	void setColider(COLIDER shape,float right,float left,float top,float bottom, float front, float back);
+	void setColider(COLIDER shape);
 	bool hasColider();
+	std::shared_ptr<Colider> getColider() { return colider; }
 
 	void updateTransformMatrix() override;
 	void Update() override;

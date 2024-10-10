@@ -36,12 +36,15 @@ void Material::cleanUpVulkan()
 {
 	auto device = VulkanBase::GetInstance()->GetDevice();
 
-	vkDestroySampler(device, textureData->sampler, nullptr);
-	vkDestroyImageView(device, textureData->view, nullptr);
-	vkDestroyImage(device, textureData->image, nullptr);
-	vkFreeMemory(device, textureData->memory, nullptr);
+	if (hasImageData())
+	{
+		vkDestroySampler(device, textureData->sampler, nullptr);
+		vkDestroyImageView(device, textureData->view, nullptr);
+		vkDestroyImage(device, textureData->image, nullptr);
+		vkFreeMemory(device, textureData->memory, nullptr);
 
-	delete textureData;
+		delete textureData;
+	}
 }
 
 void Material::setImageData(std::shared_ptr<ImageData> image)

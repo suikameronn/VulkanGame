@@ -26,31 +26,33 @@ void Scene::parseScene()
 	{
 		FileManager* fileManager = FileManager::GetInstance();
 
+		
 		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
 		fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
 		fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		model->setFbxModel(fbxModel);
-		//model->controllable = true;
+		model->controllable = true;
 		model->rotate.x = 0.0f;//’PˆÊ‚ÍŠp“x
 		model->rotate.y = 0.0f;
 		model->rotate.z = 0.0f;
 		model->scale = glm::vec3(3.2, 3.2, 3.2);
 		model->controllable = true;
-		model->setColider(BOX);
+		model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
 		model->setPosition(glm::vec3(0.1f,0.1f,0.1f));
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindObject(camera);
 
 		camera->spherePos = true;
-
-		/*
+		
+		
 		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
-		m->setFbxModel(FileManager::GetInstance()->loadModel(GROUND1));
-		m->scale = glm::vec3(10, 30, 10);
+		m->setFbxModel(FileManager::GetInstance()->loadModel(OBJECT::NORMALBOX));
+		m->scale = glm::vec3(10.0f, 30.0f, 10.0f);
+		m->setPosition(glm::vec3(0.0f,0.0f,0.0f));
+		m->setColider(BOX);
 		sceneSet["aa"] = m;
-		*/
 	}
 
 	/*
@@ -75,12 +77,12 @@ bool Scene::UpdateScene()
 		itr->second->Update();
 	}
 
-	camera->Update();
-
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		itr->second->updateTransformMatrix();
 	}
+
+	camera->Update();
 
 	return exit;
 }
@@ -113,5 +115,34 @@ void Scene::setModels(std::string name)
 		}
 
 		Storage::GetInstance()->addModel(itr->second);
+	}
+}
+
+void Scene::IntersectsColiders()
+{
+	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
+	{
+		if(!itr->second->hasColider())
+		{
+			continue;
+		}
+		std::shared_ptr<Colider> colider = itr->second->getColider();
+
+		for (auto itr2 = sceneSet.begin(); itr2 != sceneSet.end(); itr2++)
+		{
+			if (itr == itr2)
+			{
+				continue;
+			}
+
+			if (!itr2->second->hasColider())
+			{
+				continue;
+			}
+
+			std::shared_ptr<Colider> oppColider = itr2->second->getColider();
+			
+			bool intersected = colider->Intersect(oppColider);
+		}
 	}
 }

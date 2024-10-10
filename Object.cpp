@@ -7,7 +7,6 @@ Object::Object()
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };
-	pivot = position;
 	posOffSet = 0.0f;
 
 	forward = glm::vec3{ 0,0,1 };
@@ -122,7 +121,7 @@ void Object::setPosition(glm::vec3 pos)
 
 	if (bindCamera)
 	{
-		bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
+		//bindCamera->setPosition(bindCamera->getPosition() + (pos - position));
 	}
 
 	position = pos;
@@ -140,7 +139,7 @@ glm::mat4 Object::getTransformMatrix()
 
 void Object::setSpherePos(float theta, float phi)
 {
-	if (theta != 0.0f || phi != 0.0f)
+	if (theta != 0.0f || phi != 0.0f || true)
 	{
 		glm::vec3 pos;
 		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };

@@ -13,7 +13,8 @@ enum class OBJECT
 	GROUND1,
 	FRAG,
 	IDLE,
-	WALK
+	WALK,
+	NORMALBOX
 };
 
 enum COLIDER

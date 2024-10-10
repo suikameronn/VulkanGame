@@ -28,9 +28,9 @@ void Storage::addImageData(std::string path,ImageData* image)
 }
 
 //StorageにDescriptorInfoを追加する
-void Storage::addDescriptorInfo(uint32_t imageDataCount, DescriptorInfo& info)
+void Storage::addDescriptorInfo(PrimitiveTextureCount ptc, DescriptorInfo& info)
 {
-	descriptorStorage[imageDataCount] = info;
+	descriptorStorage[ptc] = info;
 }
 
 //StorageにCameraを追加する
@@ -48,14 +48,14 @@ void Storage::addModel(std::shared_ptr<Model> model)
 }
 
 //Storageから指定されたDescriptorInfoへの参照を返す
-DescriptorInfo* Storage::accessDescriptorInfo(uint32_t imageDataCount)
+DescriptorInfo* Storage::accessDescriptorInfo(PrimitiveTextureCount ptc)
 {
-	return &descriptorStorage[imageDataCount];
+	return &descriptorStorage[ptc];
 }
 
 //StorageからDescriptorInfoのマップへの参照を返す
-void Storage::accessDescriptorInfoItr(std::unordered_map<uint32_t, DescriptorInfo>::iterator& begin,
-	std::unordered_map<uint32_t, DescriptorInfo>::iterator& end)
+void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& begin,
+	std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& end)
 {
 	begin = descriptorStorage.begin();
 	end = descriptorStorage.end();
@@ -112,9 +112,9 @@ bool Storage::containImageData(std::string path)
 }
 
 //Storageに指定されたDescritporInfoがすでに存在するかどうかを返す
-bool Storage::containDescriptorInfo(uint32_t imageDataCount)
+bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
 {
-	if (descriptorStorage.find(imageDataCount) != descriptorStorage.end())
+	if (descriptorStorage.find(ptc) != descriptorStorage.end())
 	{
 		return true;
 	}

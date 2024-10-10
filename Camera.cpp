@@ -1,5 +1,4 @@
 #include"Camera.h"
-#include"VulkanBase.h"
 
 Camera::Camera()
 {
@@ -25,14 +24,14 @@ Camera::Camera()
 
 	setPosition(glm::vec3(0, 0, posOffSet));
 
-	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 10000.0f);
+	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, 0.1f, 10000.0f);
 }
 
 void Camera::setViewAngle(float f)
 {
 	viewAngle = f;
 
-	perspectiveMat = glm::perspective(viewAngle, VulkanBase::GetInstance()->getAspect(), 0.1f, 10000.0f);
+	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, 0.1f, 10000.0f);
 }
 
 float Camera::getViewAngle()

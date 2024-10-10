@@ -9,6 +9,7 @@
 #include<iostream>
 #include<vector>
 #include<math.h>
+#include<vulkan/vulkan.h>
 
 #include<glm/glm.hpp>
 #include<glm/ext.hpp>
@@ -17,6 +18,13 @@
 #include"EnumList.h"
 
 class Camera;
+
+struct DescSetData
+{
+	uint32_t texCount;
+	VkPrimitiveTopology topology;
+	VkDescriptorSet decriptorSet;
+};
 
 class Object
 {
@@ -31,8 +39,6 @@ protected:
 	float rotateSpeed;
 	float length;
 
-	glm::vec3 pivot;
-	glm::mat4 pivotMatrix;
 	glm::vec3 position;
 
 	virtual glm::vec3 inputMove();
@@ -63,8 +69,6 @@ public:
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
-
-	virtual glm::vec3 getPivot() { return pivot; }
 
 	void setSpherePos(float theta, float phi);
 

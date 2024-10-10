@@ -35,6 +35,8 @@ int FileManager::getModelResource(OBJECT obj)
         return IDR_MODEL7;
     case OBJECT::WALK:
         return IDR_MODEL8;
+    case OBJECT::NORMALBOX:
+        return IDR_MODEL3;
     }
 }
 

@@ -13,6 +13,8 @@
 #include<glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include"Object.h"
+
 class ImageData
 {
 private:
@@ -75,12 +77,6 @@ struct TextureData
 	VkDeviceMemory memory;
 	VkImageView view;
 	VkSampler sampler;
-};
-
-struct DescSetData
-{
-	uint32_t texCount;
-	VkDescriptorSet decriptorSet;
 };
 
 class Material
