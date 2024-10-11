@@ -27,7 +27,7 @@ void Scene::parseScene()
 		FileManager* fileManager = FileManager::GetInstance();
 
 		
-		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
+		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::NORMALBOX);
 		fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
 		fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
@@ -39,7 +39,8 @@ void Scene::parseScene()
 		model->rotate.z = 0.0f;
 		model->scale = glm::vec3(3.2, 3.2, 3.2);
 		model->controllable = true;
-		model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
+		//model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
+		model->setColider(BOX);
 		model->setPosition(glm::vec3(50.1f,50.1f,50.1f));
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindCamera(std::weak_ptr<Object>(camera));
@@ -79,7 +80,10 @@ bool Scene::UpdateScene()
 
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		itr->second->updateTransformMatrix();
+		if (itr->second->uniformBufferChange)
+		{
+			itr->second->updateTransformMatrix();
+		}
 	}
 
 	camera->Update();

@@ -1651,10 +1651,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-            if ((*model)->uniformBufferChange)
-            {
-                updateUniformBuffer(*model);
-            }
+            updateUniformBuffer(*model);
         }
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);

@@ -160,8 +160,10 @@ void Model::updateTransformMatrix()
 
 	if (colider)
 	{
-		colider->reflectMovement(transRotate);
+		colider->reflectMovement(transformMatrix);
 	}
+
+	uniformBufferChange = false;
 }
 
 void Model::changeAction(ACTION act)
@@ -215,7 +217,7 @@ glm::vec3 Model::inputMove()
 		changeAction();
 	}
 
-	return moveDirec;
+	return moveDirec * 0.5f;
 }
 
 void Model::setColider(COLIDER shape, float right, float left, float top, float bottom, float front, float back)

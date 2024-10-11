@@ -89,9 +89,15 @@ void Object::Update()
 
 void Object::setPosition(glm::vec3 pos)
 {
+	if (position == pos)
+	{
+		return;
+	}
 
 	position = pos;
 	sendPosToChildren();
+
+	uniformBufferChange = true;
 }
 
 glm::vec3 Object::getPosition()

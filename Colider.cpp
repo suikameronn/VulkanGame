@@ -6,6 +6,7 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 {
 	coliderVertices.resize(8);
 
+	/*
 	coliderVertices[0] = glm::vec3(pos.x + right,pos.y + top,pos.z + front);
 	coliderVertices[1] = glm::vec3(pos.x - left,pos.y + top,pos.z + front);
 	coliderVertices[2] = glm::vec3(pos.x - left, pos.y + top, pos.z - back);
@@ -14,8 +15,26 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 	coliderVertices[5] = glm::vec3(pos.x - left, pos.y - bottom, pos.z + front);
 	coliderVertices[6] = glm::vec3(pos.x - left, pos.y - bottom, pos.z - back);
 	coliderVertices[7] = glm::vec3(pos.x + right, pos.y - bottom, pos.z - back);
+	*/
 
-	pivot = glm::vec3(((pos.x + right) + (pos.x - left)) / 2, ((pos.y + top) + (pos.y - bottom)) / 2, ((pos.z + front) + (pos.z - back)) / 2);
+	coliderVertices[0] = glm::vec3( + right,  + top,  + front);
+	coliderVertices[1] = glm::vec3( - left,  + top,  + front);
+	coliderVertices[2] = glm::vec3( - left,  + top,  - back);
+	coliderVertices[3] = glm::vec3( + right,  + top,  - back);
+	coliderVertices[4] = glm::vec3( + right,  - bottom,  + front);
+	coliderVertices[5] = glm::vec3( - left,  - bottom,  + front);
+	coliderVertices[6] = glm::vec3( - left,  - bottom,  - back);
+	coliderVertices[7] = glm::vec3( + right,  - bottom,  - back);
+
+	originalVertexPos.resize(8);
+	std::copy(coliderVertices.begin(), coliderVertices.end(), originalVertexPos.begin());
+
+	for (auto itr = coliderVertices.begin(); itr != coliderVertices.end(); itr++)
+	{
+		pivot += *itr;
+	}
+	float size = coliderVertices.size();
+	pivot = glm::vec3(pivot.x / size, pivot.y / size, pivot.z / size);
 
 	coliderIndices.resize(12);
 
@@ -25,12 +44,15 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 
 	descSetData.texCount = 0;
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+	changeUniformBuffer = true;
 }
 
 Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 {
 	coliderVertices.resize(8);
 
+	/*
 	coliderVertices[0] = glm::vec3(pos.x + max.x, pos.y + max.y, pos.z + max.z);
 	coliderVertices[1] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + max.z);
 	coliderVertices[2] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + min.z);
@@ -39,8 +61,26 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 	coliderVertices[5] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + max.z);
 	coliderVertices[6] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + min.z);
 	coliderVertices[7] = glm::vec3(pos.x + max.x, pos.y + min.y, pos.z + min.z);
+	*/
+
+	coliderVertices[0] = glm::vec3( + max.x,  + max.y,  + max.z);
+	coliderVertices[1] = glm::vec3( + min.x,  + max.y,  + max.z);
+	coliderVertices[2] = glm::vec3( + min.x,  + max.y,  + min.z);
+	coliderVertices[3] = glm::vec3( + max.x,  + max.y,  + min.z);
+	coliderVertices[4] = glm::vec3( + max.x,  + min.y,  + max.z);
+	coliderVertices[5] = glm::vec3( + min.x,  + min.y,  + max.z);
+	coliderVertices[6] = glm::vec3( + min.x,  + min.y,  + min.z);
+	coliderVertices[7] = glm::vec3( + max.x,  + min.y,  + min.z);
+
+	originalVertexPos.resize(8);
+	std::copy(coliderVertices.begin(), coliderVertices.end(), originalVertexPos.begin());
 	
-	pivot = glm::vec3(((pos.x + max.x) + (pos.x + min.x)) / 2, ((pos.y + max.y) + (pos.y + min.y)) / 2, ((pos.z + max.z) + (pos.z + min.z)) / 2);
+	for (auto itr = coliderVertices.begin(); itr != coliderVertices.end(); itr++)
+	{
+		pivot += *itr;
+	}
+	float size = coliderVertices.size();
+	pivot = glm::vec3(pivot.x / size, pivot.y / size, pivot.z / size);
 
 	coliderIndices.resize(12);
 
@@ -50,16 +90,18 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 
 	descSetData.texCount = 0;
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+	changeUniformBuffer = true;
 }
 
 glm::vec3* Colider::getColiderVertices()
 {
-	return coliderVertices.data();
+	return originalVertexPos.data();
 }
 
 int Colider::getColiderVerticesSize()
 {
-	return coliderVertices.size();
+	return originalVertexPos.size();
 }
 
 int* Colider::getColiderIndices()
@@ -74,17 +116,25 @@ int Colider::getColiderIndicesSize()
 
 void Colider::reflectMovement(glm::mat4& transform)
 {
-	for (auto itr = coliderVertices.begin(); itr != coliderVertices.end(); itr++)
+	for (int i = 0; i < coliderVertices.size(); i++)
 	{
-		*itr = glm::vec3(glm::vec4(*itr,1.0f) * transform);
+		coliderVertices[i] = glm::vec3(transform * glm::vec4(originalVertexPos[i], 1.0f));
+
+		std::cout << coliderVertices[i] << std::endl;
 	}
 
-	pivot = glm::vec3(glm::vec4(pivot, 1.0f) * transform);
+	pivot = glm::vec3(transform * glm::vec4(pivot, 1.0f));
+
+	this->transform = glm::mat4(1.0f);
+
+	changeUniformBuffer = true;
 }
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 {
-	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0,0.0,0.0));
+	glm::vec3 support = getSupportVector(oppColider, -coliderVertices[0]);
+	//std::cout << pivot << std::endl;
+	//std::cout << "opp" << oppColider->getPivot() << std::endl;
 
 	Simplex simplex;
 	simplex.push_front(support);
@@ -94,6 +144,8 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 	while (true)
 	{
 		support = getSupportVector(oppColider, dir);
+
+		std::cout << glm::dot(support, dir) << std::endl;
 
 		if (glm::dot(support, dir) <= 0.0f)
 		{
@@ -165,7 +217,8 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 
 glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider,glm::vec3 dir)
 {
-	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
+	glm::vec3 pivot = getPivot() - oppColider->getPivot();
+	return (getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir));
 }
 
 bool Colider::Line(Simplex& simplex, glm::vec3 dir)
@@ -253,17 +306,20 @@ bool Colider::Tetrahedron(Simplex& simplex, glm::vec3 dir)
 
 	if (sameDirection(abc, point))
 	{
-		return Triangle(simplex = { a,b,c }, dir);
+		simplex = { a,b,c };
+		return Triangle(simplex, dir);
 	}
 
 	if (sameDirection(acd, point))
 	{
-		return Triangle(simplex = { a,c,d }, dir);
+		simplex = { a,c,d };
+		return Triangle(simplex, dir);
 	}
 
 	if (sameDirection(adb, point))
 	{
-		return Triangle(simplex = { a,d,b }, dir);
+		simplex = { a,d,b };
+		return Triangle(simplex, dir);
 	}
 
 	return true;

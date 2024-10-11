@@ -42,12 +42,17 @@ public:
 class Colider
 {
 private:
+	bool changeUniformBuffer;
+
 	glm::vec3 pivot;
 	float width;
 	float height;
 	float depth;
+
+	glm::mat4 transform;
 	
 	std::vector<glm::vec3> coliderVertices;
+	std::vector<glm::vec3> originalVertexPos;
 	glm::vec4 color;
 
 	std::vector<uint32_t> coliderIndices;
@@ -57,7 +62,7 @@ private:
 	DescriptorInfo descInfo;
 	DescSetData descSetData;
 
-	bool sameDirection(glm::vec3 point, glm::vec3 dir) { return glm::dot(dir, point) > 0.0f; }
+	bool sameDirection(glm::vec3 dir, glm::vec3 point) { return glm::dot(dir, point) > 0.0f; }
 
 	bool Line(Simplex& simplex,glm::vec3 dir);
 	bool Triangle(Simplex& simplex, glm::vec3 dir);
@@ -68,6 +73,7 @@ public:
 	Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max);
 
 	void reflectMovement(glm::mat4& transform);
+	glm::mat4& getTransformMatrix() { return transform; }
 
 	glm::vec3 getPivot() { return pivot; }
 	glm::vec3 getFurthestPoint(glm::vec3 dir);
