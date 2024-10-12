@@ -95,6 +95,7 @@ void Object::setPosition(glm::vec3 pos)
 	}
 
 	position = pos;
+
 	sendPosToChildren();
 
 	uniformBufferChange = true;

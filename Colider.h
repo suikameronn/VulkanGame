@@ -36,6 +36,39 @@ public:
 		return *this;
 	}
 
+	bool isDegenerateSimplex()
+	{
+		float result;
+
+		glm::vec3 ab, ac, ad;
+
+		switch (this->size)
+		{
+		case 2:
+			result = glm::length(points[0] - points[1]);
+			break;
+		case 3:
+			ab = points[1] - points[0];
+			ac = points[2] - points[0];
+			glm::vec3 cross = glm::cross(ab, ac);
+			result = glm::length(cross) / 2.0f;
+			break;
+		case 4:
+			ab = points[1] - points[0];
+			ac = points[2] - points[0];
+			ad = points[3] - points[0];
+			result = glm::length(glm::dot(glm::cross(ab, ac), ad)) / 6.0f;
+		}
+
+		//std::cout << "result" << result << std::endl;
+		if (result <= 0.0f)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	glm::vec3& operator[](int i) { return points[i]; }
 };
 

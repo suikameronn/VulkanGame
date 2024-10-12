@@ -154,9 +154,8 @@ void Model::updateTransformMatrix()
 {
 	//transformMatrix = pivotMatrix;
 	//pivot = glm::vec4(pivot,0.f) * glm::scale(glm::mat4(1.0f), scale);
-	glm::mat4 transRotate = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix();
 	
-	transformMatrix = transRotate * glm::scale(glm::mat4(1.0f),scale);
+	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 
 	if (colider)
 	{
@@ -217,7 +216,12 @@ glm::vec3 Model::inputMove()
 		changeAction();
 	}
 
-	return moveDirec * 0.5f;
+	if (moveDirec != glm::vec3(0.0f))
+	{
+		moveDirec = glm::normalize(moveDirec);
+	}
+
+	return moveDirec * 0.01f;
 }
 
 void Model::setColider(COLIDER shape, float right, float left, float top, float bottom, float front, float back)

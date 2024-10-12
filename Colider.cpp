@@ -119,8 +119,6 @@ void Colider::reflectMovement(glm::mat4& transform)
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = glm::vec3(transform * glm::vec4(originalVertexPos[i], 1.0f));
-
-		std::cout << coliderVertices[i] << std::endl;
 	}
 
 	pivot = glm::vec3(transform * glm::vec4(pivot, 1.0f));
@@ -132,7 +130,7 @@ void Colider::reflectMovement(glm::mat4& transform)
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 {
-	glm::vec3 support = getSupportVector(oppColider, -coliderVertices[0]);
+	glm::vec3 support = getSupportVector(oppColider, pivot - oppColider->getPivot());
 	//std::cout << pivot << std::endl;
 	//std::cout << "opp" << oppColider->getPivot() << std::endl;
 
@@ -141,11 +139,16 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 
 	glm::vec3 dir = -support;
 
-	while (true)
+	int count = 0;
+
+	while (count < 50)
 	{
+		std::cout << coliderVertices[0] << std::endl;
+		std::cout << "OPP" << oppColider->getColiderVertices()[0] << std::endl;
+
 		support = getSupportVector(oppColider, dir);
 
-		std::cout << glm::dot(support, dir) << std::endl;
+		//std::cout << glm::dot(support, dir) << std::endl;
 
 		if (glm::dot(support, dir) <= 0.0f)
 		{
@@ -158,44 +161,11 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 		{
 			return true;
 		}
+
+		count++;
 	}
 
 	return false;
-}
-
-void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)
-{
-	descSetData.decriptorSet = descriptorSet;
-}
-
-BufferObject* Colider::getPointBuffer()
-{
-	return &pointBuffer;
-}
-
-MappedBuffer* Colider::getMappedBuffer()
-{
-	return &mappedBuffer;
-}
-
-DescriptorInfo& Colider::getDescInfo()
-{
-	return descInfo;
-}
-
-void Colider::cleanupVulkan()
-{
-	VkDevice device = VulkanBase::GetInstance()->GetDevice();
-
-		vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
-		vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
-
-		vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
-		vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
-
-		vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
-		vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
-		mappedBuffer.uniformBufferMapped = nullptr;
 }
 
 glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
@@ -203,7 +173,7 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 	glm::vec3  maxPoint;
 	float maxDistance = -1000000000.0f;
 
-	for (int i = 0; i < getColiderVerticesSize();i++) 
+	for (int i = 0; i < getColiderVerticesSize(); i++)
 	{
 		float distance = glm::dot(coliderVertices[i], dir);
 		if (distance > maxDistance) {
@@ -215,10 +185,9 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 	return maxPoint;
 }
 
-glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider,glm::vec3 dir)
+glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir)
 {
-	glm::vec3 pivot = getPivot() - oppColider->getPivot();
-	return (getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir));
+	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
 }
 
 bool Colider::Line(Simplex& simplex, glm::vec3 dir)
@@ -232,7 +201,7 @@ bool Colider::Line(Simplex& simplex, glm::vec3 dir)
 	if (sameDirection(ab, ao)) {
 		dir = glm::cross(glm::cross(ab, ao), ab);
 	}
-	else 
+	else
 	{
 		simplex = { a };
 		dir = ao;
@@ -251,8 +220,8 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 	glm::vec3 ac = c - a;
 	glm::vec3 point = -a;
 
-	glm::vec3 triangleCross = glm::cross(ab,ac);
-	
+	glm::vec3 triangleCross = glm::cross(ab, ac);
+
 	if (sameDirection(glm::cross(triangleCross, ac), point))
 	{
 		if (sameDirection(ac, point))
@@ -262,14 +231,16 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 		}
 		else
 		{
-			return Line(simplex = { a,b }, dir);
+			simplex = { a,b };
+			return Line(simplex, dir);
 		}
 	}
 	else
 	{
 		if (sameDirection(glm::cross(ab, triangleCross), point))
 		{
-			return Line(simplex = { a,b }, dir);
+			simplex = { a,b };
+			return Line(simplex, dir);
 		}
 		else
 		{
@@ -328,12 +299,47 @@ bool Colider::Tetrahedron(Simplex& simplex, glm::vec3 dir)
 bool Colider::nextSimplex(Simplex& simplex, glm::vec3 dir)
 {
 	switch (simplex.size) {
-		case 2: return Line(simplex, dir);
-		case 3: return Triangle(simplex, dir);
-		case 4: return Tetrahedron(simplex, dir);
+	case 2: return Line(simplex, dir);
+	case 3: return Triangle(simplex, dir);
+	case 4: return Tetrahedron(simplex, dir);
 	}
 
 	return false;
+}
+
+void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)
+{
+	descSetData.decriptorSet = descriptorSet;
+}
+
+BufferObject* Colider::getPointBuffer()
+{
+	return &pointBuffer;
+}
+
+MappedBuffer* Colider::getMappedBuffer()
+{
+	return &mappedBuffer;
+}
+
+DescriptorInfo& Colider::getDescInfo()
+{
+	return descInfo;
+}
+
+void Colider::cleanupVulkan()
+{
+	VkDevice device = VulkanBase::GetInstance()->GetDevice();
+
+		vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
+		vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
+
+		vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
+		vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
+
+		vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
+		vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
+		mappedBuffer.uniformBufferMapped = nullptr;
 }
 
 glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart,glm::vec3 lineFinish,glm::vec3 point)
