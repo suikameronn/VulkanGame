@@ -1,0 +1,60 @@
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/CMakeFiles/ZERO_CHECK.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Animation/CMakeFiles/Animation.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Animation/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Audio/CMakeFiles/Audio.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Audio/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Camera/CMakeFiles/Camera.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Camera/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ConvertScene/CMakeFiles/ConvertScene.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ConvertScene/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportDocument/CMakeFiles/ExportDocument.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportDocument/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene01/CMakeFiles/ExportScene01.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene01/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene02/CMakeFiles/ExportScene02.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene02/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene03/CMakeFiles/ExportScene03.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene03/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene04/CMakeFiles/ExportScene04.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene04/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene05/CMakeFiles/ExportScene05.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportScene05/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportShader/CMakeFiles/ExportShader.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExportShader/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExternalDocsRefs/CMakeFiles/ExternalDocsRefs.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ExternalDocsRefs/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/FileStream/CMakeFiles/FileStream.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/FileStream/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ImportScene/CMakeFiles/ImportScene.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ImportScene/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Instances/CMakeFiles/Instances.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Instances/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Layers/CMakeFiles/Layers.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Layers/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Normals/CMakeFiles/Normals.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Normals/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Pivot/CMakeFiles/Pivot.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Pivot/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ProceduralTexture/CMakeFiles/ProceduralTexture.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ProceduralTexture/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ShapeAttributes/CMakeFiles/ShapeAttributes.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ShapeAttributes/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/StereoCamera/CMakeFiles/StereoCamera.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/StereoCamera/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/SwitchBinding/CMakeFiles/SwitchBinding.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/SwitchBinding/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Transformations/CMakeFiles/Transformations.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/Transformations/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UserProperties/CMakeFiles/UserProperties.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UserProperties/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UVSample/CMakeFiles/UVSample.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UVSample/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ViewScene/CMakeFiles/ViewScene.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/ViewScene/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/CubeCreator/CMakeFiles/UI_Example_CubeCreator.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/CubeCreator/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/SceneTreeView/CMakeFiles/UI_Example_SceneTreeView.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/SceneTreeView/CMakeFiles/ALL_BUILD.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/ImportExport/CMakeFiles/UI_Example_ImportExport.dir
+C:/Program Files/Autodesk/FBX/FBX SDK/2020.3.7/samples/build/UI Examples/ImportExport/CMakeFiles/ALL_BUILD.dir

@@ -9,6 +9,9 @@
 #include"Storage.h"
 
 #include"Assimp/Base64.hpp"
+#include "Assimp/Importer.hpp"
+#include "Assimp/scene.h"
+#include "Assimp/postprocess.h"
 
 enum IMAGE;
 
@@ -26,6 +29,7 @@ private:
 	uint32_t allVertNum;
 	glm::vec3 minPos;
 	glm::vec3 maxPos;
+	glm::vec3 pivot;
 
 	std::vector<OBJECT> loadAnimationFiles;
 
@@ -64,7 +68,7 @@ private:
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 	glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4* from);
-	glm::vec3 aiVec3DToGLM(const aiVector3D* vec);
+	glm::vec3 aiVec3DToGLM(const aiVector3D& vec);
 
 public:
 	static FileManager* GetInstance()

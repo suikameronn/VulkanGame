@@ -65,6 +65,11 @@ public:
 	Rotate rotate;
 	glm::vec3 scale;
 
+	void bindObject(std::weak_ptr<Object> obj);
+	void bindCamera(std::weak_ptr<Object> camera);
+
+	void sendPosToChildren(glm::vec3 pos);
+
 	int hasAnimation() { return fbxModel->animationNum(); }
 	void setFbxModel(std::shared_ptr<FbxModel> model);
 	void setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action);
@@ -79,15 +84,12 @@ public:
 	std::shared_ptr<Meshes> getMeshes(uint32_t i);
 	uint32_t getMeshesSize();
 
-	void setDescriptorSet(DescSetData* descSetData);
-
 	BufferObject* getPointBuffer(uint32_t i);
 	MappedBuffer* getMappedBuffer(uint32_t i);
 	uint32_t getimageDataCount();
-	DescSetData* getDescriptorSet();
-
 	
 	void setColider(COLIDER shape,float right,float left,float top,float bottom, float front, float back);
+	void setColider(COLIDER shape,glm::vec3 scale);
 	void setColider(COLIDER shape);
 	bool hasColider();
 	std::shared_ptr<Colider> getColider() { return colider; }
@@ -96,4 +98,6 @@ public:
 	void Update() override;
 
 	void cleanupVulkan();
+
+	void setPosition(glm::vec3 pos) override;
 };

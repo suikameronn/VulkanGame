@@ -82,7 +82,7 @@ void Camera::Update()
 
 void Camera::calcViewMat()
 {
-	viewMat = glm::lookAt(this->position, parentPos, glm::vec3(0, 1, 0));
+	viewMat = glm::lookAt(this->position, parentPos , glm::vec3(0, 1, 0));
 }
 
 glm::vec3 Camera::getViewTarget()

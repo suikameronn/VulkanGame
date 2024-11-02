@@ -6,7 +6,6 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 {
 	coliderVertices.resize(8);
 
-	/*
 	coliderVertices[0] = glm::vec3(pos.x + right,pos.y + top,pos.z + front);
 	coliderVertices[1] = glm::vec3(pos.x - left,pos.y + top,pos.z + front);
 	coliderVertices[2] = glm::vec3(pos.x - left, pos.y + top, pos.z - back);
@@ -15,8 +14,8 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 	coliderVertices[5] = glm::vec3(pos.x - left, pos.y - bottom, pos.z + front);
 	coliderVertices[6] = glm::vec3(pos.x - left, pos.y - bottom, pos.z - back);
 	coliderVertices[7] = glm::vec3(pos.x + right, pos.y - bottom, pos.z - back);
-	*/
 
+	/*
 	coliderVertices[0] = glm::vec3( + right,  + top,  + front);
 	coliderVertices[1] = glm::vec3( - left,  + top,  + front);
 	coliderVertices[2] = glm::vec3( - left,  + top,  - back);
@@ -25,6 +24,7 @@ Colider::Colider(glm::vec3 pos, float right, float left, float top, float bottom
 	coliderVertices[5] = glm::vec3( - left,  - bottom,  + front);
 	coliderVertices[6] = glm::vec3( - left,  - bottom,  - back);
 	coliderVertices[7] = glm::vec3( + right,  - bottom,  - back);
+	*/
 
 	originalVertexPos.resize(8);
 	std::copy(coliderVertices.begin(), coliderVertices.end(), originalVertexPos.begin());
@@ -52,7 +52,6 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 {
 	coliderVertices.resize(8);
 
-	/*
 	coliderVertices[0] = glm::vec3(pos.x + max.x, pos.y + max.y, pos.z + max.z);
 	coliderVertices[1] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + max.z);
 	coliderVertices[2] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + min.z);
@@ -61,8 +60,8 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 	coliderVertices[5] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + max.z);
 	coliderVertices[6] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + min.z);
 	coliderVertices[7] = glm::vec3(pos.x + max.x, pos.y + min.y, pos.z + min.z);
-	*/
 
+	/*
 	coliderVertices[0] = glm::vec3( + max.x,  + max.y,  + max.z);
 	coliderVertices[1] = glm::vec3( + min.x,  + max.y,  + max.z);
 	coliderVertices[2] = glm::vec3( + min.x,  + max.y,  + min.z);
@@ -71,6 +70,7 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 	coliderVertices[5] = glm::vec3( + min.x,  + min.y,  + max.z);
 	coliderVertices[6] = glm::vec3( + min.x,  + min.y,  + min.z);
 	coliderVertices[7] = glm::vec3( + max.x,  + min.y,  + min.z);
+	*/
 
 	originalVertexPos.resize(8);
 	std::copy(coliderVertices.begin(), coliderVertices.end(), originalVertexPos.begin());
@@ -86,15 +86,82 @@ Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max)
 
 	coliderIndices = { 0,1,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };
 
+	satIndices.resize(3 * 6);
+	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };
+
 	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
 
 	descSetData.texCount = 0;
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
 	changeUniformBuffer = true;
+
+	aabb.minPos = min;
+	aabb.maxPos = max;
+}
+
+Colider::Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max,glm::vec3 scale)
+{
+	coliderVertices.resize(8);
+	
+	/*
+	coliderVertices[0] = glm::vec3(pos.x + max.x, pos.y + max.y, pos.z + max.z);
+	coliderVertices[1] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + max.z);
+	coliderVertices[2] = glm::vec3(pos.x + min.x, pos.y + max.y, pos.z + min.z);
+	coliderVertices[3] = glm::vec3(pos.x + max.x, pos.y + max.y, pos.z + min.z);
+	coliderVertices[4] = glm::vec3(pos.x + max.x, pos.y + min.y, pos.z + max.z);
+	coliderVertices[5] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + max.z);
+	coliderVertices[6] = glm::vec3(pos.x + min.x, pos.y + min.y, pos.z + min.z);
+	coliderVertices[7] = glm::vec3(pos.x + max.x, pos.y + min.y, pos.z + min.z);
+	*/
+
+	
+	coliderVertices[0] = glm::vec3( + max.x,  + max.y,  + max.z);
+	coliderVertices[1] = glm::vec3( + min.x,  + max.y,  + max.z);
+	coliderVertices[2] = glm::vec3( + min.x,  + max.y,  + min.z);
+	coliderVertices[3] = glm::vec3( + max.x,  + max.y,  + min.z);
+	coliderVertices[4] = glm::vec3( + max.x,  + min.y,  + max.z);
+	coliderVertices[5] = glm::vec3( + min.x,  + min.y,  + max.z);
+	coliderVertices[6] = glm::vec3( + min.x,  + min.y,  + min.z);
+	coliderVertices[7] = glm::vec3( + max.x,  + min.y,  + min.z);
+	
+
+	originalVertexPos.resize(8);
+	std::copy(coliderVertices.begin(), coliderVertices.end(), originalVertexPos.begin());
+
+	glm::mat4 scaleMat = glm::scale(scale);
+	glm::mat4 transform = glm::translate(pos) * scaleMat;
+	for (int i = 0;i < coliderVertices.size();i++)
+	{
+		coliderVertices[i] = transform * glm::vec4(coliderVertices[i], 0.0f);
+		originalVertexPos[i] = scaleMat * glm::vec4(originalVertexPos[i], 0.0f);
+	}
+
+	coliderIndices.resize(12);
+
+	coliderIndices = { 1,0,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };
+
+	satIndices.resize(3 *6);
+	//satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
+	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };
+
+	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
+
+	descSetData.texCount = 0;
+	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+	changeUniformBuffer = true;
+
+	aabb.minPos = scaleMat * glm::vec4(min,1.0);
+	aabb.maxPos = scaleMat * glm::vec4(max,1.0);
 }
 
 glm::vec3* Colider::getColiderVertices()
+{
+	return coliderVertices.data();
+}
+
+glm::vec3* Colider::getColiderOriginalVertices()
 {
 	return originalVertexPos.data();
 }
@@ -118,19 +185,169 @@ void Colider::reflectMovement(glm::mat4& transform)
 {
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
-		coliderVertices[i] = glm::vec3(transform * glm::vec4(originalVertexPos[i], 1.0f));
+		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
 	}
 
 	pivot = glm::vec3(transform * glm::vec4(pivot, 1.0f));
 
-	this->transform = glm::mat4(1.0f);
-
 	changeUniformBuffer = true;
+
+
+	/*
+	glm::vec3 min = glm::vec3(1000.0f, 1000.0f, 1000.0f);
+	glm::vec3 max = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
+	for (int i = 0; i < getColiderVerticesSize(); i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			if (min[j] > coliderVertices[i][j])
+			{
+				min[j] = coliderVertices[i][j];
+			}
+		}
+	}
+
+	for (int i = 0; i < getColiderVerticesSize(); i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			if (max[j] < coliderVertices[i][j])
+			{
+				max[j] = coliderVertices[i][j];
+			}
+		}
+	}
+
+	aabb.minPos = min;
+	aabb.maxPos = max;
+	*/
 }
 
-bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
+bool Colider::Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector)
 {
-	glm::vec3 support = getSupportVector(oppColider, pivot - oppColider->getPivot());
+	bool collision = false;
+
+	//GJK(oppColider);
+
+	//collision = AABB(oppColider);
+
+	collision = SAT(oppColider,collisionDepth,collisionVector);
+
+	return collision;
+}
+
+bool Colider::AABB(std::shared_ptr<Colider> oppColider)
+{
+	if (aabb.minPos.x <= oppColider->aabb.maxPos.x)
+	{
+		if (aabb.maxPos.x >= oppColider->aabb.minPos.x)
+		{
+			if (aabb.minPos.y <= oppColider->aabb.maxPos.y)
+			{
+				if (aabb.maxPos.y >= oppColider->aabb.minPos.y)
+				{
+					if (aabb.minPos.z <= oppColider->aabb.maxPos.z)
+					{
+						if (aabb.maxPos.z >= oppColider->aabb.minPos.z)
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool Colider::SAT(std::shared_ptr<Colider> oppColider,float& collisionDepth,glm::vec3& collisionNormal)
+{
+	std::array<glm::vec3, 12> normals;
+
+	collisionDepth = 1000000.0f;
+	collisionNormal = { 0.0f,0.0f,0.0f };
+
+	glm::vec3* oppVertices = oppColider->getColiderVertices();
+
+	for (int i = 0; i < 18; i += 3)
+	{
+		normals[i / 3] = glm::normalize(glm::cross(coliderVertices[satIndices[i + 1]] - coliderVertices[satIndices[i]], coliderVertices[satIndices[i + 2]] - coliderVertices[satIndices[i]]));
+	}
+	for (int i = 0; i < 18; i += 3)
+	{
+		normals[(i / 3) + 6] = glm::normalize(glm::cross(oppVertices[satIndices[i + 1]] - oppVertices[satIndices[i]], oppVertices[satIndices[i + 2]] - oppVertices[satIndices[i]]));
+	}
+	/*
+	for (int i = 0; i < 12; i += 2)
+	{
+		for (int j = 0; j < 12; j += 2)
+		{
+			normals[i * 3 + (j / 2) + 12] = glm::normalize(glm::cross(coliderVertices[satIndices[i + 1]] - coliderVertices[satIndices[i]], oppVertices[satIndices[j + 1]] - oppVertices[satIndices[j]]));
+		}
+	}
+	*/
+
+	float depthMin = 0, depthMax = 0;
+
+	float min, max, oppMin, oppMax;
+	glm::vec3 minVertex, maxVertex, oppMinVertex, oppMaxVertex;
+	for (int i = 0; i < 12; i++)
+	{
+		this->projection(min, max,minVertex,maxVertex, normals[i]);
+		oppColider->projection(oppMin, oppMax,oppMinVertex,oppMaxVertex, normals[i]);
+
+		if (!((min <= oppMin && oppMin <= max) || (oppMin <= min && min <= oppMax)))
+		{
+			return false;
+		}
+		else
+		{
+			float tmp = oppMin - max;
+
+			if (abs(collisionDepth) > abs(tmp))
+			{
+				if (normals[i] != glm::vec3(0.0f))
+				{
+					depthMin = oppMin;
+					depthMax = max;
+					collisionDepth = oppMin - max;
+					collisionNormal = normals[i];
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+void Colider::projection(float& min, float& max,glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis)
+{
+	min = glm::dot(this->coliderVertices[0], axis);
+	minVertex = this->coliderVertices[0];
+	max = min;
+
+	float tmp;
+	for (int i = 1; i < this->getColiderVerticesSize(); i++)
+	{
+		tmp = glm::dot(this->coliderVertices[i], axis);
+		if (tmp > max)
+		{
+			max = tmp;
+			maxVertex = this->coliderVertices[i];
+		}
+		else if (tmp < min)
+		{
+			min = tmp;
+			minVertex = this->coliderVertices[i];
+		}
+	}
+}
+
+/*
+bool Colider::GJK(std::shared_ptr<Colider> oppColider)
+{
+	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));
 	//std::cout << pivot << std::endl;
 	//std::cout << "opp" << oppColider->getPivot() << std::endl;
 
@@ -143,8 +360,8 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 
 	while (count < 50)
 	{
-		std::cout << coliderVertices[0] << std::endl;
-		std::cout << "OPP" << oppColider->getColiderVertices()[0] << std::endl;
+		// std::cout << coliderVertices[0] << std::endl;
+		//std::cout << "OPP" << oppColider->getColiderVertices()[0] << std::endl;
 
 		support = getSupportVector(oppColider, dir);
 
@@ -167,11 +384,12 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 
 	return false;
 }
+*/
 
 glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 {
 	glm::vec3  maxPoint;
-	float maxDistance = -1000000000.0f;
+	float maxDistance = -10000.0f;
 
 	for (int i = 0; i < getColiderVerticesSize(); i++)
 	{
@@ -231,12 +449,14 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 		}
 		else
 		{
+
 			simplex = { a,b };
 			return Line(simplex, dir);
 		}
 	}
 	else
 	{
+
 		if (sameDirection(glm::cross(ab, triangleCross), point))
 		{
 			simplex = { a,b };

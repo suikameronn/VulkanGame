@@ -27,7 +27,7 @@ void Scene::parseScene()
 		FileManager* fileManager = FileManager::GetInstance();
 
 		
-		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::NORMALBOX);
+		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
 		fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
 		fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
@@ -37,21 +37,21 @@ void Scene::parseScene()
 		model->rotate.x = 0.0f;//’PˆÊ‚ÍŠp“x
 		model->rotate.y = 0.0f;
 		model->rotate.z = 0.0f;
-		model->scale = glm::vec3(3.2, 3.2, 3.2);
-		model->scale = glm::vec3(1.0f);
+		//model->scale = glm::vec3(3.2, 3.2, 3.2);
+		model->scale = glm::vec3(0.05f);
 		model->controllable = true;
 		//model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
-		model->setColider(BOX);
+		model->setColider(BOX,glm::vec3(0.4,1.0,1.0));
 		model->setPosition(glm::vec3(0.0f,0.0f,0.0f));
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindCamera(std::weak_ptr<Object>(camera));
 
 		camera->spherePos = true;
 		
-		
 		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
-		m->setFbxModel(FileManager::GetInstance()->loadModel(OBJECT::NORMALBOX));
-		m->scale = glm::vec3(1.0f);
+		fbxModel = fileManager->loadModel(OBJECT::NORMALBOX);
+		m->setFbxModel(fbxModel);
+		m->scale = glm::vec3(10.0f);
 		m->setColider(BOX);
 		m->setPosition(glm::vec3(0.0f,0.0f,0.0f));
 		sceneSet["aa"] = m;
@@ -79,19 +79,39 @@ bool Scene::UpdateScene()
 		itr->second->Update();
 	}
 
+	camera->Update();
+
+	/*
+	if (sceneSet["aa"]->getColider()->Intersect(sceneSet["aaaaa"]->getColider(),collisionDepth,collisionVector))
+	{
+		sceneSet["aa"]->setPosition(sceneSet["aa"]->getPosition() + collisionVector * collisionDepth);
+	}
+	*/
+
+	/*
+	if (sceneSet["aaaaa"]->getColider()->Intersect(sceneSet["aa"]->getColider(), collisionDepth, collisionVector))
+	{
+		sceneSet["aaaaa"]->setPosition(sceneSet["aaaaa"]->getPosition() + collisionVector * collisionDepth);
+	}
+	*/
+
+	for (auto itr = sceneSet.begin(); itr != std::prev(sceneSet.end()); itr++)
+	{
+		for (auto itr2 = std::next(itr); itr2 != sceneSet.end(); itr2++)
+		{
+			if (itr->second->getColider()->Intersect(itr2->second->getColider(), collisionDepth, collisionVector))
+			{
+				itr->second->setPosition(itr->second->getPosition() + collisionVector * collisionDepth);
+			}
+		}
+	}
+
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
 		if (itr->second->uniformBufferChange)
 		{
 			itr->second->updateTransformMatrix();
 		}
-	}
-
-	camera->Update();
-
-	if (sceneSet["aaaaa"]->getColider()->Intersect(sceneSet["aa"]->getColider()))
-	{
-		std::cout << "aaaaaaaaaaaaaaaaaaaaaa" << std::endl;
 	}
 
 	return exit;

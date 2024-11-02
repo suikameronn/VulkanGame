@@ -9,9 +9,9 @@ FileManager::FileManager()
 {
 }
 
-glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D* vec)
+glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D& vec)
 {
-    return glm::vec3(vec->x, vec->y, vec->z);
+    return glm::vec3(vec.x, vec.y, vec.z);
 }
 
 glm::mat4 FileManager::aiMatrix4x4ToGlm(const aiMatrix4x4* from)
@@ -60,11 +60,12 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     fbxModel->setGlobalInverseTransform(aiMatrix4x4ToGlm(&scene->mRootNode->mTransformation.Inverse()));
 
     allVertNum = 0;
+    pivot = glm::vec3(0.0);
     minPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
     maxPos = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
 
     processNode(scene->mRootNode,scene, fbxModel);
-    
+
     fbxModel->setMinMaxVertexPos(minPos, maxPos);
 
     imageDataCount = 0;
@@ -114,6 +115,7 @@ void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel
         Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
 
         glm::mat4 localMat = aiMatrix4x4ToGlm(&node->mTransformation);
+
         meshes->setLocalTransform(localMat);
         allVertNum += mesh->mNumVertices;
 
@@ -166,6 +168,8 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
         Vertex vertex;
         vertex.pos = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y,mesh->mVertices[i].z);
         vertex.normal = glm::vec3(mesh->mNormals[i].x, -mesh->mNormals[i].y, mesh->mNormals[i].z);
+
+        pivot += vertex.pos;
 
         if (mesh->HasTextureCoords(0))
         {
@@ -278,7 +282,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
             std::map<float, glm::vec3> keyTimeScale;
             for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
             {
-                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
+                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
             }
 
             std::map<float, aiQuaternion> keyTimeQuat;
@@ -290,7 +294,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
             std::map<float, glm::vec3> keyTimePos;
             for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
             {
-                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
+                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
             }
 
             AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
@@ -329,7 +333,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
             std::map<float, glm::vec3> keyTimeScale;
             for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
             {
-                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mScalingKeys[i].mValue);
+                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
             }
 
             std::map<float, aiQuaternion> keyTimeQuat;
@@ -341,7 +345,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
             std::map<float, glm::vec3> keyTimePos;
             for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
             {
-                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(&pNodeAnim->mPositionKeys[i].mValue);
+                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
             }
 
             AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };

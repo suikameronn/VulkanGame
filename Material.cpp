@@ -12,8 +12,6 @@ Material::Material()
 	this->transmissive = 0.0f;
 
 	imageDataCount = 0;
-
-	//texture = new ImageData();
 }
 
 Material::Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
@@ -53,6 +51,7 @@ void Material::setImageData(std::shared_ptr<ImageData> image)
 	this->image = image;
 	descSetData.texCount = imageDataCount;
 	textureData = new TextureData;
+	textureData->mipLevel = -1;
 }
 
 std::shared_ptr<ImageData> Material::getImageData()
@@ -63,6 +62,18 @@ std::shared_ptr<ImageData> Material::getImageData()
 bool Material::hasImageData()
 {
 	if (image != nullptr)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool Material::hasTextureData()
+{
+	if (textureData->mipLevel != -1)
 	{
 		return true;
 	}

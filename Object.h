@@ -96,10 +96,10 @@ public:
 
 	void bindObject(std::weak_ptr<Object> obj);
 	void bindCamera(std::weak_ptr<Object> camera);
-	void sendPosToChildren();
+	void sendPosToChildren(glm::vec3 pos);
 	void setParentPos(glm::vec3 parentPos);
 
-	void setPosition(glm::vec3 pos);
+	virtual void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
 
 	void setSpherePos(float theta, float phi);

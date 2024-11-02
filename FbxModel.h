@@ -41,6 +41,7 @@ public:
 	
 	void setMinMaxVertexPos(glm::vec3 min, glm::vec3 max);
 	void getMinMaxVertexPos(glm::vec3& min, glm::vec3& max);
+	void setPivot(glm::vec3 p) { pivot = p; }
 	glm::vec3 getPivot() { return pivot; }
 
 	void addMeshes(Meshes* mesh);
@@ -74,6 +75,6 @@ public:
 	std::array<glm::mat4, 250> getAnimationMatrix();
 	std::array<glm::mat4, 250> getAnimationMatrix(float animationTime,ACTION action);
 
-	void setImageDataCount(uint32_t count) { imageDataCount = count; }
+	void setImageDataCount(uint32_t count) { imageDataCount = std::max(imageDataCount,count); }
 	uint32_t getImageDataCount() { return imageDataCount; }
 };

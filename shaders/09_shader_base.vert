@@ -1,7 +1,6 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
     mat4 view;
     mat4 proj;
     mat4[250] boneMatrix;
@@ -14,6 +13,11 @@ layout(location = 4) in ivec4 boneID1;
 layout(location = 5) in vec4 weight1;
 layout(location = 6) in ivec4 boneID2;
 layout(location = 7) in vec4 weight2;
+
+layout( push_constant ) uniform push_constant
+{
+    mat4 modelMatrix;
+} PushConstants;
 
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTexCoord;
@@ -37,7 +41,7 @@ void main() {
 	boneMat = mat4(1.0);
     }
 
-    vec4 P = ubo.view * ubo.model * boneMat * vec4(inPosition,1.0);
+    vec4 P = ubo.view * PushConstants.modelMatrix * boneMat * vec4(inPosition,1.0);
     
     gl_Position = ubo.proj * P;
     gl_Position.y = -gl_Position.y;

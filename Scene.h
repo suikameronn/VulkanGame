@@ -29,6 +29,9 @@ private:
 	void setModels();
 	void setModels(std::string name);
 
+	float collisionDepth;//Õ“Ë‚Ì‚ß‚è‚ñ‚¾‹——£
+	glm::vec3 collisionVector;//Õ“Ë‚Ì‚ß‚è‚ñ‚¾•ûŒü
+
 public:
 	Scene();
 

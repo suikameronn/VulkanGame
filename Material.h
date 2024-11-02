@@ -115,9 +115,6 @@ public:
 	void setShininess(float* shininess) { this->shininess = *shininess; }
 	void setTransmissive(float* transmissive) { this->transmissive = *transmissive; }
 
-	void setDescriptorSet(VkDescriptorSet set) { descSetData.decriptorSet = set; }
-	DescSetData* getDescSetData() { return &descSetData; }
-
 	glm::vec3 getDiffuse() { return diffuse; }
 	glm::vec3 getAmbient() { return ambient; }
 	glm::vec3 getSpecular() { return specular; }
@@ -129,5 +126,9 @@ public:
 	std::shared_ptr<ImageData> getImageData();
 	TextureData* getTextureData() { return textureData; }
 	bool hasImageData();
+	bool hasTextureData();
 	uint32_t getImageDataCount() { return imageDataCount; }
+
+	void setDescriptorSet(VkDescriptorSet set) { descSetData.decriptorSet = set; }
+	DescSetData* getDescSetData() { return &descSetData; }
 };

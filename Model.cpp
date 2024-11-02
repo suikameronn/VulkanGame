@@ -56,16 +56,8 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 {
 	fbxModel = model;
 
-	if (fbxModel->animationNum() > 0)
-	{
-		pointBuffers.resize(model->getMeshesSize() + fbxModel->getTotalVertexNum());
-		mappedBuffers.resize(model->getMeshesSize() + fbxModel->getTotalVertexNum());
-	}
-	else
-	{
-		pointBuffers.resize(model->getMeshesSize());
-		mappedBuffers.resize(model->getMeshesSize());
-	}
+	pointBuffers.resize(model->getMeshesSize());
+	mappedBuffers.resize(model->getMeshesSize());
 }
 
 void Model::setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action)
@@ -96,6 +88,29 @@ MappedBuffer* Model::getMappedBuffer(uint32_t i)
 uint32_t Model::getimageDataCount()
 {
 	return imageDataCount;
+}
+
+void Model::bindObject(std::weak_ptr<Object> obj)
+{
+	if (obj.expired())
+	{
+#ifdef _DEBUG
+		throw std::runtime_error("bindObject(Object* obj): bindObject is nullptr");
+#endif
+
+		return;
+	}
+
+	childObjects.push_back(obj);
+
+	sendPosToChildren(position);
+}
+
+void Model::bindCamera(std::weak_ptr<Object> camera)
+{
+	cameraObj = camera;
+
+	sendPosToChildren(position);
 }
 
 void Model::playAnimation()
@@ -131,6 +146,20 @@ void Model::startAnimation()
 	startTime = clock();
 }
 
+void Model::setPosition(glm::vec3 pos)
+{
+	if (position == pos)
+	{
+		return;
+	}
+
+	position = pos;
+
+	sendPosToChildren(position);
+
+	uniformBufferChange = true;
+}
+
 void Model::Update()
 {
 	if (fbxModel->animationNum() > 0)
@@ -154,7 +183,7 @@ void Model::updateTransformMatrix()
 {
 	//transformMatrix = pivotMatrix;
 	//pivot = glm::vec4(pivot,0.f) * glm::scale(glm::mat4(1.0f), scale);
-	
+
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 
 	if (colider)
@@ -162,7 +191,7 @@ void Model::updateTransformMatrix()
 		colider->reflectMovement(transformMatrix);
 	}
 
-	uniformBufferChange = false;
+	uniformBufferChange = true;
 }
 
 void Model::changeAction(ACTION act)
@@ -233,6 +262,18 @@ void Model::setColider(COLIDER shape, float right, float left, float top, float 
 	}
 }
 
+void Model::setColider(COLIDER shape,glm::vec3 scale)
+{
+	glm::vec3 min, max;
+	fbxModel->getMinMaxVertexPos(min, max);
+
+	switch (shape)
+	{
+	case BOX:
+		colider = std::shared_ptr<Colider>(new Colider(position, min, max,scale));
+	}
+}
+
 void Model::setColider(COLIDER shape)
 {
 	glm::vec3 min, max;
@@ -253,5 +294,21 @@ bool Model::hasColider()
 	else
 	{
 		return false;
+	}
+}
+
+void Model::sendPosToChildren(glm::vec3 pos)
+{
+	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
+	{
+		if (!itr->expired())
+		{
+			itr->lock()->setParentPos(pos);
+		}
+	}
+
+	if (!cameraObj.expired())
+	{
+		cameraObj.lock()->setParentPos(pos);
 	}
 }

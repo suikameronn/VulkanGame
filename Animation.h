@@ -312,7 +312,7 @@ public:
 			glm::vec3 position = calcInterpolatedPos(animTime);
 			glm::mat4 posMat = glm::translate(glm::mat4(1.0f), position);
 
-			return transform * posMat * quatMat * scaleMat;
+			return transform * posMat * quatMat/* * scaleMat*/;
 		}
 		else
 		{

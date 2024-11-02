@@ -33,14 +33,14 @@ void Object::bindObject(std::weak_ptr<Object> obj)
 
 	childObjects.push_back(obj);
 
-	sendPosToChildren();
+	sendPosToChildren(position);
 }
 
 void Object::bindCamera(std::weak_ptr<Object> camera)
 {
 	cameraObj = camera;
 
-	sendPosToChildren();
+	sendPosToChildren(position);
 }
 
 glm::vec3 Object::inputMove()
@@ -96,7 +96,7 @@ void Object::setPosition(glm::vec3 pos)
 
 	position = pos;
 
-	sendPosToChildren();
+	sendPosToChildren(position);
 
 	uniformBufferChange = true;
 }
@@ -126,19 +126,19 @@ void Object::setSpherePos(float theta, float phi)
 	}
 }
 
-void Object::sendPosToChildren()
+void Object::sendPosToChildren(glm::vec3 pos)
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
 		if (!itr->expired())
 		{
-			itr->lock()->setParentPos(this->position);
+			itr->lock()->setParentPos(pos);
 		}
 	}
 
 	if (!cameraObj.expired())
 	{
-		cameraObj.lock()->setParentPos(this->position);
+		cameraObj.lock()->setParentPos(pos);
 	}
 }
 

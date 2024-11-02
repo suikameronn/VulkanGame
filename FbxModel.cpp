@@ -94,8 +94,6 @@ int FbxModel::getBoneToMap(std::string boneName)
 		int index = m_BoneNameToIndexMap.size();
 		m_BoneNameToIndexMap[boneName] = index;
 
-		std::cout << index << std::endl;
-
 		return index;
 	}
 	else

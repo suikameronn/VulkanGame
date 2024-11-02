@@ -69,7 +69,26 @@ public:
 		return false;
 	}
 
+	bool isDegenerateSimplex(glm::vec3 vector)
+	{
+		for (int i = 0; i < size; i++)
+		{
+			if (vector == points[i])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	glm::vec3& operator[](int i) { return points[i]; }
+};
+
+struct AABB
+{
+	glm::vec3 minPos;
+	glm::vec3 maxPos;
 };
 
 class Colider
@@ -89,6 +108,7 @@ private:
 	glm::vec4 color;
 
 	std::vector<uint32_t> coliderIndices;
+	std::vector<uint32_t> satIndices;
 
 	BufferObject pointBuffer;
 	MappedBuffer mappedBuffer;
@@ -104,6 +124,9 @@ private:
 public:
 	Colider(glm::vec3 pos, float right, float left, float top, float bottom, float front, float back);
 	Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max);
+	Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max,glm::vec3 scale);
+
+	AABB aabb;
 
 	void reflectMovement(glm::mat4& transform);
 	glm::mat4& getTransformMatrix() { return transform; }
@@ -114,6 +137,10 @@ public:
 	bool nextSimplex(Simplex& simplex, glm::vec3 dir);
 	glm::vec3 getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point);
 
+	int getSatIndicesSize() { return satIndices.size(); }
+	uint32_t* getSatIndicesPointer() { return satIndices.data(); }
+	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
+
 	void setDescriptorSet(VkDescriptorSet descriptorSet);
 
 	BufferObject* getPointBuffer();
@@ -121,8 +148,12 @@ public:
 	DescriptorInfo& getDescInfo();
 	DescSetData& getDescSetData() { return descSetData; }
 
-	virtual bool Intersect(std::shared_ptr<Colider> oppColider);
+	virtual bool Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector);
+	//bool GJK(std::shared_ptr<Colider> oppColider);
+	bool AABB(std::shared_ptr<Colider> oppColider);
+	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 
+	glm::vec3* getColiderOriginalVertices();
 	glm::vec3* getColiderVertices();
 	int getColiderVerticesSize();
 

@@ -71,13 +71,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
             (*model)->cleanupVulkan();
-
-            /*
-            if ((*model)->hasColider())
-            {
-                (*model)->getColider()->cleanupVulkan();
-            }
-            */
         }
 
         {
@@ -89,7 +82,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 itr->second->cleanupVulkan();
             }
         }
-
 
         std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoBegin;
         std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoEnd;
@@ -647,10 +639,17 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         depthStencil.front = {};
         depthStencil.back = {};
 
+        VkPushConstantRange pushConstant;
+        pushConstant.offset = 0;
+        pushConstant.size = sizeof(PushConstantObj);
+        pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &layout;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -1112,7 +1111,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createVertexBuffer(std::shared_ptr<Colider> colider)
     {
-        VkDeviceSize bufferSize = sizeof(*colider->getColiderVertices()) * colider->getColiderVerticesSize();
+        VkDeviceSize bufferSize = sizeof(*colider->getColiderOriginalVertices()) * colider->getColiderVerticesSize();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1120,7 +1119,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, colider->getColiderVertices(), (size_t)bufferSize);
+        memcpy(data, colider->getColiderOriginalVertices(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBuffer()->vertBuffer, colider->getPointBuffer()->vertHandler);
@@ -1229,7 +1228,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             setMaterial(mesh->getMaterial(), &ubo);
 
-            ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
             ubo.boneMatrix = array;
@@ -1243,7 +1241,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             UniformBufferObject ubo;
 
-            ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
             ubo.boneMatrix = array;
@@ -1256,9 +1253,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(10);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(10);
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1542,6 +1539,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 ptc.imageDataCount = material->getImageDataCount();
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
+                PushConstantObj constant = { (*model)->getTransformMatrix() };
+
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
 
                 VkViewport viewport{};
@@ -1567,6 +1566,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &material->getDescSetData()->decriptorSet, 0, nullptr);
 
+                vkCmdPushConstants(commandBuffer, storage->accessDescriptorInfo(ptc)->pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
+
                 vkCmdDrawIndexed(commandBuffer, (*model)->getMeshes(i)->getIndicesSize(), 1, 0, 0, 0);
             }
             
@@ -1575,6 +1576,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 std::shared_ptr<Colider> colider = (*model)->getColider();
                 ptc.imageDataCount = 0;
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+                PushConstantObj constant = { (*model)->getTransformMatrix() };
 
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
 
@@ -1600,6 +1603,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().decriptorSet, 0, nullptr);
+
+                vkCmdPushConstants(commandBuffer, storage->accessDescriptorInfo(ptc)->pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
                 vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
             }
@@ -1904,7 +1909,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             std::shared_ptr<Material> material = model->getMeshes(i)->getMaterial();
 
-            if (material->hasImageData())
+            if (material->hasImageData() && !material->hasTextureData())
             {
                 createTextureImage(material);
                 createTextureImageView(material);

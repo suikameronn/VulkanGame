@@ -112,15 +112,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;C:\VulkanSDK\1.3.290.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;C:\VulkanSDK\1.3.290.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include;FBX\FBX SDK\2020.3.7\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>OpenGL\lib;C:\VulkanSDK\1.3.290.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;assimp-vc143-mt.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;C:\VulkanSDK\1.3.290.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib;C:\Users\sukai\Documents\VulkanGame\FBX\FBX SDK\2020.3.7\lib\x64\release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;assimp-vc143-mt.lib;libfbxsdk.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;C:\VulkanSDK\1.3.290.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;OpenGL\include;C:\VulkanSDK\1.3.290.0\Include;GLM;C:\lua-5.4.2_Win64_vc17_lib\include;Assimp\include;FBX\FBX SDK\2020.3.7\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
@@ -141,8 +141,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>OpenGL\lib;C:\VulkanSDK\1.3.290.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)$(CoreLibraryDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>OpenGL\lib;C:\VulkanSDK\1.3.290.0\Lib;GLM\lib;C:\lua-5.4.2_Win64_vc17_lib;Assimp\lib;C:\Users\sukai\Documents\VulkanGame\FBX\FBX SDK\2020.3.7\lib\x64\release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;glm.lib;lua54.lib;assimp-vc143-mt.lib;libfbxsdk.lib;%(AdditionalDependencies)$(CoreLibraryDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
