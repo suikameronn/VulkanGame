@@ -7,6 +7,9 @@ FileManager* FileManager::fileManager = nullptr;
 
 FileManager::FileManager()
 {
+    manager = FbxManager::Create();
+    ios = FbxIOSettings::Create(manager, IOSROOT);
+    manager->SetIOSettings(ios);
 }
 
 glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D& vec)
@@ -14,9 +17,19 @@ glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D& vec)
     return glm::vec3(vec.x, vec.y, vec.z);
 }
 
-glm::mat4 FileManager::aiMatrix4x4ToGlm(const aiMatrix4x4* from)
+glm::mat4 FileManager::FbxMatrix4x4ToGlm(const FbxAMatrix* from)
 {
-    return glm::transpose(glm::make_mat4(&from->a1));
+    from->Transpose();
+    glm::mat4 matrix;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            matrix[i][j] = from->Get(i, j);
+        }
+    }
+
+    return matrix;
 }
 
 int FileManager::getModelResource(OBJECT obj)
@@ -54,23 +67,28 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     int size = 0;
     loadFbxModel(getModelResource(obj), &ptr, size);
 
-    const aiScene* scene = importer.ReadFileFromMemory(ptr, size,
-        aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
+    FbxScene* scene = FbxScene::Create(manager, "");
+    FbxImporter* importer = FbxImporter::Create(manager, "");
 
-    fbxModel->setGlobalInverseTransform(aiMatrix4x4ToGlm(&scene->mRootNode->mTransformation.Inverse()));
+    //importer->Initialize((char*)ptr,size, manager->GetIOSettings());
+    importer->Initialize("C:/Users/sukai/Documents/VulkanGame/models/test.fbx",-1, manager->GetIOSettings());
+    importer->Import(scene);
+    importer->Destroy();
+
+    FbxGeometryConverter converter(manager);
+    converter.Triangulate(scene, true);
+    //converter.SplitMeshesPerMaterial(scene, true);
 
     allVertNum = 0;
     pivot = glm::vec3(0.0);
     minPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
     maxPos = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
 
-    processNode(scene->mRootNode,scene, fbxModel);
+    processNode(scene->GetRootNode(), scene, fbxModel);
 
     fbxModel->setMinMaxVertexPos(minPos, maxPos);
 
     imageDataCount = 0;
-
-    importer.FreeScene();
 
     //loadPoses(fbxModel);
 
@@ -80,13 +98,13 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
 }
 
 /*
-void FileManager::processNode(const aiScene* scene, FbxModel* model)
+void FileManager::processNode(const FbxScene* scene, FbxModel* model)
 {
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
     {
-        const aiMesh* mesh = scene->mMeshes[i];
+        const FbxMesh& mesh = scene->mMeshes[i];
 
-        Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
+        Meshes* meshes = processFbxMesh(mesh, scene, allVertNum, model);
 
         allVertNum += mesh->mNumVertices;
 
@@ -107,32 +125,24 @@ void FileManager::processNode(const aiScene* scene, FbxModel* model)
 */
 
 
-void FileManager::processNode(const aiNode* node, const aiScene* scene, FbxModel* model)
+void FileManager::processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model)
 {
-    for (unsigned int i = 0; i < node->mNumMeshes; i++)
+    int meshNodeCount = scene->GetSrcObjectCount<FbxMesh>();
+
+    for (unsigned int i = 0; i < meshNodeCount; i++)
     {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Meshes* meshes = processAiMesh(mesh, scene, allVertNum, model);
+        Meshes* meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
+        
+        allVertNum += scene->GetSrcObject<FbxMesh>(i)->GetControlPointsCount();
 
-        glm::mat4 localMat = aiMatrix4x4ToGlm(&node->mTransformation);
-
-        meshes->setLocalTransform(localMat);
-        allVertNum += mesh->mNumVertices;
-
-        std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
+        std::shared_ptr<Material> material = processMaterial(scene->GetSrcObject<FbxMesh>(i), scene);
         if (material->hasImageData())
         {
-            imageDataCount++;
+            //imageDataCount++;
         }
 
         meshes->setMaterial(material);
         model->addMeshes(meshes);
-    }
-
-    // then do the same for each of its children
-    for (unsigned int i = 0; i < node->mNumChildren; i++)
-    {
-        processNode(node->mChildren[i], scene, model);
     }
 
     model->setTotalVertexNum(allVertNum);
@@ -159,17 +169,43 @@ void FileManager::calcMinMaxVertexPos(glm::vec3 pos)
     }
 }
 
-Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model)
+Meshes* FileManager::processFbxMesh(const FbxMesh* mesh, const FbxScene* scene, uint32_t meshNumVertices, FbxModel* model)
 {
     Meshes* meshes = new Meshes();
 
-    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+    FbxNode* node = mesh->GetNode();
+
+    glm::vec3 translate, rotation, scale;
+    FbxDouble3 value;
+    float deg;
+    value = node->LclTranslation.Get();
+    translate[0] = value[0]; translate[1] = value[1]; translate[2] = value[2];
+    value = node->LclRotation.Get();
+    rotation[0] = value[0]; rotation[1] = value[1]; rotation[2] = value[2];
+    deg = node->LclRotation.Get()[3];
+    value = node->LclScaling.Get();
+    scale[0] = value[0]; scale[1] = value[1]; scale[2] = value[2];
+
+    glm::mat4 transform(glm::translate(glm::mat4(1.0f),translate) * glm::rotate(glm::mat4(1.0f), glm::radians(deg), rotation) * glm::scale(glm::mat4(1.0f), scale));
+    meshes->setLocalTransform(transform);
+
+    int polygonVertexCount = mesh->GetPolygonVertexCount();
+    int* indices = mesh->GetPolygonVertices();
+    FbxArray<FbxVector4> normals;
+    mesh->GetPolygonVertexNormals(normals);
+
+    FbxVector4 vertices;
+    for (unsigned int i = 0; i < polygonVertexCount; i++)
     {
         Vertex vertex;
-        vertex.pos = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y,mesh->mVertices[i].z);
-        vertex.normal = glm::vec3(mesh->mNormals[i].x, -mesh->mNormals[i].y, mesh->mNormals[i].z);
+
+        vertices = mesh->GetControlPointAt(indices[i]);
+        vertex.pos = glm::vec3(vertices[0], vertices[1], vertices[2]);
+        //vertex.normal = glm::vec3(normals[i][0], normals[i][1], normals[i][2]);
 
         pivot += vertex.pos;
+
+        /*
 
         if (mesh->HasTextureCoords(0))
         {
@@ -180,65 +216,68 @@ Meshes* FileManager::processAiMesh(const aiMesh* mesh, const aiScene* scene, uin
             vertex.texCoord = glm::vec2(0.0f, 0.0f);
         }
 
+        */
+
         calcMinMaxVertexPos(vertex.pos);
 
         meshes->pushBackVertex(vertex);
     }
 
-    if (mesh->mNumBones != 0)
+    if (mesh->GetDeformerCount() != 0)
     {
         processMeshBones(mesh, meshNumVertices, model, meshes);
     }
     else
     {
-        std::string newBoneName = mesh->mName.data;
+        std::string newBoneName = mesh->GetName();
         int boneID = getBoneID(newBoneName, model);
         model->setBoneInfo(boneID, glm::mat4(1.0f));
 
-        for (int i = 0; i < mesh->mNumVertices; i++)
+        for (int i = 0; i < polygonVertexCount; i++)
         {
             meshes->addBoneData(i, boneID, 1.0f);
         }
     }
 
-    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    for (unsigned int i = 0; i < mesh->GetPolygonVertexCount(); i++)
     {
-        aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; j++)
-        {
-            meshes->pushBackIndex(face.mIndices[j]);
-        }
+        meshes->pushBackIndex(i);
     }
 
     return meshes;
 }
 
-void FileManager::processMeshBones(const aiMesh* mesh, uint32_t meshNumVertices, FbxModel* model,Meshes* meshes)
+void FileManager::processMeshBones(const FbxMesh* mesh, uint32_t meshNumVertices, FbxModel* model,Meshes* meshes)
 {
-    for (uint32_t i = 0; i < mesh->mNumBones; i++)
+    FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
+    int boneCount = skin->GetClusterCount();
+    for (uint32_t i = 0; i < boneCount; i++)
     {
-        loadSingleBone(mesh->mBones[i], meshNumVertices,model,meshes);
+        loadSingleBone(skin->GetCluster(i), meshNumVertices, model, meshes);
     }
 }
 
-void FileManager::loadSingleBone(const aiBone* bone, uint32_t meshNumVertices, FbxModel* model, Meshes* meshes)
+void FileManager::loadSingleBone(const FbxCluster* bone, uint32_t meshNumVertices, FbxModel* model, Meshes* meshes)
 {
     int boneID = getBoneID(bone, model);
 
-    aiMatrix4x4 boneOffsetMatrix = bone->mOffsetMatrix;
-
-    glm::mat4 offset = aiMatrix4x4ToGlm(&boneOffsetMatrix);
+    glm::mat4 offset;
+    FbxAMatrix initMat;
+    bone->GetTransformLinkMatrix(initMat);
+    offset = FbxMatrix4x4ToGlm(&initMat);
     model->setBoneInfo(boneID, offset);
 
-    for (uint32_t i = 0; i < bone->mNumWeights; i++)
+    int* vertexArray = bone->GetControlPointIndices();
+    double* weightArray = bone->GetControlPointWeights();
+    for (uint32_t i = 0; i < bone->GetControlPointIndicesCount(); i++)
     {
-        meshes->addBoneData(bone->mWeights[i].mVertexId, boneID, bone->mWeights[i].mWeight);
+        meshes->addBoneData(vertexArray[i], boneID, weightArray[i]);
     }
 }
 
-int FileManager::getBoneID(const aiBone* bone, FbxModel* model)
+int FileManager::getBoneID(const FbxCluster* bone, FbxModel* model)
 {
-    std::string boneName(bone->mName.C_Str());
+    std::string boneName(bone->GetName());
 
     return model->getBoneToMap(boneName);
 }
@@ -248,11 +287,11 @@ int FileManager::getBoneID(const std::string boneName, FbxModel* model)
     return model->getBoneToMap(boneName);
 }
 
-const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)
+const FbxNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)
 {
     for (uint32_t i = 0; i < pAnimation->mNumChannels; i++)
     {
-        const aiNodeAnim* pNodeAnim = pAnimation->mChannels[i];
+        const FbxNodeAnim* pNodeAnim = pAnimation->mChannels[i];
 
         if (std::string(pNodeAnim->mNodeName.data) == nodeName)
         {
@@ -263,7 +302,7 @@ const aiNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::
     return nullptr;
 }
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
+void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
     , AnimNode* parentNode, unsigned int childIdx, FbxModel* model)
 {
     AnimNode* currentNode;
@@ -275,7 +314,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
     {
         aiMatrix4x4 NodeTransformation(node->mTransformation);
 
-        const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
+        const FbxNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
 
         if (pNodeAnim)
         {
@@ -315,46 +354,40 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
     }
 }
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene, aiNode* node
-    , AnimNode* parentNode, FbxModel* model,Animation* animation)
+void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
+    , AnimNode* parentNode, FbxModel* model, Animation* animation)
 {
     AnimNode* currentNode;
+    FbxAnimCurve* curve;
 
-    std::string nodeName(node->mName.data);
+    std::string nodeName(node->GetName());
 
-    const aiAnimation* pAnimation = scene->mAnimations[0];
-
+    if (pNodeAnim)
     {
-        aiMatrix4x4 NodeTransformation(node->mTransformation);
-        const aiNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
-
-        if (pNodeAnim)
+        std::map<float, glm::vec3> keyTimeScale;
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
         {
-            std::map<float, glm::vec3> keyTimeScale;
-            for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
-            {
-                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
-            }
-
-            std::map<float, aiQuaternion> keyTimeQuat;
-            for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
-            {
-                keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
-            }
-
-            std::map<float, glm::vec3> keyTimePos;
-            for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
-            {
-                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
-            }
-
-            AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-            currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
         }
-        else
+
+        std::map<float, aiQuaternion> keyTimeQuat;
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
         {
-            currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
         }
+
+        std::map<float, glm::vec3> keyTimePos;
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
+        {
+            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
+        }
+
+        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
+        currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+    }
+    else
+    {
+        currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
     }
 
     currentNode->resizeChildren(node->mNumChildren);
@@ -377,38 +410,58 @@ std::shared_ptr<Animation> FileManager::loadAnimations(FbxModel* fbxModel, OBJEC
     int size = 0;
     loadFbxModel(getModelResource(obj), &ptr, size);
 
-    const aiScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
+    FbxScene* scene = FbxScene::Create(manager, "");
+    FbxImporter* importer = FbxImporter::Create(manager, "");
 
-    Animation* animation = new Animation(
-            scene->mAnimations[0]->mTicksPerSecond
-            , scene->mAnimations[0]->mDuration);
+    //importer->Initialize((char*)ptr,size, manager->GetIOSettings());
+    importer->Initialize("C:/Users/sukai/Documents/VulkanGame/models/test.fbx", -1, manager->GetIOSettings());
+    importer->Import(scene);
+    importer->Destroy();
+
+    //const FbxScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
+
+    FbxArray<FbxString*> names;
+    scene->FillAnimStackNameArray(names);
+    FbxTakeInfo* info = scene->GetTakeInfo(names[0]->Buffer());
+    float offset = static_cast<float>(info->mImportOffset.Get());
+    float startTime = static_cast<float>(info->mLocalTimeSpan.GetStart().Get());
+    float endTime = static_cast<float>(info->mLocalTimeSpan.GetStop().Get());
+    float duration = static_cast<float>(info->mLocalTimeSpan.GetDuration().Get());
+
+    Animation* animation = new Animation(startTime,endTime,duration);
     animation->setGlobalInverseTransform(fbxModel->getGlobalInverseTransform());
 
-    loadAnimation(scene, fbxModel,animation);
+    scene->SetCurrentAnimationStack(scene->GetSrcObject<FbxAnimStack>(0));
+
+    loadAnimation(scene, fbxModel, animation);
 
     Storage::GetInstance()->addAnimation(obj, animation);
     return Storage::GetInstance()->getAnimation(obj);
 }
 
-void FileManager::loadAnimation(const aiScene* scene,FbxModel* model,Animation* animation)
+void FileManager::loadAnimation(const FbxScene* scene, FbxModel* model, Animation* animation)
 {
     AnimNode* rootNode = nullptr;
 
-    ReadNodeHeirarchy(scene,scene->mRootNode,rootNode,model,animation);
+    FbxAnimStack* stack = scene->GetSrcObject<FbxAnimStack>(0);
+
+    ReadNodeHeirarchy(stack->GetSrcObject<FbxAnimLayer>(0), scene->GetRootNode(), rootNode, model, animation);
 }
 
+/*
 void FileManager::loadPoses(FbxModel* fbxModel)
 {
     void* ptr = nullptr;
     int size = 0;
     loadFbxModel(164, &ptr, size);
 
-    const aiScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_SortByPType | aiProcess_PopulateArmatureData);
+    const FbxScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_SortByPType | aiProcess_PopulateArmatureData);
 
     loadPose(scene, fbxModel);
 }
+*/
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray, FbxModel* fbxModel)
+void FileManager::ReadNodeHeirarchy(const FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray, FbxModel* fbxModel)
 {
     std::string nodeName(node->mName.data);
 
@@ -428,7 +481,7 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiM
     }
 }
 
-void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 250>& matrixArray, FbxModel* fbxModel)
+void FileManager::ReadNodeHeirarchy(const FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrixArray, FbxModel* fbxModel)
 {
     std::string nodeName(node->mName.data);
 
@@ -446,7 +499,8 @@ void FileManager::ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, st
     }
 }
 
-void FileManager::loadPose(const aiScene* scene, FbxModel* fbxModel)
+/*
+void FileManager::loadPose(const FbxScene* scene, FbxModel* fbxModel)
 {
     std::shared_ptr<Pose> pose = std::shared_ptr<Pose>(new Pose());
 
@@ -459,6 +513,7 @@ void FileManager::loadPose(const aiScene* scene, FbxModel* fbxModel)
 
     fbxModel->setPose("idle", pose);
 }
+*/
 
 std::string FileManager::splitFileName(std::string filePath)
 {
@@ -468,57 +523,27 @@ std::string FileManager::splitFileName(std::string filePath)
     return filePath;
 }
 
-std::shared_ptr<Material> FileManager::processAiMaterial(int index, const aiScene* scene)
+std::shared_ptr<Material> FileManager::processMaterial(FbxMesh* mesh, const FbxScene* scene)
 {
     std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
 
-    aiMaterial* aiMat = scene->mMaterials[index];
+    FbxLayerElementMaterial* fbxMaterial = mesh->GetElementMaterial(0);
+    int index = fbxMaterial->GetIndexArray().GetAt(0);
+    FbxSurfaceMaterial* surface_material = mesh->GetNode()->GetSrcObject<FbxSurfaceMaterial>(index);
 
     glm::vec3 v;
 
-    aiColor4D diffuse{};
-    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_DIFFUSE, &diffuse);
-    v = glm::vec3(diffuse.r, diffuse.g, diffuse.b);
+    FbxProperty prop = surface_material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+    glm::vec3 diffuse = glm::vec3(prop.Get<FbxDouble3>()[0], prop.Get<FbxDouble3>()[1], prop.Get<FbxDouble3>()[2]);
     material->setDiffuse(&v);
 
-    aiColor4D ambient{};
-    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_AMBIENT, &ambient);
-    v = glm::vec3(ambient.r, ambient.g, ambient.b);
-    material->setAmbient(&v);
-
-    aiColor4D specular{};
-    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_SPECULAR, &specular);
-    v = glm::vec3(specular.r, specular.g, specular.b);
-    material->setSpecular(&v);
-
-    aiColor4D emissive{};
-    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_EMISSIVE, &emissive);
-    v = glm::vec3(emissive.r, emissive.g, emissive.b);
-    material->setEmissive(&v);
-
-    aiColor4D shininess;
-    aiGetMaterialColor(aiMat,AI_MATKEY_SHININESS, &shininess);
-    float shine = shininess[3];
-    material->setShininess(&shine);
-
-    aiColor4D transparent{};
-    aiGetMaterialColor(aiMat,AI_MATKEY_COLOR_TRANSPARENT, &transparent);
-    float trans = transparent[3];
-    material->setTransmissive(&trans);
-
-    if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+    if (prop.GetSrcObjectCount<FbxFileTexture>() > 0)
     {
-        aiString Path;
-        if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
-        {
-            std::string path = Path.data;
-            path = splitFileName(path);
-            std::shared_ptr<ImageData> imageData = loadModelImage(path);
+        std::string path = prop.GetSrcObject<FbxFileTexture>(0)->GetRelativeFileName();;
+        path = splitFileName(path);
+        std::shared_ptr<ImageData> imageData = loadModelImage(path);
 
-            material->setImageData(imageData);
-        }
-
-        Path.Clear();
+        material->setImageData(imageData);
     }
 
     return material;

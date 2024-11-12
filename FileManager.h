@@ -8,10 +8,7 @@
 #include"EnumList.h"
 #include"Storage.h"
 
-#include"Assimp/Base64.hpp"
-#include "Assimp/Importer.hpp"
-#include "Assimp/scene.h"
-#include "Assimp/postprocess.h"
+#include"fbxsdk.h"
 
 enum IMAGE;
 
@@ -23,6 +20,9 @@ private:
 	FileManager();
 
 	int getModelResource(OBJECT obj);
+
+	FbxManager* manager;
+	FbxIOSettings* ios;
 
 	uint32_t imageDataCount = 0;
 
@@ -37,27 +37,27 @@ private:
 
 	std::string splitFileName(std::string filePath);
 
-	//void processNode(const aiNode* node, const aiScene* scene, FbxModel* model);
-	void processNode(/*const aiScene* scene, FbxModel* model*/const aiNode* node, const aiScene* scene, FbxModel* model);
+	//void processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model);
+	void processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model);
 	void calcMinMaxVertexPos(glm::vec3 pos);
-	Meshes* processAiMesh(const aiMesh* mesh, const aiScene* scene, uint32_t meshNumVertices, FbxModel* model);
-	void processMeshBones(const aiMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
-	void loadSingleBone(const aiBone* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
-	int getBoneID(const aiBone* bone, FbxModel* model);
+	Meshes* processFbxMesh(const FbxMesh* mesh, const FbxScene* scene, uint32_t meshNumVertices, FbxModel* model);
+	void processMeshBones(const FbxMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
+	void loadSingleBone(const FbxCluster* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
+	int getBoneID(const FbxCluster* bone, FbxModel* model);
 	int getBoneID(const std::string boneName, FbxModel* model);
-	std::shared_ptr<Material> processAiMaterial(int index, const aiScene* scene);
+	std::shared_ptr<Material> processMaterial(FbxMesh* mesh, const FbxScene* scene);
 
-	const aiNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
+	//const FbxNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
+	void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
 		unsigned int i, FbxModel* model);
-	void ReadNodeHeirarchy(const aiScene* scene, aiNode* node, AnimNode* parentNode,
+	void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
 		FbxModel* model, Animation* animation);
-	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node, std::array<glm::mat4, 250>& matrix,FbxModel* fbxModel);
-	void ReadNodeHeirarchy(const aiScene* scene, const aiNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,FbxModel* fbxModel);
+	void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrix,FbxModel* fbxModel);
+	void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,FbxModel* fbxModel);
 
 
-	void loadPose(const aiScene* scene, FbxModel* fbxModel);
-	void loadAnimation(const aiScene* scene,FbxModel* model,Animation* animation);
+	void loadPose(const FbxScene* scene, FbxModel* fbxModel);
+	void loadAnimation(const FbxScene* scene,FbxModel* model,Animation* animation);
 
 	void loadFbxModel(int id, void** ptr, int& size);
 
@@ -67,7 +67,7 @@ private:
 	int getImageID(std::string path);
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
-	glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4* from);
+	glm::mat4 FbxMatrix4x4ToGlm(const FbxAMatrix* from);
 	glm::vec3 aiVec3DToGLM(const aiVector3D& vec);
 
 public:

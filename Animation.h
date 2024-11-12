@@ -343,7 +343,8 @@ class Animation
 {
 private:
 
-	float timeTick;
+	float startTime;
+	float endTime;
 	float duration;
 
 	AnimNode* rootNode;
@@ -353,7 +354,7 @@ private:
 public:
 
 	Animation();
-	Animation(float timeInTick,float duration);
+	Animation(float startTime,float endTime,float duration);
 	~Animation();
 	void DeleteAnimTree(AnimNode* node);
 

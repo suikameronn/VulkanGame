@@ -28,8 +28,8 @@ void Scene::parseScene()
 
 		
 		std::shared_ptr<FbxModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
-		fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
-		fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
+		//fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
+		//fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
 		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 		//ƒ‚ƒfƒ‹‚ð“Ç‚Ýž‚ÞŠÖ”
 		model->setFbxModel(fbxModel);

@@ -465,7 +465,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
-            if (ptc.imageDataCount > 0)
+            if (/*ptc.imageDataCount > 0*/false)
             {
                 vertFile = "shaders/vert.spv";
                 fragFile = "shaders/frag.spv";
@@ -1527,7 +1527,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         Storage* storage = Storage::GetInstance();
         std::shared_ptr<Material> material;
-
+        std::shared_ptr<Meshes> meshes;
         
         PrimitiveTextureCount ptc;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
@@ -1535,11 +1535,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             
             for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
             {
-                material = (*model)->getMeshes(i)->getMaterial();
+                meshes = (*model)->getMeshes(i);
+                material = meshes->getMaterial();
                 ptc.imageDataCount = material->getImageDataCount();
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-                PushConstantObj constant = { (*model)->getTransformMatrix() };
+                PushConstantObj constant = {(*model)->getTransformMatrix()};
 
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
 

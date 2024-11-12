@@ -7,9 +7,10 @@ Animation::Animation()
 
 }
 
-Animation::Animation(float timeTick, float duration)
+Animation::Animation(float startTime, float endTime,float duration)
 {
-	this->timeTick = timeTick;
+	this->startTime = startTime;
+	this->endTime = endTime;
 	this->duration = duration;
 }
 
