@@ -105,10 +105,11 @@ void FileManager::processNode(const tinygltf::Node& currentNode, const tinygltf:
     {
         const tinygltf::Mesh mesh = model.meshes[currentNode.mesh];
 
-        Meshes * meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
-
-        for (unsigned int i = 0; i < meshNodeCount; i++)
+        for (unsigned int i = 0; i < mesh.primitives.size(); i++)
         {
+            const tinygltf::Primitive glPrimitve = mesh.primitives[j];
+
+            Meshes* meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
 
             allVertNum += scene->GetSrcObject<FbxMesh>(i)->GetControlPointsCount();
 
@@ -119,9 +120,9 @@ void FileManager::processNode(const tinygltf::Node& currentNode, const tinygltf:
             }
 
             meshes->setMaterial(material);
-        }
 
-        fbxModel->addMeshes(meshes);
+            fbxModel->addMeshes(meshes);
+        }
     }
 
     for (int i = 0; i < currentNode.children.size(); i++)
@@ -135,9 +136,9 @@ void FileManager::processNode(const tinygltf::Node& parentNode, const tinygltf::
 {
     if (currentNode.mesh > -1)
     {
-        const tinygltf::Mesh mesh = model.meshes[node.mesh]
+        const tinygltf::Mesh mesh = model.meshes[node.mesh];
 
-        Meshes* meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
+        Meshes* primitives = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
 
         for (unsigned int i = 0; i < meshNodeCount; i++)
         {
