@@ -1,15 +1,13 @@
 #include"FileManager.h"
 
+#define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#define STBI_MSC_SECURE_CRT
 
 FileManager* FileManager::fileManager = nullptr;
 
 FileManager::FileManager()
 {
-    manager = FbxManager::Create();
-    ios = FbxIOSettings::Create(manager, IOSROOT);
-    manager->SetIOSettings(ios);
 }
 
 glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D& vec)
@@ -17,15 +15,15 @@ glm::vec3 FileManager::aiVec3DToGLM(const aiVector3D& vec)
     return glm::vec3(vec.x, vec.y, vec.z);
 }
 
-glm::mat4 FileManager::FbxMatrix4x4ToGlm(const FbxAMatrix* from)
+glm::mat4 FileManager::FbxMatrix4x4ToGlm(FbxAMatrix& from)
 {
-    from->Transpose();
+    from.Transpose();
     glm::mat4 matrix;
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            matrix[i][j] = from->Get(i, j);
+            matrix[i][j] = from.Get(i, j);
         }
     }
 
@@ -67,24 +65,28 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     int size = 0;
     loadFbxModel(getModelResource(obj), &ptr, size);
 
-    FbxScene* scene = FbxScene::Create(manager, "");
-    FbxImporter* importer = FbxImporter::Create(manager, "");
-
-    //importer->Initialize((char*)ptr,size, manager->GetIOSettings());
-    importer->Initialize("C:/Users/sukai/Documents/VulkanGame/models/test.fbx",-1, manager->GetIOSettings());
-    importer->Import(scene);
-    importer->Destroy();
-
-    FbxGeometryConverter converter(manager);
-    converter.Triangulate(scene, true);
-    //converter.SplitMeshesPerMaterial(scene, true);
+    //"C:/Users/sukai/Documents/VulkanGame/models/test_out/test.gltf"
+    tinygltf::Model gltfModel;
+    tinygltf::TinyGLTF gltfContext;
+    std::string error;
+    std::string warning;
+    bool binary = false;
+    binary = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, "C:/Users/sukai/Documents/VulkanGame/models/test_out/test.gltf");
+    const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//デフォルトシーンがあればそれを、なければ最初のシーン
 
     allVertNum = 0;
     pivot = glm::vec3(0.0);
     minPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
     maxPos = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
 
-    processNode(scene->GetRootNode(), scene, fbxModel);
+    for (size_t i = 0; i < scene.nodes.size(); i++)
+    {
+        const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
+        processNode(node, gltfModel,fbxModel);
+    }
+
+    fbxModel->setTotalVertexNum(allVertNum);
+    fbxModel->setImageDataCount(imageDataCount);
 
     fbxModel->setMinMaxVertexPos(minPos, maxPos);
 
@@ -97,57 +99,67 @@ std::shared_ptr<FbxModel> FileManager::loadModel(OBJECT obj)
     return storage->getFbxModel(obj);
 }
 
-/*
-void FileManager::processNode(const FbxScene* scene, FbxModel* model)
+void FileManager::processNode(const tinygltf::Node& currentNode, const tinygltf::Model model, FbxModel* fbxModel)
 {
-    for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
+    if (currentNode.mesh > -1)
     {
-        const FbxMesh& mesh = scene->mMeshes[i];
+        const tinygltf::Mesh mesh = model.meshes[currentNode.mesh];
 
-        Meshes* meshes = processFbxMesh(mesh, scene, allVertNum, model);
+        Meshes * meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
 
-        allVertNum += mesh->mNumVertices;
-
-        std::shared_ptr<Material> material = processAiMaterial(mesh->mMaterialIndex, scene);
-        if (material->hasImageData())
+        for (unsigned int i = 0; i < meshNodeCount; i++)
         {
-            imageDataCount++;
+
+            allVertNum += scene->GetSrcObject<FbxMesh>(i)->GetControlPointsCount();
+
+            std::shared_ptr<Material> material = processMaterial(scene->GetSrcObject<FbxMesh>(i), scene);
+            if (material->hasImageData())
+            {
+                //imageDataCount++;
+            }
+
+            meshes->setMaterial(material);
         }
 
-        meshes->setMaterial(material);
-        model->addMeshes(meshes);
+        fbxModel->addMeshes(meshes);
     }
 
-    model->setTotalVertexNum(allVertNum);
-
-    model->setImageDataCount(imageDataCount);
+    for (int i = 0; i < currentNode.children.size(); i++)
+    {
+        processNode(currentNode, model.nodes[currentNode.children[i]], model, fbxModel);
+    }
 }
-*/
 
 
-void FileManager::processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model)
+void FileManager::processNode(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode,const tinygltf::Model model, FbxModel* fbxModel)
 {
-    int meshNodeCount = scene->GetSrcObjectCount<FbxMesh>();
-
-    for (unsigned int i = 0; i < meshNodeCount; i++)
+    if (currentNode.mesh > -1)
     {
-        Meshes* meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
-        
-        allVertNum += scene->GetSrcObject<FbxMesh>(i)->GetControlPointsCount();
+        const tinygltf::Mesh mesh = model.meshes[node.mesh]
 
-        std::shared_ptr<Material> material = processMaterial(scene->GetSrcObject<FbxMesh>(i), scene);
-        if (material->hasImageData())
+        Meshes* meshes = processFbxMesh(scene->GetSrcObject<FbxMesh>(i), scene, allVertNum, model);
+
+        for (unsigned int i = 0; i < meshNodeCount; i++)
         {
-            //imageDataCount++;
+
+            allVertNum += scene->GetSrcObject<FbxMesh>(i)->GetControlPointsCount();
+
+            std::shared_ptr<Material> material = processMaterial(scene->GetSrcObject<FbxMesh>(i), scene);
+            if (material->hasImageData())
+            {
+                //imageDataCount++;
+            }
+
+            meshes->setMaterial(material);
         }
 
-        meshes->setMaterial(material);
-        model->addMeshes(meshes);
+        fbxModel->addMeshes(meshes);
     }
 
-    model->setTotalVertexNum(allVertNum);
-
-    model->setImageDataCount(imageDataCount);
+    for (int i = 0; i < currentNode.children.size(); i++)
+    {
+        processNode(currentNode, model.nodes[currentNode.children[i]], model,fbxModel);
+    }
 }
 
 void FileManager::calcMinMaxVertexPos(glm::vec3 pos)
@@ -262,9 +274,11 @@ void FileManager::loadSingleBone(const FbxCluster* bone, uint32_t meshNumVertice
     int boneID = getBoneID(bone, model);
 
     glm::mat4 offset;
-    FbxAMatrix initMat;
-    bone->GetTransformLinkMatrix(initMat);
-    offset = FbxMatrix4x4ToGlm(&initMat);
+    FbxAMatrix transform,matrix,linkMatrix;
+    bone->GetTransformLinkMatrix(linkMatrix);
+    bone->GetTransformMatrix(matrix);
+    transform = linkMatrix.Inverse() * matrix;
+    offset = FbxMatrix4x4ToGlm(transform);
     model->setBoneInfo(boneID, offset);
 
     int* vertexArray = bone->GetControlPointIndices();
@@ -357,31 +371,45 @@ void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
 void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
     , AnimNode* parentNode, FbxModel* model, Animation* animation)
 {
+    bool hasAnimCurve = false;
+
     AnimNode* currentNode;
     FbxAnimCurve* curve;
 
     std::string nodeName(node->GetName());
 
-    if (pNodeAnim)
+    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
+    if (curve)
     {
         std::map<float, glm::vec3> keyTimeScale;
         for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
         {
             keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
         }
+    }
 
+    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
+    if (curve)
+    {
         std::map<float, aiQuaternion> keyTimeQuat;
         for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
         {
             keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
         }
+    }
 
+    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
+    if (curve)
+    {
         std::map<float, glm::vec3> keyTimePos;
         for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
         {
             keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
         }
+    }
 
+    if (hasAnimCurve)
+    {
         AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
         currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
     }

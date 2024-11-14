@@ -8,7 +8,7 @@
 #include"EnumList.h"
 #include"Storage.h"
 
-#include"fbxsdk.h"
+#include "tiny_gltf.h"
 
 enum IMAGE;
 
@@ -20,9 +20,6 @@ private:
 	FileManager();
 
 	int getModelResource(OBJECT obj);
-
-	FbxManager* manager;
-	FbxIOSettings* ios;
 
 	uint32_t imageDataCount = 0;
 
@@ -37,8 +34,8 @@ private:
 
 	std::string splitFileName(std::string filePath);
 
-	//void processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model);
-	void processNode(const FbxNode* node, const FbxScene* scene, FbxModel* model);
+	void processNode(const tinygltf::Node& currentNode, const tinygltf::Model model, FbxModel* fbxModel);
+	void processNode(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode, const tinygltf::Model model, FbxModel* fbxModel);
 	void calcMinMaxVertexPos(glm::vec3 pos);
 	Meshes* processFbxMesh(const FbxMesh* mesh, const FbxScene* scene, uint32_t meshNumVertices, FbxModel* model);
 	void processMeshBones(const FbxMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
@@ -67,7 +64,7 @@ private:
 	int getImageID(std::string path);
 	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
-	glm::mat4 FbxMatrix4x4ToGlm(const FbxAMatrix* from);
+	glm::mat4 FbxMatrix4x4ToGlm(FbxAMatrix& from);
 	glm::vec3 aiVec3DToGLM(const aiVector3D& vec);
 
 public:
