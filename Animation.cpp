@@ -1,6 +1,6 @@
 #include"Animation.h"
 
-#include"FbxModel.h"
+#include"GltfModel.h"
 
 Animation::Animation()
 {
@@ -18,9 +18,11 @@ Animation::~Animation()
 {
 	if (this->rootNode != nullptr)
 	{
-		DeleteAnimTree(this->rootNode);
+		//DeleteAnimTree(this->rootNode);
 	}
 }
+
+/*
 
 void Animation::DeleteAnimTree(AnimNode* node)
 {
@@ -35,7 +37,7 @@ void Animation::DeleteAnimTree(AnimNode* node)
 	delete node;
 }
 
-void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms, AnimNode* node, glm::mat4 parentMatrix,FbxModel* model)
+void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms, AnimNode* node, glm::mat4 parentMatrix,GltfModel* model)
 {
 	glm::mat4 childMatrix = node->getAnimMatrix(animationTime, parentMatrix);
 
@@ -55,9 +57,8 @@ void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250
 	}
 }
 
-void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,FbxModel* model)
+void Animation::setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,GltfModel* model)
 {
-	animationTime = animationTime * timeTick;
 	animationTime = fmod(animationTime, duration);
 
 	glm::mat4 identity(1.0f);
@@ -91,3 +92,5 @@ void Pose::setFinalTransform(std::array<glm::mat4, 250>& boneFinalTransforms)
 {
 	std::copy(boneMatrix.begin(), boneMatrix.end(), boneFinalTransforms.begin());
 }
+
+*/

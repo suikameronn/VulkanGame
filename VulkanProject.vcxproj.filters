@@ -72,7 +72,7 @@
     <ClCompile Include="Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="FbxModel.cpp">
+    <ClCompile Include="GltfModel.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
     <ClCompile Include="Animation.cpp">
@@ -122,7 +122,7 @@
     <ClInclude Include="Camera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="FbxModel.h">
+    <ClInclude Include="GltfModel.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
     <ClInclude Include="resource1.h">
@@ -170,6 +170,7 @@
     </None>
     <None Include="models\Flag_Pole.fbx" />
     <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\Buche de Noel.png">

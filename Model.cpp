@@ -52,7 +52,7 @@ void Model::cleanupVulkan()
 	}
 }
 
-void Model::setFbxModel(std::shared_ptr<FbxModel> model)
+void Model::setFbxModel(std::shared_ptr<GltfModel> model)
 {
 	fbxModel = model;
 
@@ -60,7 +60,7 @@ void Model::setFbxModel(std::shared_ptr<FbxModel> model)
 	mappedBuffers.resize(model->getMeshesSize());
 }
 
-void Model::setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action)
+void Model::setAnimation(std::shared_ptr<GltfModel> model, std::string fileName, ACTION action)
 {
 
 }
@@ -164,7 +164,7 @@ void Model::Update()
 {
 	if (fbxModel->animationNum() > 0)
 	{
-		playAnimation();
+		//playAnimation();
 	}
 
 	if (controllable)

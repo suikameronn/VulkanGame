@@ -11,10 +11,10 @@ void Storage::cleanup()
 	}
 }
 
-//Storage‚ÉFbxModel‚ğ’Ç‰Á‚·‚é
-void Storage::addModel(OBJECT obj, FbxModel* model)
+//Storage‚ÉGltfModel‚ğ’Ç‰Á‚·‚é
+void Storage::addModel(OBJECT obj, GltfModel* model)
 {
-	fbxModelStorage[obj] = std::shared_ptr<FbxModel>(model);
+	fbxModelStorage[obj] = std::shared_ptr<GltfModel>(model);
 }
 
 void Storage::addAnimation(OBJECT obj, Animation* animation)
@@ -61,8 +61,8 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, 
 	end = descriptorStorage.end();
 }
 
-void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr,
-	std::unordered_map<OBJECT, std::shared_ptr<FbxModel>>::iterator& itr2)
+void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
+	std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr2)
 {
 	itr = fbxModelStorage.begin();
 	itr2 = fbxModelStorage.end();
@@ -74,7 +74,7 @@ std::shared_ptr<Camera> Storage::accessCamera()
 	return camera;
 }
 
-//Storage‚Éw’è‚³‚ê‚ FbxModel‚ªŠù‚É‘¶İ‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğ•Ô‚·
+//Storage‚Éw’è‚³‚ê‚ GltfModel‚ªŠù‚É‘¶İ‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğ•Ô‚·
 bool Storage::containModel(OBJECT obj)
 {
 	if (fbxModelStorage[obj] != nullptr)
@@ -124,8 +124,8 @@ bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
 	}
 }
 
-//Storage‚©‚çFbxModel‚ğ“Ç‚İæ‚é
-std::shared_ptr<FbxModel> Storage::getFbxModel(OBJECT obj)
+//Storage‚©‚çGltfModel‚ğ“Ç‚İæ‚é
+std::shared_ptr<GltfModel> Storage::getFbxModel(OBJECT obj)
 {
 	return fbxModelStorage[obj];
 }

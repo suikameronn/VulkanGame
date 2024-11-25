@@ -6,7 +6,6 @@
 #include<vector>
 #include<map>
 #include<memory>
-#include <assimp/scene.h>           // Output data structure
 #include<glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
@@ -19,7 +18,7 @@ class Model;
 struct AnimationKeyData
 {
 	std::map<float, glm::vec3> animationScaleKey;
-	std::map<float, aiQuaternion> animationRotKey;
+	//std::map<float, aiQuaternion> animationRotKey;
 	std::map<float, glm::vec3> animationPositionKey;
 };
 
@@ -59,6 +58,7 @@ public:
 		return name;
 	}
 
+	/*
 	glm::mat4 aiMatrix3x3ToGlm(const aiMatrix3x3& from)
 	{
 		return glm::transpose(glm::make_mat3(&from.a1));
@@ -312,13 +312,15 @@ public:
 			glm::vec3 position = calcInterpolatedPos(animTime);
 			glm::mat4 posMat = glm::translate(glm::mat4(1.0f), position);
 
-			return transform * posMat * quatMat/* * scaleMat*/;
+			return transform * posMat * quatMat * scaleMat;
 		}
 		else
 		{
 			return transform * matrix;
 		}
 	}
+
+	*/
 };
 
 struct BoneInfo
@@ -326,7 +328,7 @@ struct BoneInfo
 	std::vector<glm::mat4> offsetMatrix;
 };
 
-class FbxModel;
+class GltfModel;
 
 class Pose
 {
@@ -356,7 +358,7 @@ public:
 	Animation();
 	Animation(float startTime,float endTime,float duration);
 	~Animation();
-	void DeleteAnimTree(AnimNode* node);
+	//void DeleteAnimTree(AnimNode* node);
 
 	void setRootNode(AnimNode* rootNode)
 	{
@@ -364,6 +366,6 @@ public:
 	}
 
 	void setGlobalInverseTransform(glm::mat4 mat) { inverseGlobalTransform = mat; }
-	void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms, FbxModel* model);
-	void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix, FbxModel* model);
+	//void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms, GltfModel* model);
+	//void setFinalTransform(float animationTime, std::array<glm::mat4, 250>& boneFinalTransforms,AnimNode* node,glm::mat4 parentMatrix, GltfModel* model);
 };

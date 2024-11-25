@@ -11,8 +11,6 @@ layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 texCoord;
 layout(location = 4) in ivec4 boneID1;
 layout(location = 5) in vec4 weight1;
-layout(location = 6) in ivec4 boneID2;
-layout(location = 7) in vec4 weight2;
 
 layout( push_constant ) uniform push_constant
 {
@@ -30,11 +28,6 @@ void main() {
     boneMat += ubo.boneMatrix[boneID1[1]] * weight1[1];
     boneMat += ubo.boneMatrix[boneID1[2]] * weight1[2];
     boneMat += ubo.boneMatrix[boneID1[3]] * weight1[3];
-
-    boneMat += ubo.boneMatrix[boneID2[0]] * weight2[0];
-    boneMat += ubo.boneMatrix[boneID2[1]] * weight2[1];
-    boneMat += ubo.boneMatrix[boneID2[2]] * weight2[2];
-    boneMat += ubo.boneMatrix[boneID2[3]] * weight2[3];
 
     if(boneMat == mat4(0.0))
     {

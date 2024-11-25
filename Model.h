@@ -4,7 +4,7 @@
 #include <time.h>
 
 #include"EnumList.h"
-#include"FbxModel.h"
+#include"GltfModel.h"
 #include"Colider.h"
 
 template<typename T>
@@ -37,7 +37,7 @@ class Model:public Object
 protected:
 	uint32_t imageDataCount;
 
-	std::shared_ptr<FbxModel> fbxModel;
+	std::shared_ptr<GltfModel> fbxModel;
 
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
@@ -71,8 +71,8 @@ public:
 	void sendPosToChildren(glm::vec3 pos);
 
 	int hasAnimation() { return fbxModel->animationNum(); }
-	void setFbxModel(std::shared_ptr<FbxModel> model);
-	void setAnimation(std::shared_ptr<FbxModel> model, std::string fileName, ACTION action);
+	void setFbxModel(std::shared_ptr<GltfModel> model);
+	void setAnimation(std::shared_ptr<GltfModel> model, std::string fileName, ACTION action);
 
 	void setDefaultAction(ACTION act) { defaultAction = act; }
 	void startAnimation();

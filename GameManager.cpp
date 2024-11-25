@@ -1,7 +1,5 @@
 #include"GameManager.h"
 
-#include"Scene.h"
-
 GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()

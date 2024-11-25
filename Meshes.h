@@ -14,11 +14,9 @@ struct Vertex {
 	glm::vec3 normal;
 
 	uint32_t index;
-	std::array<int, vec4Size> boneID1;
-	std::array<int, vec4Size> boneID2;
+	glm::vec4 boneID1;
 
-	std::array<float, vec4Size> weight1;
-	std::array<float, vec4Size> weight2;
+	glm::vec4 weight1;
 
 	Vertex()
 	{
@@ -34,13 +32,6 @@ struct Vertex {
 			boneID1[i] = 0;
 			weight1[i] = 0.0f;
 		}
-
-		for (uint32_t i = 0; i < vec4Size; i++)
-		{
-			boneID2[i] = 0;
-			weight2[i] = 0.0f;
-		}
-
 	};
 	
 	void addBoneData(uint32_t boneID, float weight)
@@ -51,17 +42,6 @@ struct Vertex {
 			{
 				boneID1[i] = boneID;
 				weight1[i] = weight;
-
-				return;
-			}
-		}
-
-		for (int i = 0; i < vec4Size; ++i)
-		{
-			if (weight2[i] == 0.0f)
-			{
-				boneID2[i] = boneID;
-				weight2[i] = weight;
 
 				return;
 			}
@@ -81,6 +61,13 @@ namespace std {
 }
 */
 
+struct Primitive
+{
+	int indexStart;//0Žn‚Ü‚è
+	int indexCount;
+	std::shared_ptr<Material> material;
+};
+
 class Meshes
 {
 protected:
@@ -88,9 +75,9 @@ protected:
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	glm::mat4 localTransform;
+	std::vector<Primitive> primitives;
 
-	std::shared_ptr<Material> material;
+	glm::mat4 localTransform;
 
 	glm::vec3 avePosition;
 
@@ -100,25 +87,30 @@ public:
 
 	void pushBackVertex(Vertex& v);
 	void pushBackIndex(uint32_t i);
-	void setMaterial(std::shared_ptr<Material> material);
-	const std::shared_ptr<Material> getMaterial() { return material; }
+	void pushBackPrimitive(Primitive p);
+
+	//void setMaterial(std::shared_ptr<Material> material);
+	//const std::shared_ptr<Material> getMaterial() { return material; }
 
 	std::vector<Vertex>::iterator getVertItr();
 	std::vector<uint32_t>::iterator getIndiItr();
 
 	Vertex* getVertexPoint();
 	uint32_t* getIndexPoint();
+	Primitive* getPrimitivePoint();
 
 	uint32_t getVerticesSize();
 	uint32_t getIndicesSize();
+	uint32_t getPrimitivesSize();
 
-	uint32_t getTextureCount() { material->getImageDataCount(); }
+	//uint32_t getTextureCount() { material->getImageDataCount(); }
 
 	void vertResize(uint32_t size);
 	void indexResize(uint32_t size);
+	void primitiveResize(uint32_t size);
 
-	void setLocalTransform(glm::mat4 transform);
-	glm::mat4 getLocalTransform();
+	//void setLocalTransform(glm::mat4 transform);
+	//glm::mat4 getLocalTransform();
 
 	void addBoneData(uint32_t index,uint32_t infoID, float weight);
 };

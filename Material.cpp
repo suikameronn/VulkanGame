@@ -45,9 +45,10 @@ void Material::cleanUpVulkan()
 	}
 }
 
-void Material::setImageData(std::shared_ptr<ImageData> image)
+void Material::setImageData(int uvIndex,std::shared_ptr<ImageData> image)
 {
 	imageDataCount++;
+	this->uvIndex = uvIndex;
 	this->image = image;
 	descSetData.texCount = imageDataCount;
 	textureData = new TextureData;

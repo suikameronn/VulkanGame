@@ -1,5 +1,4 @@
 #pragma once
-
 #include<iostream>
 #include <windows.h>
 #include<map>
@@ -8,6 +7,8 @@
 #include"EnumList.h"
 #include"Storage.h"
 
+#include<limits>
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
 enum IMAGE;
@@ -30,42 +31,40 @@ private:
 
 	std::vector<OBJECT> loadAnimationFiles;
 
-	Assimp::Importer importer;
-
 	std::string splitFileName(std::string filePath);
 
-	void processNode(const tinygltf::Node& currentNode, const tinygltf::Model model, FbxModel* fbxModel);
-	void processNode(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode, const tinygltf::Model model, FbxModel* fbxModel);
+	GltfModel* loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel);
+	void processMesh(const tinygltf::Node& currentNode, const tinygltf::Model gltfModel, GltfModel* model);
+	void processMesh(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode, const tinygltf::Model gltfModel, GltfModel* model);
 	void calcMinMaxVertexPos(glm::vec3 pos);
-	Meshes* processFbxMesh(const FbxMesh* mesh, const FbxScene* scene, uint32_t meshNumVertices, FbxModel* model);
-	void processMeshBones(const FbxMesh* mesh, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
-	void loadSingleBone(const FbxCluster* bone, uint32_t meshIndex, FbxModel* model,Meshes* meshes);
-	int getBoneID(const FbxCluster* bone, FbxModel* model);
-	int getBoneID(const std::string boneName, FbxModel* model);
-	std::shared_ptr<Material> processMaterial(FbxMesh* mesh, const FbxScene* scene);
+	void processPrimitive(Meshes* meshes,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel);
+	void processMeshBones(const tinygltf::Scene& scene, const tinygltf::Model gltfModel, GltfModel* model);
+	int getBoneID(const std::string boneName, GltfModel* gltfModel);
+
+	//void processMeshBones(const FbxMesh* mesh, uint32_t meshIndex, GltfModel* gltfModel,Meshes* meshes);
+	//void loadSingleBone(const FbxCluster* bone, uint32_t meshIndex, GltfModel* gltfModel,Meshes* meshes);
+	//int getBoneID(const FbxCluster* bone, GltfModel* gltfModel);
+	std::shared_ptr<Material> processMaterial(tinygltf::Model gltfModel,int materialIndex);
 
 	//const FbxNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
-		unsigned int i, FbxModel* model);
-	void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
-		FbxModel* model, Animation* animation);
-	void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrix,FbxModel* fbxModel);
-	void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,FbxModel* fbxModel);
+	//void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
+		//unsigned int i, GltfModel* gltfModel);
+	//void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
+		//GltfModel* gltfModel, Animation* animation);
+	//void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrix,GltfModel* model);
+	//void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,GltfModel* model);
 
 
-	void loadPose(const FbxScene* scene, FbxModel* fbxModel);
-	void loadAnimation(const FbxScene* scene,FbxModel* model,Animation* animation);
+	//void loadPose(const FbxScene* scene, GltfModel* model);
+	//void loadAnimation(const FbxScene* scene,GltfModel* gltfModel,Animation* animation);
 
-	void loadFbxModel(int id, void** ptr, int& size);
+	//void loadFbxModel(int id, void** ptr, int& size);
 
-	void loadPoses(FbxModel* fbxModel);
+	//void loadPoses(GltfModel* model);
 	
 	std::string extractFileName(std::string path);
 	int getImageID(std::string path);
-	std::shared_ptr<ImageData> loadModelImage(std::string filePath);
-
-	glm::mat4 FbxMatrix4x4ToGlm(FbxAMatrix& from);
-	glm::vec3 aiVec3DToGLM(const aiVector3D& vec);
+	//std::shared_ptr<ImageData> loadModelImage(std::string filePath);
 
 public:
 	static FileManager* GetInstance()
@@ -89,6 +88,6 @@ public:
 		fileManager = nullptr;
 	}
 
-	std::shared_ptr<FbxModel> loadModel(OBJECT obj);
-	std::shared_ptr<Animation> loadAnimations(FbxModel* fbxModel, OBJECT obj);
+	std::shared_ptr<GltfModel> loadModel(OBJECT obj);
+	//std::shared_ptr<Animation> loadAnimations(GltfModel* model, OBJECT obj);
 };

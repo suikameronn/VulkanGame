@@ -1,6 +1,5 @@
 #pragma once
 
-#define STB_IMAGE_IMPLEMENTATION
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -24,29 +23,14 @@ private:
 	std::vector<unsigned char> pixels;
 
 public:
-	ImageData()
-	{
-		this->width = 0;
-		this->height = 0;
-		this->texChannels = 0;
-	}
-
-	ImageData(int width, int height, int texChannel)
-	{
-		this->width = static_cast<uint32_t>(width);
-		this->height = static_cast<uint32_t>(height);
-		this->texChannels = static_cast<uint32_t>(texChannel);
-		pixels.resize(width * height * texChannels);
-	}
 
 	ImageData(int width, int height,
-		int texChannels, unsigned char* pixels)
+		int texChannels,unsigned char* pixels)
 	{
 		this->width = static_cast<uint32_t>(width);
 		this->height = static_cast<uint32_t>(height);
-		this->texChannels = static_cast<uint32_t>(texChannels);
-		this->pixels.resize(width * height * 4);
-		this->pixels.assign(pixels, pixels + ((width * height * 4) - 1));
+		this->pixels.resize(width * height * texChannels);
+		this->pixels.assign(pixels, pixels + ((width * height * texChannels) - 1));
 	}
 
 	int getWidth()
@@ -91,6 +75,7 @@ private:
 	float transmissive;
 
 	//テクスチャのもととなる画像データへのポインタ
+	int uvIndex;//使用するuv座標セットのインデックス
 	std::shared_ptr<ImageData> image = nullptr;
 	TextureData* textureData = nullptr;
 
@@ -108,12 +93,12 @@ public:
 
 	void cleanUpVulkan();
 
-	void setDiffuse(glm::vec3* diffuse) { this->diffuse = *diffuse; }
-	void setAmbient(glm::vec3* ambient) { this->ambient = *ambient; }
-	void setSpecular(glm::vec3* specular) { this->specular = *specular; }
-	void setEmissive(glm::vec3* emissive) { this->emissive = *emissive; }
-	void setShininess(float* shininess) { this->shininess = *shininess; }
-	void setTransmissive(float* transmissive) { this->transmissive = *transmissive; }
+	void setDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
+	void setAmbient(glm::vec3 ambient) { this->ambient = ambient; }
+	void setSpecular(glm::vec3 specular) { this->specular = specular; }
+	void setEmissive(glm::vec3 emissive) { this->emissive = emissive; }
+	void setShininess(float shininess) { this->shininess = shininess; }
+	void setTransmissive(float transmissive) { this->transmissive = transmissive; }
 
 	glm::vec3 getDiffuse() { return diffuse; }
 	glm::vec3 getAmbient() { return ambient; }
@@ -122,7 +107,7 @@ public:
 	float getShininess() { return shininess; }
 	float getTransmissive() { return transmissive; }
 
-	void setImageData(std::shared_ptr<ImageData> image);
+	void setImageData(int uvIndex,std::shared_ptr<ImageData> image);
 	std::shared_ptr<ImageData> getImageData();
 	TextureData* getTextureData() { return textureData; }
 	bool hasImageData();

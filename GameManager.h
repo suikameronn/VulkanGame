@@ -3,12 +3,10 @@
 #include<chrono>
 #include <thread>
 
-#include"GLFW/glfw3.h"
-
-#include"FileManager.h"
 #include"VulkanBase.h"
 #include"Controller.h"
 #include"Scene.h"
+#include"FileManager.h"
 
 extern GLFWwindow* window;
 
