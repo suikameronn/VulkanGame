@@ -14,6 +14,8 @@ GLFWwindow* window;
 int main() {
 #ifdef _DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
+    //_CrtSetBreakAlloc(27284);
+
 #endif
 
     glfwInit();

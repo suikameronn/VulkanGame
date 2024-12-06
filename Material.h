@@ -61,6 +61,17 @@ struct TextureData
 	VkDeviceMemory memory;
 	VkImageView view;
 	VkSampler sampler;
+	VkDescriptorSet descriptor;
+
+	void destroy(VkDevice& device)
+	{
+		vkDestroyImageView(device, view, nullptr);
+		vkDestroyImage(device, image, nullptr);
+		vkFreeMemory(device, memory, nullptr);
+		vkDestroySampler(device, sampler, nullptr);
+
+		delete this;
+	}
 };
 
 class Material
@@ -90,8 +101,6 @@ public:
 		, glm::vec3* emissive, float* shininess, float* transmissive);
 
 	~Material();
-
-	void cleanUpVulkan();
 
 	void setDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void setAmbient(glm::vec3 ambient) { this->ambient = ambient; }

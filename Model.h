@@ -32,31 +32,43 @@ struct Rotate
 	}
 };
 
+//アニメーションの遷移などを担う
+class AnimationController
+{
+	std::string currentAnimationName;
+
+public:
+	AnimationController()
+	{
+		currentAnimationName = "no_name";
+	};
+
+	virtual void update() = 0;
+	std::string getCurrentAnimationName() { return currentAnimationName; }
+
+};
+
 class Model:public Object
 {
 protected:
 	uint32_t imageDataCount;
 
-	std::shared_ptr<GltfModel> fbxModel;
+	std::shared_ptr<GltfModel> gltfModel;
 
 	std::vector<BufferObject> pointBuffers;
 	std::vector<MappedBuffer> mappedBuffers;
+	std::vector<std::array<glm::mat4, 128>> jointMatrices;
 
 	bool playAnim;
+	bool loopAnimation;
 
 	clock_t startTime;
 	clock_t currentTime;
 	double deltaTime;
 
-	ACTION action;
-	ACTION defaultAction;
-
-	glm::vec3 inputMove() override;
-
+	std::shared_ptr<Material> material;
+	std::shared_ptr<AnimationController> animController;
 	std::shared_ptr<Colider> colider;
-
-	void changeAction();
-	void changeAction(ACTION act);
 
 public:
 
@@ -70,32 +82,26 @@ public:
 
 	void sendPosToChildren(glm::vec3 pos);
 
-	int hasAnimation() { return fbxModel->animationNum(); }
-	void setFbxModel(std::shared_ptr<GltfModel> model);
-	void setAnimation(std::shared_ptr<GltfModel> model, std::string fileName, ACTION action);
+	void setgltfModel(std::shared_ptr<GltfModel> model);
+	GltfNode* getRootNode() { return gltfModel->getRootNode(); }
+	std::shared_ptr<GltfModel> getGltfModel() { return gltfModel; }
 
-	void setDefaultAction(ACTION act) { defaultAction = act; }
-	void startAnimation();
+	void setMaterial(std::shared_ptr<Material> material) { this->material = material; }
+
+	void setAnimationController(std::shared_ptr<AnimationController> animationController) { this->animController = animationController; }
 	void playAnimation();
-	bool hasPlayingAnimation() { return playAnim; }
-	std::array<glm::mat4,250> getBoneInfoFinalTransform();
-
-	uint32_t getTotalVertexNum() { return fbxModel->getTotalVertexNum(); }
-	std::shared_ptr<Meshes> getMeshes(uint32_t i);
-	uint32_t getMeshesSize();
+	std::array<glm::mat4, 128>& getJointMatrices(int index);
 
 	BufferObject* getPointBuffer(uint32_t i);
 	MappedBuffer* getMappedBuffer(uint32_t i);
 	uint32_t getimageDataCount();
-	
-	void setColider(COLIDER shape,float right,float left,float top,float bottom, float front, float back);
-	void setColider(COLIDER shape,glm::vec3 scale);
-	void setColider(COLIDER shape);
+
 	bool hasColider();
+	void setColider();
 	std::shared_ptr<Colider> getColider() { return colider; }
 
 	void updateTransformMatrix() override;
-	void Update() override;
+	virtual void Update() = 0;
 
 	void cleanupVulkan();
 

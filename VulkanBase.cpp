@@ -76,10 +76,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator begin;
             std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator end;
-            Storage::GetInstance()->accessFbxModel(begin, end);
+            Storage::GetInstance()->accessgltfModel(begin, end);
             for (auto itr = begin; itr != end; itr++)
             {
-                itr->second->cleanupVulkan();
+                itr->second->cleanUpVulkan(device);
             }
         }
 
@@ -93,6 +93,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyPipelineLayout(device, itr->second.pLayout, nullptr);
             vkDestroyDescriptorSetLayout(device, itr->second.layout, nullptr);
         }
+
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -467,19 +468,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             if (ptc.imageDataCount > 0)
             {
-                vertFile = "shaders/vert.spv";
-                fragFile = "shaders/frag.spv";
+                vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/vert.spv";
+                fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/frag.spv";
             }
             else
             {
-                vertFile = "shaders/Notexture.vert.spv";
-                fragFile = "shaders/Notexture.frag.spv";
+                vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/Notexture.vert.spv";
+                fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/Notexture.frag.spv";
             }
         }
         else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
-            vertFile = "shaders/line.vert.spv";
-            fragFile = "shaders/line.frag.spv";
+            vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/line.vert.spv";
+            fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/line.frag.spv";
         }
         auto vertShaderCode = readFile(vertFile);
         auto fragShaderCode = readFile(fragFile);
@@ -1074,13 +1075,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::createVertexBuffer(std::shared_ptr<Model> model) 
+    void VulkanBase::createVertexBuffer(GltfNode* node,std::shared_ptr<Model> model)
     {
-        uint32_t i;
-        for (i = 0; i < model->getMeshesSize(); i++)
+        if (node->mesh)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-            VkDeviceSize bufferSize = sizeof(*meshes->getVertItr()) * meshes->getVerticesSize();
+            Mesh* mesh = node->mesh;
+            VkDeviceSize bufferSize = sizeof(Vertex) * mesh->vertices.size();
 
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
@@ -1088,16 +1088,21 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             void* data;
             vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, meshes->getVertexPoint(), (size_t)bufferSize);
+            memcpy(data, mesh->vertices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(i)->vertBuffer, model->getPointBuffer(i)->vertHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(mesh->meshIndex)->vertBuffer, model->getPointBuffer(mesh->meshIndex)->vertHandler);
 
             //vertexBuffer配列にコピーしていく(vector型)
-            copyBuffer(stagingBuffer, model->getPointBuffer(i)->vertBuffer, bufferSize);
+            copyBuffer(stagingBuffer, model->getPointBuffer(mesh->meshIndex)->vertBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
+        }
+
+        for (size_t i = 0; i < node->children.size(); i++)
+        {
+            createVertexBuffer(node->children[i], model);
         }
     }
 
@@ -1123,12 +1128,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createIndexBuffer(std::shared_ptr<Model> model) 
+    void VulkanBase::createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model)
     {
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        if(node->mesh)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-            VkDeviceSize bufferSize = sizeof(*meshes->getIndiItr()) * meshes->getIndicesSize();
+            Mesh* mesh = node->mesh;
+            VkDeviceSize bufferSize = sizeof(uint32_t) * mesh->indices.size();
 
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
@@ -1136,15 +1141,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             void* data;
             vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, meshes->getIndexPoint(), (size_t)bufferSize);
+            memcpy(data, mesh->indices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(i)->indeBuffer, model->getPointBuffer(i)->indeHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(mesh->meshIndex)->indeBuffer, model->getPointBuffer(mesh->meshIndex)->indeHandler);
 
-            copyBuffer(stagingBuffer, model->getPointBuffer(i)->indeBuffer, bufferSize);
+            copyBuffer(stagingBuffer, model->getPointBuffer(mesh->meshIndex)->indeBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
+        }
+
+        for (size_t i = 0; i < node->children.size(); i++)
+        {
+            createIndexBuffer(node->children[i],model);
         }
     }
 
@@ -1169,71 +1179,103 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
+    void VulkanBase::createUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
+    {
+        if (node->mesh)
+        {
+            Mesh* mesh = node->mesh;
+
+            VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+            MappedBuffer* mappedBuffer = model->getMappedBuffer(mesh->meshIndex);
+
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+
+            vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+        }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            createUniformBuffer(node->children[i], model);
+        }
+    }
+
+    void VulkanBase::createUniformBuffer(std::shared_ptr<Colider> colider)
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
-        {
-            MappedBuffer* mappedBuffer = model->getMappedBuffer(i);
+        MappedBuffer* mappedBuffer = colider->getMappedBuffer();
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
-            vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
-        }
+        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+    }
+
+    void VulkanBase::createUniformBuffers(std::shared_ptr<Model> model)
+    {
+        createUniformBuffer(model->getRootNode(),model);
 
         if (model->hasColider())
         {
-            std::shared_ptr<Colider> colider = model->getColider();
-
-            MappedBuffer* mappedBuffer = colider->getMappedBuffer();
-
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
-
-            vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+            createUniformBuffer(model->getColider());
         }
     }
 
-    void VulkanBase::setMaterial(std::shared_ptr<Material> material,UniformBufferObject* ubo)
-    {
-        /*
-        ubo->diffuse = material->getDiffuse();
-        ubo->ambient = material->getAmbient();
-        ubo->specular = material->getSpecular();
-        ubo->emissive = material->getEmissive();
-        ubo->transmissive = material->getTransmissive();
-        ubo->shininess = material->getShininess();
-        */
+    void VulkanBase::setMaterial(std::shared_ptr<Material> material,UniformBufferObject& ubo)
+    {    
+        ubo.diffuse = material->getDiffuse();
     }
 
-    void VulkanBase::updateUniformBuffer(std::shared_ptr<Model> model) {
-
-        std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
-
-        std::array array = model->getBoneInfoFinalTransform();
-
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+    void VulkanBase::updateUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
+    {
+        if (node->mesh)
         {
+            Mesh* mesh = node->mesh;
+
+            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
+
+            std::array<glm::mat4, 128> array;
+            std::fill(array.begin(), array.end(), glm::mat4(1.0f));
+
             UniformBufferObject ubo;
 
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-
-            Primitive* primitives = meshes->getPrimitivePoint();
-            for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
+            for (int i = 0; i < mesh->primitives.size(); i++)
             {
-                setMaterial(primitives[j].material, &ubo);
+                setMaterial(mesh->primitives[i].material, ubo);
             }
 
+            ubo.local = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
-            ubo.boneMatrix = array;
+            if (node->skin && node->globalHasSkinNodeIndex > -1)
+            {
+                ubo.boneMatrix = model->getJointMatrices(node->globalHasSkinNodeIndex);
+            }
+            else
+            {
+                ubo.boneMatrix = array;
+            }
 
-            memcpy(model->getMappedBuffer(i)->uniformBufferMapped, &ubo, sizeof(ubo));
+            memcpy(model->getMappedBuffer(mesh->meshIndex)->uniformBufferMapped, &ubo, sizeof(ubo));
+
         }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            updateUniformBuffer(node->children[i], model);
+        }
+    }
+
+    void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model) 
+    {
+        updateUniformBuffer(model->getRootNode(), model);
 
         if (model->hasColider())
         {
+            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
             std::shared_ptr<Colider> colider = model->getColider();
+
+            std::array<glm::mat4, 128> array = { glm::mat4(1.0f) };
 
             UniformBufferObject ubo;
 
@@ -1249,35 +1291,33 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(10);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(10);
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(100);
+        poolInfo.maxSets = static_cast<uint32_t>(10);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
         }
     }
 
-    void VulkanBase::allocateDescriptorSets(std::shared_ptr<Model> model)
+    void VulkanBase::allocateDescriptorSet(GltfNode* node, std::shared_ptr<Model> model)
     {
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        if (node->mesh)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-
-            Primitive* primitives = meshes->getPrimitivePoint();
-            for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
+            Mesh* mesh = node->mesh;
+            for (int i = 0; i < mesh->primitives.size(); i++)
             {
                 PrimitiveTextureCount ptc;
-                ptc.imageDataCount = primitives[j].material->getImageDataCount();
+                ptc.imageDataCount = mesh->primitives[i].material->getImageDataCount();
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-                DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
+                DescriptorInfo* info = &mesh->descriptorInfo;
 
                 VkDescriptorSetAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1298,54 +1338,67 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 }
                 descriptorSetCount++;
 
-                primitives[j].material->setDescriptorSet(descriptorSet);
+                mesh->primitives[i].material->setDescriptorSet(descriptorSet);
             }
         }
 
-        if (model->hasColider())
+        for (int i = 0; i < node->children.size(); i++)
         {
-            PrimitiveTextureCount ptc;
-            ptc.imageDataCount = 0;
-            ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-            DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
-
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = info->pool;
-            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &info->layout;
-
-            VkDescriptorSet descriptorSet;
-
-            if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
-            {
-                throw std::runtime_error("failed to allocate descriptor sets!");
-            }
-
-            if (descriptorSetCount > 100)
-            {
-                throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
-            }
-            descriptorSetCount++;
-
-            model->getColider()->setDescriptorSet(descriptorSet);
+            allocateDescriptorSet(node->children[i], model);
         }
     }
 
-    void VulkanBase::createDescriptorSets(std::shared_ptr<Model> model)
+    void VulkanBase::allocateDescriptorSet(std::shared_ptr<Model> model)
     {
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        PrimitiveTextureCount ptc;
+        ptc.imageDataCount = 0;
+        ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+        DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = info->pool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &info->layout;
+
+        VkDescriptorSet descriptorSet;
+
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-            Primitive* primitives = meshes->getPrimitivePoint();
-            for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
+
+        if (descriptorSetCount > 100)
+        {
+            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+        }
+        descriptorSetCount++;
+
+        model->getColider()->setDescriptorSet(descriptorSet);
+    }
+
+    void VulkanBase::allocateDescriptorSets(std::shared_ptr<Model> model)
+    {
+        allocateDescriptorSet(model->getRootNode(), model);
+        if (model->hasColider())
+        {
+            allocateDescriptorSet(model);
+        }
+    }
+
+    void VulkanBase::createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model)
+    {
+        if(node->mesh)
+        {
+            Mesh* mesh = node->mesh;
+            for (int i = 0; i < mesh->primitives.size(); i++)
             {
 
-                std::shared_ptr<Material> material = primitives[j].material;
+                std::shared_ptr<Material> material = mesh->primitives[i].material;
 
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = model->getMappedBuffer(i)->uniformBuffer;
+                bufferInfo.buffer = model->getMappedBuffer(mesh->meshIndex)->uniformBuffer;
                 bufferInfo.offset = 0;
                 bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1393,25 +1446,39 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             }
         }
 
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            createDescriptorSet(node->children[i], model);
+        }
+    }
+
+    void VulkanBase::createDescriptorSet(std::shared_ptr<Model> model)
+    {
+        std::shared_ptr<Colider> colider = model->getColider();
+
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = colider->getMappedBuffer()->uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = colider->getDescSetData().decriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBase::createDescriptorSets(std::shared_ptr<Model> model)
+    {
+        createDescriptorSet(model->getRootNode(),model);
         if (model->hasColider())
         {
-            std::shared_ptr<Colider> colider = model->getColider();
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = colider->getMappedBuffer()->uniformBuffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
-
-            VkWriteDescriptorSet descriptorWrite{};
-            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = colider->getDescSetData().decriptorSet;
-            descriptorWrite.dstBinding = 0;
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+            createDescriptorSet(model);
         }
     }
 
@@ -1511,6 +1578,57 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    void VulkanBase::drawMesh(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer)
+    {
+        if(node->mesh)
+        {
+            Mesh* mesh = node->mesh;
+
+            PrimitiveTextureCount ptc;
+            ptc.imageDataCount = 1;
+            ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+            PushConstantObj constant = { node->getMatrix() };
+
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->descriptorInfo.pipeline);
+
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = (float)swapChainExtent.width;
+            viewport.height = (float)swapChainExtent.height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+            VkRect2D scissor{};
+            scissor.offset = { 0, 0 };
+            scissor.extent = swapChainExtent;
+            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+            VkDeviceSize offsets[] = { 0 };
+
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBuffer(mesh->meshIndex)->vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffer, model->getPointBuffer(mesh->meshIndex)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (int i = 0;i < mesh->primitives.size();i++)
+            {
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    mesh->descriptorInfo.pLayout, 0, 1, &mesh->primitives[i].material->getDescSetData()->decriptorSet, 0, nullptr);
+
+                vkCmdPushConstants(commandBuffer, mesh->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
+
+                vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
+            }
+        }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            drawMesh(node->children[i], model,commandBuffer);
+        }
+    }
+
     void VulkanBase::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1535,56 +1653,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         Storage* storage = Storage::GetInstance();
-        std::shared_ptr<Meshes> meshes;
         
         PrimitiveTextureCount ptc;
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-            
-            for (uint32_t i = 0; i < (*model)->getMeshesSize(); i++)
-            {
-                meshes = (*model)->getMeshes(i);
-                ptc.imageDataCount = 1;
-                ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-                PushConstantObj constant = {(*model)->getTransformMatrix()};
+            drawMesh((*model)->getRootNode(),*model,commandBuffer);
 
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
-
-                VkViewport viewport{};
-                viewport.x = 0.0f;
-                viewport.y = 0.0f;
-                viewport.width = (float)swapChainExtent.width;
-                viewport.height = (float)swapChainExtent.height;
-                viewport.minDepth = 0.0f;
-                viewport.maxDepth = 1.0f;
-                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-                VkRect2D scissor{};
-                scissor.offset = { 0, 0 };
-                scissor.extent = swapChainExtent;
-                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-                VkDeviceSize offsets[] = { 0 };
-
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(*model)->getPointBuffer(i)->vertBuffer, offsets);
-
-                vkCmdBindIndexBuffer(commandBuffer, (*model)->getPointBuffer(i)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-                Primitive* primitives = meshes->getPrimitivePoint();
-                for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
-                {
-                    Primitive primitive = primitives[j];
-
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &primitive.material->getDescSetData()->decriptorSet, 0, nullptr);
-
-                    vkCmdPushConstants(commandBuffer, storage->accessDescriptorInfo(ptc)->pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
-
-                    vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.indexStart, 0, 0);
-                }
-            }
-            
             if ((*model)->hasColider())
             {
                 std::shared_ptr<Colider> colider = (*model)->getColider();
@@ -1622,7 +1697,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
             }
-            
+
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -1670,7 +1745,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
-            updateUniformBuffer(*model);
+            updateUniformBuffers(*model);
         }
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
@@ -1907,8 +1982,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createMeshesData(std::shared_ptr<Model> model)
     {
-        createVertexBuffer(model);
-        createIndexBuffer(model);
+        createVertexBuffer(model->getRootNode(),model);
+        createIndexBuffer(model->getRootNode(), model);
 
         if (model->hasColider())
         {
@@ -1917,45 +1992,50 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createTextureData(std::shared_ptr<Model> model)
+    void VulkanBase::createTextureData(GltfNode* node, std::shared_ptr<Model> model)
     {
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        if (node->mesh)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-            Primitive* primitives = meshes->getPrimitivePoint();
-            for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
+            Mesh* mesh = node->mesh;
+            for (int i = 0;i < mesh->primitives.size();i++)
             {
-                std::shared_ptr<Material> material = primitives[j].material;
-
-                if (material->hasImageData() && !material->hasTextureData())
+                if (mesh->primitives[i].material)
                 {
-                    createTextureImage(material);
-                    createTextureImageView(material);
-                    createTextureSampler(material);
+                    std::shared_ptr<Material> material = mesh->primitives[i].material;
+
+                    if (material->hasImageData() && material->hasTextureData())
+                    {
+                        createTextureImage(material);
+                        createTextureImageView(material);
+                        createTextureSampler(material);
+                    }
                 }
             }
         }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            createTextureData(node->children[i], model);
+        }
     }
 
-    void VulkanBase::createDescriptorInfo(std::shared_ptr<Model> model)
+    void VulkanBase::createTextureDatas(std::shared_ptr<Model> model)
+    {
+        createTextureData(model->getRootNode(), model);
+    }
+
+    void VulkanBase::createDescriptorInfo(GltfNode* node, std::shared_ptr<Model> model)
     {
         uint32_t imageDataCount;
         PrimitiveTextureCount ptc;
         ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-        for (uint32_t i = 0; i < model->getMeshesSize(); i++)
+        if(node->mesh)
         {
-            std::shared_ptr<Meshes> meshes = model->getMeshes(i);
-
-            Primitive* primitives = meshes->getPrimitivePoint();
-            for (uint32_t j = 0; j < meshes->getPrimitivesSize(); j++)
+            Mesh* mesh = node->mesh;
+            for (int i = 0;i < mesh->primitives.size();i++)
             {
-                ptc.imageDataCount = primitives[j].material->getImageDataCount();
-
-                if (Storage::GetInstance()->containDescriptorInfo(ptc))
-                {
-                    continue;
-                }
+                ptc.imageDataCount = mesh->primitives[i].material->getImageDataCount();
 
                 DescriptorInfo info{};
 
@@ -1968,32 +2048,48 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 /*グラフィックスパイプラインを作る*/
                 createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
 
-                Storage::GetInstance()->addDescriptorInfo(ptc, info);
+                mesh->descriptorInfo = info;
             }
         }
 
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            createDescriptorInfo(node->children[i], model);
+        }
+    }
+
+    void VulkanBase::createDescriptorInfo(std::shared_ptr<Colider> colider)
+    {
+        uint32_t imageDataCount;
+        PrimitiveTextureCount ptc;
+        ptc.imageDataCount = 0;
+        ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+        if (Storage::GetInstance()->containDescriptorInfo(ptc))
+        {
+            return;
+        }
+
+        DescriptorInfo info{};
+
+        /*ディスクリプタレイアウトを持たせる*/
+        createDescriptorSetLayout(ptc, info.layout);
+
+        /*ディスクリプタプールを作る*/
+        createDescriptorPool(ptc, info.pool);
+
+        /*グラフィックスパイプラインを作る*/
+        createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
+
+        Storage::GetInstance()->addDescriptorInfo(ptc, info);
+    }
+
+    void VulkanBase::createDescriptorInfos(std::shared_ptr<Model> model)
+    {
+        createDescriptorInfo(model->getRootNode(), model);
         if (model->hasColider())
         {
-            ptc.imageDataCount = 0;
-            ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-            if (Storage::GetInstance()->containDescriptorInfo(ptc))
-            {
-                return;
-            }
-
-            DescriptorInfo info{};
-
-            /*ディスクリプタレイアウトを持たせる*/
-            createDescriptorSetLayout(ptc, info.layout);
-
-            /*ディスクリプタプールを作る*/
-            createDescriptorPool(ptc, info.pool);
-
-            /*グラフィックスパイプラインを作る*/
-            createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
-
-            Storage::GetInstance()->addDescriptorInfo(ptc, info);
+            createDescriptorInfo(model->getColider());
         }
     }
 
@@ -2004,14 +2100,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createMeshesData(model);
 
         /*UnifomBufferを持たせる*/
-        createUniformBuffer(model);
+        createUniformBuffers(model);
 
         /*テクスチャ関連の設定を持たせる*/
-        createTextureData(model);
+        createTextureDatas(model);
 
         /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
         /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-        createDescriptorInfo(model);
+        createDescriptorInfos(model);
 
         /*ディスクリプタ用のメモリを空ける*/
         allocateDescriptorSets(model);//マテリアルが複数ある場合エラー

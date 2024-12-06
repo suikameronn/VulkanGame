@@ -24,8 +24,6 @@ Model::Model()
 
 	deltaTime = 0.0;
 
-	action = ACTION::IDLE;
-
 	colider = nullptr;
 }
 
@@ -33,14 +31,17 @@ void Model::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
 
-	for (uint32_t i = 0; i < getMeshesSize(); i++)
+	for (uint32_t i = 0; i < pointBuffers.size(); i++)
 	{
 		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
 		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
 
 		vkDestroyBuffer(device, pointBuffers[i].indeBuffer, nullptr);
 		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
+	}
 
+	for (int i = 0; i < mappedBuffers.size(); i++)
+	{
 		vkDestroyBuffer(device, mappedBuffers[i].uniformBuffer, nullptr);
 		vkFreeMemory(device, mappedBuffers[i].uniformBufferMemory, nullptr);
 		mappedBuffers[i].uniformBufferMapped = nullptr;
@@ -52,27 +53,13 @@ void Model::cleanupVulkan()
 	}
 }
 
-void Model::setFbxModel(std::shared_ptr<GltfModel> model)
+void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 {
-	fbxModel = model;
+	gltfModel = model;
 
-	pointBuffers.resize(model->getMeshesSize());
-	mappedBuffers.resize(model->getMeshesSize());
-}
-
-void Model::setAnimation(std::shared_ptr<GltfModel> model, std::string fileName, ACTION action)
-{
-
-}
-
-std::shared_ptr<Meshes> Model::getMeshes(uint32_t i)
-{
-	return this->fbxModel->getMeshes(i);
-}
-
-uint32_t Model::getMeshesSize()
-{
-	return this->fbxModel->getMeshesSize();
+	jointMatrices.resize(model->jointNum);
+	pointBuffers.resize(model->meshCount);
+	mappedBuffers.resize(model->primitiveCount);
 }
 
 BufferObject* Model::getPointBuffer(uint32_t i)
@@ -117,7 +104,7 @@ void Model::playAnimation()
 {
 	if (true)
 	{
-		if (deltaTime > 40.0f)
+		if (deltaTime > gltfModel->animationDuration("Running"))
 		{
 			startTime = clock();
 		}
@@ -125,25 +112,14 @@ void Model::playAnimation()
 		currentTime = clock();
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
+
+		gltfModel->updateAnimation(deltaTime,"Running", jointMatrices);
 	}
 }
 
-std::array<glm::mat4,250> Model::getBoneInfoFinalTransform()
+std::array<glm::mat4, 128>& Model::getJointMatrices(int index)
 {
-	if (fbxModel->animationNum() > 0)
-	{
-		//std::cout << deltaTime << std::endl;
-		return fbxModel->getAnimationMatrix(deltaTime, action);
-	}
-
-	return fbxModel->getAnimationMatrix();//‰ŠúŽp¨‚Ìƒ{[ƒ“‚ð•Ô‚·
-}
-
-void Model::startAnimation()
-{
-	playAnim = true;
-
-	startTime = clock();
+	return this->jointMatrices[index];
 }
 
 void Model::setPosition(glm::vec3 pos)
@@ -158,25 +134,6 @@ void Model::setPosition(glm::vec3 pos)
 	sendPosToChildren(position);
 
 	uniformBufferChange = true;
-}
-
-void Model::Update()
-{
-	if (fbxModel->animationNum() > 0)
-	{
-		//playAnimation();
-	}
-
-	if (controllable)
-	{
-		glm::vec3 moveDirec = inputMove();
-		setPosition(this->position + moveDirec * speed);
-	}
-
-	if (spherePos)
-	{
-		setSpherePos(theta, phi);
-	}
 }
 
 void Model::updateTransformMatrix()
@@ -194,95 +151,9 @@ void Model::updateTransformMatrix()
 	uniformBufferChange = true;
 }
 
-void Model::changeAction(ACTION act)
+void Model::setColider()
 {
-	action = act;
-}
-
-void Model::changeAction()
-{
-	action = defaultAction;
-}
-
-glm::vec3 Model::inputMove()
-{
-	glm::vec3 moveDirec;
-	auto controller = Controller::GetInstance();
-
-	if (!cameraObj.expired())
-	{
-		forward = cameraObj.lock()->forward;
-		right = cameraObj.lock()->right;
-	}
-
-	if (controller->getKey(GLFW_KEY_W))
-	{
-		moveDirec = -forward;
-		changeAction(ACTION::WALK);
-		rotate.y = 90.0f;
-	}
-	else if (controller->getKey(GLFW_KEY_A))
-	{
-		moveDirec = -right;
-		changeAction(ACTION::WALK);
-		rotate.y = 0.0f;
-	}
-	else if (controller->getKey(GLFW_KEY_D))
-	{
-		moveDirec = right;
-		changeAction(ACTION::WALK);
-		rotate.y = 180.0f;
-	}
-	else if (controller->getKey(GLFW_KEY_S))
-	{
-		moveDirec = forward;
-		changeAction(ACTION::WALK);
-		rotate.y = 270.0f;
-	}
-	else
-	{
-		moveDirec = { 0,0,0 };
-		changeAction();
-	}
-
-	if (moveDirec != glm::vec3(0.0f))
-	{
-		moveDirec = glm::normalize(moveDirec);
-	}
-
-	return moveDirec * 0.01f;
-}
-
-void Model::setColider(COLIDER shape, float right, float left, float top, float bottom, float front, float back)
-{
-	switch (shape)
-	{
-	case BOX:
-		colider = std::shared_ptr<Colider>(new Colider(position,right,left,top,bottom,front,back));
-	}
-}
-
-void Model::setColider(COLIDER shape,glm::vec3 scale)
-{
-	glm::vec3 min, max;
-	fbxModel->getMinMaxVertexPos(min, max);
-
-	switch (shape)
-	{
-	case BOX:
-		colider = std::shared_ptr<Colider>(new Colider(position, min, max,scale));
-	}
-}
-
-void Model::setColider(COLIDER shape)
-{
-	glm::vec3 min, max;
-	fbxModel->getMinMaxVertexPos(min, max);
-	switch (shape)
-	{
-	case BOX:
-		colider = std::shared_ptr<Colider>(new Colider(position, min, max));
-	}
+	colider = std::shared_ptr<Colider>(new Colider(gltfModel->boundingBox.min, gltfModel->boundingBox.max));
 }
 
 bool Model::hasColider()

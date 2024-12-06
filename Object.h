@@ -43,6 +43,14 @@ struct DescriptorInfo
 	{
 		return !(layout == a.layout);
 	}
+
+	void destroy(VkDevice& device)
+	{
+		vkDestroyDescriptorPool(device, pool, nullptr);
+		vkDestroyPipeline(device, pipeline, nullptr);
+		vkDestroyPipelineLayout(device, pLayout, nullptr);
+		vkDestroyDescriptorSetLayout(device, layout, nullptr);
+	}
 };
 
 struct MappedBuffer

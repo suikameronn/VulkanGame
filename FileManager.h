@@ -34,37 +34,18 @@ private:
 	std::string splitFileName(std::string filePath);
 
 	GltfModel* loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel);
-	void processMesh(const tinygltf::Node& currentNode, const tinygltf::Model gltfModel, GltfModel* model);
-	void processMesh(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode, const tinygltf::Model gltfModel, GltfModel* model);
-	void calcMinMaxVertexPos(glm::vec3 pos);
-	void processPrimitive(Meshes* meshes,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel);
-	void processMeshBones(const tinygltf::Scene& scene, const tinygltf::Model gltfModel, GltfModel* model);
-	int getBoneID(const std::string boneName, GltfModel* gltfModel);
+	void loadNode(GltfNode* parent,GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
+	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model);
+	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
+	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel);
+	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
+	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
+	void setSkin(GltfNode* node, GltfModel* model);
 
-	//void processMeshBones(const FbxMesh* mesh, uint32_t meshIndex, GltfModel* gltfModel,Meshes* meshes);
-	//void loadSingleBone(const FbxCluster* bone, uint32_t meshIndex, GltfModel* gltfModel,Meshes* meshes);
-	//int getBoneID(const FbxCluster* bone, GltfModel* gltfModel);
+
 	std::shared_ptr<Material> processMaterial(tinygltf::Model gltfModel,int materialIndex);
 
-	//const FbxNodeAnim* findNodeAnim(const aiAnimation* pAnimation, const std::string nodeName);
-	//void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
-		//unsigned int i, GltfModel* gltfModel);
-	//void ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node, AnimNode* parentNode,
-		//GltfModel* gltfModel, Animation* animation);
-	//void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrix,GltfModel* model);
-	//void ReadNodeHeirarchy(FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray,GltfModel* model);
-
-
-	//void loadPose(const FbxScene* scene, GltfModel* model);
-	//void loadAnimation(const FbxScene* scene,GltfModel* gltfModel,Animation* animation);
-
-	//void loadFbxModel(int id, void** ptr, int& size);
-
-	//void loadPoses(GltfModel* model);
-	
-	std::string extractFileName(std::string path);
-	int getImageID(std::string path);
-	//std::shared_ptr<ImageData> loadModelImage(std::string filePath);
+	void loadgltfModel(int id, void** ptr, int& size);
 
 public:
 	static FileManager* GetInstance()

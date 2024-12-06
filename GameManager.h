@@ -22,7 +22,7 @@ private:
 	float frameDuration;
 	std::chrono::system_clock::time_point  start, end;
 	std::chrono::system_clock::time_point  start2, end2;
-	float elapsed;
+	long long elapsed;
 
 	bool exit = false;
 	std::unique_ptr<Scene> scene;

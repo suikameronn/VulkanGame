@@ -1,9 +1,11 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
+    mat4 local;
     mat4 view;
     mat4 proj;
-    mat4[250] boneMatrix;
+    mat4[128] boneMatrix;
+    vec3 diffuse;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -31,10 +33,10 @@ void main() {
 	boneMat = mat4(1.0);
     }
 
-    vec4 P = ubo.view * PushConstants.modelMatrix * boneMat * vec4(inPosition,1.0);
+    vec4 P = ubo.view * ubo.local * PushConstants.modelMatrix * boneMat * vec4(inPosition,1.0);
     
     gl_Position = ubo.proj * P;
     gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
-    fragColor = vec3(100,100,100);
+    fragColor = ubo.diffuse;
 }

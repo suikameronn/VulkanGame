@@ -31,6 +31,9 @@
     <Filter Include="ソース ファイル\Vulkan">
       <UniqueIdentifier>{8e5f75bc-37c1-40c7-a477-7fa13b6cef96}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\StageObjects">
+      <UniqueIdentifier>{4ad45d4e-e66e-4577-9a80-4de13d71ec69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -73,9 +76,6 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="GltfModel.cpp">
-      <Filter>ソース ファイル\LoadModel</Filter>
-    </ClCompile>
-    <ClCompile Include="Animation.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
     <ClCompile Include="AnimController.cpp">
@@ -127,9 +127,6 @@
     </ClInclude>
     <ClInclude Include="resource1.h">
       <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Animation.h">
-      <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
     <ClInclude Include="AnimController.h">
       <Filter>ヘッダー ファイル</Filter>

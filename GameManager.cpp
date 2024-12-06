@@ -29,9 +29,10 @@ void GameManager::createScene()
 void GameManager::mainGameLoop()
 {
 
+    start = std::chrono::system_clock::now();
+
     while (true)
     {
-        start = std::chrono::system_clock::now();
 
         exit = scene->UpdateScene();
         if (exit)
@@ -51,10 +52,16 @@ void GameManager::mainGameLoop()
         if (elapsed < frameDuration)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));
+
+            start = std::chrono::system_clock::now();
+
+            std::cout << "aaa" << std::endl;
         }
         else
         {
             std::cout << "fps down" << std::endl;
+
+            start = std::chrono::system_clock::now();
         }
 
         Controller::GetInstance()->initInput();

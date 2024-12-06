@@ -20,56 +20,43 @@ void Scene::parseScene()
 	for (int i = 0; i < test; i++)
 	{
 		parth[i].first = i;
-		parth[i].second = OBJECT::FBXTEST;
+		parth[i].second = OBJECT::gltfTEST;
 	}
 
 	{
 		FileManager* fileManager = FileManager::GetInstance();
 
 		
-		std::shared_ptr<GltfModel> fbxModel = fileManager->loadModel(OBJECT::UNITYCHAN_NO_ANIM);
-		//fbxModel->setAnimation(ACTION::IDLE, fileManager->loadAnimations(fbxModel.get(), OBJECT::IDLE));
-		//fbxModel->setAnimation(ACTION::WALK, fileManager->loadAnimations(fbxModel.get(), OBJECT::WALK));
-		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
+		std::shared_ptr<GltfModel> gltfModel = fileManager->loadModel(OBJECT::gltfTEST);
+		std::shared_ptr<Player> model = std::shared_ptr<Player>(new Player());
 		//モデルを読み込む関数
-		model->setFbxModel(fbxModel);
+		model->setgltfModel(gltfModel);
 		model->controllable = true;
 		model->rotate.x = 0.0f;//単位は角度
 		model->rotate.y = 0.0f;
 		model->rotate.z = 0.0f;
-		//model->scale = glm::vec3(3.2, 3.2, 3.2);
-		model->scale = glm::vec3(10.05f);
+		model->scale = glm::vec3(5.05f);
 		model->controllable = true;
-		//model->setColider(BOX,1.0f, 0.37f, 3.7f, 0.0f, 0.56f, 0.56f);
-		//model->setColider(BOX,glm::vec3(10.4,11.0,11.0));
 		model->setPosition(glm::vec3(0.0f,0.0f,0.0f));
+		model->setColider();
 		sceneSet["aaaaa"] = model;
 		sceneSet["aaaaa"]->bindCamera(std::weak_ptr<Object>(camera));
 
+		std::shared_ptr<GltfModel> gltfModel2 = fileManager->loadModel(OBJECT::CUBE);
+		std::shared_ptr<Model> model2 = std::shared_ptr<Model>(new Player());
+		//モデルを読み込む関数
+		model2->setgltfModel(gltfModel2);
+		model2->rotate.x = 0.0f;//単位は角度
+		model2->rotate.y = 0.0f;
+		model2->rotate.z = 0.0f;
+		model2->scale = glm::vec3(5.05f);
+		model2->controllable = true;
+		model2->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+		model2->setColider();
+		sceneSet["a"] = model2;
+
 		camera->spherePos = true;
-		
-		/*
-		std::shared_ptr<Model> m = std::shared_ptr<Model>(new Model());
-		fbxModel = fileManager->loadModel(OBJECT::NORMALBOX);
-		m->setFbxModel(fbxModel);
-		m->scale = glm::vec3(10.0f);
-		m->setColider(BOX);
-		m->setPosition(glm::vec3(0.0f,0.0f,0.0f));
-		sceneSet["aa"] = m;
-		*/
 	}
-
-	/*
-	//ファイルからモデルとテクスチャを読み取る
-	for (auto itr = parth.begin(); itr != parth.end(); itr++)
-	{
-		Model* model = new Model();
-		model->setMeshes(FileManager::GetInstance()->loadModelPoints(itr->second));
-		model->setImageData(FileManager::GetInstance()->loadModelImage(IMAGETEST));
-
-		sceneSet[itr->first] = model;
-	}
-	*/
 }
 
 bool Scene::UpdateScene()
@@ -82,20 +69,6 @@ bool Scene::UpdateScene()
 	}
 
 	camera->Update();
-
-	/*
-	if (sceneSet["aa"]->getColider()->Intersect(sceneSet["aaaaa"]->getColider(),collisionDepth,collisionVector))
-	{
-		sceneSet["aa"]->setPosition(sceneSet["aa"]->getPosition() + collisionVector * collisionDepth);
-	}
-	*/
-
-	/*
-	if (sceneSet["aaaaa"]->getColider()->Intersect(sceneSet["aa"]->getColider(), collisionDepth, collisionVector))
-	{
-		sceneSet["aaaaa"]->setPosition(sceneSet["aaaaa"]->getPosition() + collisionVector * collisionDepth);
-	}
-	*/
 
 	for (auto itr = sceneSet.begin(); itr != std::prev(sceneSet.end()); itr++)
 	{
@@ -110,7 +83,7 @@ bool Scene::UpdateScene()
 
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		if (itr->second->uniformBufferChange)
+		if (itr->second->uniformBufferChange || true)
 		{
 			itr->second->updateTransformMatrix();
 		}

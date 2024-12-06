@@ -15,20 +15,35 @@ int FileManager::getModelResource(OBJECT obj)
 {
     switch (obj)
     {
-    case OBJECT::FBXTEST:
+    case OBJECT::gltfTEST:
         return IDR_MODEL1;
-    case OBJECT::UNITYCHAN_NO_ANIM:
+    case OBJECT::CUBE:
         return IDR_MODEL2;
-    case OBJECT::GROUND1:
-        return IDR_MODEL3;
-    case OBJECT::FRAG:
-        return IDR_MODEL4;
-    case OBJECT::IDLE:
-        return IDR_MODEL7;
-    case OBJECT::WALK:
-        return IDR_MODEL8;
-    case OBJECT::NORMALBOX:
-        return IDR_MODEL3;
+    }
+
+    return -1;
+}
+
+void FileManager::loadgltfModel(int id, void** ptr, int& size)
+{
+    HRESULT hr = S_OK;
+    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), "MODEL");
+    hr = (hrsrc ? S_OK : E_FAIL);
+
+    HGLOBAL handle = NULL;
+    if (SUCCEEDED(hr)) {
+        handle = LoadResource(NULL, hrsrc);
+        hr = (handle ? S_OK : E_FAIL);
+    }
+
+    if (SUCCEEDED(hr)) {
+        *ptr = (void*)LockResource(handle);
+        hr = (*ptr ? S_OK : E_FAIL);
+    }
+
+    if (SUCCEEDED(hr)) {
+        size = SizeofResource(NULL, hrsrc);
+        hr = (size ? S_OK : E_FAIL);
     }
 }
 
@@ -37,20 +52,19 @@ std::shared_ptr<GltfModel> FileManager::loadModel(OBJECT obj)
     Storage* storage = Storage::GetInstance();
     if (storage->containModel(obj))
     {
-        return storage->getFbxModel(obj);
+        return storage->getgltfModel(obj);
     }
 
     void* ptr = nullptr;
     int size = 0;
-    //loadFbxModel(getModelResource(obj), &ptr, size);
+    loadgltfModel(getModelResource(obj),&ptr, size);
 
-    //"C:/Users/sukai/Documents/VulkanGame/models/test_out/test.gltf"
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
     std::string error;
     std::string warning;
     bool binary = false;
-    binary = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, "C:/Users/sukai/Downloads/SittingLaughing_out/SittingLaughing.gltf");
+    binary = gltfContext.LoadBinaryFromMemory(&gltfModel, &error, &warning, static_cast<unsigned char*>(ptr), size);
     const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//デフォルトシーンがあればそれを、なければ最初のシーン
 
     allVertNum = 0;
@@ -60,104 +74,141 @@ std::shared_ptr<GltfModel> FileManager::loadModel(OBJECT obj)
 
     GltfModel* model = loadGLTFModel(scene, gltfModel);
 
-    model->setTotalVertexNum(allVertNum);
-    model->setImageDataCount(imageDataCount);
-
-    model->setMinMaxVertexPos(minPos, maxPos);
-
-    imageDataCount = 0;
-
-    //loadPoses(model);
-
     storage->addModel(obj, model);
 
-    return storage->getFbxModel(obj);
+    return storage->getgltfModel(obj);
 }
 
 GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)
 {
-    GltfModel* model = new GltfModel();
+    float scale = 1.0f;
+    GltfNode* root = new GltfNode();
+    GltfModel* model = new GltfModel(root);
 
     for (size_t i = 0; i < scene.nodes.size(); i++)
     {
-        const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
-        processMesh(node, gltfModel, model);
+        const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
+        loadNode(nullptr, model->getRootNode(),model, gltfNode, scene.nodes[i], gltfModel, scale);
     }
 
-    processMeshBones(scene, gltfModel, model);
+    if (gltfModel.animations.size() > 0)
+    {
+        loadAnimations(model, scene, gltfModel);
+    }
+
+    loadSkin(model, gltfModel);
+    for (int i = 0; i < model->skins.size(); i++)
+    {
+        setSkin(model->getRootNode(),model);
+    }
+
+    //model->calculateBoundingBox(model->getRootNode(), nullptr);
+    model->setAABBMatrix(minPos,maxPos);
 
     return model;
 }
 
-void FileManager::processMesh(const tinygltf::Node& currentNode, const tinygltf::Model gltfModel, GltfModel* model)
+
+void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale)
 {
-    if (currentNode.mesh > -1)
+    current->index = nodeIndex;
+    current->parent = parent;
+    current->name = gltfNode.name;
+    current->skinIndex = gltfNode.skin;
+    current->matrix = glm::mat4(1.0f);
+
+    glm::vec3 translation = glm::vec3(0.0f);
+    if (gltfNode.translation.size() == 3) {
+        translation = glm::make_vec3(gltfNode.translation.data());
+        current->translation = translation;
+    }
+    glm::mat4 rotation = glm::mat4(1.0f);
+    if (gltfNode.rotation.size() == 4) {
+        glm::quat q = glm::make_quat(gltfNode.rotation.data());
+        current->rotation = glm::mat4(q);
+    }
+    glm::vec3 scale = glm::vec3(1.0f);
+    if (gltfNode.scale.size() == 3) {
+        scale = glm::make_vec3(gltfNode.scale.data());
+        current->scale = scale;
+    }
+    if (gltfNode.matrix.size() == 16) {
+        current->matrix = glm::make_mat4x4(gltfNode.matrix.data());
+    };
+
+    if (gltfNode.children.size() > 0)
     {
-        const tinygltf::Mesh mesh = gltfModel.meshes[currentNode.mesh];
-        Meshes* meshes = new Meshes();
-        int indexStart = 0;
-
-        for (unsigned int i = 0; i < mesh.primitives.size(); i++)
+        for (size_t i = 0; i < gltfNode.children.size(); i++)
         {
-            const tinygltf::Primitive glPrimitive = mesh.primitives[j];
-
-            processPrimitive(meshes,indexStart,glPrimitive,gltfModel);
+            GltfNode* newNode = new GltfNode();
+            loadNode(current, newNode,model, gltfModel.nodes[gltfNode.children[i]], gltfNode.children[i], gltfModel, globalscale);
         }
-
-        model->addMeshes(meshes);
     }
 
-    for (int i = 0; i < currentNode.children.size(); i++)
+    if (gltfNode.mesh > -1)
     {
-        processMesh(currentNode, gltfModel.nodes[currentNode.children[i]], gltfModel, model);
+        processMesh(gltfNode, gltfModel, current,model);
+    }
+
+    if (parent)
+    {
+        parent->children.push_back(current);
     }
 }
 
 
-void FileManager::processMesh(const tinygltf::Node& parentNode, const tinygltf::Node& currentNode,const tinygltf::Model gltfModel, GltfModel* model)
+void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model)
 {
-    if (currentNode.mesh > -1)
+    const tinygltf::Mesh gltfMesh = gltfModel.meshes[gltfNode.mesh];
+    int indexStart = 0;
+
+    Mesh* mesh = new Mesh();
+    mesh->meshIndex = model->meshCount;
+    model->meshCount++;
+    model->primitiveCount += gltfMesh.primitives.size();
+
+    for (unsigned int i = 0; i < gltfMesh.primitives.size(); i++)
     {
-        const tinygltf::Mesh mesh = gltfModel.meshes[currentNode.mesh];
-        Meshes* meshes = new Meshes();
-        int indexStart = 0;
+        const tinygltf::Primitive glPrimitive = gltfMesh.primitives[i];
 
-        for (unsigned int i = 0; i < mesh.primitives.size(); i++)
+        processPrimitive(mesh, indexStart, glPrimitive, gltfModel);
+    }
+
+    for (int i = 0; i < mesh->primitives.size(); i++)
+    {
+        if (mesh->primitives[i].bb.valid && !mesh->bb.valid)
         {
-            const tinygltf::Primitive glPrimitive = mesh.primitives[i];
-
-            processPrimitive(meshes, indexStart, glPrimitive, gltfModel);
+            mesh->bb = mesh->primitives[i].bb;
+            mesh->bb.valid = true;
         }
 
-        model->addMeshes(meshes);
+        mesh->bb.min = glm::min(mesh->bb.min, mesh->primitives[i].bb.min);
+        mesh->bb.max = glm::max(mesh->bb.max, mesh->primitives[i].bb.max);
     }
 
-    for (int i = 0; i < currentNode.children.size(); i++)
-    {
-        processMesh(currentNode, gltfModel.nodes[currentNode.children[i]], gltfModel, model);
-    }
+    currentNode->mesh = mesh;
 }
 
-void FileManager::calcMinMaxVertexPos(glm::vec3 pos)
+void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
 {
     for (int i = 0; i < 3; i++)
     {
-        if (minPos[i] > pos[i])
+        if (minPos[i] > min[i])
         {
-            minPos[i] = pos[i];
+            minPos[i] = min[i];
         }
     }
 
     for (int i = 0; i < 3; i++)
     {
-        if (maxPos[i] < pos[i])
+        if (maxPos[i] < max[i])
         {
-            maxPos[i] = pos[i];
+            maxPos[i] = max[i];
         }
     }
 }
 
-void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel)
+void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel)
 {
     const float* bufferPos = nullptr;
     int vertexCount;
@@ -168,6 +219,8 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
     const float* bufferColorSet0 = nullptr;
     const void* bufferJoints = nullptr;
     const float* bufferWeights = nullptr;
+    glm::vec3 posMin{};
+    glm::vec3 posMax{};
 
     int posByteStride;
     int normByteStride;
@@ -182,8 +235,12 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
     const tinygltf::Accessor& posAccessor = glModel.accessors[glPrimitive.attributes.find("POSITION")->second];//プリミティブから位置を表すバッファにアクセスするための変数
     const tinygltf::BufferView& posView = glModel.bufferViews[posAccessor.bufferView];//アクセッサーを介してバッファーから値を読み取る
     bufferPos = reinterpret_cast<const float*>(&(glModel.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));//それぞれのオフセットを足して参照する位置を調整する
+    posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+    posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
     vertexCount = static_cast<uint32_t>(posAccessor.count);//このプリミティブの持つ頂点の数
     posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);//頂点を読み取る際の頂点のデータの幅を取得
+
+    calcMinMaxVertexPos(posMin, posMax);
 
     //以下頂点座標と同じように、取得していく
 
@@ -252,12 +309,12 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
             switch (jointComponentType) {
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
                 const uint16_t* buf = static_cast<const uint16_t*>(bufferJoints);
-                vert.boneID1 = glm::uvec4(glm::make_vec4(&buf[v * jointByteStride]));
+                vert.boneID1 = glm::ivec4(glm::make_vec4(&buf[v * jointByteStride]));
                 break;
             }
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
                 const uint8_t* buf = static_cast<const uint8_t*>(bufferJoints);
-                vert.boneID1 = glm::vec4(glm::make_vec4(&buf[v * jointByteStride]));
+                vert.boneID1 = glm::ivec4(glm::make_vec4(&buf[v * jointByteStride]));
                 break;
             }
             default:
@@ -267,7 +324,7 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
             }
         }
         else {
-            vert.boneID1 = glm::vec4(0.0f);
+            vert.boneID1 = glm::ivec4(0);
         }
         vert.weight1 = hasSkin ? glm::make_vec4(&bufferWeights[v * weightByteStride]) : glm::vec4(0.0f);
         // Fix for all zero weights
@@ -275,7 +332,7 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
             vert.weight1 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
         }
 
-        meshes->pushBackVertex(vert);
+        mesh->vertices.push_back(vert);
     }
 
     int indexCount;
@@ -292,21 +349,21 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
             const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                meshes->pushBackIndex(buf[index] + indexStart);
+                mesh->indices.push_back(buf[index] + indexStart);
             }
             break;
         }
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
             const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                meshes->pushBackIndex(buf[index] + indexStart);
+                mesh->indices.push_back(buf[index] + indexStart);
             }
             break;
         }
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
             const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                meshes->pushBackIndex(buf[index] + indexStart);
+                mesh->indices.push_back(buf[index] + indexStart);
             }
             break;
         }
@@ -318,304 +375,191 @@ void FileManager::processPrimitive(Meshes* meshes,int& indexStart, tinygltf::Pri
 
     std::shared_ptr<Material> material = processMaterial(glModel, glPrimitive.material);
 
-    Primitive primitive = { indexStart,indexCount,material };
+    Primitive primitive = { indexStart,indexCount,vertexCount,material };
+    primitive.setBoundingBox(posMin, posMax);
 
-    meshes->pushBackPrimitive(primitive);
+    mesh->primitives.push_back(primitive);
 
     indexStart += indexCount;
 }
 
-void FileManager::processMeshBones(const tinygltf::Scene& scene, const tinygltf::Model gltfModel, GltfModel* model)
+void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
 {
-    tinygltf::Skin skin = gltfModel.skins[0];
-    if (skin.skeleton <= -1)
-    {
-        return;
-    }
-
-    for (int i = 0; i < skin.joints.size(); i++)
-    {
-        std::string nodeName = gltfModel.nodes[skin.joints[i]];
-
-    }
-}
-
-/*
-void FileManager::processMeshBones(const FbxMesh* mesh, uint32_t meshNumVertices, GltfModel* gltfModel,Meshes* meshes)
-{
-    FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
-    int boneCount = skin->GetClusterCount();
-    for (uint32_t i = 0; i < boneCount; i++)
-    {
-        loadSingleBone(skin->GetCluster(i), meshNumVertices, gltfModel, meshes);
-    }
-}
-
-void FileManager::loadSingleBone(const FbxCluster* bone, uint32_t meshNumVertices, GltfModel* gltfModel, Meshes* meshes)
-{
-    int boneID = getBoneID(bone, gltfModel);
-
-    glm::mat4 offset;
-    FbxAMatrix transform,matrix,linkMatrix;
-    bone->GetTransformLinkMatrix(linkMatrix);
-    bone->GetTransformMatrix(matrix);
-    transform = linkMatrix.Inverse() * matrix;
-    offset = FbxMatrix4x4ToGlm(transform);
-    gltfModel->setBoneInfo(boneID, offset);
-
-    int* vertexArray = bone->GetControlPointIndices();
-    double* weightArray = bone->GetControlPointWeights();
-    for (uint32_t i = 0; i < bone->GetControlPointIndicesCount(); i++)
-    {
-        meshes->addBoneData(vertexArray[i], boneID, weightArray[i]);
-    }
-}
-*/
-
-int FileManager::getBoneID(const std::string boneName, GltfModel* gltfModel)
-{
-    return gltfModel->getBoneToMap(boneName);
-}
-
-/*
-const FbxNodeAnim* FileManager::findNodeAnim(const aiAnimation* pAnimation, std::string nodeName)
-{
-    for (uint32_t i = 0; i < pAnimation->mNumChannels; i++)
-    {
-        const FbxNodeAnim* pNodeAnim = pAnimation->mChannels[i];
-
-        if (std::string(pNodeAnim->mNodeName.data) == nodeName)
-        {
-            return pNodeAnim;
+    for (tinygltf::Animation anim : gltfModel.animations) {
+        Animation animation{};
+        animation.name = anim.name;
+        if (anim.name.empty()) {
+            animation.name = std::to_string(model->animations.size());
         }
-    }
 
-    return nullptr;
+        // Samplers
+        for (auto& samp : anim.samplers) {
+            AnimationSampler sampler{};
+
+            if (samp.interpolation == "LINEAR") {
+                sampler.interpolation = AnimationSampler::InterpolationType::LINEAR;
+            }
+            if (samp.interpolation == "STEP") {
+                sampler.interpolation = AnimationSampler::InterpolationType::STEP;
+            }
+            if (samp.interpolation == "CUBICSPLINE") {
+                sampler.interpolation = AnimationSampler::InterpolationType::CUBICSPLINE;
+            }
+
+            // Read sampler input time values
+            {
+                const tinygltf::Accessor& accessor = gltfModel.accessors[samp.input];
+                const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+
+                assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+                const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+                const float* buf = static_cast<const float*>(dataPtr);
+                for (size_t index = 0; index < accessor.count; index++) {
+                    sampler.inputs.push_back(buf[index]);
+                }
+
+                for (auto input : sampler.inputs) {
+                    if (input < animation.start) {
+                        animation.start = input;
+                    };
+                    if (input > animation.end) {
+                        animation.end = input;
+                    }
+                }
+            }
+
+            // Read sampler output T/R/S values 
+            {
+                const tinygltf::Accessor& accessor = gltfModel.accessors[samp.output];
+                const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+
+                assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+                const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+
+                switch (accessor.type) {
+                case TINYGLTF_TYPE_VEC3: {
+                    const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
+                    for (size_t index = 0; index < accessor.count; index++) {
+                        sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                        sampler.outputs.push_back(buf[index][0]);
+                        sampler.outputs.push_back(buf[index][1]);
+                        sampler.outputs.push_back(buf[index][2]);
+                    }
+                    break;
+                }
+                case TINYGLTF_TYPE_VEC4: {
+                    const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
+                    for (size_t index = 0; index < accessor.count; index++) {
+                        sampler.outputsVec4.push_back(buf[index]);
+                        sampler.outputs.push_back(buf[index][0]);
+                        sampler.outputs.push_back(buf[index][1]);
+                        sampler.outputs.push_back(buf[index][2]);
+                        sampler.outputs.push_back(buf[index][3]);
+                    }
+                    break;
+                }
+                default: {
+                    std::cout << "unknown type" << std::endl;
+                    break;
+                }
+                }
+            }
+
+            animation.samplers.push_back(sampler);
+        }
+
+        // Channels
+        for (auto& source : anim.channels) {
+            AnimationChannel channel{};
+
+            if (source.target_path == "rotation") {
+                channel.path = AnimationChannel::PathType::ROTATION;
+            }
+            if (source.target_path == "translation") {
+                channel.path = AnimationChannel::PathType::TRANSLATION;
+            }
+            if (source.target_path == "scale") {
+                channel.path = AnimationChannel::PathType::SCALE;
+            }
+            if (source.target_path == "weights") {
+                std::cout << "weights not yet supported, skipping channel" << std::endl;
+                continue;
+            }
+            channel.samplerIndex = source.sampler;
+            channel.node = model->nodeFromIndex(source.target_node);
+            if (!channel.node) {
+                continue;
+            }
+
+            animation.channels.push_back(channel);
+        }
+
+        model->animations[animation.name] = animation;
+    }
 }
 
-void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
-    , AnimNode* parentNode, unsigned int childIdx, GltfModel* gltfModel)
+void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
 {
-    AnimNode* currentNode;
+    for (tinygltf::Skin& source : gltfModel.skins) {
+        Skin* newSkin = new Skin{};
+        newSkin->name = source.name;
 
-    std::string nodeName(node->mName.data);
-
-    const aiAnimation* pAnimation = scene->mAnimations[0];
-
-    {
-        aiMatrix4x4 NodeTransformation(node->mTransformation);
-
-        const FbxNodeAnim* pNodeAnim = findNodeAnim(pAnimation, nodeName);
-
-        if (pNodeAnim)
-        {
-            std::map<float, glm::vec3> keyTimeScale;
-            for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
-            {
-                keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
-            }
-
-            std::map<float, aiQuaternion> keyTimeQuat;
-            for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
-            {
-                keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
-            }
-
-            std::map<float, glm::vec3> keyTimePos;
-            for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
-            {
-                keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
-            }
-
-            AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-            currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+        // Find skeleton root node
+        if (source.skeleton > -1) {
+            newSkin->skeletonRoot = model->nodeFromIndex(source.skeleton);
         }
         else
         {
-            currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
+            newSkin->skeletonRoot = nullptr;
         }
-    }
 
-    currentNode->resizeChildren(node->mNumChildren);
-    parentNode->setChild(childIdx, currentNode);
 
-    for (uint32_t i = 0; i < node->mNumChildren; i++)
-    {
-        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, gltfModel);
-    }
-}
-
-void FileManager::ReadNodeHeirarchy(FbxAnimLayer* layer, FbxNode* node
-    , AnimNode* parentNode, GltfModel* gltfModel, Animation* animation)
-{
-    bool hasAnimCurve = false;
-
-    AnimNode* currentNode;
-    FbxAnimCurve* curve;
-
-    std::string nodeName(node->GetName());
-
-    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
-    if (curve)
-    {
-        std::map<float, glm::vec3> keyTimeScale;
-        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys; i++)
-        {
-            keyTimeScale[pNodeAnim->mScalingKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mScalingKeys[i].mValue);
+        // Find joint nodes
+        int globalHasSkinNodeIndex = 1;
+        for (int jointIndex : source.joints) {
+            GltfNode* node = model->nodeFromIndex(jointIndex);
+            if (node) {
+                node->globalHasSkinNodeIndex = globalHasSkinNodeIndex;
+                newSkin->joints.push_back(node);
+                globalHasSkinNodeIndex++;
+            }
         }
-    }
+        model->jointNum = globalHasSkinNodeIndex;
 
-    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
-    if (curve)
-    {
-        std::map<float, aiQuaternion> keyTimeQuat;
-        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys; i++)
-        {
-            keyTimeQuat[pNodeAnim->mRotationKeys[i].mTime] = pNodeAnim->mRotationKeys[i].mValue;
+        // Get inverse bind matrices from buffer
+        if (source.inverseBindMatrices > -1) {
+            const tinygltf::Accessor& accessor = gltfModel.accessors[source.inverseBindMatrices];
+            const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
+            const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+            newSkin->inverseBindMatrices.resize(accessor.count);
+            memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
         }
-    }
 
-    curve = node->LclScaling.GetCurve(layer, FBXSDK_CURVENODE_COMPONENT_X);
-    if (curve)
-    {
-        std::map<float, glm::vec3> keyTimePos;
-        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys; i++)
-        {
-            keyTimePos[pNodeAnim->mPositionKeys[i].mTime] = aiVec3DToGLM(pNodeAnim->mPositionKeys[i].mValue);
+        if (newSkin->joints.size() > 128) {
+            std::cerr << "[WARNING] Skin " << newSkin->name << " has " << newSkin->joints.size() << " joints, which is higher than the supported maximum of " << 128 << "\n";
+            std::cerr << "[WARNING] glTF scene may display wrong/incomplete\n";
         }
-    }
 
-    if (hasAnimCurve)
-    {
-        AnimationKeyData animKeyData = { keyTimeScale, keyTimeQuat, keyTimePos };
-        currentNode = new AnimNode(nodeName, animKeyData, node->mNumChildren);
+        model->skins.push_back(newSkin);
     }
-    else
-    {
-        currentNode = new AnimNode(nodeName, aiMatrix4x4ToGlm(&NodeTransformation), node->mNumChildren);
-    }
-
-    currentNode->resizeChildren(node->mNumChildren);
-    for (uint32_t i = 0; i < node->mNumChildren; i++)
-    {
-        ReadNodeHeirarchy(scene, node->mChildren[i], currentNode, i, gltfModel);
-    }
-
-    animation->setRootNode(currentNode);
 }
 
-std::shared_ptr<Animation> FileManager::loadAnimations(GltfModel* model, OBJECT obj)
+void FileManager::setSkin(GltfNode* node,GltfModel* model)
 {
-    if (Storage::GetInstance()->containAnimation(obj))
+    if (node->skinIndex > -1)
     {
-        return Storage::GetInstance()->getAnimation(obj);
+        node->skin = model->skins[node->skinIndex];
     }
 
-    void* ptr = nullptr;
-    int size = 0;
-    loadFbxModel(getModelResource(obj), &ptr, size);
-
-    FbxScene* scene = FbxScene::Create(manager, "");
-    FbxImporter* importer = FbxImporter::Create(manager, "");
-
-    //importer->Initialize((char*)ptr,size, manager->GetIOSettings());
-    importer->Initialize("C:/Users/sukai/Documents/VulkanGame/models/test.fbx", -1, manager->GetIOSettings());
-    importer->Import(scene);
-    importer->Destroy();
-
-    //const FbxScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
-
-    FbxArray<FbxString*> names;
-    scene->FillAnimStackNameArray(names);
-    FbxTakeInfo* info = scene->GetTakeInfo(names[0]->Buffer());
-    float offset = static_cast<float>(info->mImportOffset.Get());
-    float startTime = static_cast<float>(info->mLocalTimeSpan.GetStart().Get());
-    float endTime = static_cast<float>(info->mLocalTimeSpan.GetStop().Get());
-    float duration = static_cast<float>(info->mLocalTimeSpan.GetDuration().Get());
-
-    Animation* animation = new Animation(startTime,endTime,duration);
-    animation->setGlobalInverseTransform(model->getGlobalInverseTransform());
-
-    scene->SetCurrentAnimationStack(scene->GetSrcObject<FbxAnimStack>(0));
-
-    loadAnimation(scene, model, animation);
-
-    Storage::GetInstance()->addAnimation(obj, animation);
-    return Storage::GetInstance()->getAnimation(obj);
-}
-
-void FileManager::loadAnimation(const FbxScene* scene, GltfModel* gltfModel, Animation* animation)
-{
-    AnimNode* rootNode = nullptr;
-
-    FbxAnimStack* stack = scene->GetSrcObject<FbxAnimStack>(0);
-
-    ReadNodeHeirarchy(stack->GetSrcObject<FbxAnimLayer>(0), scene->GetRootNode(), rootNode, gltfModel, animation);
-}
-
-void FileManager::loadPoses(GltfModel* model)
-{
-    void* ptr = nullptr;
-    int size = 0;
-    loadFbxModel(164, &ptr, size);
-
-    const FbxScene* scene = importer.ReadFileFromMemory(ptr, size, aiProcess_SortByPType | aiProcess_PopulateArmatureData);
-
-    loadPose(scene, model);
-}
-
-void FileManager::ReadNodeHeirarchy(const FbxScene* scene, const FbxNode* node,aiMatrix4x4 matrix, std::array<glm::mat4, 250>& matrixArray, GltfModel* model)
-{
-    std::string nodeName(node->mName.data);
-
-    aiMatrix4x4 NodeTransformation(node->mTransformation);
-
-    matrix = matrix * NodeTransformation;
-
-    if (model->containBone(nodeName))
+    for (int i = 0; i < node->children.size(); i++)
     {
-        int boneID = model->getBoneToMap(nodeName);
-        matrixArray[boneID] = aiMatrix4x4ToGlm(&matrix) * model->getBoneOffset(boneID);
-    }
-
-    for (uint32_t i = 0; i < node->mNumChildren; i++)
-    {
-        ReadNodeHeirarchy(scene, node->mChildren[i], matrix,matrixArray,model);
+        setSkin(node->children[i], model);
     }
 }
-
-void FileManager::ReadNodeHeirarchy(const FbxScene* scene, const FbxNode* node, std::array<glm::mat4, 250>& matrixArray, GltfModel* model)
-{
-    std::string nodeName(node->mName.data);
-
-    aiMatrix4x4 NodeTransformation(node->mTransformation);
-
-    if (model->containBone(nodeName))
-    {
-        int boneID = model->getBoneToMap(nodeName);
-        matrixArray[boneID] = aiMatrix4x4ToGlm(&NodeTransformation) * model->getBoneOffset(boneID);
-    }
-
-    for (uint32_t i = 0; i < node->mNumChildren; i++)
-    {
-        ReadNodeHeirarchy(scene, node->mChildren[i],NodeTransformation,matrixArray,model);
-    }
-}
-
-void FileManager::loadPose(const FbxScene* scene, GltfModel* model)
-{
-    std::shared_ptr<Pose> pose = std::shared_ptr<Pose>(new Pose());
-
-    std::array<glm::mat4, 250> boneMatrixArray;
-    std::fill(boneMatrixArray.begin(), boneMatrixArray.end(), glm::mat4(1.0f));
-
-    ReadNodeHeirarchy(scene, scene->mRootNode, boneMatrixArray,model);
-
-    pose->setPoseMatrix(boneMatrixArray);
-
-    model->setPose("idle", pose);
-}
-*/
 
 std::string FileManager::splitFileName(std::string filePath)
 {
@@ -644,137 +588,3 @@ std::shared_ptr<Material> FileManager::processMaterial(tinygltf::Model gltfModel
 
     return material;
 }
-
-/*
-void FileManager::loadFbxModel(int id, void** ptr, int& size)
-{
-    HRESULT hr = S_OK;
-    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), L"MODEL");
-    hr = (hrsrc ? S_OK : E_FAIL);
-
-    HGLOBAL handle = NULL;
-    if (SUCCEEDED(hr)) {
-        handle = LoadResource(NULL, hrsrc);
-        hr = (handle ? S_OK : E_FAIL);
-    }
-
-    if (SUCCEEDED(hr)) {
-        *ptr = (void*)LockResource(handle);
-        hr = (*ptr ? S_OK : E_FAIL);
-    }
-
-    if (SUCCEEDED(hr)) {
-        size = SizeofResource(NULL, hrsrc);
-        hr = (size ? S_OK : E_FAIL);
-    }
-}
-*/
-
-std::string FileManager::extractFileName(std::string path)
-{
-    std::string symbol = "\\";
-    int symbolLength = symbol.length();
-    int pathLength = path.length();
-    if (pathLength < symbolLength)
-    {
-        throw std::runtime_error("extractFilePath:: symbol is longer than path");
-    }
-
-    int pos = 0, tmp = 0;
-    while (true)
-    {
-        tmp = path.find(symbol);
-        if (tmp < pathLength && tmp >= 0)
-        {
-            pos = tmp;
-            path = path.substr(pos + symbolLength);
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    return path;
-}
-
-int FileManager::getImageID(std::string path)
-{
-    if (path == "Remy_Top_Diffuse.png")
-    {
-        return IDB_PNG2;
-    }
-    else if (path == "Remy_Body_Diffuse.png")
-    {
-        return IDB_PNG3;
-    }
-    else if (path == "Remy_Bottom_Diffuse.png")
-    {
-        return IDB_PNG4;
-    }
-    else if (path == "Remy_Hair_Diffuse.png")
-    {
-        return IDB_PNG5;
-    }
-    else if (path == "Remy_Shoes_Diffuse.png")
-    {
-        return IDB_PNG6;
-    }
-
-    return -1;
-}
-
-/*
-std::shared_ptr<ImageData> FileManager::loadModelImage(std::string filePath)
-{
-    Storage* storage = Storage::GetInstance();
-
-    if (storage->containImageData(filePath))
-    {
-        return storage->getImageData(filePath);
-    }
-
-    int id = getImageID(extractFileName(filePath));
-
-    HRESULT hr = S_OK;
-    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), L"PNG");
-    hr = (hrsrc ? S_OK : E_FAIL);
-
-    HGLOBAL handle = NULL;
-    if (SUCCEEDED(hr)) {
-        handle = LoadResource(NULL, hrsrc);
-        hr = (handle ? S_OK : E_FAIL);
-    }
-
-    void* pFile = nullptr;
-    if (SUCCEEDED(hr)) {
-        pFile = LockResource(handle);
-        hr = (pFile ? S_OK : E_FAIL);
-    }
-
-    int size = 0;
-    if (SUCCEEDED(hr)) {
-        size = SizeofResource(NULL, hrsrc);
-        hr = (size ? S_OK : E_FAIL);
-    }
-
-    int width, height, texChannels;
-    std::vector<unsigned char> pixels;
-
-    stbi_uc* picture = nullptr;
-    picture = stbi_load_from_memory((unsigned char*)pFile, size, &width, &height, &texChannels, 4);
-    if (!picture)
-    {
-        throw std::runtime_error("faile image load");
-    }
-
-    int imageSize = width * height * 4;
-    ImageData* imageData = new ImageData(width, height, texChannels, picture);
-
-    stbi_image_free(picture);
-
-    storage->addImageData(filePath, imageData);
-
-    return storage->getImageData(filePath);
-}
-*/

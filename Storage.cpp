@@ -5,22 +5,21 @@ Storage* Storage::storage = nullptr;
 
 void Storage::cleanup()
 {
-	for (auto itr = descriptorStorage.begin(); itr != descriptorStorage.end(); itr++)
-	{
 
-	}
 }
 
 //StorageにGltfModelを追加する
 void Storage::addModel(OBJECT obj, GltfModel* model)
 {
-	fbxModelStorage[obj] = std::shared_ptr<GltfModel>(model);
+	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
 }
 
+/*
 void Storage::addAnimation(OBJECT obj, Animation* animation)
 {
-	fbxAnimationStorage[obj] = std::shared_ptr<Animation>(animation);
+	gltfAnimationStorage[obj] = std::shared_ptr<Animation>(animation);
 }
+*/
 
 void Storage::addImageData(std::string path,ImageData* image)
 {
@@ -61,11 +60,11 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, 
 	end = descriptorStorage.end();
 }
 
-void Storage::accessFbxModel(std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
+void Storage::accessgltfModel(std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
 	std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr2)
 {
-	itr = fbxModelStorage.begin();
-	itr2 = fbxModelStorage.end();
+	itr = gltfModelStorage.begin();
+	itr2 = gltfModelStorage.end();
 }
 
 //StorageのCameraにアクセスする
@@ -77,7 +76,7 @@ std::shared_ptr<Camera> Storage::accessCamera()
 //Storageに指定されあGltfModelが既に存在しているかどうかを返す
 bool Storage::containModel(OBJECT obj)
 {
-	if (fbxModelStorage[obj] != nullptr)
+	if (gltfModelStorage[obj] != nullptr)
 	{
 		return true;
 	}
@@ -87,9 +86,10 @@ bool Storage::containModel(OBJECT obj)
 	}
 }
 
+/*
 bool Storage::containAnimation(OBJECT obj)
 {
-	if (fbxAnimationStorage[obj] != nullptr)
+	if (gltfAnimationStorage[obj] != nullptr)
 	{
 		return true;
 	}
@@ -98,6 +98,7 @@ bool Storage::containAnimation(OBJECT obj)
 		return false;
 	}
 }
+*/
 
 bool Storage::containImageData(std::string path)
 {
@@ -125,15 +126,17 @@ bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
 }
 
 //StorageからGltfModelを読み取る
-std::shared_ptr<GltfModel> Storage::getFbxModel(OBJECT obj)
+std::shared_ptr<GltfModel> Storage::getgltfModel(OBJECT obj)
 {
-	return fbxModelStorage[obj];
+	return gltfModelStorage[obj];
 }
 
+/*
 std::shared_ptr<Animation> Storage::getAnimation(OBJECT obj)
 {
-	return fbxAnimationStorage[obj];
+	return gltfAnimationStorage[obj];
 }
+*/
 
 std::shared_ptr<ImageData> Storage::getImageData(std::string path)
 {

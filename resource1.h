@@ -2,28 +2,8 @@
 // Microsoft Visual C++ で生成されたインクルード ファイル。
 // VulkanGame1.rc で使用
 //
-#define IDB_PNG1                        101
 #define IDR_MODEL1                      102
-#define IDR_ACCELERATOR1                104
-#define IDB_PNG2                        116
-#define IDB_PNG3                        117
-#define IDB_PNG4                        118
-#define IDB_PNG5                        119
-#define IDB_PNG6                        120
-#define IDB_PNG7                        121
-#define IDB_PNG8                        122
-#define IDR_MODEL2                      125
-#define IDR_TGA1                        131
-#define IDB_PNG9                        139
-#define IDR_MODEL3                      140
-#define IDB_PNG10                       143
-#define IDB_BITMAP1                     158
-#define IDR_MODEL4                      161
-#define IDB_PNG11						162
-#define IDR_MODEL5						163
-#define IDR_MODEL6						164
-#define IDR_MODEL7						165
-#define IDR_MODEL8						166
+#define IDR_MODEL2						103
 
 // Next default values for new objects
 // 

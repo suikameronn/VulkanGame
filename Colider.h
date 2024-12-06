@@ -122,11 +122,7 @@ private:
 	bool Tetrahedron(Simplex& simplex, glm::vec3 dir);
 
 public:
-	Colider(glm::vec3 pos, float right, float left, float top, float bottom, float front, float back);
-	Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max);
-	Colider(glm::vec3 pos, glm::vec3 min, glm::vec3 max,glm::vec3 scale);
-
-	AABB aabb;
+	Colider(glm::vec3 min,glm::vec3 max);
 
 	void reflectMovement(glm::mat4& transform);
 	glm::mat4& getTransformMatrix() { return transform; }
@@ -150,7 +146,6 @@ public:
 
 	virtual bool Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector);
 	//bool GJK(std::shared_ptr<Colider> oppColider);
-	bool AABB(std::shared_ptr<Colider> oppColider);
 	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 
 	glm::vec3* getColiderOriginalVertices();

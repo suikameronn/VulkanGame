@@ -1,7 +1,5 @@
 #include"Material.h"
 
-#include"VulkanBase.h"
-
 Material::Material()
 {
 	this->diffuse = glm::vec3(1.0,1.0,1.0);
@@ -30,21 +28,6 @@ Material::~Material()
 
 }
 
-void Material::cleanUpVulkan()
-{
-	auto device = VulkanBase::GetInstance()->GetDevice();
-
-	if (hasImageData())
-	{
-		vkDestroySampler(device, textureData->sampler, nullptr);
-		vkDestroyImageView(device, textureData->view, nullptr);
-		vkDestroyImage(device, textureData->image, nullptr);
-		vkFreeMemory(device, textureData->memory, nullptr);
-
-		delete textureData;
-	}
-}
-
 void Material::setImageData(int uvIndex,std::shared_ptr<ImageData> image)
 {
 	imageDataCount++;
@@ -52,7 +35,6 @@ void Material::setImageData(int uvIndex,std::shared_ptr<ImageData> image)
 	this->image = image;
 	descSetData.texCount = imageDataCount;
 	textureData = new TextureData;
-	textureData->mipLevel = -1;
 }
 
 std::shared_ptr<ImageData> Material::getImageData()
@@ -74,7 +56,7 @@ bool Material::hasImageData()
 
 bool Material::hasTextureData()
 {
-	if (textureData->mipLevel != -1)
+	if (textureData)
 	{
 		return true;
 	}

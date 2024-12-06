@@ -1,134 +1,183 @@
 #include"GltfModel.h"
 
-GltfModel::GltfModel()
+GltfModel::~GltfModel()
 {
-}
+	deleteNodes(root);
 
-void GltfModel::setMinMaxVertexPos(glm::vec3 min, glm::vec3 max)
-{
-	minPos = min;
-	maxPos = max;
-
-	pivot = glm::vec3((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
-}
-
-void GltfModel::getMinMaxVertexPos(glm::vec3& min, glm::vec3& max)
-{
-	min = minPos;
-	max = maxPos;
-}
-
-void GltfModel::addMeshes(Meshes* mesh)
-{
-	meshes.push_back(std::shared_ptr<Meshes>(mesh));
-}
-
-std::shared_ptr<Meshes> GltfModel::getMeshes(uint32_t i)
-{
-	return meshes[i];
-}
-
-uint32_t GltfModel::getMeshesSize()
-{
-	return meshes.size();
-}
-
-void GltfModel::cleanupVulkan()
-{
-	for (auto itr = meshes.begin(); itr != meshes.end(); itr++)
+	for (size_t i = 0; i < skins.size(); i++)
 	{
-		Primitive* primitives = (*itr)->getPrimitivePoint();
-		for (int i = 0; i < (*itr)->getPrimitivesSize(); i++)
+		delete skins[i];
+	}
+}
+
+void GltfModel::deleteNodes(GltfNode* node)
+{
+	for (size_t i = 0; i < node->children.size(); i++)
+	{
+		deleteNodes(node->children[i]);
+	}
+
+	delete node;
+}
+
+GltfNode* GltfModel::findNode(GltfNode* parent,int index)
+{
+	GltfNode* dstNode = nullptr;
+
+	if (parent->index == index)
+	{
+		return parent;
+	}
+
+	for (size_t i = 0; i < parent->children.size(); i++)
+	{
+		dstNode = findNode(parent->children[i], index);
+		if (dstNode)
 		{
-			std::shared_ptr<Material> material = primitives[i].material;
-			if (material->hasImageData())
-			{
-				material->cleanUpVulkan();
+			break;
+		}
+	}
+
+	return dstNode;
+}
+
+GltfNode* GltfModel::nodeFromIndex(int index)
+{
+	GltfNode* node = nullptr;
+
+	node = findNode(root,index);
+
+	return node;
+}
+
+void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+{
+	if (parent->mesh && parent->skin)
+	{
+		parent->update(jointMatrices[parent->globalHasSkinNodeIndex]);
+	}
+
+	for (size_t i = 0; i < parent->children.size(); i++)
+	{
+		updateAllNodes(parent->children[i],jointMatrices);
+	}
+}
+
+float GltfModel::animationDuration(std::string animationName)
+{
+	Animation& animation = animations[animationName];
+	return animation.end - animation.start;
+}
+
+void GltfModel::updateAnimation(float animationTime,std::string animationName, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+{
+	if (animations.empty()) {
+		std::cout << ".glTF does not contain animation." << std::endl;
+		return;
+	}
+	Animation& animation = animations[animationName];
+
+	bool updated = false;
+	for (auto& channel : animation.channels) {
+		AnimationSampler sampler = animation.samplers[channel.samplerIndex];
+		if (sampler.inputs.size() > sampler.outputsVec4.size()) {
+			continue;
+		}
+
+		for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
+			if ((animationTime >= sampler.inputs[i]) && (animationTime <= sampler.inputs[i + 1])) {
+				float u = std::max(0.0f, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+				if (u <= 1.0f) {
+					switch (channel.path) {
+					case AnimationChannel::PathType::TRANSLATION:
+						sampler.translate(i, animationTime, channel.node);
+						break;
+					case AnimationChannel::PathType::SCALE:
+						sampler.scale(i, animationTime, channel.node);
+						break;
+					case AnimationChannel::PathType::ROTATION:
+						sampler.rotate(i, animationTime, channel.node);
+						break;
+					}
+					updated = true;
+				}
 			}
 		}
 	}
-}
 
-void GltfModel::setPose(std::string name, std::shared_ptr<Pose> pose)
-{
-	poses[name] = pose;
-}
-
-void GltfModel::setAnimation(ACTION action, std::shared_ptr<Animation> animation)
-{
-	animations[action] = animation;
-}
-
-std::array<glm::mat4, 250> GltfModel::getAnimationMatrix()
-{
-	std::array<glm::mat4, 250> transforms;
-	std::fill(transforms.begin(), transforms.end(), glm::mat4(0.0f));
-
-	//std::copy(boneInfo.offsetMatrix.begin(), boneInfo.offsetMatrix.end(), transforms.begin());
-
-	//poses["idle"]->setFinalTransform(transforms);
-
-	return transforms;
-}
-
-std::array<glm::mat4,250> GltfModel::getAnimationMatrix(float animationTime,ACTION action)
-{
-	std::array<glm::mat4, 250> transforms;
-	std::fill(transforms.begin(), transforms.end(), glm::mat4(1.0f));
-
-	//animations[action]->setFinalTransform(animationTime, transforms,this);
-
-	return transforms;
-}
-
-bool GltfModel::containBone(std::string nodeName)
-{
-	if (m_BoneNameToIndexMap.find(nodeName) != m_BoneNameToIndexMap.end())
-	{
-		return true;
-	}
-
-	return false;
-}
-
-int GltfModel::getBoneToMap(std::string boneName)
-{
-	if (m_BoneNameToIndexMap.find(boneName) == m_BoneNameToIndexMap.end())
-	{
-		int index = m_BoneNameToIndexMap.size();
-		m_BoneNameToIndexMap[boneName] = index;
-
-		return index;
-	}
-	else
-	{
-		return m_BoneNameToIndexMap[boneName];
+	if (updated) {
+		updateAllNodes(root,jointMatrices);
 	}
 }
 
-void GltfModel::setBoneInfo(int id, const glm::mat4 mat)
+void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
 {
-	if (id == boneInfo.offsetMatrix.size())
-	{
-		boneInfo.offsetMatrix.push_back(mat);
+	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(glm::vec3(10000000.0f), glm::vec3(-10000000.0f));
+
+	if (node->mesh) {
+		if (node->mesh->bb.valid) {
+			node->aabb = node->mesh->bb.getAABB(node->getMatrix());
+			if (node->children.size() == 0) {
+				node->bvh.min = node->aabb.min;
+				node->bvh.max = node->aabb.max;
+				node->bvh.valid = true;
+			}
+		}
+	}
+
+	parentBvh.min = glm::min(parentBvh.min, node->bvh.min);
+	parentBvh.max = glm::min(parentBvh.max, node->bvh.max);
+
+	for (auto& child : node->children) {
+		calculateBoundingBox(child, node);
 	}
 }
 
-int GltfModel::getBoneNum()
+void GltfModel::getVertexMinMax(GltfNode* node, glm::vec3& min, glm::vec3& max)
 {
-	return boneInfo.offsetMatrix.size();
+	if (node->bvh.valid)
+	{
+		min = glm::min(min, node->bvh.min);
+		max = glm::max(max, node->bvh.max);
+	}
+
+	for (int i = 0; i < node->children.size(); i++)
+	{
+		getVertexMinMax(node->children[i], min, max);
+	}
 }
 
-glm::mat4 GltfModel::getBoneOffset(int index)
+void GltfModel::setAABBMatrix(glm::vec3 min,glm::vec3 max)
 {
-	return boneInfo.offsetMatrix[index];
+	boundingBox.min = min;
+	boundingBox.max = max;
 }
 
-/*
-
-//アニメーションの行列を求める
-glm::mat4* getAnimationMatrix(glm::mat4 mat)
+void GltfModel::cleanUpVulkan(VkDevice& device)
 {
-
+	cleanUpVulkan(device, root);
 }
-*/
+
+void GltfModel::cleanUpVulkan(VkDevice& device, GltfNode* node)
+{
+	if (node->mesh)
+	{
+		Mesh* mesh = node->mesh;
+		for (size_t i = 0; i < mesh->primitives.size(); i++)
+		{
+			if (mesh->primitives[i].material)
+			{
+				if (mesh->primitives[i].material->hasTextureData())
+				{
+					mesh->primitives[i].material->getTextureData()->destroy(device);
+				}
+			}
+		}
+		mesh->descriptorInfo.destroy(device);
+	}
+
+	for (size_t i = 0; i < node->children.size(); i++)
+	{
+		cleanUpVulkan(device, node->children[i]);
+	}
+}

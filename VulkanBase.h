@@ -47,12 +47,13 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
+    alignas(16) glm::mat4 local;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     //alignas(16) glm::mat3 normal;
-    alignas(16) std::array<glm::mat4,250> boneMatrix;
-    /*
+    alignas(16) std::array<glm::mat4,128> boneMatrix;
     alignas(16) glm::vec3 diffuse;
+    /*
     alignas(16) glm::vec3 ambient;
     alignas(16) glm::vec3 specular;
     alignas(16) glm::vec3 emissive;
@@ -177,14 +178,20 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void createVertexBuffer(std::shared_ptr<Model> model);
+    void createVertexBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createVertexBuffer(std::shared_ptr<Colider> colider);
-    void createIndexBuffer(std::shared_ptr<Model> model);
+    void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createIndexBuffer(std::shared_ptr<Colider> colider);
-    void createUniformBuffer(std::shared_ptr<Model> model);
+    void createUniformBuffers(std::shared_ptr<Model> model);
+    void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
+    void createUniformBuffer(std::shared_ptr<Colider> colider);
     void createDescriptorPool(PrimitiveTextureCount ptc,VkDescriptorPool& pool);
     void allocateDescriptorSets(std::shared_ptr<Model> model);
+    void allocateDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
+    void allocateDescriptorSet(std::shared_ptr<Model> model);
     void createDescriptorSets(std::shared_ptr<Model> model);
+    void createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
+    void createDescriptorSet(std::shared_ptr<Model> model);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -193,9 +200,12 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
-    void setMaterial(std::shared_ptr<Material> material, UniformBufferObject* ubo);
-    void updateUniformBuffer(std::shared_ptr<Model> model);
+    void setMaterial(std::shared_ptr<Material> material, UniformBufferObject& ubo);
+    void updateUniformBuffers(std::shared_ptr<Model> model);
+    void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
+    void updateUniformBuffer(std::shared_ptr<Colider> colider);
     void drawFrame();
+    void drawMesh(GltfNode* node,std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -208,8 +218,11 @@ private:
     bool checkValidationLayerSupport();
 
     void createMeshesData(std::shared_ptr<Model> model);
-    void createTextureData(std::shared_ptr<Model> model);
-    void createDescriptorInfo(std::shared_ptr<Model> model);
+    void createTextureDatas(std::shared_ptr<Model> model);
+    void createTextureData(GltfNode* node,std::shared_ptr<Model> model);
+    void createDescriptorInfos(std::shared_ptr<Model> model);
+    void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
+    void createDescriptorInfo(std::shared_ptr<Colider> colider);
 
 public:
 

@@ -8,13 +8,8 @@ enum class ACTION
 
 enum class OBJECT
 {
-	FBXTEST = 101,
-	UNITYCHAN_NO_ANIM,
-	GROUND1,
-	FRAG,
-	IDLE,
-	WALK,
-	NORMALBOX
+	gltfTEST = 101,
+	CUBE
 };
 
 enum COLIDER

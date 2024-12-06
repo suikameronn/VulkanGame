@@ -597,3 +597,5 @@ shaders/Notexture.vert.spv
 models/Flag_Pole_dae.dae
 models/Flag_Pole_dxf.dxf
 models/flag_pole_obj.mtl
+models/cube.glb
+models/PlayerModel.glb
