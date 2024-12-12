@@ -97,6 +97,7 @@ struct BoundingBox
 
 struct Primitive
 {
+	int primitiveIndex;
 	int firstIndex;
 	int indexCount;
 	int vertexCount;
@@ -104,8 +105,8 @@ struct Primitive
 	bool hasIndices;
 	BoundingBox bb;
 
-	Primitive(int firstIndex, int indexCount, int vertexCount,std::shared_ptr<Material> material)
-		: firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+	Primitive(int primitiveIndex,int firstIndex, int indexCount, int vertexCount,std::shared_ptr<Material> material)
+		: primitiveIndex(primitiveIndex),firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
 		hasIndices = indexCount > 0;
 	}
 	void setBoundingBox(glm::vec3 min, glm::vec3 max)
@@ -347,10 +348,12 @@ public:
 		this->root = rootNode; 
 		this->meshCount = 0;
 		this->primitiveCount = 0;
+		this->setup = false;
 	}
 	~GltfModel();
 	void deleteNodes(GltfNode* node);
 
+	bool setup;
 	int meshCount;
 	int primitiveCount;
 	int jointNum;

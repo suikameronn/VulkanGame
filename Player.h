@@ -3,10 +3,14 @@
 class Player : public Model
 {
 	float moveSpeed;
+	bool controllable;
 
 	glm::vec3 inputMove();
 
 public:
 
-	void Update() override;
+	Player();
+	Player(std::string luaScriptPath);
+
+	void customUpdate() override;
 };

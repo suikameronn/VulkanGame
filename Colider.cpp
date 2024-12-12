@@ -33,7 +33,6 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 
 	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
 
-	descSetData.texCount = 0;
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
 	changeUniformBuffer = true;
@@ -387,7 +386,7 @@ bool Colider::nextSimplex(Simplex& simplex, glm::vec3 dir)
 
 void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)
 {
-	descSetData.decriptorSet = descriptorSet;
+	descSetData.descriptorSet = descriptorSet;
 }
 
 BufferObject* Colider::getPointBuffer()

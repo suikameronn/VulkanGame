@@ -1,5 +1,24 @@
 #include"Object.h"
 
+UpdateScript::UpdateScript(std::string path)
+{
+	currentAnimationName = "no_name";
+
+	initScript(path);
+}
+
+UpdateScript::~UpdateScript()
+{
+}
+
+void UpdateScript::initScript(std::string path)
+{
+}
+
+void UpdateScript::update()
+{
+}
+
 Object::Object()
 {
 	uniformBufferChange = true;
@@ -13,11 +32,13 @@ Object::Object()
 	childObjects.clear();
 	spherePos = false;
 
-	controllable = false;
-	speed = 10.0f;
-
 	rotateSpeed = 0.1f;
 	length = 1.0f;
+}
+
+void Object::setLuaScript(std::string path)
+{
+	//updateScript = std::make_unique<UpdateScript>(path);
 }
 
 void Object::bindObject(std::weak_ptr<Object> obj)
@@ -80,11 +101,12 @@ glm::vec3 Object::inputMove()
 
 void Object::Update()
 {
-	if (controllable)
+	if (updateScript)
 	{
-		glm::vec3 moveDirec = inputMove();
-		setPosition(this->position + moveDirec * speed);
+		updateScript->update();
 	}
+
+	customUpdate();
 }
 
 void Object::setPosition(glm::vec3 pos)

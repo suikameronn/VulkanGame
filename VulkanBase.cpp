@@ -1338,7 +1338,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 }
                 descriptorSetCount++;
 
-                mesh->primitives[i].material->setDescriptorSet(descriptorSet);
+                model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet = descriptorSet;
             }
         }
 
@@ -1408,7 +1408,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     descriptorWrites.resize(2);
 
                     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[0].dstSet = material->getDescSetData()->decriptorSet;
+                    descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
                     descriptorWrites[0].dstBinding = 0;
                     descriptorWrites[0].dstArrayElement = 0;
                     descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1421,7 +1421,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     imageInfo.sampler = material->getTextureData()->sampler;
 
                     descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[1].dstSet = material->getDescSetData()->decriptorSet;
+                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
                     descriptorWrites[1].dstBinding = 1;
                     descriptorWrites[1].dstArrayElement = 0;
                     descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1433,7 +1433,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     descriptorWrites.resize(1);
 
                     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[0].dstSet = material->getDescSetData()->decriptorSet;
+                    descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
                     descriptorWrites[0].dstBinding = 0;
                     descriptorWrites[0].dstArrayElement = 0;
                     descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1463,7 +1463,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = colider->getDescSetData().decriptorSet;
+        descriptorWrite.dstSet = colider->getDescSetData().descriptorSet;
         descriptorWrite.dstBinding = 0;
         descriptorWrite.dstArrayElement = 0;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1584,10 +1584,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             Mesh* mesh = node->mesh;
 
-            PrimitiveTextureCount ptc;
-            ptc.imageDataCount = 1;
-            ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
             PushConstantObj constant = { node->getMatrix() };
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->descriptorInfo.pipeline);
@@ -1615,7 +1611,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             for (int i = 0;i < mesh->primitives.size();i++)
             {
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    mesh->descriptorInfo.pLayout, 0, 1, &mesh->primitives[i].material->getDescSetData()->decriptorSet, 0, nullptr);
+                    mesh->descriptorInfo.pLayout, 0, 1, &model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet, 0, nullptr);
 
                 vkCmdPushConstants(commandBuffer, mesh->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
@@ -1691,7 +1687,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindIndexBuffer(commandBuffer, colider->getPointBuffer()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().decriptorSet, 0, nullptr);
+                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
 
                 vkCmdPushConstants(commandBuffer, storage->accessDescriptorInfo(ptc)->pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
@@ -2021,6 +2017,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createTextureDatas(std::shared_ptr<Model> model)
     {
+        if (model->getGltfModel()->setup)
+        {
+            return;
+        }
+
         createTextureData(model->getRootNode(), model);
     }
 
@@ -2086,11 +2087,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createDescriptorInfos(std::shared_ptr<Model> model)
     {
-        createDescriptorInfo(model->getRootNode(), model);
+        if (!model->getGltfModel()->setup)
+        {
+            createDescriptorInfo(model->getRootNode(), model);
+        }
+
         if (model->hasColider())
         {
             createDescriptorInfo(model->getColider());
         }
+    }
+
+    void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
+    {
+
     }
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)
@@ -2114,6 +2124,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         /*ディスクリプタセットを作る*/
         createDescriptorSets(model);
+
+        model->getGltfModel()->setup = true;
     }
 
     void VulkanBase::render()

@@ -7,6 +7,8 @@ Camera::Camera()
 	position = { 0,0.0f,5.0f };
 	posOffSet = 50.0f;
 
+	spherePos = true;
+
 	forward = glm::vec3{ 0,0,1};
 	right = glm::vec3{ 1,0,0};
 	up = glm::vec3{ 0,1,0 };
@@ -38,7 +40,7 @@ float Camera::getViewAngle()
 	return viewAngle;
 }
 
-void Camera::Update()
+void Camera::customUpdate()
 {
 	auto controller = Controller::GetInstance();
 
@@ -82,7 +84,7 @@ void Camera::Update()
 
 void Camera::calcViewMat()
 {
-	viewMat = glm::lookAt(this->position, parentPos , glm::vec3(0, 1, 0));
+	viewMat = glm::lookAt(this->position, parentPos , up);
 }
 
 glm::vec3 Camera::getViewTarget()

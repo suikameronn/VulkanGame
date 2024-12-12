@@ -21,5 +21,5 @@ public:
 
 	glm::vec3 getViewTarget();
 
-	void Update() override;
+	void customUpdate() override;
 };

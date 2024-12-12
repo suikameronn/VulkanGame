@@ -37,7 +37,7 @@ private:
 	void loadNode(GltfNode* parent,GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
 	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model);
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
-	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel);
+	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel,GltfModel* model);
 	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
 	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
 	void setSkin(GltfNode* node, GltfModel* model);

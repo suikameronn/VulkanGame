@@ -1,5 +1,17 @@
 #include "Player.h"
 
+Player::Player()
+{
+	controllable = true;
+	moveSpeed = 1.0f;
+}
+
+Player::Player(std::string luaScriptPath)
+{
+	controllable = true;
+	moveSpeed = 1.0f;
+}
+
 glm::vec3 Player::inputMove()
 {
 	glm::vec3 moveDirec;
@@ -44,7 +56,7 @@ glm::vec3 Player::inputMove()
 	return moveDirec;
 }
 
-void Player::Update()
+void Player::customUpdate()
 {
 	if (gltfModel->animations.size() > 0)
 	{
@@ -54,7 +66,7 @@ void Player::Update()
 	if (controllable)
 	{
 		glm::vec3 moveDirec = inputMove();
-		setPosition(this->position + moveDirec * speed);
+		setPosition(this->position + moveDirec);
 	}
 
 	if (spherePos)

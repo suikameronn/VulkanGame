@@ -32,22 +32,6 @@ struct Rotate
 	}
 };
 
-//アニメーションの遷移などを担う
-class AnimationController
-{
-	std::string currentAnimationName;
-
-public:
-	AnimationController()
-	{
-		currentAnimationName = "no_name";
-	};
-
-	virtual void update() = 0;
-	std::string getCurrentAnimationName() { return currentAnimationName; }
-
-};
-
 class Model:public Object
 {
 protected:
@@ -67,14 +51,13 @@ protected:
 	double deltaTime;
 
 	std::shared_ptr<Material> material;
-	std::shared_ptr<AnimationController> animController;
 	std::shared_ptr<Colider> colider;
 
 public:
 
 	Model();
+	Model(std::string luaScriptPath);
 
-	Rotate rotate;
 	glm::vec3 scale;
 
 	void bindObject(std::weak_ptr<Object> obj);
@@ -88,10 +71,10 @@ public:
 
 	void setMaterial(std::shared_ptr<Material> material) { this->material = material; }
 
-	void setAnimationController(std::shared_ptr<AnimationController> animationController) { this->animController = animationController; }
 	void playAnimation();
 	std::array<glm::mat4, 128>& getJointMatrices(int index);
 
+	std::vector<DescSetData> descSetDatas;
 	BufferObject* getPointBuffer(uint32_t i);
 	MappedBuffer* getMappedBuffer(uint32_t i);
 	uint32_t getimageDataCount();
@@ -101,7 +84,6 @@ public:
 	std::shared_ptr<Colider> getColider() { return colider; }
 
 	void updateTransformMatrix() override;
-	virtual void Update() = 0;
 
 	void cleanupVulkan();
 

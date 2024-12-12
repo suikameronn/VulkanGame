@@ -61,7 +61,6 @@ struct TextureData
 	VkDeviceMemory memory;
 	VkImageView view;
 	VkSampler sampler;
-	VkDescriptorSet descriptor;
 
 	void destroy(VkDevice& device)
 	{
@@ -92,8 +91,6 @@ private:
 
 	uint32_t imageDataCount;
 
-	DescSetData descSetData;
-
 public:
 
 	Material();
@@ -122,7 +119,4 @@ public:
 	bool hasImageData();
 	bool hasTextureData();
 	uint32_t getImageDataCount() { return imageDataCount; }
-
-	void setDescriptorSet(VkDescriptorSet set) { descSetData.decriptorSet = set; }
-	DescSetData* getDescSetData() { return &descSetData; }
 };

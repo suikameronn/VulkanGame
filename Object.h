@@ -9,6 +9,8 @@
 #include<iostream>
 #include<vector>
 #include<math.h>
+#include<memory>
+
 #include<vulkan/vulkan.h>
 
 #include<glm/glm.hpp>
@@ -62,14 +64,31 @@ struct MappedBuffer
 
 struct DescSetData
 {
-	uint32_t texCount;
 	VkPrimitiveTopology topology;
-	VkDescriptorSet decriptorSet;
+	VkDescriptorSet descriptorSet;
+};
+
+//アニメーションの遷移などを担う
+class UpdateScript
+{
+	std::string currentAnimationName;
+
+	void initScript(std::string path);
+
+public:
+	UpdateScript(std::string path);
+	~UpdateScript();
+
+	void update();
+	std::string getCurrentAnimationName() { return currentAnimationName; }
+
 };
 
 class Object
 {
 protected:
+
+	std::unique_ptr<UpdateScript> updateScript;
 	std::weak_ptr<Object> cameraObj;
 	std::vector<std::weak_ptr<Object>> childObjects;
 	float theta, phi;
@@ -86,12 +105,13 @@ public:
 
 	Object();
 
-	bool controllable;
-	float speed;
+	void setLuaScript(std::string path);
 
 	bool spherePos;
 
 	bool uniformBufferChange;
+
+	Rotate rotate;
 
 	float posOffSet;
 	glm::vec3 forward;
@@ -115,5 +135,6 @@ public:
 	glm::mat4 getTransformMatrix();
 
 	virtual void updateTransformMatrix() {};
-	virtual void Update();
+	void Update();
+	virtual void customUpdate() = 0;
 };

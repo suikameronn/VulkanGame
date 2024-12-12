@@ -27,6 +27,32 @@ Model::Model()
 	colider = nullptr;
 }
 
+Model::Model(std::string luaScriptPath)
+{
+	uniformBufferChange = true;
+
+	position = { 0,0,0 };
+	posOffSet = 0.0f;
+
+	scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	forward = glm::vec3{ 0,0,1 };
+	right = glm::vec3{ 1,0,0 };
+
+	childObjects.clear();
+	spherePos = false;
+	theta = 0.0f;
+	phi = 0.0f;
+
+	playAnim = true;
+
+	rotateSpeed = 0.1f;
+
+	deltaTime = 0.0;
+
+	colider = nullptr;
+}
+
 void Model::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
@@ -57,6 +83,7 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 {
 	gltfModel = model;
 
+	descSetDatas.resize(model->primitiveCount);
 	jointMatrices.resize(model->jointNum);
 	pointBuffers.resize(model->meshCount);
 	mappedBuffers.resize(model->primitiveCount);
@@ -138,9 +165,6 @@ void Model::setPosition(glm::vec3 pos)
 
 void Model::updateTransformMatrix()
 {
-	//transformMatrix = pivotMatrix;
-	//pivot = glm::vec4(pivot,0.f) * glm::scale(glm::mat4(1.0f), scale);
-
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 
 	if (colider)

@@ -275,6 +275,7 @@ public:
         return device;
     }
 
+    void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
     void setModelData(std::shared_ptr<Model> model);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 

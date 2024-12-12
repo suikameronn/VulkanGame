@@ -165,13 +165,14 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     Mesh* mesh = new Mesh();
     mesh->meshIndex = model->meshCount;
     model->meshCount++;
-    model->primitiveCount += gltfMesh.primitives.size();
 
     for (unsigned int i = 0; i < gltfMesh.primitives.size(); i++)
     {
         const tinygltf::Primitive glPrimitive = gltfMesh.primitives[i];
 
-        processPrimitive(mesh, indexStart, glPrimitive, gltfModel);
+        processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);
+
+        model->primitiveCount++;
     }
 
     for (int i = 0; i < mesh->primitives.size(); i++)
@@ -208,7 +209,7 @@ void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
     }
 }
 
-void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel)
+void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel,GltfModel* model)
 {
     const float* bufferPos = nullptr;
     int vertexCount;
@@ -375,7 +376,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
 
     std::shared_ptr<Material> material = processMaterial(glModel, glPrimitive.material);
 
-    Primitive primitive = { indexStart,indexCount,vertexCount,material };
+    Primitive primitive = { model->primitiveCount,indexStart,indexCount,vertexCount,material };
     primitive.setBoundingBox(posMin, posMax);
 
     mesh->primitives.push_back(primitive);

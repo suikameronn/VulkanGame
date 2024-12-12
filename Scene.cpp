@@ -1,62 +1,96 @@
 #include"Scene.h"
 
+Scene* Scene::globalScene = nullptr;
+
 Scene::Scene()
 {
+}
+
+void Scene::init(std::string luaScriptPath)
+{
+	globalScene = this;
+
 	camera = std::make_shared<Camera>();
+
+	initLuaScript(luaScriptPath);
 
 	parseScene();
 
 	setModels();
 }
 
+Scene::~Scene()
+{
+	globalScene = nullptr;
+
+	if (false)
+	{
+	//	lua_close(pL);
+	}
+}
+
+void Scene::pushCFunctions()
+{
+	/*
+	lua_pushcfunction(pL,glueTestFunc);
+	lua_setglobal(pL, "glueTestFunc");
+
+	lua_pushcfunction(pL, glueAddPlayer);
+	lua_setglobal(pL, "glueAddPlayer");
+
+	lua_pushcfunction(pL, glueAddStageBox);
+	lua_setglobal(pL, "glueAddStageBox");
+
+	lua_pushcfunction(pL, glueSetPos);
+	lua_setglobal(pL, "glueSetPos");
+
+	lua_pushcfunction(pL, glueSetColider);
+	lua_setglobal(pL, "glueSetColider");
+
+	lua_pushcfunction(pL, glueSetScale);
+	lua_setglobal(pL, "glueSetScale");
+
+	lua_pushcfunction(pL, glueSetRotate);
+	lua_setglobal(pL, "glueSetRotate");
+
+	lua_pushcfunction(pL, glueBindCamera);
+	lua_setglobal(pL, "glueBindCamera");
+
+	lua_pushcfunction(pL, glueBindObject);
+	lua_setglobal(pL, "glueBindObject");
+
+	lua_pushcfunction(pL, glueSetUpdateScript);
+	lua_setglobal(pL, "glueSetUpdateScript");
+	*/
+}
+
+void Scene::initLuaScript(std::string path)
+{
+	/*
+	pL = luaL_newstate();
+	luaL_openlibs(pL);
+	luaL_loadfile(pL, path.c_str());
+
+	pushCFunctions();
+
+	if (lua_pcall(pL, 0, 0, 0, 0))
+	{
+		std::cout << "error" << std::endl;
+	}
+	*/
+
+	state.open_libraries(sol::lib::base, sol::lib::package);
+
+	script = state.load_file(path);
+}
+
 void Scene::parseScene()
 {
-	//sceneSet = オブジェクトの名前と種類を読み取りシーンファイルをパスする
-	std::vector<std::pair<std::string, OBJECT>> parth;
+	sol::usertype<Scene> usertype = state.new_usertype<Scene>("Scene", sol::constructors<Scene()>());
 
-	//VkDescriptorSetの上限は100
-	int test = 1;
-	parth.resize(test);
-	for (int i = 0; i < test; i++)
-	{
-		parth[i].first = i;
-		parth[i].second = OBJECT::gltfTEST;
-	}
+	this->state.set_function("testGlue", &Scene::testGlue, this);
 
-	{
-		FileManager* fileManager = FileManager::GetInstance();
-
-		
-		std::shared_ptr<GltfModel> gltfModel = fileManager->loadModel(OBJECT::gltfTEST);
-		std::shared_ptr<Player> model = std::shared_ptr<Player>(new Player());
-		//モデルを読み込む関数
-		model->setgltfModel(gltfModel);
-		model->controllable = true;
-		model->rotate.x = 0.0f;//単位は角度
-		model->rotate.y = 0.0f;
-		model->rotate.z = 0.0f;
-		model->scale = glm::vec3(5.05f);
-		model->controllable = true;
-		model->setPosition(glm::vec3(0.0f,0.0f,0.0f));
-		model->setColider();
-		sceneSet["aaaaa"] = model;
-		sceneSet["aaaaa"]->bindCamera(std::weak_ptr<Object>(camera));
-
-		std::shared_ptr<GltfModel> gltfModel2 = fileManager->loadModel(OBJECT::CUBE);
-		std::shared_ptr<Model> model2 = std::shared_ptr<Model>(new Player());
-		//モデルを読み込む関数
-		model2->setgltfModel(gltfModel2);
-		model2->rotate.x = 0.0f;//単位は角度
-		model2->rotate.y = 0.0f;
-		model2->rotate.z = 0.0f;
-		model2->scale = glm::vec3(5.05f);
-		model2->controllable = true;
-		model2->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-		model2->setColider();
-		sceneSet["a"] = model2;
-
-		camera->spherePos = true;
-	}
+	script();
 }
 
 bool Scene::UpdateScene()
@@ -72,11 +106,19 @@ bool Scene::UpdateScene()
 
 	for (auto itr = sceneSet.begin(); itr != std::prev(sceneSet.end()); itr++)
 	{
+		if (!itr->second->hasColider())
+		{
+			continue;
+		}
+
 		for (auto itr2 = std::next(itr); itr2 != sceneSet.end(); itr2++)
 		{
-			if (itr->second->getColider()->Intersect(itr2->second->getColider(), collisionDepth, collisionVector))
+			if (itr2->second->hasColider())
 			{
-				itr->second->setPosition(itr->second->getPosition() + collisionVector * collisionDepth);
+				if (itr->second->getColider()->Intersect(itr2->second->getColider(), collisionDepth, collisionVector))
+				{
+					itr->second->setPosition(itr->second->getPosition() + collisionVector * collisionDepth);
+				}
 			}
 		}
 	}
@@ -122,34 +164,3 @@ void Scene::setModels(std::string name)
 		Storage::GetInstance()->addModel(itr->second);
 	}
 }
-
-/*
-void Scene::IntersectsColiders()
-{
-	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
-	{
-		if(!itr->second->hasColider())
-		{
-			continue;
-		}
-		std::shared_ptr<Colider> colider = itr->second->getColider();
-
-		for (auto itr2 = sceneSet.begin(); itr2 != sceneSet.end(); itr2++)
-		{
-			if (itr == itr2)
-			{
-				continue;
-			}
-
-			if (!itr2->second->hasColider())
-			{
-				continue;
-			}
-
-			std::shared_ptr<Colider> oppColider = itr2->second->getColider();
-			
-			bool intersected = colider->Intersect(oppColider);
-		}
-	}
-}
-*/

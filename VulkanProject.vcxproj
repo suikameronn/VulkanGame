@@ -72,14 +72,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Vcpkg">
-    <VcpkgEnableManifest>true</VcpkgEnableManifest>
-    <VcpkgEnabled>true</VcpkgEnabled>
-    <VcpkgManifestInstall>true</VcpkgManifestInstall>
-    <VcpkgAutoLink>true</VcpkgAutoLink>
+    <VcpkgEnableManifest>false</VcpkgEnableManifest>
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <VcpkgManifestInstall>false</VcpkgManifestInstall>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
     <VcpkgApplocalDeps>false</VcpkgApplocalDeps>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,15 +115,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;lua-5.4.2_Win64_vc17_lib\include;C:\Users\sukai\Documents\VulkanGame\tinygltf</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\sukai\Documents\VulkanGame\lua-5.4.2_Win64_vc17_lib;C:\VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua52.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;lua-5.4.2_Win64_vc17_lib\include;C:\Users\sukai\Documents\VulkanGame\tinygltf</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
@@ -145,8 +145,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\sukai\Documents\VulkanGame\lua-5.4.2_Win64_vc17_lib;C:\VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua52.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -164,6 +164,7 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="StageBox.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
@@ -183,6 +184,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="StageBox.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>
