@@ -13,25 +13,6 @@ uint32_t getSize(T v)
 	return v.size();
 }
 
-struct Rotate
-{
-	float x;
-	float y;
-	float z;
-
-	float getRadian(float deg)
-	{
-		return deg * (PI / 180.0f);
-	}
-
-	glm::mat4 getRotateMatrix()
-	{
-		return glm::rotate(glm::mat4(1.0f), getRadian(z), glm::vec3(0.0f, 0.0f, 1.0f))
-			* glm::rotate(glm::mat4(1.0f), getRadian(y), glm::vec3(0.0f, -1.0f, 0.0f))
-			* glm::rotate(glm::mat4(1.0f), getRadian(x), glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-};
-
 class Model:public Object
 {
 protected:
@@ -88,4 +69,6 @@ public:
 	void cleanupVulkan();
 
 	void setPosition(glm::vec3 pos) override;
+
+	void customUpdate() {}
 };

@@ -3,6 +3,8 @@
 
 Model::Model()
 {
+	objNum = ObjNum::cModel;
+
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };

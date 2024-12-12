@@ -16,3 +16,9 @@ enum COLIDER
 {
 	BOX
 };
+
+enum ObjNum
+{
+	cObject = 0,
+	cModel
+};

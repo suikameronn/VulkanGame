@@ -24,20 +24,24 @@ private:
 	void parseScene();
 
 	void setModels();
-	void setModels(std::string name);
 
 	float collisionDepth;//衝突時のめり込んだ距離
 	glm::vec3 collisionVector;//衝突時のめり込んだ方向
 
 	sol::state state;
 	sol::load_result script;
+	sol::usertype<Object> luaObject;
+	sol::usertype<Model> luaModel;
 
 	void initLuaScript(std::string path);
+	void setUsertype();
+	void convertObjectType();
 	void pushCFunctions();
 
 public:
 
 	void testGlue() { std::cout << "glueSuccess" << std::endl; }
+	void glueAddObject(Object* obj);
 
 
 	Scene();
@@ -49,13 +53,9 @@ public:
 
 
 	//ここにシーンのオブジェクトの名前とモデルが保存される
-	std::unordered_map<std::string, std::shared_ptr<Model>> sceneSet;
+	std::vector<std::shared_ptr<Model>> sceneSet;
 
 	bool UpdateScene();
-
-	//void IntersectsColiders();
-
-	std::shared_ptr<Model> getSceneModelData(std::string name);
 };
 
 static OBJECT convertEnum(int obj)

@@ -1,14 +1,11 @@
 #include"Scene.h"
 
-Scene* Scene::globalScene = nullptr;
-
 Scene::Scene()
 {
 }
 
 void Scene::init(std::string luaScriptPath)
 {
-	globalScene = this;
 
 	camera = std::make_shared<Camera>();
 
@@ -21,7 +18,6 @@ void Scene::init(std::string luaScriptPath)
 
 Scene::~Scene()
 {
-	globalScene = nullptr;
 
 	if (false)
 	{
@@ -81,16 +77,42 @@ void Scene::initLuaScript(std::string path)
 
 	state.open_libraries(sol::lib::base, sol::lib::package);
 
+	setUsertype();
+	this->state.set_function("glueAddObject", &Scene::glueAddObject, this);
+
 	script = state.load_file(path);
+	if (!script.valid())
+	{
+		std::cout << "lua load error" << std::endl;
+	}
+
+}
+
+void Scene::setUsertype()
+{
+	luaObject = state.new_usertype<Object>("Object", sol::constructors<Object()>());
+	luaModel = state.new_usertype<Model>("Model", sol::constructors<Model()>());
 }
 
 void Scene::parseScene()
 {
-	sol::usertype<Scene> usertype = state.new_usertype<Scene>("Scene", sol::constructors<Scene()>());
-
-	this->state.set_function("testGlue", &Scene::testGlue, this);
 
 	script();
+}
+
+void Scene::glueAddObject(Object* obj)
+{
+	switch (obj->getObjNum())
+	{
+	case cObject:
+		std::cout << 0 << std::endl;
+		break;
+	case cModel:
+		std::cout << 1 << std::endl;
+		break;
+	default:
+		std::cout << "none case" << std::endl;
+	}
 }
 
 bool Scene::UpdateScene()
@@ -99,25 +121,25 @@ bool Scene::UpdateScene()
 
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		itr->second->Update();
+		(*itr)->Update();
 	}
 
 	camera->Update();
 
 	for (auto itr = sceneSet.begin(); itr != std::prev(sceneSet.end()); itr++)
 	{
-		if (!itr->second->hasColider())
+		if (!(*itr)->hasColider())
 		{
 			continue;
 		}
 
 		for (auto itr2 = std::next(itr); itr2 != sceneSet.end(); itr2++)
 		{
-			if (itr2->second->hasColider())
+			if ((*itr2)->hasColider())
 			{
-				if (itr->second->getColider()->Intersect(itr2->second->getColider(), collisionDepth, collisionVector))
+				if ((*itr)->getColider()->Intersect((*itr2)->getColider(), collisionDepth, collisionVector))
 				{
-					itr->second->setPosition(itr->second->getPosition() + collisionVector * collisionDepth);
+					(*itr)->setPosition((*itr)->getPosition() + collisionVector * collisionDepth);
 				}
 			}
 		}
@@ -125,18 +147,13 @@ bool Scene::UpdateScene()
 
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		if (itr->second->uniformBufferChange || true)
+		if ((*itr)->uniformBufferChange || true)
 		{
-			itr->second->updateTransformMatrix();
+			(*itr)->updateTransformMatrix();
 		}
 	}
 
 	return exit;
-}
-
-std::shared_ptr<Model> Scene::getSceneModelData(std::string name)
-{
-	return sceneSet[name];
 }
 
 void Scene::setModels()
@@ -146,21 +163,7 @@ void Scene::setModels()
 	//描画するモデルのポインタを積んでいく
 	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
 	{
-		itr->second->updateTransformMatrix();
-		Storage::GetInstance()->addModel(itr->second);
-	}
-}
-
-void Scene::setModels(std::string name)
-{
-	//シーン内の重複したモデルやデータを除いた、シーンに必要なモデルやテクスチャをmodelsPointerに入れる
-	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
-	{
-		if (&itr->second == &sceneSet[name])
-		{
-			continue;
-		}
-
-		Storage::GetInstance()->addModel(itr->second);
+		(*itr)->updateTransformMatrix();
+		Storage::GetInstance()->addModel(*itr);
 	}
 }

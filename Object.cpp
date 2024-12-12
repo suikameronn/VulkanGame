@@ -21,6 +21,8 @@ void UpdateScript::update()
 
 Object::Object()
 {
+	objNum = ObjNum::cObject;
+
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };

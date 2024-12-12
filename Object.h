@@ -84,9 +84,29 @@ public:
 
 };
 
+struct Rotate
+{
+	float x;
+	float y;
+	float z;
+
+	float getRadian(float deg)
+	{
+		return deg * (PI / 180.0f);
+	}
+
+	glm::mat4 getRotateMatrix()
+	{
+		return glm::rotate(glm::mat4(1.0f), getRadian(z), glm::vec3(0.0f, 0.0f, 1.0f))
+			* glm::rotate(glm::mat4(1.0f), getRadian(y), glm::vec3(0.0f, -1.0f, 0.0f))
+			* glm::rotate(glm::mat4(1.0f), getRadian(x), glm::vec3(1.0f, 0.0f, 0.0f));
+	}
+};
+
 class Object
 {
 protected:
+	ObjNum objNum;
 
 	std::unique_ptr<UpdateScript> updateScript;
 	std::weak_ptr<Object> cameraObj;
@@ -102,9 +122,9 @@ protected:
 	virtual glm::vec3 inputMove();
 
 public:
-
 	Object();
 
+	ObjNum getObjNum() { return objNum; }
 	void setLuaScript(std::string path);
 
 	bool spherePos;
@@ -136,5 +156,5 @@ public:
 
 	virtual void updateTransformMatrix() {};
 	void Update();
-	virtual void customUpdate() = 0;
+	virtual void customUpdate() {}
 };
