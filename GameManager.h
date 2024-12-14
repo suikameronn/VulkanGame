@@ -25,7 +25,7 @@ private:
 	long long elapsed;
 
 	bool exit = false;
-	std::shared_ptr<Scene> scene;
+	std::unique_ptr<Scene> scene;
 
 	GameManager() {};
 
@@ -48,12 +48,15 @@ public:
 
 	void FinishInstance()
 	{
-		Controller::GetInstance()->FinishController();
 		FileManager::GetInstance()->FinishFileManger();
 		VulkanBase::GetInstance()->FinishVulkanBase();
 		Storage::GetInstance()->FinishStorage();
+		Controller::GetInstance()->FinishController();
 
-		delete gameManager;
+		if (gameManager)
+		{
+			delete gameManager;
+		}
 		gameManager = nullptr;
 	}
 

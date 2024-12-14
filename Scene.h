@@ -32,17 +32,21 @@ private:
 	sol::load_result script;
 	sol::usertype<Object> luaObject;
 	sol::usertype<Model> luaModel;
+	sol::usertype<GltfModel> luaGltfModel;
 
 	void initLuaScript(std::string path);
+	void setEnumOBJECT();
 	void setUsertype();
-	void convertObjectType();
-	void pushCFunctions();
+	void setFunctions();
 
 public:
 
 	void testGlue() { std::cout << "glueSuccess" << std::endl; }
-	void glueAddObject(Object* obj);
 
+	void glueAddObject(Object* obj);
+	void glueAddModel(Model* model);
+	std::shared_ptr<GltfModel> glueLoadModelResource(OBJECT object);
+	void glueBindCamera(Model* model);
 
 	Scene();
 	~Scene();
@@ -51,8 +55,6 @@ public:
 
 	void init(std::string luaScriptPath);
 
-
-	//ここにシーンのオブジェクトの名前とモデルが保存される
 	std::vector<std::shared_ptr<Model>> sceneSet;
 
 	bool UpdateScene();

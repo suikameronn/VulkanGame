@@ -1091,10 +1091,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             memcpy(data, mesh->vertices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(mesh->meshIndex)->vertBuffer, model->getPointBuffer(mesh->meshIndex)->vertHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+                model->getPointBufferData()[mesh->meshIndex].vertBuffer, model->getPointBufferData()[mesh->meshIndex].vertHandler);
 
             //vertexBuffer配列にコピーしていく(vector型)
-            copyBuffer(stagingBuffer, model->getPointBuffer(mesh->meshIndex)->vertBuffer, bufferSize);
+            copyBuffer(stagingBuffer, model->getPointBufferData()[mesh->meshIndex].vertBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1119,10 +1120,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, colider->getColiderOriginalVertices(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBuffer()->vertBuffer, colider->getPointBuffer()->vertHandler);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBufferData()->vertBuffer, colider->getPointBufferData()->vertHandler);
 
         //vertexBuffer配列にコピーしていく(vector型)
-        copyBuffer(stagingBuffer, colider->getPointBuffer()->vertBuffer, bufferSize);
+        copyBuffer(stagingBuffer, colider->getPointBufferData()->vertBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1144,9 +1145,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             memcpy(data, mesh->indices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model->getPointBuffer(mesh->meshIndex)->indeBuffer, model->getPointBuffer(mesh->meshIndex)->indeHandler);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                model->getPointBufferData()[mesh->meshIndex].indeBuffer, model->getPointBufferData()[mesh->meshIndex].indeHandler);
 
-            copyBuffer(stagingBuffer, model->getPointBuffer(mesh->meshIndex)->indeBuffer, bufferSize);
+            copyBuffer(stagingBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1171,9 +1173,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, colider->getColiderIndices(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBuffer()->indeBuffer, colider->getPointBuffer()->indeHandler);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBufferData()->indeBuffer, colider->getPointBufferData()->indeHandler);
 
-        copyBuffer(stagingBuffer, colider->getPointBuffer()->indeBuffer, bufferSize);
+        copyBuffer(stagingBuffer, colider->getPointBufferData()->indeBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1187,7 +1189,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-            MappedBuffer* mappedBuffer = model->getMappedBuffer(mesh->meshIndex);
+            MappedBuffer* mappedBuffer = &model->getMappedBufferData()[mesh->meshIndex];
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
@@ -1204,7 +1206,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        MappedBuffer* mappedBuffer = colider->getMappedBuffer();
+        MappedBuffer* mappedBuffer = colider->getMappedBufferData();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
@@ -1256,7 +1258,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 ubo.boneMatrix = array;
             }
 
-            memcpy(model->getMappedBuffer(mesh->meshIndex)->uniformBufferMapped, &ubo, sizeof(ubo));
+            memcpy(model->getMappedBufferData()[mesh->meshIndex].uniformBufferMapped, &ubo, sizeof(ubo));
 
         }
 
@@ -1283,7 +1285,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             ubo.proj = camera->perspectiveMat;
             ubo.boneMatrix = array;
 
-            memcpy(colider->getMappedBuffer()->uniformBufferMapped, &ubo, sizeof(ubo));
+            memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
     }
 
@@ -1398,7 +1400,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 std::shared_ptr<Material> material = mesh->primitives[i].material;
 
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = model->getMappedBuffer(mesh->meshIndex)->uniformBuffer;
+                bufferInfo.buffer = model->getMappedBufferData()[mesh->meshIndex].uniformBuffer;
                 bufferInfo.offset = 0;
                 bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1457,7 +1459,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         std::shared_ptr<Colider> colider = model->getColider();
 
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = colider->getMappedBuffer()->uniformBuffer;
+        bufferInfo.buffer = colider->getMappedBufferData()->uniformBuffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1604,9 +1606,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             VkDeviceSize offsets[] = { 0 };
 
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBuffer(mesh->meshIndex)->vertBuffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, model->getPointBuffer(mesh->meshIndex)->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0;i < mesh->primitives.size();i++)
             {
@@ -1682,9 +1684,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 VkDeviceSize offsets[] = { 0 };
 
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBuffer()->vertBuffer, offsets);
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBufferData()->vertBuffer, offsets);
 
-                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBuffer()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);

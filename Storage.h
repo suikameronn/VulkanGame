@@ -116,7 +116,7 @@ public:
 	bool containImageData(std::string path);
 	bool containDescriptorInfo(PrimitiveTextureCount ptc);
 
-	static void FinishStorage()
+	void FinishStorage()
 	{
 		delete storage;
 	}

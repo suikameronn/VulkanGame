@@ -253,16 +253,15 @@ public:
         return limitVertexBoneDataSize;
     }
 
-    static void FinishVulkanBase()
+    void FinishVulkanBase()
     {
         delete vulkanBase;
+        vulkanBase = nullptr;
     }
 
     ~VulkanBase()
     {
         cleanup();
-
-        vulkanBase = nullptr;
     }
 
     bool framebufferResized = false;

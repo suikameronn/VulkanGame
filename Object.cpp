@@ -30,6 +30,10 @@ Object::Object()
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
+	
+	rotate.x = rotate.getRadian(0.0f);
+	rotate.y = rotate.getRadian(0.0f);
+	rotate.z = rotate.getRadian(0.0f);
 
 	childObjects.clear();
 	spherePos = false;

@@ -10,7 +10,10 @@ Model::Model()
 	position = { 0,0,0 };
 	posOffSet = 0.0f;
 
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	rotate.x = rotate.getRadian(0.0f);
+	rotate.y = rotate.getRadian(0.0f);
+	rotate.z = rotate.getRadian(0.0f);
+	scale = glm::vec3(1.0f, 1.0f, 1.0f) * 100.0f;
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
@@ -41,6 +44,10 @@ Model::Model(std::string luaScriptPath)
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
 
+	rotate.x = rotate.getRadian(0.0f);
+	rotate.y = rotate.getRadian(0.0f);
+	rotate.z = rotate.getRadian(0.0f);
+
 	childObjects.clear();
 	spherePos = false;
 	theta = 0.0f;
@@ -59,7 +66,10 @@ void Model::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
 
-	for (uint32_t i = 0; i < pointBuffers.size(); i++)
+	std::cout << pointBuffers.size() << std::endl;
+	std::cout << mappedBuffers.size() << std::endl;
+
+	for (size_t i = 0; i < pointBuffers.size(); i++)
 	{
 		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
 		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
@@ -89,16 +99,6 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 	jointMatrices.resize(model->jointNum);
 	pointBuffers.resize(model->meshCount);
 	mappedBuffers.resize(model->primitiveCount);
-}
-
-BufferObject* Model::getPointBuffer(uint32_t i)
-{
-	return &pointBuffers[i];
-}
-
-MappedBuffer* Model::getMappedBuffer(uint32_t i)
-{
-	return &mappedBuffers[i];
 }
 
 uint32_t Model::getimageDataCount()

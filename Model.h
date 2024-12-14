@@ -38,6 +38,56 @@ public:
 
 	Model();
 	Model(std::string luaScriptPath);
+	~Model()
+	{
+		std::cout << "Model deleted!" << std::endl;
+	}
+
+	bool operator==(const Model& other) const
+	{
+		if (imageDataCount == other.imageDataCount &&
+			pointBuffers.size() == other.pointBuffers.size() &&
+			mappedBuffers.size() == other.mappedBuffers.size() &&
+			jointMatrices.size() == other.jointMatrices.size())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	bool operator!=(const Model& other) const
+	{
+		if (imageDataCount == other.imageDataCount &&
+			pointBuffers.size() == other.pointBuffers.size() &&
+			mappedBuffers.size() == other.mappedBuffers.size() &&
+			jointMatrices.size() == other.jointMatrices.size())
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	bool operator<(const Model& other) const
+	{
+		return false;
+	}
+
+	bool operator>(const Model& other) const
+	{
+		return false;
+	}
+
+	bool operator<=(const Model& other) const
+	{
+		return false;
+	}
+
+	bool operator>=(const Model& other) const
+	{
+		return false;
+	}
 
 	glm::vec3 scale;
 
@@ -56,8 +106,8 @@ public:
 	std::array<glm::mat4, 128>& getJointMatrices(int index);
 
 	std::vector<DescSetData> descSetDatas;
-	BufferObject* getPointBuffer(uint32_t i);
-	MappedBuffer* getMappedBuffer(uint32_t i);
+	BufferObject* getPointBufferData() { std::cout << pointBuffers.size() << std::endl; return pointBuffers.data(); }
+	MappedBuffer* getMappedBufferData() { return mappedBuffers.data(); };
 	uint32_t getimageDataCount();
 
 	bool hasColider();

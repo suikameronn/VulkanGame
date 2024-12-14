@@ -21,7 +21,7 @@ void GameManager::initGame()
 
 void GameManager::createScene()
 {
-    scene = std::shared_ptr<Scene>(new Scene());
+    scene = std::unique_ptr<Scene>(new Scene());
     scene->init("C:/Users/sukai/Documents/VulkanGame/LusScripts/LuaClass.lua");
 
     mainGameLoop();
@@ -74,9 +74,9 @@ void GameManager::mainGameLoop()
 
 void GameManager::exitScene()
 {
-    scene.reset();
-
     FinishGame();
+
+    scene.reset();
 }
 
 void GameManager::FinishGame()

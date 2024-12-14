@@ -41,9 +41,8 @@ void Storage::setCamera(std::shared_ptr<Camera> c)
 //Storage‚ÉModel‚ğ’Ç‰Á‚·‚é
 void Storage::addModel(std::shared_ptr<Model> model)
 {
-	DescriptorInfo info{};
 	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage.push_back(model);
+	sceneModelStorage.push_back(std::shared_ptr<Model>(model));
 }
 
 //Storage‚©‚çw’è‚³‚ê‚½DescriptorInfo‚Ö‚ÌQÆ‚ğ•Ô‚·

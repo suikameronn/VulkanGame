@@ -18,46 +18,6 @@ void Scene::init(std::string luaScriptPath)
 
 Scene::~Scene()
 {
-
-	if (false)
-	{
-	//	lua_close(pL);
-	}
-}
-
-void Scene::pushCFunctions()
-{
-	/*
-	lua_pushcfunction(pL,glueTestFunc);
-	lua_setglobal(pL, "glueTestFunc");
-
-	lua_pushcfunction(pL, glueAddPlayer);
-	lua_setglobal(pL, "glueAddPlayer");
-
-	lua_pushcfunction(pL, glueAddStageBox);
-	lua_setglobal(pL, "glueAddStageBox");
-
-	lua_pushcfunction(pL, glueSetPos);
-	lua_setglobal(pL, "glueSetPos");
-
-	lua_pushcfunction(pL, glueSetColider);
-	lua_setglobal(pL, "glueSetColider");
-
-	lua_pushcfunction(pL, glueSetScale);
-	lua_setglobal(pL, "glueSetScale");
-
-	lua_pushcfunction(pL, glueSetRotate);
-	lua_setglobal(pL, "glueSetRotate");
-
-	lua_pushcfunction(pL, glueBindCamera);
-	lua_setglobal(pL, "glueBindCamera");
-
-	lua_pushcfunction(pL, glueBindObject);
-	lua_setglobal(pL, "glueBindObject");
-
-	lua_pushcfunction(pL, glueSetUpdateScript);
-	lua_setglobal(pL, "glueSetUpdateScript");
-	*/
 }
 
 void Scene::initLuaScript(std::string path)
@@ -77,8 +37,9 @@ void Scene::initLuaScript(std::string path)
 
 	state.open_libraries(sol::lib::base, sol::lib::package);
 
+	setEnumOBJECT();
 	setUsertype();
-	this->state.set_function("glueAddObject", &Scene::glueAddObject, this);
+	setFunctions();
 
 	script = state.load_file(path);
 	if (!script.valid())
@@ -88,10 +49,26 @@ void Scene::initLuaScript(std::string path)
 
 }
 
+void Scene::setEnumOBJECT()
+{
+	state.new_enum("OBJECT","gltfTEST", OBJECT::gltfTEST, "CUBE", OBJECT::CUBE);
+}
+
 void Scene::setUsertype()
 {
 	luaObject = state.new_usertype<Object>("Object", sol::constructors<Object()>());
-	luaModel = state.new_usertype<Model>("Model", sol::constructors<Model()>());
+	luaModel = state.new_usertype<std::shared_ptr<Model>>("Model", sol::constructors<std::shared_ptr<Model>>(), sol::base_classes, sol::bases<std::shared_ptr<Object>>());
+	luaGltfModel = state.new_usertype<GltfModel>("GltfModel");
+
+	luaModel.set_function("setgltfModel", &Model::setgltfModel);
+}
+
+void Scene::setFunctions()
+{
+	this->state.set_function("glueAddObject", &Scene::glueAddObject, this);
+	this->state.set_function("glueAddModel", &Scene::glueAddModel, this);
+	this->state.set_function("glueLoadModelResource", &Scene::glueLoadModelResource, this);
+	this->state.set_function("glueBindCamera", &Scene::glueBindCamera, this);
 }
 
 void Scene::parseScene()
@@ -102,17 +79,24 @@ void Scene::parseScene()
 
 void Scene::glueAddObject(Object* obj)
 {
-	switch (obj->getObjNum())
-	{
-	case cObject:
-		std::cout << 0 << std::endl;
-		break;
-	case cModel:
-		std::cout << 1 << std::endl;
-		break;
-	default:
-		std::cout << "none case" << std::endl;
-	}
+}
+
+void Scene::glueAddModel(Model* model)
+{
+	sceneSet.push_back(std::shared_ptr<Model>(model));
+}
+
+void Scene::glueBindCamera(Model* model)
+{
+	model->bindCamera(std::weak_ptr<Camera>(camera));
+}
+
+std::shared_ptr<GltfModel> Scene::glueLoadModelResource(OBJECT object)
+{
+	FileManager* fileManager = FileManager::GetInstance();
+	std::shared_ptr<GltfModel> gltfModel = fileManager->loadModel(object);
+
+	return gltfModel;
 }
 
 bool Scene::UpdateScene()

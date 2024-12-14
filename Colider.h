@@ -139,8 +139,8 @@ public:
 
 	void setDescriptorSet(VkDescriptorSet descriptorSet);
 
-	BufferObject* getPointBuffer();
-	MappedBuffer* getMappedBuffer();
+	BufferObject* getPointBufferData();
+	MappedBuffer* getMappedBufferData();
 	DescriptorInfo& getDescInfo();
 	DescSetData& getDescSetData() { return descSetData; }
 

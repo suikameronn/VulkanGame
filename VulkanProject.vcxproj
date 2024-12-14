@@ -116,14 +116,15 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lua;VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua52.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,10 +136,10 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,7 +147,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lua;VulkanSDK\1.3.290.0\Lib;C:\Users\sukai\Documents\VulkanGame\GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua52.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

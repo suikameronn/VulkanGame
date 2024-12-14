@@ -389,12 +389,12 @@ void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)
 	descSetData.descriptorSet = descriptorSet;
 }
 
-BufferObject* Colider::getPointBuffer()
+BufferObject* Colider::getPointBufferData()
 {
 	return &pointBuffer;
 }
 
-MappedBuffer* Colider::getMappedBuffer()
+MappedBuffer* Colider::getMappedBufferData()
 {
 	return &mappedBuffer;
 }
