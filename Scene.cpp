@@ -22,81 +22,46 @@ Scene::~Scene()
 
 void Scene::initLuaScript(std::string path)
 {
-	/*
-	pL = luaL_newstate();
-	luaL_openlibs(pL);
-	luaL_loadfile(pL, path.c_str());
+	lua = luaL_newstate();
+	luaL_openlibs(lua);
 
-	pushCFunctions();
+	lua_pushlightuserdata(lua, this);
+	lua_setglobal(lua, "Scene");
 
-	if (lua_pcall(pL, 0, 0, 0, 0))
-	{
-		std::cout << "error" << std::endl;
-	}
-	*/
+	registerOBJECT();
 
-	state.open_libraries(sol::lib::base, sol::lib::package);
+	createModelMetatable();
 
-	setEnumOBJECT();
-	setUsertype();
-	setFunctions();
+	lua_register(lua, "glueCreateModel", glueCreateModel);
 
-	script = state.load_file(path);
-	if (!script.valid())
-	{
-		std::cout << "lua load error" << std::endl;
-	}
-
+	luaL_dofile(lua,path.c_str());
 }
 
-void Scene::setEnumOBJECT()
+void Scene::registerOBJECT()
 {
-	state.new_enum("OBJECT","gltfTEST", OBJECT::gltfTEST, "CUBE", OBJECT::CUBE);
+	lua_pushnumber(lua, (int)OBJECT::gltfTEST);
+	lua_setglobal(lua, "gltfTEST");
+
+	lua_pushnumber(lua, (int)OBJECT::CUBE);
+	lua_setglobal(lua, "CUBE");
 }
 
-void Scene::setUsertype()
+void Scene::createModelMetatable()
 {
-	luaObject = state.new_usertype<Object>("Object", sol::constructors<Object()>());
-	luaModel = state.new_usertype<std::shared_ptr<Model>>("Model", sol::constructors<std::shared_ptr<Model>>(), sol::base_classes, sol::bases<std::shared_ptr<Object>>());
-	luaGltfModel = state.new_usertype<GltfModel>("GltfModel");
+	luaL_newmetatable(lua, "ModelMetaTable");
 
-	luaModel.set_function("setgltfModel", &Model::setgltfModel);
-}
 
-void Scene::setFunctions()
-{
-	this->state.set_function("glueAddObject", &Scene::glueAddObject, this);
-	this->state.set_function("glueAddModel", &Scene::glueAddModel, this);
-	this->state.set_function("glueLoadModelResource", &Scene::glueLoadModelResource, this);
-	this->state.set_function("glueBindCamera", &Scene::glueBindCamera, this);
+
+	lua_pushcfunction(lua, glueAllGc);
+	lua_setfield(lua, -2, "__gc");
+	lua_pushcfunction(lua, glueSetGltfModel);
+	lua_setfield(lua, -2, "setGltfModel");
+
+	lua_pop(lua, 1);
 }
 
 void Scene::parseScene()
 {
-
-	script();
-}
-
-void Scene::glueAddObject(Object* obj)
-{
-}
-
-void Scene::glueAddModel(Model* model)
-{
-	sceneSet.push_back(std::shared_ptr<Model>(model));
-}
-
-void Scene::glueBindCamera(Model* model)
-{
-	model->bindCamera(std::weak_ptr<Camera>(camera));
-}
-
-std::shared_ptr<GltfModel> Scene::glueLoadModelResource(OBJECT object)
-{
-	FileManager* fileManager = FileManager::GetInstance();
-	std::shared_ptr<GltfModel> gltfModel = fileManager->loadModel(object);
-
-	return gltfModel;
 }
 
 bool Scene::UpdateScene()

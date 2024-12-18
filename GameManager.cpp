@@ -22,7 +22,7 @@ void GameManager::initGame()
 void GameManager::createScene()
 {
     scene = std::unique_ptr<Scene>(new Scene());
-    scene->init("C:/Users/sukai/Documents/VulkanGame/LusScripts/LuaClass.lua");
+    scene->init("C:/Users/sukai/Documents/VulkanGame/LusScripts/test.lua");
 
     mainGameLoop();
 }

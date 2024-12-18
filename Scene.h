@@ -8,7 +8,9 @@
 
 #include<glm/glm.hpp>
 
-#include"sol/sol.hpp"
+#include "lua/include/lua.hpp"
+#include "lua/include/lualib.h"
+#include "lua/include/lauxlib.h"
 
 #include"FileManager.h"
 #include"Controller.h"
@@ -28,25 +30,14 @@ private:
 	float collisionDepth;//衝突時のめり込んだ距離
 	glm::vec3 collisionVector;//衝突時のめり込んだ方向
 
-	sol::state state;
-	sol::load_result script;
-	sol::usertype<Object> luaObject;
-	sol::usertype<Model> luaModel;
-	sol::usertype<GltfModel> luaGltfModel;
-
+	lua_State* lua;
 	void initLuaScript(std::string path);
-	void setEnumOBJECT();
-	void setUsertype();
-	void setFunctions();
+	void registerOBJECT();
+	void createModelMetatable();
 
 public:
 
-	void testGlue() { std::cout << "glueSuccess" << std::endl; }
-
-	void glueAddObject(Object* obj);
-	void glueAddModel(Model* model);
-	std::shared_ptr<GltfModel> glueLoadModelResource(OBJECT object);
-	void glueBindCamera(Model* model);
+	void test() { std::cout << "glueSuccess" << std::endl; }
 
 	Scene();
 	~Scene();
@@ -60,180 +51,95 @@ public:
 	bool UpdateScene();
 };
 
-static OBJECT convertEnum(int obj)
+static int testGlue(lua_State* lua)
 {
-	switch (obj)
-	{
-	case 101:
-		return OBJECT::gltfTEST;
-	case 102:
-		return OBJECT::CUBE;
+	std::cout << "testGlue" << std::endl;
+
+	lua_getglobal(lua, "Scene");
+
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	scene->test();
+
+	return 1;
+}
+
+// スタックの内容を表示する関数
+static void printStack(lua_State* L) {
+	int top = lua_gettop(L); // スタックのトップインデックスを取得
+	std::cout << "Stack size: " << top << std::endl;
+	for (int i = 1; i <= top; ++i) {
+		int t = lua_type(L, i);
+		switch (t) {
+		case LUA_TSTRING: // 文字列の場合
+			std::cout << i << ": " << lua_tostring(L, i) << " (string)" << std::endl;
+			break;
+		case LUA_TBOOLEAN: // 真偽値の場合
+			std::cout << i << ": " << (lua_toboolean(L, i) ? "true" : "false") << " (boolean)" << std::endl;
+			break;
+		case LUA_TNUMBER: // 数値の場合
+			std::cout << i << ": " << lua_tonumber(L, i) << " (number)" << std::endl;
+			break;
+		case LUA_TUSERDATA: // ユーザーデータの場合
+			std::cout << i << ": " << lua_touserdata(L, i) << " (userdata)" << std::endl;
+			break;
+		case LUA_TTABLE: // テーブルの場合
+			std::cout << i << ": table" << std::endl;
+			break;
+		default: // その他の場合
+			std::cout << i << ": " << lua_typename(L, t) << std::endl;
+			break;
+		}
 	}
 }
 
-/*
-
-static int glueTestFunc(lua_State* pL)
+static int glueAllGc(lua_State* lua)
 {
-	std::cout << "LUA" << std::endl;
-
 	return 0;
 }
 
-static int glueSetUpdateScript(lua_State* pL)
+//オブジェクトのインスタンスの作成のグルー
+static int glueCreateObject(lua_State* lua)
 {
-	std::string name;
-	std::string luaScriptPath;
-	luaScriptPath = "C:/Users/sukai/Documents/VulkanGame/LusScripts/";
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+	
+	std::shared_ptr<Object> obj = std::shared_ptr<Object>(new Object());
 
-	name = lua_tostring(pL, -2);
-	luaScriptPath += lua_tostring(pL, -1);
-
-	Scene::GetInstance()->sceneSet[name]->setLuaScript(luaScriptPath);
-
-	return 0;
+	return 1;
 }
 
-
-
-static int glueAddPlayer(lua_State* pL)
+static int glueCreateModel(lua_State* lua)
 {
-	std::string name;
-	int objNumber;
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
-	name = lua_tostring(pL, -2);
-	objNumber = lua_tonumber(pL, -1);
+	Model* model = new Model();
+	scene->sceneSet.push_back(std::shared_ptr<Model>(model));
 
-	OBJECT obj = convertEnum(objNumber);
+	void** userdata = (void**)lua_newuserdata(lua, sizeof(void*));
+	*userdata = model;
 
-	FileManager* fileManager = FileManager::GetInstance();
+	luaL_getmetatable(lua, "ModelMetaTable");
+	lua_setmetatable(lua, -2);
 
-	Scene::GetInstance()->sceneSet[name] = std::shared_ptr<Player>(new Player());
-	Scene::GetInstance()->sceneSet[name]->setgltfModel(fileManager->loadModel(obj));
-
-	lua_pop(pL, -1);
-
-	return 0;
+	return 1;
 }
 
-static int glueAddStageBox(lua_State* pL)
+static int glueSetGltfModel(lua_State* lua)
 {
-	std::string name;
-	int objNumber;
+	std::cout << "aaaa" << std::endl;
 
-	name = lua_tostring(pL, -2);
-	objNumber = lua_tonumber(pL, -1);
+	printStack(lua);
 
-	OBJECT obj = convertEnum(objNumber);
+	/*
+	//void** userdata = (void**)luaL_checkudata(lua,-1, "ModelMetaTable");
+	Model* model = static_cast<Model*>(*userdata);
 
-	FileManager* fileManager = FileManager::GetInstance();
+	//const OBJECT modelType = (OBJECT)lua_tointeger(lua, -2);
 
-	Scene::GetInstance()->sceneSet[name] = std::shared_ptr<StageBox>(new StageBox());
-	Scene::GetInstance()->sceneSet[name]->setgltfModel(fileManager->loadModel(obj));
+	FileManager::GetInstance()->loadModel(modelType);
+	*/
 
-	lua_pop(pL, -1);
-
-	return 0;
+	return 1;
 }
-
-static int glueSetPos(lua_State* pL)
-{
-	std::string name;
-	float x;
-	float y;
-	float z;
-
-	name = lua_tostring(pL, -4);
-	x = lua_tonumber(pL, -3);
-	y = lua_tonumber(pL, -2);
-	z = lua_tonumber(pL, -1);
-
-	Scene::GetInstance()->sceneSet[name]->setPosition(glm::vec3(x, y, z));
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-static int glueSetRotate(lua_State* pL)
-{
-	std::string name;
-	float x;
-	float y;
-	float z;
-
-	name = lua_tostring(pL, -4);
-	x = lua_tonumber(pL, -3);
-	y = lua_tonumber(pL, -2);
-	z = lua_tonumber(pL, -1);
-
-	Rotate rotate = { x,y,z };
-	Scene::GetInstance()->sceneSet[name]->rotate = rotate;
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-int glueSetScale(lua_State* pL)
-{
-	std::string name;
-	float x;
-	float y;
-	float z;
-
-	name = lua_tostring(pL, -4);
-	x = lua_tonumber(pL, -3);
-	y = lua_tonumber(pL, -2);
-	z = lua_tonumber(pL, -1);
-
-	Scene::GetInstance()->sceneSet[name]->scale = glm::vec3(x, y, z);
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-static int glueSetColider(lua_State* pL)
-{
-	std::string name;
-
-	name = lua_tostring(pL, -1);
-
-	Scene::GetInstance()->sceneSet[name]->setColider();
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-static int glueBindCamera(lua_State* pL)
-{
-	std::string name;
-
-	name = lua_tostring(pL, -1);
-
-	Scene* scene = Scene::GetInstance();
-
-	scene->sceneSet[name]->bindCamera(std::weak_ptr<Object>(scene->camera));
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-static int glueBindObject(lua_State* pL)
-{
-	std::string parentName;
-	std::string childName;
-
-	Scene* scene = Scene::GetInstance();
-
-	scene->sceneSet[parentName]->bindObject(std::weak_ptr<Object>(scene->sceneSet[childName]));
-
-	lua_pop(pL, -1);
-
-	return 0;
-}
-
-*/
