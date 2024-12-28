@@ -20,16 +20,15 @@ Model::Model()
 
 	childObjects.clear();
 	spherePos = false;
-	theta = 0.0f;
-	phi = 0.0f;
-
-	playAnim = true;
 
 	rotateSpeed = 0.1f;
 
 	deltaTime = 0.0;
 
+	isMovable = false;
 	colider = nullptr;
+
+	defaultAnimationName = "Idle";
 }
 
 Model::Model(std::string luaScriptPath)
@@ -50,24 +49,21 @@ Model::Model(std::string luaScriptPath)
 
 	childObjects.clear();
 	spherePos = false;
-	theta = 0.0f;
-	phi = 0.0f;
-
-	playAnim = true;
 
 	rotateSpeed = 0.1f;
 
 	deltaTime = 0.0;
 
+	isMovable = false;
 	colider = nullptr;
+
+	defaultAnimationName = "none";
+	currentPlayAnimationName = "none";
 }
 
 void Model::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
-
-	std::cout << pointBuffers.size() << std::endl;
-	std::cout << mappedBuffers.size() << std::endl;
 
 	for (size_t i = 0; i < pointBuffers.size(); i++)
 	{
@@ -91,9 +87,39 @@ void Model::cleanupVulkan()
 	}
 }
 
+void Model::setDefaultAnimationName(std::string name)
+{
+#ifdef DEBUG
+	bool animationExist = false;
+	for (int i = 0; i < animationNames.size(); i++)
+	{
+		if (animationNames[i] == name)
+		{
+			animaitonExist = true;
+			break;
+		}
+	}
+	if (!animationExist)
+	{
+		defaultAnimation = "none";
+		return;
+	}
+#endif
+	defaultAnimationName = name;
+	currentPlayAnimationName = name;
+}
+
 void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 {
 	gltfModel = model;
+
+	animationNames.resize(model->animations.size());
+	int i = 0;
+	for (auto itr = model->animations.begin(); itr != model->animations.end(); itr++)
+	{
+		animationNames[i] = itr->first;
+		i++;
+	}
 
 	descSetDatas.resize(model->primitiveCount);
 	jointMatrices.resize(model->jointNum);
@@ -122,18 +148,28 @@ void Model::bindObject(std::weak_ptr<Object> obj)
 	sendPosToChildren(position);
 }
 
-void Model::bindCamera(std::weak_ptr<Object> camera)
+void Model::bindCamera(std::weak_ptr<Camera> camera)
 {
 	cameraObj = camera;
 
 	sendPosToChildren(position);
 }
 
+void Model::switchPlayAnimation()
+{
+	currentPlayAnimationName = defaultAnimationName;
+}
+
+void Model::switchPlayAnimation(std::string nextAnimation)
+{
+	currentPlayAnimationName = nextAnimation;
+}
+
 void Model::playAnimation()
 {
-	if (true)
+	if (currentPlayAnimationName != "none")
 	{
-		if (deltaTime > gltfModel->animationDuration("Running"))
+		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName))
 		{
 			startTime = clock();
 		}
@@ -142,7 +178,7 @@ void Model::playAnimation()
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
 
-		gltfModel->updateAnimation(deltaTime,"Running", jointMatrices);
+		gltfModel->updateAnimation(deltaTime, gltfModel->animations[currentPlayAnimationName], jointMatrices);
 	}
 }
 
@@ -174,12 +210,12 @@ void Model::updateTransformMatrix()
 		colider->reflectMovement(transformMatrix);
 	}
 
-	uniformBufferChange = true;
+	uniformBufferChange = false;
 }
 
 void Model::setColider()
 {
-	colider = std::shared_ptr<Colider>(new Colider(gltfModel->boundingBox.min, gltfModel->boundingBox.max));
+	colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
 }
 
 bool Model::hasColider()
@@ -207,5 +243,35 @@ void Model::sendPosToChildren(glm::vec3 pos)
 	if (!cameraObj.expired())
 	{
 		cameraObj.lock()->setParentPos(pos);
+	}
+}
+
+void Model::Update()
+{
+	if (updateScript)
+	{
+		updateScript->update();
+	}
+
+	playAnimation();
+
+	customUpdate();
+}
+
+void Model::customUpdate()
+{
+
+}
+
+void Model::initFrameSetting()
+{
+	if (defaultAnimationName != "none")
+	{
+		switchPlayAnimation();
+	}
+
+	if (colider)
+	{
+		colider->initFrameSettings();
 	}
 }

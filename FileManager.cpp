@@ -73,6 +73,8 @@ std::shared_ptr<GltfModel> FileManager::loadModel(OBJECT obj)
     maxPos = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
 
     GltfModel* model = loadGLTFModel(scene, gltfModel);
+    model->initPoseMin = minPos;
+    model->initPoseMax = maxPos;
 
     storage->addModel(obj, model);
 
@@ -85,15 +87,13 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     GltfNode* root = new GltfNode();
     GltfModel* model = new GltfModel(root);
 
+    minPos = glm::vec3(100000.0, 10000.0, 10000.0);
+    maxPos = glm::vec3(-10000.0, -10000.0, -10000.0);
+
     for (size_t i = 0; i < scene.nodes.size(); i++)
     {
         const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
         loadNode(nullptr, model->getRootNode(),model, gltfNode, scene.nodes[i], gltfModel, scale);
-    }
-
-    if (gltfModel.animations.size() > 0)
-    {
-        loadAnimations(model, scene, gltfModel);
     }
 
     loadSkin(model, gltfModel);
@@ -102,8 +102,10 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
         setSkin(model->getRootNode(),model);
     }
 
-    //model->calculateBoundingBox(model->getRootNode(), nullptr);
-    model->setAABBMatrix(minPos,maxPos);
+    if (gltfModel.animations.size() > 0)
+    {
+        loadAnimations(model, scene, gltfModel);
+    }
 
     return model;
 }
@@ -173,18 +175,6 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
         processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);
 
         model->primitiveCount++;
-    }
-
-    for (int i = 0; i < mesh->primitives.size(); i++)
-    {
-        if (mesh->primitives[i].bb.valid && !mesh->bb.valid)
-        {
-            mesh->bb = mesh->primitives[i].bb;
-            mesh->bb.valid = true;
-        }
-
-        mesh->bb.min = glm::min(mesh->bb.min, mesh->primitives[i].bb.min);
-        mesh->bb.max = glm::max(mesh->bb.max, mesh->primitives[i].bb.max);
     }
 
     currentNode->mesh = mesh;
@@ -501,6 +491,31 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
 
         model->animations[animation.name] = animation;
     }
+}
+
+int FileManager::splitPos(std::string text, std::array<float, 4>& coliderSetting)
+{
+    int spacePos = 0;
+    int beforeSpacePos = 0;
+    std::string substr;
+
+    for(int i = 0;i < 3;i++)
+    {
+        spacePos = text.find(" ",beforeSpacePos);
+        if (spacePos == std::string::npos)
+        {
+            return -1;
+        }
+
+        substr = text.substr(beforeSpacePos, spacePos - beforeSpacePos - 1);
+        coliderSetting[i] = std::stof(substr);
+
+        beforeSpacePos = spacePos + 1;
+    }
+    substr = text.substr(beforeSpacePos, text.length() - beforeSpacePos);
+    coliderSetting[3] = std::stof(substr);
+
+    return 0;
 }
 
 void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)

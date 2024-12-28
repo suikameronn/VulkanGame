@@ -21,27 +21,28 @@ glm::vec3 Player::inputMove()
 	{
 		forward = cameraObj.lock()->forward;
 		right = cameraObj.lock()->right;
+		cameraDirDeg = cameraObj.lock()->getTheta();
 	}
 
 	if (controller->getKey(GLFW_KEY_W))
 	{
 		moveDirec = -forward;
-		rotate.y = 90.0f;
+		rotate.y = cameraDirDeg;
 	}
 	else if (controller->getKey(GLFW_KEY_A))
 	{
 		moveDirec = -right;
-		rotate.y = 0.0f;
+		rotate.y = cameraDirDeg - 90.0f;
 	}
 	else if (controller->getKey(GLFW_KEY_D))
 	{
 		moveDirec = right;
-		rotate.y = 180.0f;
+		rotate.y = cameraDirDeg + 90.0f;
 	}
 	else if (controller->getKey(GLFW_KEY_S))
 	{
 		moveDirec = forward;
-		rotate.y = 270.0f;
+		rotate.y = cameraDirDeg + 180.0f;
 	}
 	else
 	{
@@ -67,10 +68,5 @@ void Player::customUpdate()
 	{
 		glm::vec3 moveDirec = inputMove();
 		setPosition(this->position + moveDirec);
-	}
-
-	if (spherePos)
-	{
-		setSpherePos(theta, phi);
 	}
 }

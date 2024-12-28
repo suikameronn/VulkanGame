@@ -22,6 +22,9 @@
 #include <functional>
 #include<fstream>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include"Storage.h"
 
 extern GLFWwindow* window;
@@ -144,6 +147,8 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
+
+    void setUpComputingShader();
 
     void cleanup();
     void cleanupSwapChain();
@@ -278,6 +283,7 @@ public:
     void setModelData(std::shared_ptr<Model> model);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
+    void updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider);
 };
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {

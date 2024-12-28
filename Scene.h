@@ -23,7 +23,7 @@ class Scene
 {
 private:
 
-	void parseScene();
+	void initFrameSetting();
 
 	void setModels();
 
@@ -33,7 +33,7 @@ private:
 	lua_State* lua;
 	void initLuaScript(std::string path);
 	void registerOBJECT();
-	void createModelMetatable();
+	void registerFunctions();
 
 public:
 
@@ -46,7 +46,7 @@ public:
 
 	void init(std::string luaScriptPath);
 
-	std::vector<std::shared_ptr<Model>> sceneSet;
+	std::vector<std::shared_ptr<Object>> sceneSet;
 
 	bool UpdateScene();
 };
@@ -115,31 +115,174 @@ static int glueCreateModel(lua_State* lua)
 	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
 	Model* model = new Model();
-	scene->sceneSet.push_back(std::shared_ptr<Model>(model));
+	scene->sceneSet.push_back(std::shared_ptr<Object>(model));
 
-	void** userdata = (void**)lua_newuserdata(lua, sizeof(void*));
-	*userdata = model;
+	lua_pushlightuserdata(lua, model);
 
-	luaL_getmetatable(lua, "ModelMetaTable");
-	lua_setmetatable(lua, -2);
+	return 1;
+}
+
+static int glueCreatePlayer(lua_State* lua)
+{
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	Player* player = new Player();
+	scene->sceneSet.push_back(std::shared_ptr<Object>(player));
+
+	lua_pushlightuserdata(lua, player);
 
 	return 1;
 }
 
 static int glueSetGltfModel(lua_State* lua)
 {
-	std::cout << "aaaa" << std::endl;
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 
-	printStack(lua);
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model* model = dynamic_cast<Model*>(obj);
+		model->setgltfModel(FileManager::GetInstance()->loadModel(static_cast<OBJECT>(lua_tointeger(lua, -1))));
+		break;
+	}
 
-	/*
-	//void** userdata = (void**)luaL_checkudata(lua,-1, "ModelMetaTable");
-	Model* model = static_cast<Model*>(*userdata);
 
-	//const OBJECT modelType = (OBJECT)lua_tointeger(lua, -2);
+	return 0;
+}
 
-	FileManager::GetInstance()->loadModel(modelType);
-	*/
+static int glueSetPos(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua,-4));
 
-	return 1;
+	switch (obj->getObjNum())
+	{
+	case 0:
+	case 1:
+		float x = static_cast<float>(lua_tonumber(lua, -3));
+		float y = static_cast<float>(lua_tonumber(lua, -2));
+		float z = static_cast<float>(lua_tonumber(lua, -1));
+		obj->setPosition(glm::vec3(x, y, z));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetRotate(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
+
+	switch (obj->getObjNum())
+	{
+	case 0:
+	case 1:
+		obj->rotate.x = static_cast<float>(lua_tonumber(lua, -3));
+		obj->rotate.y = static_cast<float>(lua_tonumber(lua, -2));
+		obj->rotate.z = static_cast<float>(lua_tonumber(lua, -1));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetScale(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		model->scale.x = static_cast<float>(lua_tonumber(lua, -3));
+		model->scale.y = static_cast<float>(lua_tonumber(lua, -2));
+		model->scale.z = static_cast<float>(lua_tonumber(lua, -1));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetDiffuse(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -5));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		float r = static_cast<float>(lua_tonumber(lua, -4));
+		float g = static_cast<float>(lua_tonumber(lua, -3));
+		float b = static_cast<float>(lua_tonumber(lua, -2));
+		float a = static_cast<float>(lua_tonumber(lua, -1));
+		glm::vec4 diffuse = glm::vec4(r, g, b, a);
+		model->setDiffuse(diffuse);
+	}
+
+	return 0;
+}
+
+static int glueBindCamera(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
+
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	obj->bindCamera(std::weak_ptr<Camera>(scene->camera));
+
+	return 0;
+}
+
+static int glueSetColider(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		model->setColider();
+		model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetColiderScale(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		std::shared_ptr<Colider> colider = model->getColider();
+		if (colider)
+		{
+			float x = static_cast<float>(lua_tonumber(lua, -3));
+			float y = static_cast<float>(lua_tonumber(lua, -2));
+			float z = static_cast<float>(lua_tonumber(lua, -1));
+			colider->scale = glm::vec3(x, y, z);
+		}
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetDefaultAnimationName(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		model->setDefaultAnimationName(std::string(lua_tostring(lua, -1)));
+		break;
+	}
+
+	return 0;
 }

@@ -2,8 +2,8 @@
 // Microsoft Visual C++ で生成されたインクルード ファイル。
 // VulkanGame1.rc で使用
 //
-#define IDR_MODEL1                      102
-#define IDR_MODEL2						103
+#define IDR_MODEL1                      101
+#define IDR_MODEL2						102
 
 // Next default values for new objects
 // 

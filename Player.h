@@ -1,7 +1,10 @@
 #include "Model.h"
+#include"Camera.h"
 
 class Player : public Model
 {
+	float cameraDirDeg;
+
 	float moveSpeed;
 	bool controllable;
 

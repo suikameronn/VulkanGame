@@ -24,15 +24,16 @@ protected:
 	std::vector<MappedBuffer> mappedBuffers;
 	std::vector<std::array<glm::mat4, 128>> jointMatrices;
 
-	bool playAnim;
-	bool loopAnimation;
-
 	clock_t startTime;
 	clock_t currentTime;
 	double deltaTime;
 
 	std::shared_ptr<Material> material;
 	std::shared_ptr<Colider> colider;
+
+	std::string defaultAnimationName;
+	std::string currentPlayAnimationName;
+	std::vector<std::string> animationNames;
 
 public:
 
@@ -43,56 +44,12 @@ public:
 		std::cout << "Model deleted!" << std::endl;
 	}
 
-	bool operator==(const Model& other) const
-	{
-		if (imageDataCount == other.imageDataCount &&
-			pointBuffers.size() == other.pointBuffers.size() &&
-			mappedBuffers.size() == other.mappedBuffers.size() &&
-			jointMatrices.size() == other.jointMatrices.size())
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	bool operator!=(const Model& other) const
-	{
-		if (imageDataCount == other.imageDataCount &&
-			pointBuffers.size() == other.pointBuffers.size() &&
-			mappedBuffers.size() == other.mappedBuffers.size() &&
-			jointMatrices.size() == other.jointMatrices.size())
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	bool operator<(const Model& other) const
-	{
-		return false;
-	}
-
-	bool operator>(const Model& other) const
-	{
-		return false;
-	}
-
-	bool operator<=(const Model& other) const
-	{
-		return false;
-	}
-
-	bool operator>=(const Model& other) const
-	{
-		return false;
-	}
-
 	glm::vec3 scale;
 
+	void setDefaultAnimationName(std::string name);
+
 	void bindObject(std::weak_ptr<Object> obj);
-	void bindCamera(std::weak_ptr<Object> camera);
+	void bindCamera(std::weak_ptr<Camera> camera);
 
 	void sendPosToChildren(glm::vec3 pos);
 
@@ -101,15 +58,19 @@ public:
 	std::shared_ptr<GltfModel> getGltfModel() { return gltfModel; }
 
 	void setMaterial(std::shared_ptr<Material> material) { this->material = material; }
+	void setDiffuse(glm::vec4 color) { this->material->setDiffuse(color); }
 
+	void switchPlayAnimation();
+	void switchPlayAnimation(std::string nextAnimation);
 	void playAnimation();
 	std::array<glm::mat4, 128>& getJointMatrices(int index);
 
 	std::vector<DescSetData> descSetDatas;
-	BufferObject* getPointBufferData() { std::cout << pointBuffers.size() << std::endl; return pointBuffers.data(); }
+	BufferObject* getPointBufferData() { return pointBuffers.data(); }
 	MappedBuffer* getMappedBufferData() { return mappedBuffers.data(); };
 	uint32_t getimageDataCount();
 
+	bool isMovable;
 	bool hasColider();
 	void setColider();
 	std::shared_ptr<Colider> getColider() { return colider; }
@@ -120,5 +81,8 @@ public:
 
 	void setPosition(glm::vec3 pos) override;
 
-	void customUpdate() {}
+	void Update() override;
+	void customUpdate() override;
+
+	void initFrameSetting() override;
 };

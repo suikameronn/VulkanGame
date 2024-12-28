@@ -1,5 +1,6 @@
 #pragma once
 
+#include<map>
 #include<array>
 
 #include"Object.h"
@@ -85,23 +86,19 @@ public:
 	glm::vec3& operator[](int i) { return points[i]; }
 };
 
-struct AABB
-{
-	glm::vec3 minPos;
-	glm::vec3 maxPos;
-};
-
 class Colider
 {
 private:
-	bool changeUniformBuffer;
 
 	glm::vec3 pivot;
 	float width;
 	float height;
 	float depth;
 
+	glm::mat4 scaleMat;
 	glm::mat4 transform;
+
+	std::map<float, std::pair<glm::vec3, glm::vec3>> animationAABB;
 	
 	std::vector<glm::vec3> coliderVertices;
 	std::vector<glm::vec3> originalVertexPos;
@@ -123,6 +120,11 @@ private:
 
 public:
 	Colider(glm::vec3 min,glm::vec3 max);
+
+	void initFrameSettings();
+
+	glm::vec3 scale;
+	glm::mat4 getScaleMat();
 
 	void reflectMovement(glm::mat4& transform);
 	glm::mat4& getTransformMatrix() { return transform; }

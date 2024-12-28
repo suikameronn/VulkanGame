@@ -2,23 +2,15 @@
 
 Camera::Camera()
 {
-	uniformBufferChange = true;
-
 	position = { 0,0.0f,5.0f };
 	posOffSet = 50.0f;
-
-	spherePos = true;
 
 	forward = glm::vec3{ 0,0,1};
 	right = glm::vec3{ 1,0,0};
 	up = glm::vec3{ 0,1,0 };
 
-	axis = glm::vec3{ 0,1,0 };
-
 	theta = 0.0f;
 	phi = 0.0f;
-
-	childObjects.clear();
 
 	viewAngle = 45;
 	viewPointSpeed = 1.0f;
@@ -26,6 +18,16 @@ Camera::Camera()
 	setPosition(glm::vec3(0, 0, posOffSet));
 
 	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, 0.1f, 10000.0f);
+}
+
+void Camera::setPosition(glm::vec3 pos)
+{
+	if (position == pos)
+	{
+		return;
+	}
+
+	position = pos;
 }
 
 void Camera::setViewAngle(float f)
@@ -38,6 +40,11 @@ void Camera::setViewAngle(float f)
 float Camera::getViewAngle()
 {
 	return viewAngle;
+}
+
+void Camera::Update()
+{
+	customUpdate();
 }
 
 void Camera::customUpdate()
@@ -82,6 +89,26 @@ void Camera::customUpdate()
 	calcViewMat();
 }
 
+void Camera::setParentPos(glm::vec3 pos)
+{
+	parentPos = pos;
+}
+
+void Camera::setSpherePos(float theta, float phi)
+{
+	if (theta != 0.0f || phi != 0.0f || true)
+	{
+		glm::vec3 pos;
+		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
+		pos += parentPos;
+
+		this->forward = glm::normalize(glm::vec3(pos - parentPos));
+		this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
+
+		setPosition(pos);
+	}
+}
+
 void Camera::calcViewMat()
 {
 	viewMat = glm::lookAt(this->position, parentPos , up);
@@ -90,4 +117,9 @@ void Camera::calcViewMat()
 glm::vec3 Camera::getViewTarget()
 {
 	return parentPos;
+}
+
+float Camera::getTheta()
+{
+	return theta;
 }

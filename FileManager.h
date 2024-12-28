@@ -3,6 +3,7 @@
 #include <windows.h>
 #include<map>
 #include "resource1.h"
+#include<ostream>
 
 #include"EnumList.h"
 #include"Storage.h"
@@ -17,6 +18,9 @@ class FileManager
 {
 private:
 	static FileManager* fileManager;
+
+	const std::string aabbCalc = "Running";
+	const int aabbUpdateRate = 60;
 
 	FileManager();
 
@@ -39,6 +43,7 @@ private:
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
 	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel,GltfModel* model);
 	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
+	int splitPos(std::string text,std::array<float, 4>& coliderSetting);
 	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
 	void setSkin(GltfNode* node, GltfModel* model);
 

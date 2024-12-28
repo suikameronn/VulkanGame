@@ -8,7 +8,7 @@ enum class ACTION
 
 enum class OBJECT
 {
-	gltfTEST = 101,
+	gltfTEST = 0,
 	CUBE
 };
 

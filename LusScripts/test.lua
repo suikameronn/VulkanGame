@@ -1,11 +1,23 @@
+
 local model = glueCreateModel()
 
-model:setGltfModel()
+glueSetGltfModel(model,CUBE)
+glueSetPos(model,0.0,0.0,0.0)
+glueSetScale(model,40.0,1.0,40.0)
+glueSetColider(model,false)
 
-local mt = debug.getmetatable(model)
-if mt and mt.setGltfModel then
-    print("a")
-    mt.setGltfModel(model)
-else
-    print("b")
-end
+local model2 = glueCreateModel()
+glueSetGltfModel(model2,CUBE)
+glueSetPos(model2,40.0,39.0,0.0)
+glueSetScale(model2,1.0,40.0,40.0)
+glueSetColider(model2,false)
+
+local player = glueCreatePlayer()
+glueSetGltfModel(player,gltfTEST)
+glueSetScale(player,10.0,10.0,10.0)
+glueSetColider(player,true)
+glueSetColiderScale(player,1.0,1.0,0.3)
+glueSetDefaultAnimationName(player,"Running")
+glueBindCamera(player)
+
+print("AAA")

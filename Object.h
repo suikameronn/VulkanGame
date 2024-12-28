@@ -19,6 +19,7 @@
 
 #include"EnumList.h"
 #include"Controller.h"
+#include"Camera.h"
 
 struct BufferObject
 {
@@ -109,9 +110,8 @@ protected:
 	ObjNum objNum;
 
 	std::unique_ptr<UpdateScript> updateScript;
-	std::weak_ptr<Object> cameraObj;
+	std::weak_ptr<Camera> cameraObj;
 	std::vector<std::weak_ptr<Object>> childObjects;
-	float theta, phi;
 
 	float rotateSpeed;
 	float length;
@@ -143,18 +143,17 @@ public:
 	glm::mat4 transformMatrix;
 
 	void bindObject(std::weak_ptr<Object> obj);
-	void bindCamera(std::weak_ptr<Object> camera);
+	void bindCamera(std::weak_ptr<Camera> camera);
 	void sendPosToChildren(glm::vec3 pos);
 	void setParentPos(glm::vec3 parentPos);
 
 	virtual void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
 
-	void setSpherePos(float theta, float phi);
-
 	glm::mat4 getTransformMatrix();
 
+	virtual void initFrameSetting();
 	virtual void updateTransformMatrix() {};
-	void Update();
+	virtual void Update();
 	virtual void customUpdate() {}
 };

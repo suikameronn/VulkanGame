@@ -11,13 +11,30 @@ void Scene::init(std::string luaScriptPath)
 
 	initLuaScript(luaScriptPath);
 
-	parseScene();
+	initFrameSetting();
 
 	setModels();
 }
 
 Scene::~Scene()
 {
+}
+
+void Scene::initFrameSetting()
+{
+	for (int i = 0; i < sceneSet.size(); i++)
+	{
+		switch (sceneSet[i]->getObjNum())
+		{
+		case 0:
+			sceneSet[i]->initFrameSetting();
+			break;
+		case 1:
+			std::shared_ptr<Model> model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
+			model->initFrameSetting();
+			break;
+		}
+	}
 }
 
 void Scene::initLuaScript(std::string path)
@@ -29,10 +46,7 @@ void Scene::initLuaScript(std::string path)
 	lua_setglobal(lua, "Scene");
 
 	registerOBJECT();
-
-	createModelMetatable();
-
-	lua_register(lua, "glueCreateModel", glueCreateModel);
+	registerFunctions();
 
 	luaL_dofile(lua,path.c_str());
 }
@@ -46,59 +60,96 @@ void Scene::registerOBJECT()
 	lua_setglobal(lua, "CUBE");
 }
 
-void Scene::createModelMetatable()
+void Scene::registerFunctions()
 {
-	luaL_newmetatable(lua, "ModelMetaTable");
-
-
-
-	lua_pushcfunction(lua, glueAllGc);
-	lua_setfield(lua, -2, "__gc");
-	lua_pushcfunction(lua, glueSetGltfModel);
-	lua_setfield(lua, -2, "setGltfModel");
-
-	lua_pop(lua, 1);
-}
-
-void Scene::parseScene()
-{
+	lua_register(lua, "glueCreateModel", glueCreateModel);
+	lua_register(lua, "glueCreatePlayer", glueCreatePlayer);
+	lua_register(lua, "glueSetGltfModel",glueSetGltfModel);
+	lua_register(lua, "glueSetPos", glueSetPos);
+	lua_register(lua, "glueSetRotate", glueSetRotate);
+	lua_register(lua, "glueSetScale", glueSetScale);
+	lua_register(lua, "glueSetDiffuse", glueSetDiffuse);
+	lua_register(lua, "glueBindCamera", glueBindCamera);
+	lua_register(lua, "glueSetColider", glueSetColider);
+	lua_register(lua, "glueSetColiderScale", glueSetColiderScale);
+	lua_register(lua, "glueSetDefaultAnimationName", glueSetDefaultAnimationName);
 }
 
 bool Scene::UpdateScene()
 {
 	bool exit = false;
 
-	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
-	{
-		(*itr)->Update();
-	}
-
 	camera->Update();
 
-	for (auto itr = sceneSet.begin(); itr != std::prev(sceneSet.end()); itr++)
+	for (int i = 0; i < sceneSet.size(); i++)
 	{
-		if (!(*itr)->hasColider())
+		std::shared_ptr<Model> model;
+		switch (sceneSet[i]->getObjNum())
 		{
+		case ObjNum::cModel:
+			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
+			model->Update();
+			break;
+		default:
 			continue;
 		}
+	}
 
-		for (auto itr2 = std::next(itr); itr2 != sceneSet.end(); itr2++)
+	for (int i = 0; i < sceneSet.size(); i++)
+	{
+		if (sceneSet[i]->uniformBufferChange)
 		{
-			if ((*itr2)->hasColider())
+			sceneSet[i]->updateTransformMatrix();
+		}
+	}
+
+	for(int i = 0;i < sceneSet.size() - 1;i++)
+	{
+		if (sceneSet[i]->getObjNum() == ObjNum::cModel)
+		{
+			std::shared_ptr<Model> model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
+
+			if (!model->hasColider())
 			{
-				if ((*itr)->getColider()->Intersect((*itr2)->getColider(), collisionDepth, collisionVector))
+				continue;
+			}
+
+			for (int j = i + 1; j < sceneSet.size(); j++)
+			{
+				std::shared_ptr<Model> model2;
+				switch (sceneSet[j]->getObjNum())
 				{
-					(*itr)->setPosition((*itr)->getPosition() + collisionVector * collisionDepth);
+				case ObjNum::cModel:
+					model2 = std::dynamic_pointer_cast<Model>(sceneSet[j]);
+					break;
+				default:
+					continue;
+				}
+
+				if (model2->hasColider())
+				{
+					if (model->getColider()->Intersect(model2->getColider(), collisionDepth, collisionVector))
+					{
+						if (model->isMovable)
+						{
+							model->setPosition(model->getPosition() + collisionVector * collisionDepth);
+						}
+
+						if (model2->isMovable)
+						{
+							model2->setPosition(model2->getPosition() + (-collisionVector) * collisionDepth);
+						}
+					}
 				}
 			}
 		}
 	}
 
-	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
+	for (int i = 0;i < sceneSet.size();i++)
 	{
-		if ((*itr)->uniformBufferChange || true)
+		if (sceneSet[i]->uniformBufferChange)
 		{
-			(*itr)->updateTransformMatrix();
+			sceneSet[i]->updateTransformMatrix();
 		}
 	}
 
@@ -110,9 +161,18 @@ void Scene::setModels()
 	Storage::GetInstance()->setCamera(camera);
 
 	//描画するモデルのポインタを積んでいく
-	for (auto itr = sceneSet.begin(); itr != sceneSet.end(); itr++)
+	std::shared_ptr<Model> model;
+	for (int i = 0;i < sceneSet.size();i++)
 	{
-		(*itr)->updateTransformMatrix();
-		Storage::GetInstance()->addModel(*itr);
+		switch (sceneSet[i]->getObjNum())
+		{
+		case ObjNum::cModel:
+			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
+			model->updateTransformMatrix();
+			Storage::GetInstance()->addModel(model);
+			break;
+		default:
+			continue;
+		}
 	}
 }

@@ -66,20 +66,22 @@ void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat
 float GltfModel::animationDuration(std::string animationName)
 {
 	Animation& animation = animations[animationName];
+
 	return animation.end - animation.start;
 }
 
-void GltfModel::updateAnimation(float animationTime,std::string animationName, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+void GltfModel::updateAnimation(float animationTime,Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
 {
 	if (animations.empty()) {
 		std::cout << ".glTF does not contain animation." << std::endl;
 		return;
 	}
-	Animation& animation = animations[animationName];
 
 	bool updated = false;
 	for (auto& channel : animation.channels) {
+
 		AnimationSampler sampler = animation.samplers[channel.samplerIndex];
+
 		if (sampler.inputs.size() > sampler.outputsVec4.size()) {
 			continue;
 		}
@@ -133,24 +135,18 @@ void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
 	}
 }
 
-void GltfModel::getVertexMinMax(GltfNode* node, glm::vec3& min, glm::vec3& max)
+void GltfModel::getVertexMinMax(GltfNode* node)
 {
 	if (node->bvh.valid)
 	{
-		min = glm::min(min, node->bvh.min);
-		max = glm::max(max, node->bvh.max);
+		initPoseMin = glm::min(initPoseMin, node->bvh.min);
+		initPoseMax = glm::max(initPoseMax, node->bvh.max);
 	}
 
 	for (int i = 0; i < node->children.size(); i++)
 	{
-		getVertexMinMax(node->children[i], min, max);
+		getVertexMinMax(node->children[i]);
 	}
-}
-
-void GltfModel::setAABBMatrix(glm::vec3 min,glm::vec3 max)
-{
-	boundingBox.min = min;
-	boundingBox.max = max;
 }
 
 void GltfModel::cleanUpVulkan(VkDevice& device)
@@ -180,4 +176,9 @@ void GltfModel::cleanUpVulkan(VkDevice& device, GltfNode* node)
 	{
 		cleanUpVulkan(device, node->children[i]);
 	}
+}
+
+std::map<float, std::pair<glm::vec3, glm::vec3>>& GltfModel::getAnimationAABB(std::string animationName)
+{
+	return animations[animationName].coliderVertices;
 }

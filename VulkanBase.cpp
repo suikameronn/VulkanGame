@@ -1281,12 +1281,33 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             UniformBufferObject ubo;
 
+            ubo.local = model->getTransformMatrix();// * colider->getScaleMat();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
             ubo.boneMatrix = array;
 
             memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
+    }
+
+    void VulkanBase::updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider)
+    {
+        VkDeviceSize bufferSize = sizeof(*colider->getColiderOriginalVertices()) * colider->getColiderVerticesSize();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, colider->getColiderOriginalVertices(), (size_t)bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        //vertexBuffer配列にコピーしていく(vector型)
+        copyBuffer(stagingBuffer, colider->getPointBufferData()->vertBuffer, bufferSize);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     void VulkanBase::createDescriptorPool(PrimitiveTextureCount ptc, VkDescriptorPool& pool)
@@ -1664,8 +1685,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 ptc.imageDataCount = 0;
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
-                PushConstantObj constant = { (*model)->getTransformMatrix() };
-
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
 
                 VkViewport viewport{};
@@ -1690,8 +1709,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
-
-                vkCmdPushConstants(commandBuffer, storage->accessDescriptorInfo(ptc)->pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
                 vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
             }
@@ -1918,7 +1935,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         int i = 0;
         for (const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+                && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT))
+            {
                 indices.graphicsFamily = i;
             }
 

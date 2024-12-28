@@ -4,6 +4,7 @@
 #include<iostream>
 #include<vector>
 #include<array>
+#include<map>
 #include<glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
@@ -335,6 +336,8 @@ struct Animation {
 	std::vector<AnimationChannel> channels;
 	float start = std::numeric_limits<float>::max();
 	float end = std::numeric_limits<float>::min();
+
+	std::map<float, std::pair<glm::vec3,glm::vec3>> coliderVertices;
 };
 
 class GltfModel
@@ -361,20 +364,20 @@ public:
 	std::vector<Skin*> skins;
 
 	BoundingBox boundingBox;
-	glm::mat4 aabb;
+	glm::vec3 initPoseMin, initPoseMax;
 
 	GltfNode* getRootNode() { return root; }
 	GltfNode* nodeFromIndex(int index);
 	GltfNode* findNode(GltfNode* parent,int index);
 
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
-	void setAABBMatrix(glm::vec3 min,glm::vec3 max);
-	void getVertexMinMax(GltfNode* node, glm::vec3& min, glm::vec3& max);
+	void getVertexMinMax(GltfNode* node);
 	
 	void updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
 
 	float animationDuration(std::string animationName);
-	void updateAnimation(float animationTime,std::string animationName, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+	void updateAnimation(float animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+	std::map<float, std::pair<glm::vec3, glm::vec3>>& getAnimationAABB(std::string animationName);
 
 	void cleanUpVulkan(VkDevice& device);
 	void cleanUpVulkan(VkDevice& device, GltfNode* node);

@@ -74,9 +74,9 @@ void GameManager::mainGameLoop()
 
 void GameManager::exitScene()
 {
-    FinishGame();
-
     scene.reset();
+
+    FinishGame();
 }
 
 void GameManager::FinishGame()

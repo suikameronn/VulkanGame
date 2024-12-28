@@ -63,7 +63,7 @@ void Object::bindObject(std::weak_ptr<Object> obj)
 	sendPosToChildren(position);
 }
 
-void Object::bindCamera(std::weak_ptr<Object> camera)
+void Object::bindCamera(std::weak_ptr<Camera> camera)
 {
 	cameraObj = camera;
 
@@ -139,21 +139,6 @@ glm::mat4 Object::getTransformMatrix()
 	return transformMatrix;
 }
 
-void Object::setSpherePos(float theta, float phi)
-{
-	if (theta != 0.0f || phi != 0.0f || true)
-	{
-		glm::vec3 pos;
-		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
-		pos += parentPos;
-
-		this->forward = glm::normalize(glm::vec3(pos - parentPos));
-		this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
-
-		setPosition(pos);
-	}
-}
-
 void Object::sendPosToChildren(glm::vec3 pos)
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
@@ -173,4 +158,9 @@ void Object::sendPosToChildren(glm::vec3 pos)
 void Object::setParentPos(glm::vec3 pos)
 {
 	parentPos = pos;
+}
+
+void Object::initFrameSetting()
+{
+
 }
