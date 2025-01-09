@@ -3,7 +3,8 @@
 Camera::Camera()
 {
 	position = { 0,0.0f,5.0f };
-	posOffSet = 50.0f;
+	distance = 50.0f;
+	offsetPos = glm::vec3(0.0f,20.0f,0.0f);
 
 	forward = glm::vec3{ 0,0,1};
 	right = glm::vec3{ 1,0,0};
@@ -15,7 +16,7 @@ Camera::Camera()
 	viewAngle = 45;
 	viewPointSpeed = 1.0f;
 
-	setPosition(glm::vec3(0, 0, posOffSet));
+	setPosition(glm::vec3(0, 0, distance));
 
 	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, 0.1f, 10000.0f);
 }
@@ -28,6 +29,16 @@ void Camera::setPosition(glm::vec3 pos)
 	}
 
 	position = pos;
+}
+
+void Camera::setDistance(float distance)
+{
+	this->distance = distance;
+}
+
+void Camera::setOffsetPos(glm::vec3 offset)
+{
+	this->offsetPos = offset;
 }
 
 void Camera::setViewAngle(float f)
@@ -99,8 +110,8 @@ void Camera::setSpherePos(float theta, float phi)
 	if (theta != 0.0f || phi != 0.0f || true)
 	{
 		glm::vec3 pos;
-		pos = { posOffSet * cos(theta) * cos(phi),posOffSet * sin(phi),posOffSet * sin(theta) * cos(phi) };
-		pos += parentPos;
+		pos = { distance * cos(theta) * cos(phi),distance * sin(phi),distance * sin(theta) * cos(phi) };
+		pos += parentPos + offsetPos;
 
 		this->forward = glm::normalize(glm::vec3(pos - parentPos));
 		this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
@@ -111,7 +122,9 @@ void Camera::setSpherePos(float theta, float phi)
 
 void Camera::calcViewMat()
 {
-	viewMat = glm::lookAt(this->position, parentPos , up);
+	glm::vec3 pos = glm::vec3(parentPos.x, parentPos.y + 20.0f, parentPos.z);
+
+	viewMat = glm::lookAt(this->position, pos/*parentPos*/, up);
 }
 
 glm::vec3 Camera::getViewTarget()

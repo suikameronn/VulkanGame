@@ -20,6 +20,7 @@
 #include"EnumList.h"
 #include"Controller.h"
 #include"Camera.h"
+#include"PhysicBase.h"
 
 struct BufferObject
 {
@@ -93,7 +94,7 @@ struct Rotate
 
 	float getRadian(float deg)
 	{
-		return deg * (PI / 180.0f);
+		return static_cast<float>(deg * (PI / 180.0f));
 	}
 
 	glm::mat4 getRotateMatrix()
@@ -108,6 +109,8 @@ class Object
 {
 protected:
 	ObjNum objNum;
+
+	std::unique_ptr<PhysicBase> physicBase;
 
 	std::unique_ptr<UpdateScript> updateScript;
 	std::weak_ptr<Camera> cameraObj;

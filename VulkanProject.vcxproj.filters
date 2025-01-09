@@ -90,6 +90,9 @@
     <ClCompile Include="StageBox.cpp">
       <Filter>ソース ファイル\StageObjects</Filter>
     </ClCompile>
+    <ClCompile Include="PhysicBase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -146,14 +149,9 @@
     <ClInclude Include="StageBox.h">
       <Filter>ヘッダー ファイル\StageObjects</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="classDesign.txt">
-      <Filter>リソース ファイル</Filter>
-    </Text>
-    <Text Include="scene.txt">
-      <Filter>リソース ファイル</Filter>
-    </Text>
+    <ClInclude Include="PhysicBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VulkanGame1.rc">
@@ -164,68 +162,9 @@
     <None Include="models\Buche_de_Noel.fbx" />
     <None Include="models\unitychan.fbx" />
     <None Include="models\unitychan_fbx7binary.fbx" />
-    <None Include="model3.bin">
-      <Filter>リソース ファイル</Filter>
-    </None>
     <None Include="models\Ground_01.fbx" />
-    <None Include="model5.bin">
-      <Filter>リソース ファイル</Filter>
-    </None>
-    <None Include="model6.bin">
-      <Filter>リソース ファイル</Filter>
-    </None>
     <None Include="models\Flag_Pole.fbx" />
     <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="textures\Buche de Noel.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\body_01.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\eye_iris_L_00.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\eye_iris_R_00.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\eyeline_00.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\face_00.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\hair_01.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\skin_01.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="bitmap1.bmp">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\cheek_00.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\NaturePackLite_Texture_01.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\Nature_Texture_01.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\Add_your_Flag.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\body_01 - コピー.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\png11.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="textures\FO_SKIN1.png">
-      <Filter>リソース ファイル</Filter>
-    </Image>
   </ItemGroup>
 </Project>

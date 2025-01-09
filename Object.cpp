@@ -23,6 +23,8 @@ Object::Object()
 {
 	objNum = ObjNum::cObject;
 
+	physicBase = std::make_unique<PhysicBase>();
+
 	uniformBufferChange = true;
 
 	position = { 0,0,0 };

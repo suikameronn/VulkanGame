@@ -40,7 +40,7 @@ struct Vertex {
 		{
 			if (weight1[i] == 0.0f)
 			{
-				boneID1[i] = boneID;
+				boneID1[i] = static_cast<float>(boneID);
 				weight1[i] = weight;
 
 				return;

@@ -197,13 +197,18 @@ struct GltfNode
 		return mat;
 	}
 
-	void update(std::array<glm::mat4, 128>& jointMatrices)
+	void update(std::array<glm::mat4, 128>& jointMatrices,size_t& updatedIndex)
 	{
 		glm::mat4 m = getMatrix();
 
 		//ボーンの行列の更新
 		glm::mat4 inverseTransform = glm::inverse(m);
 		size_t numJoints = std::min((uint32_t)skin->joints.size(), 128u);
+		if (numJoints <= updatedIndex)
+		{
+			return;
+		}
+
 		for (size_t i = 0; i < numJoints; i++)
 		{
 			GltfNode* jointNode = skin->joints[i];
@@ -212,6 +217,8 @@ struct GltfNode
 			jointMat = inverseTransform * jointMat;
 			jointMatrices[i] = jointMat;
 		}
+
+		updatedIndex = numJoints;
 	}
 };
 
@@ -346,6 +353,7 @@ private:
 	GltfNode* root;
 
 public:
+
 	GltfModel(GltfNode* rootNode) 
 	{
 		this->root = rootNode; 
@@ -373,7 +381,7 @@ public:
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
 	void getVertexMinMax(GltfNode* node);
 	
-	void updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+	void updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex);
 
 	float animationDuration(std::string animationName);
 	void updateAnimation(float animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);

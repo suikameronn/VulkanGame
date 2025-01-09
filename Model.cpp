@@ -3,6 +3,8 @@
 
 Model::Model()
 {
+	isGround = false;
+
 	objNum = ObjNum::cModel;
 
 	uniformBufferChange = true;
@@ -17,6 +19,7 @@ Model::Model()
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
+	up = glm::vec3{ 0,1,0 };
 
 	childObjects.clear();
 	spherePos = false;
@@ -27,6 +30,9 @@ Model::Model()
 
 	isMovable = false;
 	colider = nullptr;
+
+	gravity = 0.0f;
+	slippery = 0.0f;
 
 	defaultAnimationName = "Idle";
 }
@@ -56,6 +62,9 @@ Model::Model(std::string luaScriptPath)
 
 	isMovable = false;
 	colider = nullptr;
+
+	gravity = 0.0f;
+	slippery = 0.0f;
 
 	defaultAnimationName = "none";
 	currentPlayAnimationName = "none";
@@ -252,6 +261,8 @@ void Model::Update()
 	{
 		updateScript->update();
 	}
+
+	setPosition(getPosition() - up * gravity);
 
 	playAnimation();
 

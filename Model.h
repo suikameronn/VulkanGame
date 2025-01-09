@@ -16,6 +16,8 @@ uint32_t getSize(T v)
 class Model:public Object
 {
 protected:
+	bool isGround;
+
 	uint32_t imageDataCount;
 
 	std::shared_ptr<GltfModel> gltfModel;
@@ -43,6 +45,9 @@ public:
 	{
 		std::cout << "Model deleted!" << std::endl;
 	}
+
+	float gravity;
+	float slippery;
 
 	glm::vec3 scale;
 

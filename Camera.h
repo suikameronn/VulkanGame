@@ -13,7 +13,9 @@ class Camera
 private:
 	glm::vec3 position;
 	glm::vec3 parentPos;
-	float posOffSet;
+	
+	float distance;
+	glm::vec3 offsetPos;
 
 	float viewAngle;
 	float viewPointSpeed;
@@ -31,6 +33,9 @@ public:
 
 	void setPosition(glm::vec3 pos);
 	void setParentPos(glm::vec3 pos);
+	void setDistance(float distance);
+	void setOffsetPos(glm::vec3 offset);
+
 	void setSpherePos(float theta, float phi);
 
 	void setViewAngle(float f);

@@ -87,12 +87,12 @@ void Colider::reflectMovement(glm::mat4& transform)
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector)
 {
 	bool collision = false;
-
-	//GJK(oppColider);
+	
+	collision = GJK(oppColider,collisionVector);
 
 	//collision = AABB(oppColider);
 
-	collision = SAT(oppColider, collisionDepth, collisionVector);
+	//collision = SAT(oppColider, collisionDepth, collisionVector);
 
 	return collision;
 }
@@ -171,12 +171,9 @@ void Colider::projection(float& min, float& max, glm::vec3& minVertex, glm::vec3
 	}
 }
 
-/*
-bool Colider::GJK(std::shared_ptr<Colider> oppColider)
+bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthVec)
 {
 	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));
-	//std::cout << pivot << std::endl;
-	//std::cout << "opp" << oppColider->getPivot() << std::endl;
 
 	Simplex simplex;
 	simplex.push_front(support);
@@ -185,14 +182,9 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider)
 
 	int count = 0;
 
-	while (count < 50)
+	while (true)
 	{
-		// std::cout << coliderVertices[0] << std::endl;
-		//std::cout << "OPP" << oppColider->getColiderVertices()[0] << std::endl;
-
 		support = getSupportVector(oppColider, dir);
-
-		//std::cout << glm::dot(support, dir) << std::endl;
 
 		if (glm::dot(support, dir) <= 0.0f)
 		{
@@ -203,20 +195,18 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider)
 
 		if (nextSimplex(simplex, dir))
 		{
+			EPA(oppColider,simplex, collisionDepthVec);
 			return true;
 		}
-
-		count++;
 	}
 
 	return false;
 }
-*/
 
 glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 {
-	glm::vec3  maxPoint;
-	float maxDistance = -10000.0f;
+	glm::vec3  maxPoint = glm::vec3(0.0f);
+	float maxDistance = -FLT_MAX;
 
 	for (int i = 0; i < getColiderVerticesSize(); i++)
 	{
@@ -235,7 +225,7 @@ glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider, glm::ve
 	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
 }
 
-bool Colider::Line(Simplex& simplex, glm::vec3 dir)
+bool Colider::Line(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
 	glm::vec3 b = simplex[1];
@@ -243,7 +233,8 @@ bool Colider::Line(Simplex& simplex, glm::vec3 dir)
 	glm::vec3 ab = b - a;
 	glm::vec3 ao = -a;
 
-	if (sameDirection(ab, ao)) {
+	if (sameDirection(ab, ao)) 
+	{		
 		dir = glm::cross(glm::cross(ab, ao), ab);
 	}
 	else
@@ -255,7 +246,7 @@ bool Colider::Line(Simplex& simplex, glm::vec3 dir)
 	return false;
 }
 
-bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
+bool Colider::Triangle(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
 	glm::vec3 b = simplex[1];
@@ -303,10 +294,11 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3 dir)
 		}
 	}
 
+
 	return false;
 }
 
-bool Colider::Tetrahedron(Simplex& simplex, glm::vec3 dir)
+bool Colider::Tetrahedron(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
 	glm::vec3 b = simplex[1];
@@ -343,7 +335,7 @@ bool Colider::Tetrahedron(Simplex& simplex, glm::vec3 dir)
 	return true;
 }
 
-bool Colider::nextSimplex(Simplex& simplex, glm::vec3 dir)
+bool Colider::nextSimplex(Simplex& simplex, glm::vec3& dir)
 {
 	switch (simplex.size) {
 	case 2: return Line(simplex, dir);
@@ -352,6 +344,147 @@ bool Colider::nextSimplex(Simplex& simplex, glm::vec3 dir)
 	}
 
 	return false;
+}
+
+void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec3& collisionDepthVec)
+{
+	std::vector<glm::vec3> polytope;
+	simplex.setSimplexVertices(polytope);
+
+	std::vector<size_t> faces =
+	{
+		0,1,2,
+		0,3,1,
+		0,2,3,
+		1,3,2
+	};
+
+	auto[normals,minFace] = getFaceNormals(polytope, faces);
+
+	glm::vec3 minNormal;
+	float minDistance = FLT_MAX;
+	while (minDistance == FLT_MAX)
+	{
+		minNormal = normals[minFace];
+		minDistance = normals[minFace].w;
+
+		glm::vec3 support = getSupportVector(oppColider, minNormal);
+		float sDistance = glm::dot(minNormal, support);
+
+		if (abs(sDistance - minDistance) > 0.001f)
+		{
+			minDistance = FLT_MAX;
+			std::vector<std::pair<size_t, size_t>> uniqueEdges;
+			for (size_t i = 0; i < normals.size(); i++)
+			{
+				if (sameDirection(normals[i], support))
+				{
+					size_t f = i * 3;
+
+					addIfUniqueEdge(uniqueEdges, faces, f, f + 1);
+					addIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
+					addIfUniqueEdge(uniqueEdges, faces, f + 2, f);
+
+					faces[f + 2] = faces.back();
+					faces.pop_back();
+					faces[f + 1] = faces.back();
+					faces.pop_back();
+					faces[f] = faces.back();
+					faces.pop_back();
+
+					normals[i] = normals.back();
+					normals.pop_back();
+
+					i--;
+				}
+			}
+
+			std::vector<size_t> newFaces;
+			for (int i = 0; i < uniqueEdges.size(); i++)
+			{
+				newFaces.push_back(uniqueEdges[i].first);
+				newFaces.push_back(uniqueEdges[i].second);
+				newFaces.push_back(polytope.size());
+			}
+			polytope.push_back(support);
+
+			auto[newNormals,newMinFace] = getFaceNormals(polytope, newFaces);
+
+			float oldMinDistance = FLT_MAX;
+			for (size_t i = 0; i < normals.size(); i++)
+			{
+				if (normals[i].w < oldMinDistance)
+				{
+					oldMinDistance = normals[i].w;
+					minFace = i;
+				}
+			}
+			
+			if (newNormals[newMinFace].w < oldMinDistance)
+			{
+				minFace = newMinFace + normals.size();
+			}
+
+			faces.insert(faces.end(), newFaces.begin(), newFaces.end());
+			normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+
+		}
+	}
+
+	collisionDepthVec = minNormal * (minDistance);
+}
+
+void Colider::addIfUniqueEdge(
+	std::vector<std::pair<size_t, size_t>>& edges,
+	const std::vector<size_t>& faces,
+	size_t a,
+	size_t b)
+{
+	auto reverse = std::find(                       //      0--<--3
+		edges.begin(),                              //     / \ B /   A: 2-0
+		edges.end(),                                //    / A \ /    B: 0-2
+		std::make_pair(faces[b], faces[a]) //   1-->--2
+	);
+
+	if (reverse != edges.end()) {
+		edges.erase(reverse);
+	}
+
+	else {
+		edges.emplace_back(faces[a], faces[b]);
+	}
+}
+
+std::pair<std::vector<glm::vec4>, size_t> Colider::getFaceNormals(
+	std::vector<glm::vec3>& vertices,
+	std::vector<size_t>& faces)
+{
+	std::vector<glm::vec4> normals;
+	size_t minTriangle = 0;
+	float  minDistance = FLT_MAX;
+
+	for (size_t i = 0; i < faces.size(); i += 3) {
+		glm::vec3 a = vertices[faces[i]];
+		glm::vec3 b = vertices[faces[i + 1]];
+		glm::vec3 c = vertices[faces[i + 2]];
+
+		glm::vec3 normal = glm::normalize(glm::cross(b - a, c - a));
+		float distance = glm::dot(normal, a);
+
+		if (distance < 0) {
+			normal *= -1;
+			distance *= -1;
+		}
+
+		normals.emplace_back(normal, distance);
+
+		if (distance < minDistance) {
+			minTriangle = i / 3;
+			minDistance = distance;
+		}
+	}
+
+	return { normals, minTriangle };
 }
 
 void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)

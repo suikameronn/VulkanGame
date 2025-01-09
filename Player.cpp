@@ -20,6 +20,7 @@ glm::vec3 Player::inputMove()
 	if (!cameraObj.expired())
 	{
 		forward = cameraObj.lock()->forward;
+		forward.y = 0.0f;
 		right = cameraObj.lock()->right;
 		cameraDirDeg = cameraObj.lock()->getTheta();
 	}
@@ -47,11 +48,18 @@ glm::vec3 Player::inputMove()
 	else
 	{
 		moveDirec = { 0,0,0 };
+		switchPlayAnimation("Idle");
+	}
+
+	if (controller->getKey(GLFW_KEY_SPACE))
+	{
+
 	}
 
 	if (moveDirec != glm::vec3(0.0f))
 	{
 		moveDirec = glm::normalize(moveDirec) * moveSpeed;
+		switchPlayAnimation("Running");
 	}
 
 	return moveDirec;

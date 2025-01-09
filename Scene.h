@@ -27,6 +27,7 @@ private:
 
 	void setModels();
 
+	float upBlend;
 	float collisionDepth;//Õ“Ë‚Ì‚ß‚è‚ñ‚¾‹——£
 	glm::vec3 collisionVector;//Õ“Ë‚Ì‚ß‚è‚ñ‚¾•ûŒü
 
@@ -34,6 +35,8 @@ private:
 	void initLuaScript(std::string path);
 	void registerOBJECT();
 	void registerFunctions();
+
+	glm::vec3 slopeCollision(glm::vec3 collisionVector);
 
 public:
 
@@ -281,6 +284,37 @@ static int glueSetDefaultAnimationName(lua_State* lua)
 	case 1:
 		Model * model = dynamic_cast<Model*>(obj);
 		model->setDefaultAnimationName(std::string(lua_tostring(lua, -1)));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetGravity(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		model->gravity = static_cast<float>(lua_tonumber(lua, -1));
+		break;
+	}
+
+	return 0;
+}
+
+static int glueSetSlippery(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+	float slippery = static_cast<float>(lua_tonumber(lua, -1));
+
+	switch (obj->getObjNum())
+	{
+	case 1:
+		Model * model = dynamic_cast<Model*>(obj);
+		model->slippery = slippery;
 		break;
 	}
 

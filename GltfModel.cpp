@@ -50,16 +50,16 @@ GltfNode* GltfModel::nodeFromIndex(int index)
 	return node;
 }
 
-void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex)
 {
 	if (parent->mesh && parent->skin)
 	{
-		parent->update(jointMatrices[parent->globalHasSkinNodeIndex]);
+		parent->update(jointMatrices[parent->globalHasSkinNodeIndex],updatedIndex);
 	}
 
 	for (size_t i = 0; i < parent->children.size(); i++)
 	{
-		updateAllNodes(parent->children[i],jointMatrices);
+		updateAllNodes(parent->children[i],jointMatrices,updatedIndex);
 	}
 }
 
@@ -108,7 +108,8 @@ void GltfModel::updateAnimation(float animationTime,Animation& animation, std::v
 	}
 
 	if (updated) {
-		updateAllNodes(root,jointMatrices);
+		size_t updatedIndex = 0;
+		updateAllNodes(root,jointMatrices,updatedIndex);
 	}
 }
 

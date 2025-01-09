@@ -6,6 +6,8 @@
 #include"Object.h"
 #include"EnumList.h"
 
+#include<random>
+
 struct Simplex
 {
 private:
@@ -37,53 +39,13 @@ public:
 		return *this;
 	}
 
-	bool isDegenerateSimplex()
-	{
-		float result;
-
-		glm::vec3 ab, ac, ad;
-
-		switch (this->size)
-		{
-		case 2:
-			result = glm::length(points[0] - points[1]);
-			break;
-		case 3:
-			ab = points[1] - points[0];
-			ac = points[2] - points[0];
-			glm::vec3 cross = glm::cross(ab, ac);
-			result = glm::length(cross) / 2.0f;
-			break;
-		case 4:
-			ab = points[1] - points[0];
-			ac = points[2] - points[0];
-			ad = points[3] - points[0];
-			result = glm::length(glm::dot(glm::cross(ab, ac), ad)) / 6.0f;
-		}
-
-		//std::cout << "result" << result << std::endl;
-		if (result <= 0.0f)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	bool isDegenerateSimplex(glm::vec3 vector)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			if (vector == points[i])
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	glm::vec3& operator[](int i) { return points[i]; }
+
+	void setSimplexVertices(std::vector<glm::vec3>& polytope)
+	{
+		polytope.resize(points.size());
+		std::copy(points.begin(), points.end(), polytope.begin());
+	}
 };
 
 class Colider
@@ -114,9 +76,24 @@ private:
 
 	bool sameDirection(glm::vec3 dir, glm::vec3 point) { return glm::dot(dir, point) > 0.0f; }
 
-	bool Line(Simplex& simplex,glm::vec3 dir);
-	bool Triangle(Simplex& simplex, glm::vec3 dir);
-	bool Tetrahedron(Simplex& simplex, glm::vec3 dir);
+	bool Line(Simplex& simplex,glm::vec3& dir);
+	bool Triangle(Simplex& simplex, glm::vec3& dir);
+	bool Tetrahedron(Simplex& simplex, glm::vec3& dir);
+
+	glm::vec3 getFurthestPoint(glm::vec3 dir);
+	glm::vec3 getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir);
+	bool nextSimplex(Simplex& simplex, glm::vec3& dir);
+	glm::vec3 getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point);
+	bool GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthVec);
+	void EPA(std::shared_ptr<Colider> oppColider, Simplex& simplex, glm::vec3& collisionDepthVec);
+	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
+
+	void addIfUniqueEdge(std::vector<std::pair<size_t, size_t>>& edges, const std::vector<size_t>& faces,
+						 size_t a, size_t b);
+
+	std::pair<std::vector<glm::vec4>, size_t> getFaceNormals(
+		std::vector<glm::vec3>& vertices,
+		std::vector<size_t>& faces);
 
 public:
 	Colider(glm::vec3 min,glm::vec3 max);
@@ -130,10 +107,6 @@ public:
 	glm::mat4& getTransformMatrix() { return transform; }
 
 	glm::vec3 getPivot() { return pivot; }
-	glm::vec3 getFurthestPoint(glm::vec3 dir);
-	glm::vec3 getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir);
-	bool nextSimplex(Simplex& simplex, glm::vec3 dir);
-	glm::vec3 getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point);
 
 	int getSatIndicesSize() { return satIndices.size(); }
 	uint32_t* getSatIndicesPointer() { return satIndices.data(); }
@@ -147,8 +120,6 @@ public:
 	DescSetData& getDescSetData() { return descSetData; }
 
 	virtual bool Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector);
-	//bool GJK(std::shared_ptr<Colider> oppColider);
-	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 
 	glm::vec3* getColiderOriginalVertices();
 	glm::vec3* getColiderVertices();

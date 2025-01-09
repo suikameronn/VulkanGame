@@ -163,6 +163,7 @@
     <ClCompile Include="Meshes.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="StageBox.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="Meshes.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="PhysicBase.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
@@ -190,16 +192,9 @@
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="classDesign.txt" />
-    <Text Include="scene.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="VulkanGame1.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="model3.bin" />
-    <None Include="model5.bin" />
-    <None Include="model6.bin" />
     <None Include="models\Buche_de_Noel.fbx" />
     <None Include="models\Flag_Pole.fbx" />
     <None Include="models\Ground_01.fbx" />
@@ -207,24 +202,6 @@
     <None Include="models\unitychan_fbx7binary.fbx" />
     <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="bitmap1.bmp" />
-    <Image Include="textures\Add_your_Flag.png" />
-    <Image Include="textures\body_01 - コピー.png" />
-    <Image Include="textures\body_01.png" />
-    <Image Include="textures\Buche de Noel.png" />
-    <Image Include="textures\cheek_00.png" />
-    <Image Include="textures\eyeline_00.png" />
-    <Image Include="textures\eye_iris_L_00.png" />
-    <Image Include="textures\eye_iris_R_00.png" />
-    <Image Include="textures\face_00.png" />
-    <Image Include="textures\FO_SKIN1.png" />
-    <Image Include="textures\hair_01.png" />
-    <Image Include="textures\NaturePackLite_Texture_01.png" />
-    <Image Include="textures\Nature_Texture_01.png" />
-    <Image Include="textures\png11.png" />
-    <Image Include="textures\skin_01.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -73,6 +73,8 @@ void Scene::registerFunctions()
 	lua_register(lua, "glueSetColider", glueSetColider);
 	lua_register(lua, "glueSetColiderScale", glueSetColiderScale);
 	lua_register(lua, "glueSetDefaultAnimationName", glueSetDefaultAnimationName);
+	lua_register(lua, "glueSetGravity", glueSetGravity);
+	lua_register(lua, "glueSetSlippery", glueSetSlippery);
 }
 
 bool Scene::UpdateScene()
@@ -132,12 +134,14 @@ bool Scene::UpdateScene()
 					{
 						if (model->isMovable)
 						{
-							model->setPosition(model->getPosition() + collisionVector * collisionDepth);
+							std::cout << "hit" << std::endl;
+							model->setPosition(model->getPosition() + slopeCollision(collisionVector));
 						}
 
 						if (model2->isMovable)
 						{
-							model2->setPosition(model2->getPosition() + (-collisionVector) * collisionDepth);
+							//model2->setPosition(model2->getPosition() + up * glm::dot(collisionVector,up));
+							model2->setPosition(model2->getPosition() + slopeCollision(collisionVector));
 						}
 					}
 				}
@@ -174,5 +178,17 @@ void Scene::setModels()
 		default:
 			continue;
 		}
+	}
+}
+
+glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)
+{
+	if (collisionVector.y > 0.5f)
+	{
+		return collisionVector * glm::vec3(0.0f, 1.0f, 0.0f);
+	}
+	else
+	{
+		return collisionVector;
 	}
 }
