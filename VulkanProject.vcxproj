@@ -115,7 +115,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -135,7 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;C:\VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\1.3.290.0\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
