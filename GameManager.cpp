@@ -22,7 +22,7 @@ void GameManager::initGame()
 void GameManager::createScene()
 {
     scene = std::unique_ptr<Scene>(new Scene());
-    scene->init("C:/Users/sukai/Documents/VulkanGame/LusScripts/test.lua");
+    scene->init("LusScripts/test.lua");
 
     mainGameLoop();
 }
@@ -55,8 +55,6 @@ void GameManager::mainGameLoop()
             std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));
 
             start = std::chrono::system_clock::now();
-
-            std::cout << "aaa" << std::endl;
         }
         else
         {

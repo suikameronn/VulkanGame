@@ -468,19 +468,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             if (ptc.imageDataCount > 0)
             {
-                vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/vert.spv";
-                fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/frag.spv";
+                vertFile = "shaders/vert.spv";
+                fragFile = "shaders/frag.spv";
             }
             else
             {
-                vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/Notexture.vert.spv";
-                fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/Notexture.frag.spv";
+                vertFile = "shaders/Notexture.vert.spv";
+                fragFile = "shaders/Notexture.frag.spv";
             }
         }
         else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
-            vertFile = "C:/Users/sukai/Documents/VulkanGame/shaders/line.vert.spv";
-            fragFile = "C:/Users/sukai/Documents/VulkanGame/shaders/line.frag.spv";
+            vertFile = "shaders/line.vert.spv";
+            fragFile = "shaders/line.frag.spv";
         }
         auto vertShaderCode = readFile(vertFile);
         auto fragShaderCode = readFile(fragFile);
