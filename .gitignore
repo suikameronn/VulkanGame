@@ -34,7 +34,6 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
@@ -599,3 +598,7 @@ models/Flag_Pole_dxf.dxf
 models/flag_pole_obj.mtl
 models/cube.glb
 models/PlayerModel.glb
+VulkanSDK/1.3.290.0/maintenancetool.exe
+VulkanSDK/1.3.290.0/Helpers/install_helper.exe
+VulkanSDK/1.3.290.0/Helpers/launch_helper.exe
+EXE/VulkanGame.exe
