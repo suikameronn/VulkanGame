@@ -1,8 +1,6 @@
 #include"Scene.h"
 
-Scene::Scene()
-{
-}
+Scene* Scene::instance = nullptr;
 
 void Scene::init(std::string luaScriptPath)
 {
@@ -14,6 +12,10 @@ void Scene::init(std::string luaScriptPath)
 	initFrameSetting();
 
 	setModels();
+}
+
+Scene::Scene()
+{
 }
 
 Scene::~Scene()
@@ -134,7 +136,6 @@ bool Scene::UpdateScene()
 					{
 						if (model->isMovable)
 						{
-							std::cout << "hit" << std::endl;
 							model->setPosition(model->getPosition() + slopeCollision(collisionVector));
 						}
 
@@ -191,4 +192,38 @@ glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)
 	{
 		return collisionVector;
 	}
+}
+
+std::shared_ptr<Model> Scene::raycast(std::shared_ptr<Colider> colider,Model* model)
+{
+	for (int i = 0; i < sceneSet.size(); i++)
+	{
+		std::shared_ptr<Model> model2;
+		switch (sceneSet[i]->getObjNum())
+		{
+		case cModel:
+			model2 = std::dynamic_pointer_cast<Model>(sceneSet[i]);
+			break;
+		default:
+			continue;
+		}
+
+		if (model == model2.get())
+		{
+			continue;
+		}
+
+		if (!model2->hasColider())
+		{
+			continue;
+		}
+
+		std::shared_ptr<Colider> colider2 = model2->getColider();
+		if (colider->Intersect(colider2))
+		{
+			return model2;
+		}
+	}
+
+	return nullptr;
 }

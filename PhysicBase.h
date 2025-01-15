@@ -1,11 +1,14 @@
 #pragma once
 #include<time.h>
+#include<vector>
+#include<memory>
 
 #include<glm/glm.hpp>
 
 class PhysicBase
 {
 private:
+
 	float prevFrameTime;
 	glm::vec3 prevPos;
 
@@ -23,7 +26,6 @@ public:
 
 	virtual void Update(float time, bool isAccelerateReset = true);
 
-	virtual void setVelocity(glm::vec3 velocity);
 	void setZeroVelocity();
 
 	virtual void setAcceleration(glm::vec3 acceleration);

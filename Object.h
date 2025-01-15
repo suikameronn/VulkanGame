@@ -109,10 +109,10 @@ class Object
 {
 protected:
 	ObjNum objNum;
+	std::vector<Tag> tags;
 
 	std::unique_ptr<PhysicBase> physicBase;
 
-	std::unique_ptr<UpdateScript> updateScript;
 	std::weak_ptr<Camera> cameraObj;
 	std::vector<std::weak_ptr<Object>> childObjects;
 
@@ -128,6 +128,8 @@ public:
 	Object();
 
 	ObjNum getObjNum() { return objNum; }
+	bool containTag(Tag tag);
+
 	void setLuaScript(std::string path);
 
 	bool spherePos;
@@ -154,6 +156,8 @@ public:
 	glm::vec3 getPosition();
 
 	glm::mat4 getTransformMatrix();
+
+	glm::mat4 getRodriguesMatrix(glm::vec3 axis, float theta);
 
 	virtual void initFrameSetting();
 	virtual void updateTransformMatrix() {};

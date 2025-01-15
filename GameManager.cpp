@@ -21,7 +21,7 @@ void GameManager::initGame()
 
 void GameManager::createScene()
 {
-    scene = std::unique_ptr<Scene>(new Scene());
+    scene = Scene::GetInstance();
     scene->init("LusScripts/test.lua");
 
     mainGameLoop();
@@ -72,7 +72,7 @@ void GameManager::mainGameLoop()
 
 void GameManager::exitScene()
 {
-    scene.reset();
+    scene->Destroy();
 
     FinishGame();
 }

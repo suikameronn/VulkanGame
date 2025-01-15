@@ -1,9 +1,10 @@
 #include"Model.h"
+#include"Scene.h"
 #include"VulkanBase.h"
 
 Model::Model()
 {
-	isGround = false;
+	scene = Scene::GetInstance();
 
 	objNum = ObjNum::cModel;
 
@@ -35,6 +36,10 @@ Model::Model()
 	slippery = 0.0f;
 
 	defaultAnimationName = "Idle";
+
+	physicBase = std::make_unique<PhysicBase>();
+
+	boxCastColider = std::shared_ptr<Colider>(new Colider(glm::vec3(0.0, 0.0, 0.0), glm::vec3(-1.0, -1.0, -1.0)));
 }
 
 Model::Model(std::string luaScriptPath)
@@ -68,6 +73,10 @@ Model::Model(std::string luaScriptPath)
 
 	defaultAnimationName = "none";
 	currentPlayAnimationName = "none";
+
+	physicBase = std::make_unique<PhysicBase>();
+
+	boxCastColider = std::shared_ptr<Colider>(new Colider(glm::vec3(0.0, 0.0, 0.0), glm::vec3(-1.0, -1.0, -1.0)));
 }
 
 void Model::cleanupVulkan()
@@ -257,11 +266,6 @@ void Model::sendPosToChildren(glm::vec3 pos)
 
 void Model::Update()
 {
-	if (updateScript)
-	{
-		updateScript->update();
-	}
-
 	setPosition(getPosition() - up * gravity);
 
 	playAnimation();
@@ -281,8 +285,38 @@ void Model::initFrameSetting()
 		switchPlayAnimation();
 	}
 
+	boxCastColider->initFrameSettings();
 	if (colider)
 	{
 		colider->initFrameSettings();
 	}
+}
+
+std::shared_ptr<Model> Model::boxRayCast(glm::vec3 origin,glm::vec3 dir,float maxLength)
+{
+	glm::vec3 rotateAxis = glm::normalize(glm::cross(origin, dir));
+	float theta = acos(glm::dot(origin, dir));
+	glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), theta, rotateAxis);
+
+	for (int i = 0; i < maxLength; i++)
+	{
+		glm::vec3 boxScale = glm::vec3(0.1f, i, 0.1f);
+		glm::mat4 transformMatrix = glm::translate(glm::mat4(1.0), origin) * rotate * glm::scale(glm::mat4(1.0f), boxScale);
+
+		boxCastColider->reflectMovement(transformMatrix);
+
+		std::shared_ptr<Model> hitModel = scene->raycast(boxCastColider,this);
+		if (hitModel)
+		{
+			std::cout << "hit" << std::endl;
+			return hitModel;
+		}
+	}
+
+	return nullptr;
+}
+
+bool Model::isGround()
+{
+	return false;
 }

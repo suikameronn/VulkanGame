@@ -25,7 +25,7 @@ private:
 	long long elapsed;
 
 	bool exit = false;
-	std::unique_ptr<Scene> scene;
+	Scene* scene;
 
 	GameManager() {};
 

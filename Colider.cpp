@@ -7,7 +7,7 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	scale = glm::vec3(1.0f);
 	scaleMat = glm::scale(scale);
 
-	originalVertexPos.resize(8);
+	originalVertexPos.resize(8);//座標変換前の座標配列
 
 	originalVertexPos[0] = glm::vec3(min.x, min.y, min.z);
 	originalVertexPos[1] = glm::vec3(max.x, min.y, min.z);
@@ -20,11 +20,11 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 
 	coliderIndices.resize(12);
 
-	coliderIndices = { 1,0,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };
+	coliderIndices = { 1,0,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };//描画用のインデックス配列
 
 	satIndices.resize(3 * 6);
 	//satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
-	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };
+	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
 
 	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
 
@@ -90,11 +90,42 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider, float& collisionDep
 	
 	collision = GJK(oppColider,collisionVector);
 
-	//collision = AABB(oppColider);
+	return collision;
+}
 
-	//collision = SAT(oppColider, collisionDepth, collisionVector);
+bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
+{
+	bool collision = false;
+
+	glm::vec3 collisionVector;
+
+	collision = GJK(oppColider, collisionVector);
 
 	return collision;
+}
+
+bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
+{
+	glm::vec3 endPoint = origin + dir * length;
+
+	std::array<glm::vec3, 6> normals;
+	for (int i = 0; i < 18; i += 3)
+	{
+		normals[i / 3] = glm::normalize(glm::cross(coliderVertices[satIndices[i + 1]] - coliderVertices[satIndices[i]], coliderVertices[satIndices[i + 2]] - coliderVertices[satIndices[i]]));
+	}
+
+	float dot;
+	for (int i = 0; i < 6; i++)
+	{
+		dot = glm::dot(normals[i], origin) * glm::dot(normals[i], endPoint);
+		if (dot <= 0.0f)//夢幻の広さの平面は貫通している
+		{
+			float a;
+			glm::vec3 v1, v2,v3;
+			v1 = origin - coliderVertices[0];
+			v2 = endPoint - coliderVertices[0];
+		}
+	}
 }
 
 bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal)

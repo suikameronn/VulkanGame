@@ -53,7 +53,14 @@ glm::vec3 Player::inputMove()
 
 	if (controller->getKey(GLFW_KEY_SPACE))
 	{
-
+		if (boxRayCast(position + up * 10.0f,glm::vec3(1.0f,0.0,0.0f), 100.0f))
+		{
+			physicBase->addVelocity(10.0f * up);
+		}
+		else
+		{
+			std::cout << "No hit" << std::endl;
+		}
 	}
 
 	if (moveDirec != glm::vec3(0.0f))

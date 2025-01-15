@@ -22,3 +22,9 @@ enum ObjNum
 	cObject = 0,
 	cModel
 };
+
+enum Tag
+{
+	NONE = 0,
+	GROUND
+};

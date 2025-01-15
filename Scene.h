@@ -15,13 +15,14 @@
 #include"FileManager.h"
 #include"Controller.h"
 #include"Player.h"
-#include"StageBox.h"
 #include"Camera.h"
 #include"EnumList.h"
 
 class Scene
 {
 private:
+
+	static Scene* instance;
 
 	void initFrameSetting();
 
@@ -38,12 +39,26 @@ private:
 
 	glm::vec3 slopeCollision(glm::vec3 collisionVector);
 
-public:
-
-	void test() { std::cout << "glueSuccess" << std::endl; }
-
 	Scene();
 	~Scene();
+
+public:
+
+	static Scene* GetInstance()
+	{
+		if (!instance)
+		{
+			instance = new Scene();
+		}
+
+		return instance;
+	}
+
+	void Destroy()
+	{
+		delete instance;
+		instance = nullptr;
+	}
 
 	std::shared_ptr<Camera> camera;
 
@@ -52,20 +67,9 @@ public:
 	std::vector<std::shared_ptr<Object>> sceneSet;
 
 	bool UpdateScene();
+
+	std::shared_ptr<Model> raycast(std::shared_ptr<Colider> colider,Model* model);
 };
-
-static int testGlue(lua_State* lua)
-{
-	std::cout << "testGlue" << std::endl;
-
-	lua_getglobal(lua, "Scene");
-
-	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
-
-	scene->test();
-
-	return 1;
-}
 
 // スタックの内容を表示する関数
 static void printStack(lua_State* L) {

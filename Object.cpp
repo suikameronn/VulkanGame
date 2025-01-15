@@ -1,24 +1,5 @@
 #include"Object.h"
 
-UpdateScript::UpdateScript(std::string path)
-{
-	currentAnimationName = "no_name";
-
-	initScript(path);
-}
-
-UpdateScript::~UpdateScript()
-{
-}
-
-void UpdateScript::initScript(std::string path)
-{
-}
-
-void UpdateScript::update()
-{
-}
-
 Object::Object()
 {
 	objNum = ObjNum::cObject;
@@ -42,6 +23,19 @@ Object::Object()
 
 	rotateSpeed = 0.1f;
 	length = 1.0f;
+}
+
+bool Object::containTag(Tag tag)
+{
+	for (auto itr = tags.begin(); itr != tags.end(); itr++)
+	{
+		if (tag == (*itr))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void Object::setLuaScript(std::string path)
@@ -109,11 +103,6 @@ glm::vec3 Object::inputMove()
 
 void Object::Update()
 {
-	if (updateScript)
-	{
-		updateScript->update();
-	}
-
 	customUpdate();
 }
 

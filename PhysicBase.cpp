@@ -29,11 +29,8 @@ void PhysicBase::Update(float time, bool isAccelerateReset)
 	{
 		acceleration = glm::vec3(0.0f);
 	}
-}
 
-void PhysicBase::setVelocity(glm::vec3 velocity)
-{
-	this->velocity = velocity;
+
 }
 
 void PhysicBase::setZeroVelocity()
@@ -49,12 +46,12 @@ void PhysicBase::setAcceleration(glm::vec3 acceleration)
 
 void PhysicBase::addVelocity(glm::vec3 addVelocity)
 {
-	this->acceleration += addVelocity;
+	this->velocity += addVelocity;
 }
 
 glm::vec3 PhysicBase::getAddPos()
 {
-	return currentPos;
+	return currentPos + velocity;
 }
 
 glm::vec3 PhysicBase::getVelocity()

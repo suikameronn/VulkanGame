@@ -7,6 +7,8 @@
 #include"GltfModel.h"
 #include"Colider.h"
 
+class Scene;
+
 template<typename T>
 uint32_t getSize(T v)
 {
@@ -16,9 +18,11 @@ uint32_t getSize(T v)
 class Model:public Object
 {
 protected:
-	bool isGround;
+	Scene* scene;
 
 	uint32_t imageDataCount;
+
+	std::unique_ptr<PhysicBase> physicBase;
 
 	std::shared_ptr<GltfModel> gltfModel;
 
@@ -32,6 +36,7 @@ protected:
 
 	std::shared_ptr<Material> material;
 	std::shared_ptr<Colider> colider;
+	std::shared_ptr<Colider> boxCastColider;
 
 	std::string defaultAnimationName;
 	std::string currentPlayAnimationName;
@@ -80,6 +85,8 @@ public:
 	void setColider();
 	std::shared_ptr<Colider> getColider() { return colider; }
 
+	std::shared_ptr<Model> boxRayCast(glm::vec3 origin,glm::vec3 dir,float maxLength);
+
 	void updateTransformMatrix() override;
 
 	void cleanupVulkan();
@@ -90,4 +97,6 @@ public:
 	void customUpdate() override;
 
 	void initFrameSetting() override;
+
+	bool isGround();
 };
