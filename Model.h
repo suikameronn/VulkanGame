@@ -36,7 +36,6 @@ protected:
 
 	std::shared_ptr<Material> material;
 	std::shared_ptr<Colider> colider;
-	std::shared_ptr<Colider> boxCastColider;
 
 	std::string defaultAnimationName;
 	std::string currentPlayAnimationName;
@@ -46,10 +45,7 @@ public:
 
 	Model();
 	Model(std::string luaScriptPath);
-	~Model()
-	{
-		std::cout << "Model deleted!" << std::endl;
-	}
+	~Model() {};
 
 	float gravity;
 	float slippery;
@@ -85,7 +81,7 @@ public:
 	void setColider();
 	std::shared_ptr<Colider> getColider() { return colider; }
 
-	std::shared_ptr<Model> boxRayCast(glm::vec3 origin,glm::vec3 dir,float maxLength);
+	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength);
 
 	void updateTransformMatrix() override;
 

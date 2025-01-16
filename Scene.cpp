@@ -194,7 +194,7 @@ glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)
 	}
 }
 
-std::shared_ptr<Model> Scene::raycast(std::shared_ptr<Colider> colider,Model* model)
+std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)
 {
 	for (int i = 0; i < sceneSet.size(); i++)
 	{
@@ -219,7 +219,7 @@ std::shared_ptr<Model> Scene::raycast(std::shared_ptr<Colider> colider,Model* mo
 		}
 
 		std::shared_ptr<Colider> colider2 = model2->getColider();
-		if (colider->Intersect(colider2))
+		if (colider2->Intersect(origin,dir,length))
 		{
 			return model2;
 		}

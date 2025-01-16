@@ -3,8 +3,6 @@
 
 class Player : public Model
 {
-	bool isGround;
-
 	float cameraDirDeg;
 
 	float moveSpeed;

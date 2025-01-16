@@ -68,7 +68,7 @@ public:
 
 	bool UpdateScene();
 
-	std::shared_ptr<Model> raycast(std::shared_ptr<Colider> colider,Model* model);
+	std::shared_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model);
 };
 
 // スタックの内容を表示する関数

@@ -52,7 +52,8 @@ class Colider
 {
 private:
 
-	glm::vec3 pivot;
+	glm::vec3 min, max;
+	glm::vec3 transformedMin, transformedMax;
 	float width;
 	float height;
 	float depth;
@@ -105,8 +106,6 @@ public:
 
 	void reflectMovement(glm::mat4& transform);
 	glm::mat4& getTransformMatrix() { return transform; }
-
-	glm::vec3 getPivot() { return pivot; }
 
 	int getSatIndicesSize() { return satIndices.size(); }
 	uint32_t* getSatIndicesPointer() { return satIndices.data(); }

@@ -2,8 +2,8 @@
 
 PhysicBase::PhysicBase()
 {
-	prevFrameTime = 0.0f;
-	frameTime = 0.0f;
+	gravity = glm::vec3(0.0, -0.1f, 0.0f);
+
 	deltaTime = 0.0f;
 
 	prevPos = glm::vec3(0.0f);
@@ -12,25 +12,21 @@ PhysicBase::PhysicBase()
 	acceleration = glm::vec3(0.0f);
 }
 
-void PhysicBase::Update(float time, bool isAccelerateReset)
+void PhysicBase::Update(bool isAccelerateReset)
 {
 	prevFrameTime = frameTime;
 	prevPos = currentPos;
 
-	frameTime = time;
+	frameTime = std::chrono::system_clock::now();
 
-	deltaTime = frameTime - prevFrameTime;
+	velocity += gravity + acceleration * deltaTime;
 
-	getAddPos();
-
-	velocity += acceleration * deltaTime;
+	std::cout << velocity.y << std::endl;
 
 	if (isAccelerateReset)
 	{
 		acceleration = glm::vec3(0.0f);
 	}
-
-
 }
 
 void PhysicBase::setZeroVelocity()
@@ -47,11 +43,6 @@ void PhysicBase::setAcceleration(glm::vec3 acceleration)
 void PhysicBase::addVelocity(glm::vec3 addVelocity)
 {
 	this->velocity += addVelocity;
-}
-
-glm::vec3 PhysicBase::getAddPos()
-{
-	return currentPos + velocity;
 }
 
 glm::vec3 PhysicBase::getVelocity()

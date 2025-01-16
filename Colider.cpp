@@ -4,6 +4,12 @@
 
 Colider::Colider(glm::vec3 min, glm::vec3 max)
 {
+	this->min = min;
+	this->max = max;
+
+	this->transformedMin = min;
+	this->transformedMax = max;
+
 	scale = glm::vec3(1.0f);
 	scaleMat = glm::scale(scale);
 
@@ -79,9 +85,9 @@ void Colider::reflectMovement(glm::mat4& transform)
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
+		transformedMin = transform * glm::vec4(min, 1.0f);
+		transformedMax = transform * glm::vec4(max, 1.0f);
 	}
-
-	pivot = glm::vec3(transform * glm::vec4(pivot, 1.0f));
 }
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector)
@@ -104,28 +110,23 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 	return collision;
 }
 
+//ü•ª‚Æ’¼•û‘Ì‚Ì“–‚½‚è”»’è
 bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
 {
 	glm::vec3 endPoint = origin + dir * length;
 
-	std::array<glm::vec3, 6> normals;
-	for (int i = 0; i < 18; i += 3)
+	if (endPoint.x >= transformedMin.x && endPoint.x <= transformedMax.x)
 	{
-		normals[i / 3] = glm::normalize(glm::cross(coliderVertices[satIndices[i + 1]] - coliderVertices[satIndices[i]], coliderVertices[satIndices[i + 2]] - coliderVertices[satIndices[i]]));
-	}
-
-	float dot;
-	for (int i = 0; i < 6; i++)
-	{
-		dot = glm::dot(normals[i], origin) * glm::dot(normals[i], endPoint);
-		if (dot <= 0.0f)//–²Œ¶‚ÌL‚³‚Ì•½–Ê‚ÍŠÑ’Ê‚µ‚Ä‚¢‚é
+		if (endPoint.y >= transformedMin.y && endPoint.y <= transformedMax.y)
 		{
-			float a;
-			glm::vec3 v1, v2,v3;
-			v1 = origin - coliderVertices[0];
-			v2 = endPoint - coliderVertices[0];
+			if (endPoint.z >= transformedMin.z && endPoint.z <= transformedMax.z)
+			{
+				return true;
+			}
 		}
 	}
+
+	return false;
 }
 
 bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal)
