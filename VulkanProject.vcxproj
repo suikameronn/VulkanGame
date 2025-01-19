@@ -158,6 +158,7 @@
     <ClCompile Include="GltfModel.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="GameManager.cpp" />
+    <ClCompile Include="Light.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -165,7 +166,6 @@
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="StageBox.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
@@ -178,6 +178,7 @@
     <ClInclude Include="GltfModel.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="GameManager.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Object.h" />
@@ -185,7 +186,6 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="StageBox.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>

@@ -26,13 +26,15 @@ protected:
 
 	std::shared_ptr<GltfModel> gltfModel;
 
+	MappedBuffer modelViewMappedBuffer;
 	std::vector<BufferObject> pointBuffers;
-	std::vector<MappedBuffer> mappedBuffers;
+	std::vector<MappedBuffer> animationMappedBuffers;
 	std::vector<std::array<glm::mat4, 128>> jointMatrices;
 
 	clock_t startTime;
 	clock_t currentTime;
 	double deltaTime;
+	bool animationChange;
 
 	std::shared_ptr<Material> material;
 	std::shared_ptr<Colider> colider;
@@ -73,7 +75,8 @@ public:
 
 	std::vector<DescSetData> descSetDatas;
 	BufferObject* getPointBufferData() { return pointBuffers.data(); }
-	MappedBuffer* getMappedBufferData() { return mappedBuffers.data(); };
+	MappedBuffer& getModelViewMappedBuffer() { return modelViewMappedBuffer; }
+	MappedBuffer* getAnimationMappedBufferData();
 	uint32_t getimageDataCount();
 
 	bool isMovable;

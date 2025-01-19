@@ -32,6 +32,7 @@ public:
 	Camera();
 
 	void setPosition(glm::vec3 pos);
+	glm::vec3 getPosition() { return position; }
 	void setParentPos(glm::vec3 pos);
 	void setDistance(float distance);
 	void setOffsetPos(glm::vec3 offset);

@@ -40,7 +40,14 @@ bool Object::containTag(Tag tag)
 
 void Object::setLuaScript(std::string path)
 {
-	//updateScript = std::make_unique<UpdateScript>(path);
+	luaPath = path;
+	lua = luaL_newstate();
+	luaL_openlibs(lua);
+}
+
+void Object::registerGlueFunctions()
+{
+
 }
 
 void Object::bindObject(std::weak_ptr<Object> obj)
@@ -153,5 +160,11 @@ void Object::setParentPos(glm::vec3 pos)
 
 void Object::initFrameSetting()
 {
+	if (lua)
+	{
+		lua_pushlightuserdata(lua, this);
+		lua_setglobal(lua, "Data");
 
+		luaL_dofile(lua, luaPath.c_str());
+	}
 }

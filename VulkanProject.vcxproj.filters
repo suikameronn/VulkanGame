@@ -31,12 +31,6 @@
     <Filter Include="ソース ファイル\Vulkan">
       <UniqueIdentifier>{8e5f75bc-37c1-40c7-a477-7fa13b6cef96}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\StageObjects">
-      <UniqueIdentifier>{4ad45d4e-e66e-4577-9a80-4de13d71ec69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\StageObjects">
-      <UniqueIdentifier>{c0270a5a-c084-4f03-a48e-830f0f61cd9d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -84,11 +78,11 @@
     <ClCompile Include="Colider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="StageBox.cpp">
-      <Filter>ソース ファイル\StageObjects</Filter>
-    </ClCompile>
     <ClCompile Include="PhysicBase.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>ソース ファイル\Lights</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -140,11 +134,11 @@
     <ClInclude Include="Colider.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="StageBox.h">
-      <Filter>ヘッダー ファイル\StageObjects</Filter>
-    </ClInclude>
     <ClInclude Include="PhysicBase.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>ヘッダー ファイル\Lights</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

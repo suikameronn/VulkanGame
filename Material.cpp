@@ -36,6 +36,12 @@ void Material::setImageData(int uvIndex,std::shared_ptr<ImageData> image)
 	textureData = new TextureData;
 }
 
+void Material::setMetallicRoughnessMap(int uvIndex, std::shared_ptr<ImageData> map)
+{
+	imageDataCount++;
+	//this->uv
+}
+
 std::shared_ptr<ImageData> Material::getImageData()
 {
 	return image;

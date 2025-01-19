@@ -66,6 +66,7 @@ void Scene::registerFunctions()
 {
 	lua_register(lua, "glueCreateModel", glueCreateModel);
 	lua_register(lua, "glueCreatePlayer", glueCreatePlayer);
+	lua_register(lua, "glueSetLuaPath", glueSetLuaPath);
 	lua_register(lua, "glueSetGltfModel",glueSetGltfModel);
 	lua_register(lua, "glueSetPos", glueSetPos);
 	lua_register(lua, "glueSetRotate", glueSetRotate);

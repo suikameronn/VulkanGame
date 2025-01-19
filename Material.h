@@ -83,11 +83,15 @@ private:
 	glm::vec3 emissive;
 	float shininess;
 	float transmissive;
+	float roughness;
 
 	//テクスチャのもととなる画像データへのポインタ
 	int uvIndex;//使用するuv座標セットのインデックス
 	std::shared_ptr<ImageData> image = nullptr;
 	TextureData* textureData = nullptr;
+
+	std::shared_ptr<ImageData> metallicRoughnessMap = nullptr;;
+	TextureData* metallicRoughnessTexture = nullptr;;
 
 	uint32_t imageDataCount;
 
@@ -105,6 +109,7 @@ public:
 	void setEmissive(glm::vec3 emissive) { this->emissive = emissive; }
 	void setShininess(float shininess) { this->shininess = shininess; }
 	void setTransmissive(float transmissive) { this->transmissive = transmissive; }
+	void setRoughness(float roughness) { this->roughness = roughness; }
 
 	glm::vec3 getDiffuse() { return diffuse; }
 	glm::vec3 getAmbient() { return ambient; }
@@ -114,6 +119,8 @@ public:
 	float getTransmissive() { return transmissive; }
 
 	void setImageData(int uvIndex,std::shared_ptr<ImageData> image);
+	void setMetallicRoughnessMap(int uvIndex, std::shared_ptr<ImageData> map);
+
 	std::shared_ptr<ImageData> getImageData();
 	TextureData* getTextureData() { return textureData; }
 	bool hasImageData();

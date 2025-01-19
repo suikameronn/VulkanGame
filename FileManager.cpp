@@ -291,8 +291,8 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         Vertex vert;
         vert.pos = glm::vec3(glm::make_vec3(&bufferPos[v * posByteStride]));
         vert.normal = glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f)));
-        vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
-        //vert.uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec3(0.0f);
+        vert.texCoord0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
+        vert.texCoord1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec3(0.0f);
         vert.color = bufferColorSet0 ? glm::make_vec4(&bufferColorSet0[v * color0ByteStride]) : glm::vec4(1.0f);
 
         if (hasSkin)
@@ -376,7 +376,8 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
 
 void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
 {
-    for (tinygltf::Animation anim : gltfModel.animations) {
+    for (tinygltf::Animation anim : gltfModel.animations) 
+    {
         Animation animation{};
         animation.name = anim.name;
         if (anim.name.empty()) {
@@ -599,8 +600,21 @@ std::shared_ptr<Material> FileManager::processMaterial(tinygltf::Model gltfModel
         material->setImageData(mat.values["baseColorTexture"].TextureTexCoord(),imageData);
     }
     if (mat.values.find("baseColorFactor") != mat.values.end()) {
-        material->setDiffuse(glm::make_vec3(mat.values["baseColorFactor"].ColorFactor().data()));
+        material->setDiffuse(glm::make_vec3(mat.values["baseColorFactor"].ColorFactor().data()));//物質の色、ベースカラー
     }
+
+    /*
+    if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
+        material.metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
+        material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+    }
+    if (mat.values.find("roughnessFactor") != mat.values.end()) {
+        material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+    }
+    if (mat.values.find("metallicFactor") != mat.values.end()) {
+        material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+    }
+    */
 
     return material;
 }

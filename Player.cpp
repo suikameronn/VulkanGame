@@ -2,14 +2,26 @@
 
 Player::Player()
 {
+	jumpHeight = 0.0f;
 	controllable = true;
 	moveSpeed = 1.0f;
+
+	physicBase = std::make_unique<PhysicBase>();
 }
 
 Player::Player(std::string luaScriptPath)
 {
+	jumpHeight = 0.0f;
 	controllable = true;
 	moveSpeed = 1.0f;
+
+	physicBase = std::make_unique<PhysicBase>();
+}
+
+void Player::registerGlueFunctions()
+{
+	lua_register(lua, "setSpeed", glueSetSpeed);
+	lua_register(lua, "setJumpHeight", glueSetJumpHeight);
 }
 
 glm::vec3 Player::inputMove()
@@ -48,29 +60,63 @@ glm::vec3 Player::inputMove()
 	else
 	{
 		moveDirec = { 0,0,0 };
+	}
+
+	if (moveDirec == glm::vec3(0.0f))
+	{
 		switchPlayAnimation("Idle");
 	}
-
-	if (controller->getKey(GLFW_KEY_SPACE))
-	{
-		if (isGround())//地面に足がついていれば、ジャンプ
-		{
-			std::cout << "Hit" << std::endl;
-			physicBase->addVelocity(10.0f * up);
-		}
-		else
-		{
-			std::cout << "No hit" << std::endl;
-		}
-	}
-
-	if (moveDirec != glm::vec3(0.0f))
+	else
 	{
 		moveDirec = glm::normalize(moveDirec) * moveSpeed;
 		switchPlayAnimation("Running");
 	}
 
+	if (isGround())
+	{
+		gravity = 1.0f;
+		physicBase->setZeroVelocity();
+
+		if (controller->getKey(GLFW_KEY_SPACE))
+		{
+			jumpHeight += 1.0f;
+		} 
+		
+
+		if (jumpHeight > 0.0f)
+		{
+			if ((!controller->getKey(GLFW_KEY_SPACE)) || jumpHeight >= maxJumpHeight)
+			{
+				physicBase->addVelocity(up * maxJumpHeight);
+				jumpHeight = 0.0f;
+			}
+		}
+	}
+
 	return moveDirec;
+}
+
+void Player::initFrameSetting()
+{
+	if (lua)
+	{
+		registerGlueFunctions();
+
+		lua_pushlightuserdata(lua, this);
+		lua_setglobal(lua, "Data");
+
+		luaL_dofile(lua, luaPath.c_str());
+	}
+
+	if (defaultAnimationName != "none")
+	{
+		switchPlayAnimation();
+	}
+
+	if (colider)
+	{
+		colider->initFrameSettings();
+	}
 }
 
 void Player::customUpdate()
@@ -80,9 +126,16 @@ void Player::customUpdate()
 		playAnimation();
 	}
 
-	if (controllable)
-	{
-		glm::vec3 moveDirec = inputMove();
-		setPosition(this->position + moveDirec);
-	}
+	glm::vec3 moveDirec = inputMove();
+	setPosition(this->position + moveDirec);
+}
+
+void Player::setSpeed(float s)
+{
+	moveSpeed = s;
+}
+
+void Player::setMaxJumpHeight(float height)
+{
+	maxJumpHeight = height;
 }

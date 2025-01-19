@@ -115,7 +115,7 @@ void GltfModel::updateAnimation(float animationTime,Animation& animation, std::v
 
 void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
 {
-	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(glm::vec3(10000000.0f), glm::vec3(-10000000.0f));
+	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX));
 
 	if (node->mesh) {
 		if (node->mesh->bb.valid) {

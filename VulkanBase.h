@@ -49,26 +49,19 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UniformBufferObject {
+struct MatricesUBO {
     alignas(16) glm::mat4 local;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    //alignas(16) glm::mat3 normal;
-    alignas(16) std::array<glm::mat4,128> boneMatrix;
-    alignas(16) glm::vec3 diffuse;
-    /*
-    alignas(16) glm::vec3 ambient;
-    alignas(16) glm::vec3 specular;
-    alignas(16) glm::vec3 emissive;
-    float transmissive;
-    float shininess;
-    */
+    alignas(16) glm::vec3 worldCameraPos;
+    alignas(16) glm::vec3 cameraDir;
 };
 
 struct AnimationUBO
 {
-    alignas(16) std::array<int,250> boneIDs;
-    alignas(16) std::array<float,250> weights;
+    alignas(16) glm::mat4 matrix;
+    alignas(16) std::array<glm::mat4, 128> boneMatrix;
+    alignas(16) int boneCount;
 };
 
 struct PushConstantObj
@@ -188,6 +181,7 @@ private:
     void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createIndexBuffer(std::shared_ptr<Colider> colider);
     void createUniformBuffers(std::shared_ptr<Model> model);
+    void createUniformBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
     void createDescriptorPool(PrimitiveTextureCount ptc,VkDescriptorPool& pool);
@@ -205,7 +199,6 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
-    void setMaterial(std::shared_ptr<Material> material, UniformBufferObject& ubo);
     void updateUniformBuffers(std::shared_ptr<Model> model);
     void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void updateUniformBuffer(std::shared_ptr<Colider> colider);

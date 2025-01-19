@@ -29,6 +29,7 @@ Model::Model()
 	rotateSpeed = 0.1f;
 
 	deltaTime = 0.0;
+	animationChange = true;
 
 	isMovable = false;
 	colider = nullptr;
@@ -37,8 +38,6 @@ Model::Model()
 	slippery = 0.0f;
 
 	defaultAnimationName = "Idle";
-
-	physicBase = std::make_unique<PhysicBase>();
 }
 
 Model::Model(std::string luaScriptPath)
@@ -73,8 +72,6 @@ Model::Model(std::string luaScriptPath)
 
 	defaultAnimationName = "none";
 	currentPlayAnimationName = "none";
-
-	physicBase = std::make_unique<PhysicBase>();
 }
 
 void Model::cleanupVulkan()
@@ -90,17 +87,26 @@ void Model::cleanupVulkan()
 		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
 	}
 
-	for (int i = 0; i < mappedBuffers.size(); i++)
+	vkDestroyBuffer(device, modelViewMappedBuffer.uniformBuffer, nullptr);
+	vkFreeMemory(device, modelViewMappedBuffer.uniformBufferMemory, nullptr);
+	modelViewMappedBuffer.uniformBufferMapped = nullptr;
+
+	for (int i = 0; i < animationMappedBuffers.size(); i++)
 	{
-		vkDestroyBuffer(device, mappedBuffers[i].uniformBuffer, nullptr);
-		vkFreeMemory(device, mappedBuffers[i].uniformBufferMemory, nullptr);
-		mappedBuffers[i].uniformBufferMapped = nullptr;
+		vkDestroyBuffer(device, animationMappedBuffers[i].uniformBuffer, nullptr);
+		vkFreeMemory(device, animationMappedBuffers[i].uniformBufferMemory, nullptr);
+		animationMappedBuffers[i].uniformBufferMapped = nullptr;
 	}
 
 	if (colider)
 	{
 		colider->cleanupVulkan();
 	}
+}
+
+MappedBuffer* Model::getAnimationMappedBufferData()
+{
+	return animationMappedBuffers.data();
 }
 
 void Model::setDefaultAnimationName(std::string name)
@@ -140,7 +146,7 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 	descSetDatas.resize(model->primitiveCount);
 	jointMatrices.resize(model->jointNum);
 	pointBuffers.resize(model->meshCount);
-	mappedBuffers.resize(model->primitiveCount);
+	animationMappedBuffers.resize(model->primitiveCount);
 }
 
 uint32_t Model::getimageDataCount()
@@ -178,15 +184,20 @@ void Model::switchPlayAnimation()
 
 void Model::switchPlayAnimation(std::string nextAnimation)
 {
-	currentPlayAnimationName = nextAnimation;
+	if (currentPlayAnimationName != nextAnimation)
+	{
+		animationChange = true;
+		currentPlayAnimationName = nextAnimation;
+	}
 }
 
 void Model::playAnimation()
 {
 	if (currentPlayAnimationName != "none")
 	{
-		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName))
+		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName) || animationChange)
 		{
+			animationChange = false;
 			startTime = clock();
 		}
 
@@ -264,13 +275,15 @@ void Model::sendPosToChildren(glm::vec3 pos)
 
 void Model::Update()
 {
-	physicBase->Update();
+	customUpdate();
 
-	setPosition(getPosition() + physicBase->getVelocity());
+	if (physicBase)
+	{
+		physicBase->Update();
+		setPosition(getPosition() + physicBase->getVelocity());
+	}
 
 	playAnimation();
-
-	customUpdate();
 }
 
 void Model::customUpdate()
@@ -280,6 +293,14 @@ void Model::customUpdate()
 
 void Model::initFrameSetting()
 {
+	if (lua)
+	{
+		lua_pushlightuserdata(lua, this);
+		lua_setglobal(lua, "Data");
+
+		luaL_dofile(lua, luaPath.c_str());
+	}
+
 	if (defaultAnimationName != "none")
 	{
 		switchPlayAnimation();

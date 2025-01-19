@@ -2,7 +2,7 @@
 
 PhysicBase::PhysicBase()
 {
-	gravity = glm::vec3(0.0, -0.1f, 0.0f);
+	gravity = glm::vec3(0.0, -1.0f, 0.0f);
 
 	deltaTime = 0.0f;
 
@@ -20,8 +20,6 @@ void PhysicBase::Update(bool isAccelerateReset)
 	frameTime = std::chrono::system_clock::now();
 
 	velocity += gravity + acceleration * deltaTime;
-
-	std::cout << velocity.y << std::endl;
 
 	if (isAccelerateReset)
 	{

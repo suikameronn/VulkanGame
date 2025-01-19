@@ -22,7 +22,7 @@ void GameManager::initGame()
 void GameManager::createScene()
 {
     scene = Scene::GetInstance();
-    scene->init("LusScripts/test.lua");
+    scene->init("LuaScripts/test.lua");
 
     mainGameLoop();
 }

@@ -18,6 +18,4 @@ glueSetColider(player,true)
 glueSetColiderScale(player,1.0,1.0,0.3)
 glueSetDefaultAnimationName(player,"Running")
 glueBindCamera(player)
-glueSetGravity(player,1.0)
-
-print("AAA")
+glueSetLuaPath(player,"LuaScripts/player.lua")

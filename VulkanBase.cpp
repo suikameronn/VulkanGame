@@ -426,7 +426,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     void VulkanBase::createDescriptorSetLayout(PrimitiveTextureCount ptc,VkDescriptorSetLayout &descriptorSetLayout) {
-        std::vector<VkDescriptorSetLayoutBinding> bindings(ptc.imageDataCount + 1);
+        std::vector<VkDescriptorSetLayoutBinding> bindings(ptc.imageDataCount + 2);
         
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -435,18 +435,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+        VkDescriptorSetLayoutBinding uboLayoutBindingAnimation{};
+        uboLayoutBindingAnimation.binding = 1;
+        uboLayoutBindingAnimation.descriptorCount = 1;
+        uboLayoutBindingAnimation.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingAnimation.pImmutableSamplers = nullptr;
+        uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
         bindings[0] = uboLayoutBinding;
+        bindings[1] = uboLayoutBindingAnimation;
 
         for (int i = 0; i < ptc.imageDataCount; i++)
         {
             VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding = 1;
+            samplerLayoutBinding.binding = i + 2;
             samplerLayoutBinding.descriptorCount = 1;
             samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             samplerLayoutBinding.pImmutableSamplers = nullptr;
             samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-            bindings[i + 1] = samplerLayoutBinding;
+            bindings[i + 2] = samplerLayoutBinding;
         }
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -514,7 +522,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             bindingDescription.stride = sizeof(Vertex);
 
-            attributeDescriptions.resize(5);
+            attributeDescriptions.resize(7);
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
             attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -528,24 +536,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             attributeDescriptions[2].binding = 0;
             attributeDescriptions[2].location = 2;
             attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-            attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+            attributeDescriptions[2].offset = offsetof(Vertex, texCoord0);
 
-            attributeDescriptions[3].binding = 0;
-            attributeDescriptions[3].location = 4;
-            attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SINT;
-            attributeDescriptions[3].offset = offsetof(Vertex, boneID1);
-
-            attributeDescriptions[4].binding = 0;
-            attributeDescriptions[4].location = 5;
-            attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            attributeDescriptions[4].offset = offsetof(Vertex, weight1);
-
-            /*
             attributeDescriptions[3].binding = 0;
             attributeDescriptions[3].location = 3;
-            attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[3].offset = offsetof(Vertex, normal);
-            */
+            attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[3].offset = offsetof(Vertex, texCoord1);
+
+            attributeDescriptions[4].binding = 0;
+            attributeDescriptions[4].location = 4;
+            attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[4].offset = offsetof(Vertex, normal);
+
+            attributeDescriptions[5].binding = 0;
+            attributeDescriptions[5].location = 5;
+            attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SINT;
+            attributeDescriptions[5].offset = offsetof(Vertex, boneID1);
+
+            attributeDescriptions[6].binding = 0;
+            attributeDescriptions[6].location = 6;
+            attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            attributeDescriptions[6].offset = offsetof(Vertex, weight1);
         }
         else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
@@ -1181,15 +1192,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
+    void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
+    {
+        VkDeviceSize bufferSize = sizeof(MatricesUBO);
+
+        MappedBuffer* mappedBuffer = &model->getModelViewMappedBuffer();
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+
+        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+    }
+
     void VulkanBase::createUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
     {
         if (node->mesh)
         {
             Mesh* mesh = node->mesh;
 
-            VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+            VkDeviceSize bufferSize = sizeof(AnimationUBO);
 
-            MappedBuffer* mappedBuffer = &model->getMappedBufferData()[mesh->meshIndex];
+            MappedBuffer* mappedBuffer = &model->getAnimationMappedBufferData()[mesh->meshIndex];
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
@@ -1204,7 +1226,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createUniformBuffer(std::shared_ptr<Colider> colider)
     {
-        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        VkDeviceSize bufferSize = sizeof(MatricesUBO);
 
         MappedBuffer* mappedBuffer = colider->getMappedBufferData();
 
@@ -1215,17 +1237,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createUniformBuffers(std::shared_ptr<Model> model)
     {
-        createUniformBuffer(model->getRootNode(),model);
+        createUniformBuffer(model);
+
+        createUniformBuffer(model->getRootNode(), model);
 
         if (model->hasColider())
         {
             createUniformBuffer(model->getColider());
         }
-    }
-
-    void VulkanBase::setMaterial(std::shared_ptr<Material> material,UniformBufferObject& ubo)
-    {    
-        ubo.diffuse = material->getDiffuse();
     }
 
     void VulkanBase::updateUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
@@ -1239,16 +1258,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             std::array<glm::mat4, 128> array;
             std::fill(array.begin(), array.end(), glm::mat4(1.0f));
 
-            UniformBufferObject ubo;
+            AnimationUBO ubo;
 
-            for (int i = 0; i < mesh->primitives.size(); i++)
-            {
-                setMaterial(mesh->primitives[i].material, ubo);
-            }
-
-            ubo.local = model->getTransformMatrix();
-            ubo.view = camera->viewMat;
-            ubo.proj = camera->perspectiveMat;
+            ubo.matrix = node->matrix;
             if (node->skin && node->globalHasSkinNodeIndex > -1)
             {
                 ubo.boneMatrix = model->getJointMatrices(node->globalHasSkinNodeIndex);
@@ -1258,7 +1270,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 ubo.boneMatrix = array;
             }
 
-            memcpy(model->getMappedBufferData()[mesh->meshIndex].uniformBufferMapped, &ubo, sizeof(ubo));
+            ubo.boneCount = node->getJointCount();
+
+            memcpy(model->getAnimationMappedBufferData()[mesh->meshIndex].uniformBufferMapped, &ubo, sizeof(ubo));
 
         }
 
@@ -1270,6 +1284,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model) 
     {
+        {
+            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
+
+            MatricesUBO ubo;
+
+            ubo.local = model->getTransformMatrix();
+            ubo.view = camera->viewMat;
+            ubo.proj = camera->perspectiveMat;
+            ubo.worldCameraPos = camera->getPosition();
+            ubo.cameraDir = camera->forward;
+
+            memcpy(model->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
+        }
+
         updateUniformBuffer(model->getRootNode(), model);
 
         if (model->hasColider())
@@ -1277,14 +1305,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
             std::shared_ptr<Colider> colider = model->getColider();
 
-            std::array<glm::mat4, 128> array = { glm::mat4(1.0f) };
+            MatricesUBO ubo;
 
-            UniformBufferObject ubo;
-
-            ubo.local = model->getTransformMatrix();// * colider->getScaleMat();
+            ubo.local = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
-            ubo.boneMatrix = array;
+            ubo.worldCameraPos = camera->getPosition();
+            ubo.cameraDir = camera->forward;
 
             memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
@@ -1421,14 +1448,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 std::shared_ptr<Material> material = mesh->primitives[i].material;
 
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = model->getMappedBufferData()[mesh->meshIndex].uniformBuffer;
+                bufferInfo.buffer = model->getModelViewMappedBuffer().uniformBuffer;
                 bufferInfo.offset = 0;
-                bufferInfo.range = sizeof(UniformBufferObject);
+                bufferInfo.range = sizeof(MatricesUBO);
+
+                VkDescriptorBufferInfo animationBufferInfo{};
+                animationBufferInfo.buffer = model->getAnimationMappedBufferData()[i].uniformBuffer;
+                animationBufferInfo.offset = 0;
+                animationBufferInfo.range = sizeof(AnimationUBO);
 
                 std::vector<VkWriteDescriptorSet> descriptorWrites;
                 if (material->hasImageData())
                 {
-                    descriptorWrites.resize(2);
+                    descriptorWrites.resize(3);
 
                     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
@@ -1438,18 +1470,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     descriptorWrites[0].descriptorCount = 1;
                     descriptorWrites[0].pBufferInfo = &bufferInfo;
 
+                    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+                    descriptorWrites[1].dstBinding = 1;
+                    descriptorWrites[1].dstArrayElement = 0;
+                    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    descriptorWrites[1].descriptorCount = 1;
+                    descriptorWrites[1].pBufferInfo = &animationBufferInfo;
+
                     VkDescriptorImageInfo imageInfo{};
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     imageInfo.imageView = material->getTextureData()->view;
                     imageInfo.sampler = material->getTextureData()->sampler;
 
-                    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[1].dstBinding = 1;
-                    descriptorWrites[1].dstArrayElement = 0;
-                    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    descriptorWrites[1].descriptorCount = 1;
-                    descriptorWrites[1].pImageInfo = &imageInfo;
+                    descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    descriptorWrites[2].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+                    descriptorWrites[2].dstBinding = 2;
+                    descriptorWrites[2].dstArrayElement = 0;
+                    descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    descriptorWrites[2].descriptorCount = 1;
+                    descriptorWrites[2].pImageInfo = &imageInfo;
                 }
                 else
                 {
@@ -1482,7 +1522,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = colider->getMappedBufferData()->uniformBuffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        bufferInfo.range = sizeof(MatricesUBO);
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

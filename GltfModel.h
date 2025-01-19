@@ -21,7 +21,8 @@ struct BoundingBox;
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 color;
-	glm::vec2 texCoord;
+	glm::vec2 texCoord0;
+	glm::vec2 texCoord1;
 	glm::vec3 normal;
 
 	uint32_t index;
@@ -33,7 +34,8 @@ struct Vertex {
 	{
 		pos = glm::vec3(0.0);
 		color = glm::vec3(0.0);
-		texCoord = glm::vec2(0.0);
+		texCoord0 = glm::vec2(0.0);
+		texCoord1 = glm::vec2(0.0);
 		normal = glm::vec3(0.0);
 
 		index = 0;
@@ -219,6 +221,16 @@ struct GltfNode
 		}
 
 		updatedIndex = numJoints;
+	}
+
+	int getJointCount()
+	{
+		if (!skin)
+		{
+			return 0;
+		}
+
+		return std::min((uint32_t)skin->joints.size(), 128u);
 	}
 };
 

@@ -3,7 +3,7 @@
 Camera::Camera()
 {
 	position = { 0,0.0f,5.0f };
-	distance = 50.0f;
+	distance = 100.0f;
 	offsetPos = glm::vec3(0.0f,20.0f,0.0f);
 
 	forward = glm::vec3{ 0,0,1};

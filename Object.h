@@ -17,6 +17,10 @@
 #include<glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <lua.hpp>
+#include <lualib.h>
+#include <lauxlib.h>
+
 #include"EnumList.h"
 #include"Controller.h"
 #include"Camera.h"
@@ -70,22 +74,6 @@ struct DescSetData
 	VkDescriptorSet descriptorSet;
 };
 
-//アニメーションの遷移などを担う
-class UpdateScript
-{
-	std::string currentAnimationName;
-
-	void initScript(std::string path);
-
-public:
-	UpdateScript(std::string path);
-	~UpdateScript();
-
-	void update();
-	std::string getCurrentAnimationName() { return currentAnimationName; }
-
-};
-
 struct Rotate
 {
 	float x;
@@ -108,6 +96,10 @@ struct Rotate
 class Object
 {
 protected:
+
+	lua_State* lua;
+	std::string luaPath;
+
 	ObjNum objNum;
 	std::vector<Tag> tags;
 
@@ -160,6 +152,7 @@ public:
 	glm::mat4 getRodriguesMatrix(glm::vec3 axis, float theta);
 
 	virtual void initFrameSetting();
+	virtual void registerGlueFunctions();
 	virtual void updateTransformMatrix() {};
 	virtual void Update();
 	virtual void customUpdate() {}

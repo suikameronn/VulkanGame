@@ -142,6 +142,19 @@ static int glueCreatePlayer(lua_State* lua)
 	return 1;
 }
 
+static int glueSetLuaPath(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+	std::string path = std::string(lua_tostring(lua, -1));
+
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	obj->setLuaScript(path);
+
+	return 0;
+}
+
 static int glueSetGltfModel(lua_State* lua)
 {
 	Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
