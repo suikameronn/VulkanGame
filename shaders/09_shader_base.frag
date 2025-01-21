@@ -2,11 +2,11 @@
 
 layout(binding = 2) uniform sampler2D texSampler;
 
-layout(location = 0) in vec2 texCoord;
-layout(location = 1) in vec3 vWorldPosition;
-layout(location = 2) in vec3 vWorldNormal;
-layout(location = 3) in vec3 worldCameraPosition;
-layout(location = 4) in vec3 cameraDir;
+layout (location = 0) in vec3 inPos;
+layout (location = 1) in vec3 inNormal;
+layout (location = 2) in vec2 inUV0;
+layout (location = 3) in vec2 inUV1;
+layout (location = 4) in vec4 inColor0;
 
 layout(location = 0) out vec4 outColor;
 

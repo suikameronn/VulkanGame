@@ -1,11 +1,10 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 local;
+    mat4 model;
     mat4 view;
     mat4 proj;
-    vec3 worldCameraPos;
-    vec3 cameraDir;
+    vec3 camPos;
 } matricesUBO;
 
 layout(binding = 1) uniform animationUniformBufferObject
@@ -16,7 +15,7 @@ layout(binding = 1) uniform animationUniformBufferObject
 } animationUBO;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inColor;
+layout(location = 1) in vec4 inColor;
 layout(location = 2) in vec2 inTexCoord1;
 layout(location = 3) in vec2 inTexCoord2;
 layout(location = 4) in vec3 inNormal;
@@ -28,38 +27,42 @@ layout( push_constant ) uniform push_constant
     mat4 modelMatrix;
 } PushConstants;
 
-layout(location = 0) out vec2 texCoord;
-layout(location = 1) out vec3 vWorldPosition;
-layout(location = 2) out vec3 vWorldNormal;
-layout(location = 3) out vec3 worldCameraPosition;
-layout(location = 4) out vec3 cameraDir;
+layout (location = 0) out vec3 outWorldPos;
+layout (location = 1) out vec3 outNormal;
+layout (location = 2) out vec2 outUV0;
+layout (location = 3) out vec2 outUV1;
+layout (location = 4) out vec4 outColor0;
 
 void main() {
+    outColor0 = inColor;
 
     mat4 boneMat = mat4(0.0);
 
-    for(int i = 0;i < animationUBO.boneCount;i++)
+    vec4 locPos;
+    if(animationUBO.boneCount > 0)
     {
-        boneMat += animationUBO.boneMatrix[boneID1[i]] * weight1[i];
+        mat4 skinMat = 
+        weight1.x * animationUBO.boneMatrix[boneID1.x] +
+        weight1.y * animationUBO.boneMatrix[boneID1.y] +
+        weight1.z * animationUBO.boneMatrix[boneID1.z] +
+        weight1.w * animationUBO.boneMatrix[boneID1.w];
+
+        locPos = matricesUBO.model * animationUBO.matrix * skinMat * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * skinMat))) * inNormal);
+    }
+    else
+    {
+        locPos = matricesUBO.model * animationUBO.matrix * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix))) * inNormal);
     }
 
-    if(boneMat == mat4(0.0))
-    {
-	boneMat = mat4(1.0);
-    }
+    locPos.y = -locPos.y;
+    locPos.z = (locPos.z + locPos.w) / 2.0;
 
-    mat4 M = matricesUBO.local *PushConstants.modelMatrix * boneMat;
+    outWorldPos = locPos.xyz / locPos.w;
 
-    gl_Position = matricesUBO.proj * matricesUBO.view * M * vec4(inPosition,1.0);
-    gl_Position.y = -gl_Position.y;
-    gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
+    outUV0 = inTexCoord1;
+    outUV1 = inTexCoord2;
 
-    vec4 worldPosition = M * vec4(inPosition,1.0);
-    vWorldPosition = worldPosition.xyz / worldPosition.w;
-    vWorldNormal = mat3(inverse(M)) * inNormal;
-
-    worldCameraPosition = matricesUBO.worldCameraPos;
-    cameraDir = matricesUBO.cameraDir;
-
-    texCoord = inTexCoord1;
+    gl_Position = matricesUBO.proj * matricesUBO.view * vec4(outWorldPos,1.0);
 }
