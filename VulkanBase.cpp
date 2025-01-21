@@ -1760,7 +1760,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createSyncObjects() {
+    void VulkanBase::createSyncObjects() {//•`‰æ‚Ì“®‹@—p‚Ì•Ï”‚ð—pˆÓ
         imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1784,7 +1784,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::drawFrame() 
     {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-        vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1796,6 +1795,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
         }
+
+        vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         Storage* storage = Storage::GetInstance();
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
@@ -1832,7 +1833,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = { swapChain };
+        VkSwapchainKHR swapChains[] = {swapChain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
