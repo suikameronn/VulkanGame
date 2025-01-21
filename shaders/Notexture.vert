@@ -44,19 +44,18 @@ void main() {
         weight1.z * animationUBO.boneMatrix[boneID1.z] +
         weight1.w * animationUBO.boneMatrix[boneID1.w];
 
-        locPos = matricesUBO.model * animationUBO.matrix * skinMat * vec4(inPosition,1.0);
+        locPos = matricesUBO.model * PushConstants.modelMatrix * skinMat * vec4(inPosition,1.0);
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * skinMat))) * inNormal);
     }
     else
     {
-        locPos = matricesUBO.model * animationUBO.matrix * vec4(inPosition,1.0);
+        locPos = matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix))) * inNormal);
     }
 
-    locPos.y = -locPos.y;
-    locPos.z = (locPos.z + locPos.w) / 2.0;
-
     outWorldPos = locPos.xyz / locPos.w;
 
-    gl_Position = matricesUBO.proj * matricesUBO.view * vec4(outWorldPos,1.0);
+    gl_Position = matricesUBO.proj * matricesUBO.view * locPos;
+    gl_Position.y = -gl_Position.y;
+    gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }

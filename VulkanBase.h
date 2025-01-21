@@ -50,11 +50,10 @@ struct SwapChainSupportDetails {
 };
 
 struct MatricesUBO {
-    alignas(16) glm::mat4 local;
+    alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 worldCameraPos;
-    alignas(16) glm::vec3 cameraDir;
 };
 
 struct AnimationUBO

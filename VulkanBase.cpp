@@ -476,19 +476,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             if (ptc.imageDataCount > 0)
             {
-                vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/vert.spv";
-                fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/frag.spv";
+                vertFile = "shaders/vert.spv";
+                fragFile = "shaders/frag.spv";
             }
             else
             {
-                vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/Notexture.vert.spv";
-                fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/Notexture.frag.spv";
+                vertFile = "shaders/Notexture.vert.spv";
+                fragFile = "shaders/Notexture.frag.spv";
             }
         }
         else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
-            vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/line.vert.spv";
-            fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/line.frag.spv";
+            vertFile = "shaders/line.vert.spv";
+            fragFile = "shaders/line.frag.spv";
         }
         auto vertShaderCode = readFile(vertFile);
         auto fragShaderCode = readFile(fragFile);
@@ -1289,11 +1289,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             MatricesUBO ubo;
 
-            ubo.local = model->getTransformMatrix();
+            ubo.model= model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
             ubo.worldCameraPos = camera->getPosition();
-            ubo.cameraDir = camera->forward;
 
             memcpy(model->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
         }
@@ -1307,11 +1306,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             MatricesUBO ubo;
 
-            ubo.local = model->getTransformMatrix();
+            ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
             ubo.worldCameraPos = camera->getPosition();
-            ubo.cameraDir = camera->forward;
 
             memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
