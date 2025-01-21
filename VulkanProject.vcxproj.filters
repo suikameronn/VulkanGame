@@ -146,13 +146,4 @@
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="models\Buche_de_Noel.fbx" />
-    <None Include="models\unitychan.fbx" />
-    <None Include="models\unitychan_fbx7binary.fbx" />
-    <None Include="models\Ground_01.fbx" />
-    <None Include="models\Flag_Pole.fbx" />
-    <None Include="models\unitychan_WALK00_F_fbx7binary.fbx" />
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

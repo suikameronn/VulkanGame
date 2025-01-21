@@ -1,6 +1,7 @@
 #pragma once
 
-class updateScript
+class 
+	Script
 {
 private:
 

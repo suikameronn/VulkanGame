@@ -15,10 +15,12 @@ layout(binding = 1) uniform animationUniformBufferObject
 } animationUBO;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec4 inColor;
-layout(location = 2) in vec3 inNormal;
-layout(location = 3) in ivec4 boneID1;
-layout(location = 4) in vec4 weight1;
+layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inTexCoord1;
+layout(location = 3) in vec2 inTexCoord2;
+layout(location = 4) in vec3 inNormal;
+layout(location = 5) in ivec4 boneID1;
+layout(location = 6) in vec4 weight1;
 
 layout (location = 0) out vec3 outWorldPos;
 layout (location = 1) out vec3 outNormal;
@@ -31,7 +33,7 @@ layout( push_constant ) uniform push_constant
 
 void main() {
 
-    outColor0 = inColor;
+    outColor0 = vec4(inColor,1.0);
 
     vec4 locPos;
     if(animationUBO.boneCount > 0)

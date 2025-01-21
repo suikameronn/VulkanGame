@@ -476,19 +476,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             if (ptc.imageDataCount > 0)
             {
-                vertFile = "shaders/vert.spv";
-                fragFile = "shaders/frag.spv";
+                vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/vert.spv";
+                fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/frag.spv";
             }
             else
             {
-                vertFile = "shaders/Notexture.vert.spv";
-                fragFile = "shaders/Notexture.frag.spv";
+                vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/Notexture.vert.spv";
+                fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/Notexture.frag.spv";
             }
         }
         else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
-            vertFile = "shaders/line.vert.spv";
-            fragFile = "shaders/line.frag.spv";
+            vertFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/line.vert.spv";
+            fragFile = "C:/Users/sugiyama/Documents/VulkanGame/shaders/line.frag.spv";
         }
         auto vertShaderCode = readFile(vertFile);
         auto fragShaderCode = readFile(fragFile);
@@ -1341,7 +1341,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(10);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
 
@@ -1349,7 +1349,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(10);
+        poolInfo.maxSets = static_cast<uint32_t>(100);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");

@@ -4,8 +4,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 local;
     mat4 view;
     mat4 proj;
-    mat4[128] boneMatrix;
-    vec3 diffuse;
+    vec3 camPos;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

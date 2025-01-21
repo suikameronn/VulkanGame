@@ -15,7 +15,7 @@ layout(binding = 1) uniform animationUniformBufferObject
 } animationUBO;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec4 inColor;
+layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord1;
 layout(location = 3) in vec2 inTexCoord2;
 layout(location = 4) in vec3 inNormal;
@@ -32,9 +32,10 @@ layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
+layout(location = 5) out vec3 camPos;
 
 void main() {
-    outColor0 = inColor;
+    outColor0 = vec4(inColor,1.0);
 
     mat4 boneMat = mat4(0.0);
 
@@ -63,6 +64,8 @@ void main() {
 
     outUV0 = inTexCoord1;
     outUV1 = inTexCoord2;
+
+    camPos = matricesUBO.camPos;
 
     gl_Position = matricesUBO.proj * matricesUBO.view * vec4(outWorldPos,1.0);
 }

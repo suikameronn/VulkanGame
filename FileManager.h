@@ -20,7 +20,7 @@ private:
 	static FileManager* fileManager;
 
 	const std::string aabbCalc = "Running";
-	const int aabbUpdateRate = 60;
+	const int aabbRate = 60;
 
 	FileManager();
 
