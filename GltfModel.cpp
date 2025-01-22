@@ -170,7 +170,6 @@ void GltfModel::cleanUpVulkan(VkDevice& device, GltfNode* node)
 				}
 			}
 		}
-		mesh->descriptorInfo.destroy(device);
 	}
 
 	for (size_t i = 0; i < node->children.size(); i++)

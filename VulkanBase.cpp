@@ -39,6 +39,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //createUniformBuffers();
         createCommandBuffers();
         createSyncObjects();
+        createDescriptorPool();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -83,12 +84,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             }
         }
 
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
         std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoBegin;
         std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoEnd;
         Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
         for (auto itr = infoBegin; itr != infoEnd; itr++)
         {
-            vkDestroyDescriptorPool(device, itr->second.pool, nullptr);
             vkDestroyPipeline(device, itr->second.pipeline, nullptr);
             vkDestroyPipelineLayout(device, itr->second.pLayout, nullptr);
             vkDestroyDescriptorSetLayout(device, itr->second.layout, nullptr);
@@ -1335,13 +1337,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createDescriptorPool(PrimitiveTextureCount ptc, VkDescriptorPool& pool)
+    void VulkanBase::createDescriptorPool()
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(10 * swapChainImages.size());
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(1 * swapChainImages.size());
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(5 * swapChainImages.size());
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1349,7 +1351,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(100);
 
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
+        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
         }
     }
@@ -1369,7 +1371,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 VkDescriptorSetAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-                allocInfo.descriptorPool = info->pool;
+                allocInfo.descriptorPool = descriptorPool;
                 allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
                 allocInfo.pSetLayouts = &info->layout;
 
@@ -1406,7 +1408,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = info->pool;
+        allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
         allocInfo.pSetLayouts = &info->layout;
 
@@ -1491,7 +1493,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 }
                 else
                 {
-                    descriptorWrites.resize(1);
+                    descriptorWrites.resize(2);
 
                     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
@@ -1500,6 +1502,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                     descriptorWrites[0].descriptorCount = 1;
                     descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+                    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+                    descriptorWrites[1].dstBinding = 1;
+                    descriptorWrites[1].dstArrayElement = 0;
+                    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    descriptorWrites[1].descriptorCount = 1;
+                    descriptorWrites[1].pBufferInfo = &animationBufferInfo;
                 }
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -1810,32 +1820,32 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitDstStageMask = waitStages.data();
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
+            //throw std::runtime_error("failed to submit draw command buffer!");
         }
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
+        presentInfo.pWaitSemaphores = signalSemaphores.data();
 
-        VkSwapchainKHR swapChains[] = {swapChain};
+        std::vector<VkSwapchainKHR> swapChains = {swapChain};
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
+        presentInfo.pSwapchains = swapChains.data();
 
         presentInfo.pImageIndices = &imageIndex;
 
@@ -2098,18 +2108,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             {
                 ptc.imageDataCount = mesh->primitives[i].material->getImageDataCount();
 
-                DescriptorInfo info{};
+                if (!Storage::GetInstance()->containDescriptorInfo(ptc))
+                {
+                    DescriptorInfo info{};
 
-                /*ディスクリプタレイアウトを持たせる*/
-                createDescriptorSetLayout(ptc, info.layout);
+                    /*ディスクリプタレイアウトを持たせる*/
+                    createDescriptorSetLayout(ptc, info.layout);
 
-                /*ディスクリプタプールを作る*/
-                createDescriptorPool(ptc, info.pool);
+                    /*グラフィックスパイプラインを作る*/
+                    createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
 
-                /*グラフィックスパイプラインを作る*/
-                createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
+                    mesh->descriptorInfo = info;
 
-                mesh->descriptorInfo = info;
+                    Storage::GetInstance()->addDescriptorInfo(ptc, info);
+                }
+                else
+                {
+                    DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
+
+                    mesh->descriptorInfo = *info;
+                }
             }
         }
 
@@ -2135,9 +2153,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         /*ディスクリプタレイアウトを持たせる*/
         createDescriptorSetLayout(ptc, info.layout);
-
-        /*ディスクリプタプールを作る*/
-        createDescriptorPool(ptc, info.pool);
 
         /*グラフィックスパイプラインを作る*/
         createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);

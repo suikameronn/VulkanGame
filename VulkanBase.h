@@ -140,6 +140,8 @@ private:
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
 
+    VkDescriptorPool descriptorPool;
+
     void setUpComputingShader();
 
     void cleanup();
@@ -183,7 +185,7 @@ private:
     void createUniformBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
-    void createDescriptorPool(PrimitiveTextureCount ptc,VkDescriptorPool& pool);
+    void createDescriptorPool();
     void allocateDescriptorSets(std::shared_ptr<Model> model);
     void allocateDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void allocateDescriptorSet(std::shared_ptr<Model> model);

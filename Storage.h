@@ -41,9 +41,7 @@ struct Hash
 		size_t a = std::hash<VkDescriptorSetLayout>()(info.layout);
 		size_t b = std::hash<VkPipeline>()(info.pipeline);
 		size_t c = std::hash<VkPipelineLayout>()(info.pLayout);
-		size_t d = std::hash<VkDescriptorPool>()(info.pool);
-
-		return a ^ b ^ c ^ d;
+		return a ^ b ^ c;
 	}
 
 	size_t operator()(const PrimitiveTextureCount& ptc) const
