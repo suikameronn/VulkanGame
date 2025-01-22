@@ -113,7 +113,7 @@ public:
 	bool unlit = false;
 	float emissiveStrength = 1.0f;
 
-	DescSetData descSetData;
+	VkDescriptorSet descriptorSet;
 
 	TexCoordSets texCoordSets;
 

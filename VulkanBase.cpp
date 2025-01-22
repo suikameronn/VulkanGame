@@ -69,20 +69,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         cleanupSwapChain();
 
+        emptyImage.destroy(device);
+
         Storage* storage = Storage::GetInstance();
         for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
         {
             (*model)->cleanupVulkan();
         }
 
+        std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator begin;
+        std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator end;
+        storage->accessgltfModel(begin, end);
+        for (auto itr = begin; itr != end; itr++)
         {
-            std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator begin;
-            std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator end;
-            Storage::GetInstance()->accessgltfModel(begin, end);
-            for (auto itr = begin; itr != end; itr++)
-            {
-                itr->second->cleanUpVulkan(device);
-            }
+            itr->second->cleanUpVulkan(device);
         }
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -429,7 +429,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     void VulkanBase::createDescriptorSetLayout(PrimitiveTextureCount ptc,VkDescriptorSetLayout &descriptorSetLayout) {
-        std::vector<VkDescriptorSetLayoutBinding> bindings(ptc.imageDataCount + 2);
+        std::vector<VkDescriptorSetLayoutBinding> bindings(7);
         
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -448,7 +448,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindings[0] = uboLayoutBinding;
         bindings[1] = uboLayoutBindingAnimation;
 
-        for (int i = 0; i < ptc.imageDataCount; i++)
+        for (int i = 0; i < 5; i++)
         {
             VkDescriptorSetLayoutBinding samplerLayoutBinding{};
             samplerLayoutBinding.binding = i + 2;
@@ -2260,7 +2260,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layoutInfo.bindingCount = 1;
         layoutInfo.pBindings = &samplerLayoutBinding;
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &emptyImage.info.layout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &emptyImage.layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
 
@@ -2268,7 +2268,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = &emptyImage.info.layout;
+        allocInfo.pSetLayouts = &emptyImage.layout;
 
         VkDescriptorSet descriptorSet;
 
@@ -2304,7 +2304,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)
     {
-
         /*頂点、インデックスバッファーを持たせる*/
         createMeshesData(model);
 

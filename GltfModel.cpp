@@ -150,12 +150,15 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 	}
 }
 
-void GltfModel::cleanUpVulkan(VkDevice& device)
-{
-	//cleanUpVulkan(device, root);
-}
-
 std::map<float, std::pair<glm::vec3, glm::vec3>>& GltfModel::getAnimationAABB(std::string animationName)
 {
 	return animations[animationName].coliderVertices;
+}
+
+void GltfModel::cleanUpVulkan(VkDevice& device)
+{
+	for (int i = 0; i < textureDatas.size(); i++)
+	{
+		textureDatas[i]->destroy(device);
+	}
 }

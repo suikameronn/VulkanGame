@@ -404,5 +404,4 @@ public:
 	std::map<float, std::pair<glm::vec3, glm::vec3>>& getAnimationAABB(std::string animationName);
 
 	void cleanUpVulkan(VkDevice& device);
-	void cleanUpVulkan(VkDevice& device, GltfNode* node);
 };

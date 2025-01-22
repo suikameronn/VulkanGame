@@ -71,8 +71,15 @@ struct PushConstantObj
 struct EmptyImage
 {
     TextureData* emptyTex;
-    DescriptorInfo info;
+    VkDescriptorSetLayout layout;
     VkDescriptorSet descriptorSet;
+
+    void destroy(VkDevice& device)
+    {
+        emptyTex->destroy(device);
+
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+    }
 };
 
 class VulkanBase
