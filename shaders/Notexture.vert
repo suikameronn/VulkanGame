@@ -45,12 +45,12 @@ void main() {
         weight1.w * animationUBO.boneMatrix[boneID1.w];
 
         locPos = matricesUBO.model * PushConstants.modelMatrix * skinMat * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * skinMat))) * inNormal);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix * skinMat))) * inNormal);
     }
     else
     {
         locPos = matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix))) * inNormal);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix))) * inNormal);
     }
 
     outWorldPos = locPos.xyz / locPos.w;
