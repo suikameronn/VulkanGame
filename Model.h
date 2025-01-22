@@ -66,7 +66,6 @@ public:
 	std::shared_ptr<GltfModel> getGltfModel() { return gltfModel; }
 
 	void setMaterial(std::shared_ptr<Material> material) { this->material = material; }
-	void setDiffuse(glm::vec4 color) { this->material->setDiffuse(color); }
 
 	void switchPlayAnimation();
 	void switchPlayAnimation(std::string nextAnimation);

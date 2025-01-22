@@ -68,6 +68,13 @@ struct PushConstantObj
     glm::mat4 modelMatrix;
 };
 
+struct EmptyImage
+{
+    TextureData* emptyTex;
+    DescriptorInfo info;
+    VkDescriptorSet descriptorSet;
+};
+
 class VulkanBase
 {
 private:
@@ -142,6 +149,8 @@ private:
 
     VkDescriptorPool descriptorPool;
 
+    EmptyImage emptyImage;
+
     void setUpComputingShader();
 
     void cleanup();
@@ -168,10 +177,17 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
-    void createTextureImage(std::shared_ptr<Material> material);
+
+    void createTextureImage();
+    void createTextureImage(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView(std::shared_ptr<Material> material);
-    void createTextureSampler(std::shared_ptr<Material> material);
+
+    void createTextureImageView();
+    void createTextureImageView(std::shared_ptr<Material> material,std::shared_ptr<GltfModel> gltfModel);
+    
+    void createTextureSampler();
+    void createTextureSampler(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
+    
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -186,9 +202,11 @@ private:
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
     void createDescriptorPool();
+    void allocateDescriptorSets();
     void allocateDescriptorSets(std::shared_ptr<Model> model);
     void allocateDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void allocateDescriptorSet(std::shared_ptr<Model> model);
+    void createDescriptorSets();
     void createDescriptorSets(std::shared_ptr<Model> model);
     void createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorSet(std::shared_ptr<Model> model);
@@ -218,10 +236,11 @@ private:
 
     void createMeshesData(std::shared_ptr<Model> model);
     void createTextureDatas(std::shared_ptr<Model> model);
-    void createTextureData(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfos(std::shared_ptr<Model> model);
     void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
+
+    void createEmptyImage();
 
 public:
 

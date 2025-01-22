@@ -40,6 +40,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createCommandBuffers();
         createSyncObjects();
         createDescriptorPool();
+        createEmptyImage();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -790,10 +791,49 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return std::floor(std::log2(std::max(width, height))) + 1;
     }
 
-    void VulkanBase::createTextureImage(std::shared_ptr<Material> material)
+    void VulkanBase::createTextureImage()
     {
-        std::shared_ptr<ImageData> imageData = material->getImageData();
-        TextureData* textureData = material->getTextureData();
+        int emptyTexWidth = 2;
+        std::vector<float> pixel;
+        pixel.resize(emptyTexWidth * 2);
+        std::fill(pixel.begin(), pixel.end(), 0.0f);
+
+        TextureData* textureData = emptyImage.emptyTex;
+
+        VkDeviceSize bufferSize = pixel.size() * 4;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, pixel.data() , bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        textureData->mipLevel = calcMipMapLevel(emptyTexWidth,emptyTexWidth);
+        createImage(emptyTexWidth,emptyTexWidth, textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
+
+        transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel);
+        copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(emptyTexWidth), static_cast<uint32_t>(emptyTexWidth));
+        //transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,mipLevels);
+
+        generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, emptyTexWidth, emptyTexWidth, textureData->mipLevel);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
+    }
+
+    void VulkanBase::createTextureImage(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel)
+    {
+        if (gltfModel->textureDatas.size() == 0)
+        {
+            return;
+        }
+
+        std::shared_ptr<ImageData> imageData = gltfModel->imageDatas[material->baseColorTextureIndex];
+        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
 
         VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
 
@@ -908,14 +948,61 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
-    void VulkanBase::createTextureImageView(std::shared_ptr<Material> material) {
-        TextureData* textureData = material->getTextureData();
+    void VulkanBase::createTextureImageView()
+    {
+        TextureData* textureData = emptyImage.emptyTex;
         textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
     }
 
-    void VulkanBase::createTextureSampler(std::shared_ptr<Material> material)
+    void VulkanBase::createTextureImageView(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel) 
     {
-        TextureData* textureData = material->getTextureData();
+        if (gltfModel->textureDatas.size() == 0)
+        {
+            return;
+        }
+
+        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
+        textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
+    }
+
+    void VulkanBase::createTextureSampler()
+    {
+        TextureData* textureData = emptyImage.emptyTex;
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.anisotropyEnable = VK_TRUE;
+        samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable = VK_FALSE;
+        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = static_cast<float>(textureData->mipLevel);
+        samplerInfo.mipLodBias = 0.0f;
+
+        if (vkCreateSampler(device, &samplerInfo, nullptr, &textureData->sampler) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create texture sampler!");
+        }
+    }
+
+    void VulkanBase::createTextureSampler(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel)
+    {
+        if (gltfModel->textureDatas.size() == 0)
+        {
+            return;
+        }
+
+        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
 
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -1341,9 +1428,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::array<VkDescriptorPoolSize,2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(10 * swapChainImages.size());
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(100 * swapChainImages.size());
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(5 * swapChainImages.size());
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(100 * swapChainImages.size());
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1363,10 +1450,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
-                PrimitiveTextureCount ptc;
-                ptc.imageDataCount = mesh->primitives[i].material->getImageDataCount();
-                ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
                 DescriptorInfo* info = &mesh->descriptorInfo;
 
                 VkDescriptorSetAllocateInfo allocInfo{};
@@ -1444,8 +1527,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
-
-                std::shared_ptr<Material> material = mesh->primitives[i].material;
+                std::shared_ptr<GltfModel> gltfModel = model->getGltfModel();
+                std::shared_ptr<Material> material = gltfModel->materials[mesh->primitives[i].materialIndex];
 
                 VkDescriptorBufferInfo bufferInfo{};
                 bufferInfo.buffer = model->getModelViewMappedBuffer().uniformBuffer;
@@ -1458,7 +1541,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 animationBufferInfo.range = sizeof(AnimationUBO);
 
                 std::vector<VkWriteDescriptorSet> descriptorWrites;
-                if (material->hasImageData())
+                if (material->getTexCount() > 0)
                 {
                     descriptorWrites.resize(3);
 
@@ -1480,8 +1563,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                     VkDescriptorImageInfo imageInfo{};
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo.imageView = material->getTextureData()->view;
-                    imageInfo.sampler = material->getTextureData()->sampler;
+                    imageInfo.imageView = gltfModel->textureDatas[material->baseColorTextureIndex]->view;
+                    imageInfo.sampler = gltfModel->textureDatas[material->baseColorTextureIndex]->sampler;
 
                     descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     descriptorWrites[2].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
@@ -2058,33 +2141,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createTextureData(GltfNode* node, std::shared_ptr<Model> model)
-    {
-        if (node->mesh)
-        {
-            Mesh* mesh = node->mesh;
-            for (int i = 0;i < mesh->primitives.size();i++)
-            {
-                if (mesh->primitives[i].material)
-                {
-                    std::shared_ptr<Material> material = mesh->primitives[i].material;
-
-                    if (material->hasImageData() && material->hasTextureData())
-                    {
-                        createTextureImage(material);
-                        createTextureImageView(material);
-                        createTextureSampler(material);
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < node->children.size(); i++)
-        {
-            createTextureData(node->children[i], model);
-        }
-    }
-
     void VulkanBase::createTextureDatas(std::shared_ptr<Model> model)
     {
         if (model->getGltfModel()->setup)
@@ -2092,7 +2148,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             return;
         }
 
-        createTextureData(model->getRootNode(), model);
+        for (std::shared_ptr<Material> material:model->getGltfModel()->materials)
+        {
+            std::shared_ptr<GltfModel> gltfModel = model->getGltfModel();
+            createTextureImage(material,gltfModel);
+            createTextureImageView(material,gltfModel);
+            createTextureSampler(material,gltfModel);
+        }
     }
 
     void VulkanBase::createDescriptorInfo(GltfNode* node, std::shared_ptr<Model> model)
@@ -2106,7 +2168,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0;i < mesh->primitives.size();i++)
             {
-                ptc.imageDataCount = mesh->primitives[i].material->getImageDataCount();
+                ptc.imageDataCount = model->getGltfModel()->materials[mesh->primitives[i].materialIndex]->getTexCount();
 
                 if (!Storage::GetInstance()->containDescriptorInfo(ptc))
                 {
@@ -2176,6 +2238,68 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
     {
 
+    }
+
+    void VulkanBase::createEmptyImage()
+    {
+        emptyImage.emptyTex = new TextureData();
+
+        createTextureImage();
+        createTextureImageView();
+        createTextureSampler();
+
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 0;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings = &samplerLayoutBinding;
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &emptyImage.info.layout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &emptyImage.info.layout;
+
+        VkDescriptorSet descriptorSet;
+
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
+
+        if (descriptorSetCount > 100)
+        {
+            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+        }
+        descriptorSetCount++;
+
+        emptyImage.descriptorSet = descriptorSet;
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = emptyImage.emptyTex->view;
+        imageInfo.sampler = emptyImage.emptyTex->sampler;
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = emptyImage.descriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)

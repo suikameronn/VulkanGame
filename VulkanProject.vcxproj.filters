@@ -39,9 +39,6 @@
     <ClCompile Include="Scene.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>ソース ファイル\LoadModel</Filter>
-    </ClCompile>
     <ClCompile Include="Object.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>

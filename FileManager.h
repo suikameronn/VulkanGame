@@ -47,8 +47,8 @@ private:
 	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
 	void setSkin(GltfNode* node, GltfModel* model);
 
-
-	std::shared_ptr<Material> processMaterial(tinygltf::Model gltfModel,int materialIndex);
+	void loadTextures(GltfModel* model,const tinygltf::Model gltfModel);
+	void loadMaterial(GltfModel* model,tinygltf::Model gltfModel);
 
 	void loadgltfModel(int id, void** ptr, int& size);
 

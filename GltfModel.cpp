@@ -152,30 +152,7 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 
 void GltfModel::cleanUpVulkan(VkDevice& device)
 {
-	cleanUpVulkan(device, root);
-}
-
-void GltfModel::cleanUpVulkan(VkDevice& device, GltfNode* node)
-{
-	if (node->mesh)
-	{
-		Mesh* mesh = node->mesh;
-		for (size_t i = 0; i < mesh->primitives.size(); i++)
-		{
-			if (mesh->primitives[i].material)
-			{
-				if (mesh->primitives[i].material->hasTextureData())
-				{
-					mesh->primitives[i].material->getTextureData()->destroy(device);
-				}
-			}
-		}
-	}
-
-	for (size_t i = 0; i < node->children.size(); i++)
-	{
-		cleanUpVulkan(device, node->children[i]);
-	}
+	//cleanUpVulkan(device, root);
 }
 
 std::map<float, std::pair<glm::vec3, glm::vec3>>& GltfModel::getAnimationAABB(std::string animationName)

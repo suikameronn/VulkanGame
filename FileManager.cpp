@@ -81,6 +81,25 @@ std::shared_ptr<GltfModel> FileManager::loadModel(OBJECT obj)
     return storage->getgltfModel(obj);
 }
 
+void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel)
+{
+    for (tinygltf::Texture tex : gltfModel.textures)
+    {
+        tinygltf::Image source = gltfModel.images[tex.source];
+
+        std::shared_ptr<ImageData> image =
+            std::shared_ptr<ImageData>(new ImageData(source.width, source.height, source.component, source.image.data()));
+
+        model->imageDatas.push_back(image);
+    }
+
+    model->textureDatas.resize(gltfModel.textures.size());
+    for (int i = 0; i < model->textureDatas.size(); i++)
+    {
+        model->textureDatas[i] = new TextureData();
+    }
+}
+
 GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)
 {
     float scale = 1.0f;
@@ -89,6 +108,9 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
 
     minPos = glm::vec3(100000.0, 10000.0, 10000.0);
     maxPos = glm::vec3(-10000.0, -10000.0, -10000.0);
+
+    loadTextures(model, gltfModel);
+    loadMaterial(model, gltfModel);
 
     for (size_t i = 0; i < scene.nodes.size(); i++)
     {
@@ -364,9 +386,9 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         }
     }
 
-    std::shared_ptr<Material> material = processMaterial(glModel, glPrimitive.material);
 
-    Primitive primitive = { model->primitiveCount,indexStart,indexCount,vertexCount,material };
+
+    Primitive primitive = { model->primitiveCount,indexStart,indexCount,vertexCount,glPrimitive.material };
     primitive.setBoundingBox(posMin, posMax);
 
     mesh->primitives.push_back(primitive);
@@ -586,35 +608,59 @@ std::string FileManager::splitFileName(std::string filePath)
     return filePath;
 }
 
-std::shared_ptr<Material> FileManager::processMaterial(tinygltf::Model gltfModel,int materialIndex)
+void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
 {
-    std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
-
-    tinygltf::Material mat = gltfModel.materials[materialIndex];
-
-    if (mat.values.find("baseColorTexture") != mat.values.end()) 
+    for (tinygltf::Material& mat : gltfModel.materials)
     {
-        tinygltf::Image image = gltfModel.images[gltfModel.textures[mat.values["baseColorTexture"].TextureIndex()].source];
+        std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
 
-        std::shared_ptr<ImageData> imageData = std::shared_ptr<ImageData>(new ImageData(image.width, image.height, image.component, image.image.data()));
-        material->setImageData(mat.values["baseColorTexture"].TextureTexCoord(),imageData);
-    }
-    if (mat.values.find("baseColorFactor") != mat.values.end()) {
-        material->setDiffuse(glm::make_vec3(mat.values["baseColorFactor"].ColorFactor().data()));//物質の色、ベースカラー
-    }
+        if (mat.values.find("baseColorTexture") != mat.values.end()) {
+            material->baseColorTextureIndex = mat.values["baseColorTexture"].TextureIndex();
+            material->texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+        }
+        if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
+            material->metallicRoughnessTextureIndex = mat.values["metallicRoughnessTexture"].TextureIndex();
+            material->texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+        }
+        if (mat.values.find("roughnessFactor") != mat.values.end()) {
+            material->roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+        }
+        if (mat.values.find("metallicFactor") != mat.values.end()) {
+            material->metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+        }
+        if (mat.values.find("baseColorFactor") != mat.values.end()) {
+            material->baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+        }
+        if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
+            material->normalTextureIndex = mat.additionalValues["normalTexture"].TextureIndex();
+            material->texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+        }
+        if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
+            material->emissiveTextureIndex = mat.additionalValues["emissiveTexture"].TextureIndex();
+            material->texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+        }
+        if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
+            material->occlusionTextureIndex = mat.additionalValues["occlusionTexture"].TextureIndex();
+            material->texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+        }
+        if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
+            tinygltf::Parameter param = mat.additionalValues["alphaMode"];
+            if (param.string_value == "BLEND") {
+                material->alphaMode = Material::ALPHAMODE_BLEND;
+            }
+            if (param.string_value == "MASK") {
+                material->alphaCutoff = 0.5f;
+                material->alphaMode = Material::ALPHAMODE_MASK;
+            }
+        }
+        if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
+            material->alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+        }
+        if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
+            material->emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+        }
 
-    /*
-    if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-        material.metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
-        material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+        material->index = model->materials.size();
+        model->materials.push_back(material);
     }
-    if (mat.values.find("roughnessFactor") != mat.values.end()) {
-        material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
-    }
-    if (mat.values.find("metallicFactor") != mat.values.end()) {
-        material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
-    }
-    */
-
-    return material;
 }

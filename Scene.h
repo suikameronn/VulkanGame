@@ -236,7 +236,7 @@ static int glueSetDiffuse(lua_State* lua)
 		float b = static_cast<float>(lua_tonumber(lua, -2));
 		float a = static_cast<float>(lua_tonumber(lua, -1));
 		glm::vec4 diffuse = glm::vec4(r, g, b, a);
-		model->setDiffuse(diffuse);
+		//model->setDiffuse(diffuse);
 	}
 
 	return 0;

@@ -73,57 +73,60 @@ struct TextureData
 	}
 };
 
+struct TexCoordSets {
+	uint8_t baseColor = 0;
+	uint8_t metallicRoughness = 0;
+	uint8_t specularGlossiness = 0;
+	uint8_t normal = 0;
+	uint8_t occlusion = 0;
+	uint8_t emissive = 0;
+};
+
 class Material
 {
-private:
-
-	glm::vec3 diffuse;
-	glm::vec3 ambient;
-	glm::vec3 specular;
-	glm::vec3 emissive;
-	float shininess;
-	float transmissive;
-	float roughness;
-
-	//テクスチャのもととなる画像データへのポインタ
-	int uvIndex;//使用するuv座標セットのインデックス
-	std::shared_ptr<ImageData> image = nullptr;
-	TextureData* textureData = nullptr;
-
-	std::shared_ptr<ImageData> metallicRoughnessMap = nullptr;;
-	TextureData* metallicRoughnessTexture = nullptr;;
-
-	uint32_t imageDataCount;
-
 public:
 
-	Material();
-	Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
-		, glm::vec3* emissive, float* shininess, float* transmissive);
+	Material()
+	{
+		baseColorTextureIndex = -1;
+		metallicRoughnessTextureIndex = -1;
+		normalTextureIndex = -1;
+		occlusionTextureIndex = -1;
+		emissiveTextureIndex = -1;
+	}
 
-	~Material();
+	enum AlphaMode { ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
+	AlphaMode alphaMode = ALPHAMODE_OPAQUE;
+	float alphaCutoff = 1.0f;
+	float metallicFactor = 1.0f;
+	float roughnessFactor = 1.0f;
+	glm::vec4 baseColorFactor = glm::vec4(1.0f);
+	glm::vec4 emissiveFactor = glm::vec4(0.0f);
+	int baseColorTextureIndex;
+	int metallicRoughnessTextureIndex;
+	int normalTextureIndex;
+	int occlusionTextureIndex;
+	int emissiveTextureIndex;
+	bool doubleSided = false;
 
-	void setDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
-	void setAmbient(glm::vec3 ambient) { this->ambient = ambient; }
-	void setSpecular(glm::vec3 specular) { this->specular = specular; }
-	void setEmissive(glm::vec3 emissive) { this->emissive = emissive; }
-	void setShininess(float shininess) { this->shininess = shininess; }
-	void setTransmissive(float transmissive) { this->transmissive = transmissive; }
-	void setRoughness(float roughness) { this->roughness = roughness; }
+	int index = 0;
+	bool unlit = false;
+	float emissiveStrength = 1.0f;
 
-	glm::vec3 getDiffuse() { return diffuse; }
-	glm::vec3 getAmbient() { return ambient; }
-	glm::vec3 getSpecular() { return specular; }
-	glm::vec3 getEmissive() { return emissive; }
-	float getShininess() { return shininess; }
-	float getTransmissive() { return transmissive; }
+	DescSetData descSetData;
 
-	void setImageData(int uvIndex,std::shared_ptr<ImageData> image);
-	void setMetallicRoughnessMap(int uvIndex, std::shared_ptr<ImageData> map);
+	TexCoordSets texCoordSets;
 
-	std::shared_ptr<ImageData> getImageData();
-	TextureData* getTextureData() { return textureData; }
-	bool hasImageData();
-	bool hasTextureData();
-	uint32_t getImageDataCount() { return imageDataCount; }
+	int getTexCount()
+	{
+		int texCount = 0;
+
+		texCount += baseColorTextureIndex != -1 ? 1 : 0;
+		texCount += metallicRoughnessTextureIndex != -1 ? 1 : 0;
+		texCount += normalTextureIndex != -1 ? 1 : 0;
+		texCount += occlusionTextureIndex != -1 ? 1 : 0;
+		texCount += emissiveTextureIndex != -1 ? 1 : 0;
+
+		return texCount;
+	}
 };

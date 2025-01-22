@@ -104,12 +104,12 @@ struct Primitive
 	int firstIndex;
 	int indexCount;
 	int vertexCount;
-	std::shared_ptr<Material> material;
+	int materialIndex;
 	bool hasIndices;
 	BoundingBox bb;
 
-	Primitive(int primitiveIndex,int firstIndex, int indexCount, int vertexCount,std::shared_ptr<Material> material)
-		: primitiveIndex(primitiveIndex),firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+	Primitive(int primitiveIndex,int firstIndex, int indexCount, int vertexCount,int materialIndex)
+		: primitiveIndex(primitiveIndex),firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), materialIndex(materialIndex) {
 		hasIndices = indexCount > 0;
 	}
 	void setBoundingBox(glm::vec3 min, glm::vec3 max)
@@ -382,6 +382,10 @@ public:
 	int jointNum;
 	std::unordered_map<std::string,Animation> animations;
 	std::vector<Skin*> skins;
+
+	std::vector < std::shared_ptr<ImageData>> imageDatas;
+	std::vector<TextureData*> textureDatas;
+	std::vector<std::shared_ptr<Material>> materials;
 
 	BoundingBox boundingBox;
 	glm::vec3 initPoseMin, initPoseMax;
