@@ -82,6 +82,24 @@ struct TexCoordSets {
 	uint8_t emissive = 0;
 };
 
+struct ShaderMaterial
+{
+	glm::vec4 baseColorFactor;
+	glm::vec4 emissiveFactor;
+	glm::vec4 diffuseFactor;
+	glm::vec4 specularFactor;
+	int colorTextureSet;
+	int PhysicalDescriptorTextureSet;
+	int normalTextureSet;
+	int occlusionTextureSet;
+	int emissiveTextureSet;
+	float metallicFactor;
+	float roughnessFactor;
+	float alphaMask;
+	float alphaMaskCutoff;
+	float emissiveStrength;
+};
+
 class Material
 {
 public:
@@ -113,9 +131,12 @@ public:
 	bool unlit = false;
 	float emissiveStrength = 1.0f;
 
+	VkDescriptorSetLayout layout;
 	VkDescriptorSet descriptorSet;
-
 	TexCoordSets texCoordSets;
+
+	ShaderMaterial shaderMaterial;
+	MappedBuffer sMaterialMappedBuffer;
 
 	int getTexCount()
 	{
@@ -128,5 +149,24 @@ public:
 		texCount += emissiveTextureIndex != -1 ? 1 : 0;
 
 		return texCount;
+	}
+
+	void setupShaderMaterial()
+	{
+		shaderMaterial.emissiveFactor = emissiveFactor;
+
+		//それぞれのuv座標のインデックスを設定していく
+		shaderMaterial.colorTextureSet = baseColorTextureIndex != -1 ? texCoordSets.baseColor : -1;
+		shaderMaterial.normalTextureSet = normalTextureIndex != -1 ? texCoordSets.normal : -1;
+		shaderMaterial.occlusionTextureSet = occlusionTextureIndex != -1 ? texCoordSets.occlusion : -1;
+		shaderMaterial.emissiveTextureSet = emissiveTextureIndex != -1 ? texCoordSets.emissive : -1;
+		shaderMaterial.alphaMask = static_cast<float>(alphaMode == AlphaMode::ALPHAMODE_MASK);
+		shaderMaterial.alphaMaskCutoff = alphaCutoff;
+		shaderMaterial.emissiveStrength = emissiveStrength;
+
+		shaderMaterial.baseColorFactor = baseColorFactor;
+		shaderMaterial.metallicFactor = metallicFactor;
+		shaderMaterial.roughnessFactor = roughnessFactor;
+		shaderMaterial.PhysicalDescriptorTextureSet = metallicRoughnessTextureIndex != -1 ? texCoordSets.metallicRoughness : -1;
 	}
 };

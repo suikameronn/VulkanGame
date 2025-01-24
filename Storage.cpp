@@ -12,6 +12,8 @@ void Storage::cleanup()
 void Storage::addModel(OBJECT obj, GltfModel* model)
 {
 	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
+
+	VulkanBase::GetInstance()->setGltfModelData(gltfModelStorage[obj]);
 }
 
 /*

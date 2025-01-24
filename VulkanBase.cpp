@@ -428,8 +428,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createDescriptorSetLayout(PrimitiveTextureCount ptc,VkDescriptorSetLayout &descriptorSetLayout) {
-        std::vector<VkDescriptorSetLayoutBinding> bindings(7);
+    void VulkanBase::createDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout) {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(2);
         
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -448,18 +448,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindings[0] = uboLayoutBinding;
         bindings[1] = uboLayoutBindingAnimation;
 
-        for (int i = 0; i < 5; i++)
-        {
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding = i + 2;
-            samplerLayoutBinding.descriptorCount = 1;
-            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers = nullptr;
-            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            bindings[i + 2] = samplerLayoutBinding;
-        }
-
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = bindings.size();
@@ -470,14 +458,49 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(PrimitiveTextureCount ptc, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
+    void VulkanBase::createDescriptorSetLayout(std::shared_ptr<Material> material)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(MAX_TEXTURE_COUNT + 1);
+
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        bindings[0] = uboLayoutBinding;
+
+        for (int i = 1; i < MAX_TEXTURE_COUNT + 1; i++)
+        {
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding = i;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            bindings[i] = samplerLayoutBinding;
+        }
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = bindings.size();
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &material->layout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+    }
+
+    void VulkanBase::createGraphicsPipeline(std::shared_ptr<Material> material, VkPrimitiveTopology topology,
+        VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
 
         std::string vertFile;
         std::string fragFile;
 
-        if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
-            if (ptc.imageDataCount > 0)
+            if (material->getTexCount() > 0)
             {
                 vertFile = "shaders/vert.spv";
                 fragFile = "shaders/frag.spv";
@@ -488,7 +511,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 fragFile = "shaders/Notexture.frag.spv";
             }
         }
-        else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+        else if (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
             vertFile = "shaders/line.vert.spv";
             fragFile = "shaders/line.frag.spv";
@@ -521,7 +544,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-        if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
             bindingDescription.stride = sizeof(Vertex);
 
@@ -561,7 +584,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
             attributeDescriptions[6].offset = offsetof(Vertex, weight1);
         }
-        else if (ptc.topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+        else if (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
             bindingDescription.stride = sizeof(glm::vec3);
 
@@ -580,7 +603,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = ptc.topology;
+        inputAssembly.topology = topology;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineViewportStateCreateInfo viewportState{};
@@ -651,10 +674,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pushConstant.size = sizeof(PushConstantObj);
         pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+        std::vector<VkDescriptorSetLayout> layouts = { layout };
+        if (material)
+        {
+            layouts.push_back(material->layout);
+        }
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &layout;
+        pipelineLayoutInfo.setLayoutCount = layouts.size();
+        pipelineLayoutInfo.pSetLayouts = layouts.data();
         pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
 
@@ -825,39 +854,42 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createTextureImage(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel)
+    void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel)
     {
         if (gltfModel->textureDatas.size() == 0)
         {
             return;
         }
 
-        std::shared_ptr<ImageData> imageData = gltfModel->imageDatas[material->baseColorTextureIndex];
-        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
+        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        {
+            std::shared_ptr<ImageData> imageData = gltfModel->imageDatas[i];
+            TextureData* textureData = gltfModel->textureDatas[i];
 
-        VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
+            VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * 4;
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+            VkBuffer stagingBuffer;
+            VkDeviceMemory stagingBufferMemory;
+            createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-        memcpy(data, imageData->getPixelsData(), static_cast<size_t>(imageSize));
-        vkUnmapMemory(device, stagingBufferMemory);
+            void* data;
+            vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+            memcpy(data, imageData->getPixelsData(), static_cast<size_t>(imageSize));
+            vkUnmapMemory(device, stagingBufferMemory);
 
-        textureData->mipLevel = calcMipMapLevel(imageData->getWidth() , imageData->getHeight());
-        createImage(imageData->getWidth(), imageData->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
+            textureData->mipLevel = calcMipMapLevel(imageData->getWidth(), imageData->getHeight());
+            createImage(imageData->getWidth(), imageData->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
 
-        transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel);
-        copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(imageData->getWidth()), static_cast<uint32_t>(imageData->getHeight()));
-        //transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,mipLevels);
+            transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel);
+            copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(imageData->getWidth()), static_cast<uint32_t>(imageData->getHeight()));
+            //transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,mipLevels);
 
-        generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, imageData->getWidth(), imageData->getHeight(), textureData->mipLevel);
+            generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, imageData->getWidth(), imageData->getHeight(), textureData->mipLevel);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+            vkDestroyBuffer(device, stagingBuffer, nullptr);
+            vkFreeMemory(device, stagingBufferMemory, nullptr);
+        }
     }
 
     void VulkanBase::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
@@ -954,15 +986,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
     }
 
-    void VulkanBase::createTextureImageView(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel) 
+    void VulkanBase::createTextureImageView(std::shared_ptr<GltfModel> gltfModel) 
     {
         if (gltfModel->textureDatas.size() == 0)
         {
             return;
         }
 
-        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
-        textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
+        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        {
+            TextureData* textureData = gltfModel->textureDatas[i];
+            textureData->view = createImageView(textureData->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel);
+        }
     }
 
     void VulkanBase::createTextureSampler()
@@ -995,38 +1030,41 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createTextureSampler(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel)
+    void VulkanBase::createTextureSampler(std::shared_ptr<GltfModel> gltfModel)
     {
         if (gltfModel->textureDatas.size() == 0)
         {
             return;
         }
 
-        TextureData* textureData = gltfModel->textureDatas[material->baseColorTextureIndex];
+        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        {
+            TextureData* textureData = gltfModel->textureDatas[i];
 
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+            VkPhysicalDeviceProperties properties{};
+            vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_FALSE;
-        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(textureData->mipLevel);
-        samplerInfo.mipLodBias = 0.0f;
+            VkSamplerCreateInfo samplerInfo{};
+            samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter = VK_FILTER_LINEAR;
+            samplerInfo.minFilter = VK_FILTER_LINEAR;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.anisotropyEnable = VK_TRUE;
+            samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+            samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            samplerInfo.unnormalizedCoordinates = VK_FALSE;
+            samplerInfo.compareEnable = VK_FALSE;
+            samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.minLod = 0.0f;
+            samplerInfo.maxLod = static_cast<float>(textureData->mipLevel);
+            samplerInfo.mipLodBias = 0.0f;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &textureData->sampler) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture sampler!");
+            if (vkCreateSampler(device, &samplerInfo, nullptr, &textureData->sampler) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create texture sampler!");
+            }
         }
     }
 
@@ -1324,6 +1362,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
     }
 
+    void VulkanBase::createUniformBuffer(std::shared_ptr<Material> material)
+    {
+        VkDeviceSize bufferSize = sizeof(ShaderMaterial);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            , material->sMaterialMappedBuffer.uniformBuffer, material->sMaterialMappedBuffer.uniformBufferMemory);
+
+        vkMapMemory(device, material->sMaterialMappedBuffer.uniformBufferMemory, 0, bufferSize, 0, &material->sMaterialMappedBuffer.uniformBufferMapped);
+    }
+
     void VulkanBase::createUniformBuffers(std::shared_ptr<Model> model)
     {
         createUniformBuffer(model);
@@ -1481,6 +1529,30 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    void VulkanBase::allocateDescriptorSet(std::shared_ptr<Material> material)
+    {
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &material->layout;
+
+        VkDescriptorSet descriptorSet;
+
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
+
+        if (descriptorSetCount > 100)
+        {
+            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+        }
+        descriptorSetCount++;
+
+        material->descriptorSet = descriptorSet;
+    }
+
     void VulkanBase::allocateDescriptorSet(std::shared_ptr<Model> model)
     {
         PrimitiveTextureCount ptc;
@@ -1527,9 +1599,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
-                std::shared_ptr<GltfModel> gltfModel = model->getGltfModel();
-                std::shared_ptr<Material> material = gltfModel->materials[mesh->primitives[i].materialIndex];
-
                 VkDescriptorBufferInfo bufferInfo{};
                 bufferInfo.buffer = model->getModelViewMappedBuffer().uniformBuffer;
                 bufferInfo.offset = 0;
@@ -1541,62 +1610,25 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 animationBufferInfo.range = sizeof(AnimationUBO);
 
                 std::vector<VkWriteDescriptorSet> descriptorWrites;
-                if (material->getTexCount() > 0)
-                {
-                    descriptorWrites.resize(3);
+                descriptorWrites.resize(2);
 
-                    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[0].dstBinding = 0;
-                    descriptorWrites[0].dstArrayElement = 0;
-                    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                    descriptorWrites[0].descriptorCount = 1;
-                    descriptorWrites[0].pBufferInfo = &bufferInfo;
+                descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+                descriptorWrites[0].dstBinding = 0;
+                descriptorWrites[0].dstArrayElement = 0;
+                descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[0].descriptorCount = 1;
+                descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-                    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[1].dstBinding = 1;
-                    descriptorWrites[1].dstArrayElement = 0;
-                    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                    descriptorWrites[1].descriptorCount = 1;
-                    descriptorWrites[1].pBufferInfo = &animationBufferInfo;
-
-                    VkDescriptorImageInfo imageInfo{};
-                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo.imageView = gltfModel->textureDatas[material->baseColorTextureIndex]->view;
-                    imageInfo.sampler = gltfModel->textureDatas[material->baseColorTextureIndex]->sampler;
-
-                    descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[2].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[2].dstBinding = 2;
-                    descriptorWrites[2].dstArrayElement = 0;
-                    descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    descriptorWrites[2].descriptorCount = 1;
-                    descriptorWrites[2].pImageInfo = &imageInfo;
-                }
-                else
-                {
-                    descriptorWrites.resize(2);
-
-                    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[0].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[0].dstBinding = 0;
-                    descriptorWrites[0].dstArrayElement = 0;
-                    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                    descriptorWrites[0].descriptorCount = 1;
-                    descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-                    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
-                    descriptorWrites[1].dstBinding = 1;
-                    descriptorWrites[1].dstArrayElement = 0;
-                    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                    descriptorWrites[1].descriptorCount = 1;
-                    descriptorWrites[1].pBufferInfo = &animationBufferInfo;
-                }
+                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[1].dstSet = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+                descriptorWrites[1].dstBinding = 1;
+                descriptorWrites[1].dstArrayElement = 0;
+                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[1].descriptorCount = 1;
+                descriptorWrites[1].pBufferInfo = &animationBufferInfo;
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
             }
         }
 
@@ -1625,6 +1657,71 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         descriptorWrite.pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBase::createDescriptorSet(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel)
+    {
+        std::vector<VkDescriptorImageInfo> imageInfo(MAX_TEXTURE_COUNT);
+
+        VkDescriptorImageInfo info{};
+        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info.imageView = emptyImage.emptyTex->view;
+        info.sampler = emptyImage.emptyTex->sampler;
+        std::fill(imageInfo.begin(), imageInfo.end(), info);
+
+        if (material->baseColorTextureIndex != -1)
+        {
+            imageInfo[0].imageView = gltfModel->textureDatas[material->baseColorTextureIndex]->view;
+            imageInfo[0].sampler = gltfModel->textureDatas[material->baseColorTextureIndex]->sampler;
+        }
+        if (material->metallicRoughnessTextureIndex != -1)
+        {
+            imageInfo[1].imageView = gltfModel->textureDatas[material->metallicRoughnessTextureIndex]->view;
+            imageInfo[1].sampler = gltfModel->textureDatas[material->metallicRoughnessTextureIndex]->sampler;
+        }
+        if (material->normalTextureIndex != -1)
+        {
+            imageInfo[2].imageView = gltfModel->textureDatas[material->normalTextureIndex]->view;
+            imageInfo[2].sampler = gltfModel->textureDatas[material->normalTextureIndex]->sampler;
+        }
+        if (material->occlusionTextureIndex != -1)
+        {
+            imageInfo[3].imageView = gltfModel->textureDatas[material->occlusionTextureIndex]->view;
+            imageInfo[3].sampler = gltfModel->textureDatas[material->occlusionTextureIndex]->sampler;
+        }
+        if (material->emissiveTextureIndex != -1)
+        {
+            imageInfo[4].imageView = gltfModel->textureDatas[material->emissiveTextureIndex]->view;
+            imageInfo[4].sampler = gltfModel->textureDatas[material->emissiveTextureIndex]->sampler;
+        }
+
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = material->sMaterialMappedBuffer.uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(ShaderMaterial);
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites(MAX_TEXTURE_COUNT + 1);
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = material->descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        for (int i = 1; i < descriptorWrites.size(); i++)
+        {
+            descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[i].dstSet = material->descriptorSet;
+            descriptorWrites[i].dstBinding = static_cast<uint32_t>(i);
+            descriptorWrites[i].dstArrayElement = 0;
+            descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[i].descriptorCount = 1;
+            descriptorWrites[i].pImageInfo = &imageInfo[i - 1];
+        }
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     void VulkanBase::createDescriptorSets(std::shared_ptr<Model> model)
@@ -1764,8 +1861,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             for (int i = 0;i < mesh->primitives.size();i++)
             {
+                std::vector<VkDescriptorSet> descriptorSets = 
+                {
+                    model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
+                };
+                std::shared_ptr<Material> material = model->getGltfModel()->materials[mesh->primitives[i].materialIndex];
+                if (material)
+                {
+                    descriptorSets.push_back(material->descriptorSet);
+                }
+
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    mesh->descriptorInfo.pLayout, 0, 1, &model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet, 0, nullptr);
+                    mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
                 vkCmdPushConstants(commandBuffer, mesh->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
@@ -2141,22 +2248,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createTextureDatas(std::shared_ptr<Model> model)
-    {
-        if (model->getGltfModel()->setup)
-        {
-            return;
-        }
-
-        for (std::shared_ptr<Material> material:model->getGltfModel()->materials)
-        {
-            std::shared_ptr<GltfModel> gltfModel = model->getGltfModel();
-            createTextureImage(material,gltfModel);
-            createTextureImageView(material,gltfModel);
-            createTextureSampler(material,gltfModel);
-        }
-    }
-
     void VulkanBase::createDescriptorInfo(GltfNode* node, std::shared_ptr<Model> model)
     {
         uint32_t imageDataCount;
@@ -2168,21 +2259,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0;i < mesh->primitives.size();i++)
             {
-                ptc.imageDataCount = model->getGltfModel()->materials[mesh->primitives[i].materialIndex]->getTexCount();
-
                 if (!Storage::GetInstance()->containDescriptorInfo(ptc))
                 {
                     DescriptorInfo info{};
 
                     /*ディスクリプタレイアウトを持たせる*/
-                    createDescriptorSetLayout(ptc, info.layout);
+                    createDescriptorSetLayout(info.layout);
 
                     /*グラフィックスパイプラインを作る*/
-                    createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
+                    createGraphicsPipeline(model->getGltfModel()->materials[mesh->primitives[i].materialIndex],
+                        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, info.layout, info.pLayout, info.pipeline);
 
                     mesh->descriptorInfo = info;
 
-                    Storage::GetInstance()->addDescriptorInfo(ptc, info);
+                    //Storage::GetInstance()->addDescriptorInfo(ptc, info);
                 }
                 else
                 {
@@ -2214,10 +2304,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         DescriptorInfo info{};
 
         /*ディスクリプタレイアウトを持たせる*/
-        createDescriptorSetLayout(ptc, info.layout);
+        createDescriptorSetLayout(info.layout);
 
         /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline(ptc, info.layout, info.pLayout, info.pipeline);
+        createGraphicsPipeline(nullptr,VK_PRIMITIVE_TOPOLOGY_LINE_LIST,info.layout, info.pLayout, info.pipeline);
 
         Storage::GetInstance()->addDescriptorInfo(ptc, info);
     }
@@ -2235,9 +2325,35 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    void VulkanBase::createShaderMaterialUBO(std::shared_ptr<Material> material)
+    {
+        material->setupShaderMaterial();
+
+        createUniformBuffer(material);
+
+        memcpy(material->sMaterialMappedBuffer.uniformBufferMapped, &material->shaderMaterial, sizeof(ShaderMaterial));
+    }
+
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
     {
+        /*テクスチャ関連の設定を持たせる*/
+        createTextureImage(gltfModel);
+        createTextureImageView(gltfModel);
+        createTextureSampler(gltfModel);
 
+        for (std::shared_ptr<Material> material : gltfModel->materials)
+        {
+            createShaderMaterialUBO(material);
+           /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
+           /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
+            createDescriptorSetLayout(material);
+
+            /*ディスクリプタ用のメモリを空ける*/
+            allocateDescriptorSet(material);//マテリアルが複数ある場合エラー
+
+            /*ディスクリプタセットを作る*/
+            createDescriptorSet(material,gltfModel);
+        }
     }
 
     void VulkanBase::createEmptyImage()
@@ -2309,9 +2425,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         /*UnifomBufferを持たせる*/
         createUniformBuffers(model);
-
-        /*テクスチャ関連の設定を持たせる*/
-        createTextureDatas(model);
 
         /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
         /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/

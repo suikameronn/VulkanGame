@@ -374,7 +374,7 @@ public:
 		this->setup = false;
 	}
 	~GltfModel();
-	void deleteNodes(GltfNode* node);
+	void deleteNodes(GltfNode* node,VkDevice& device);
 
 	bool setup;
 	int meshCount;

@@ -2,19 +2,22 @@
 
 GltfModel::~GltfModel()
 {
-	deleteNodes(root);
-
 	for (size_t i = 0; i < skins.size(); i++)
 	{
 		delete skins[i];
 	}
 }
 
-void GltfModel::deleteNodes(GltfNode* node)
+void GltfModel::deleteNodes(GltfNode* node,VkDevice& device)
 {
 	for (size_t i = 0; i < node->children.size(); i++)
 	{
-		deleteNodes(node->children[i]);
+		deleteNodes(node->children[i],device);
+	}
+
+	if (node->mesh)
+	{
+		node->mesh->descriptorInfo.destroy(device);
 	}
 
 	delete node;
@@ -157,8 +160,19 @@ std::map<float, std::pair<glm::vec3, glm::vec3>>& GltfModel::getAnimationAABB(st
 
 void GltfModel::cleanUpVulkan(VkDevice& device)
 {
+	for (std::shared_ptr<Material> material:materials)
+	{
+		vkDestroyDescriptorSetLayout(device,material->layout,nullptr);
+
+		vkDestroyBuffer(device, material->sMaterialMappedBuffer.uniformBuffer, nullptr);
+		vkFreeMemory(device, material->sMaterialMappedBuffer.uniformBufferMemory, nullptr);
+		material->sMaterialMappedBuffer.uniformBufferMapped = nullptr;
+	}
+
 	for (int i = 0; i < textureDatas.size(); i++)
 	{
 		textureDatas[i]->destroy(device);
 	}
+
+	deleteNodes(root,device);
 }

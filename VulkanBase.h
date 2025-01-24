@@ -29,6 +29,8 @@
 
 extern GLFWwindow* window;
 
+#define MAX_TEXTURE_COUNT 5
+
 enum Extension
 {
     OBJ,
@@ -80,6 +82,16 @@ struct EmptyImage
 
         vkDestroyDescriptorSetLayout(device, layout, nullptr);
     }
+};
+
+struct ShaderBuffer
+{
+    VkDevice device;
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkDescriptorBufferInfo descriptor;
+    int32_t count = 0;
+    void* mapped = nullptr;
 };
 
 class VulkanBase
@@ -173,8 +185,13 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout(PrimitiveTextureCount ptc, VkDescriptorSetLayout& descriptorSetLayout);
-    void createGraphicsPipeline(PrimitiveTextureCount ptc, VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+
+    void createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout);
+    void createDescriptorSetLayout(std::shared_ptr<Material> material);
+
+    void createGraphicsPipeline(std::shared_ptr<Material> material, VkPrimitiveTopology topology,
+        VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
@@ -186,14 +203,14 @@ private:
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
 
     void createTextureImage();
-    void createTextureImage(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
+    void createTextureImage(std::shared_ptr<GltfModel> gltfModel);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
     void createTextureImageView();
-    void createTextureImageView(std::shared_ptr<Material> material,std::shared_ptr<GltfModel> gltfModel);
+    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);
     
     void createTextureSampler();
-    void createTextureSampler(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
+    void createTextureSampler(std::shared_ptr<GltfModel> gltfModel);
     
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
@@ -208,15 +225,22 @@ private:
     void createUniformBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
+    void createUniformBuffer(std::shared_ptr<Material> material);
+
+    void createShaderMaterialUBO(std::shared_ptr<Material> material);
+
     void createDescriptorPool();
-    void allocateDescriptorSets();
+
     void allocateDescriptorSets(std::shared_ptr<Model> model);
     void allocateDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void allocateDescriptorSet(std::shared_ptr<Model> model);
-    void createDescriptorSets();
+    void allocateDescriptorSet(std::shared_ptr<Material> material);
+
     void createDescriptorSets(std::shared_ptr<Model> model);
     void createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorSet(std::shared_ptr<Model> model);
+    void createDescriptorSet(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
+
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -242,7 +266,6 @@ private:
     bool checkValidationLayerSupport();
 
     void createMeshesData(std::shared_ptr<Model> model);
-    void createTextureDatas(std::shared_ptr<Model> model);
     void createDescriptorInfos(std::shared_ptr<Model> model);
     void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
