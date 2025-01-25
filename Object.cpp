@@ -2,7 +2,7 @@
 
 Object::Object()
 {
-	objNum = ObjNum::cObject;
+	objNum = ObjNum::OBJECT;
 
 	physicBase = std::make_unique<PhysicBase>();
 

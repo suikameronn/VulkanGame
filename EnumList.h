@@ -6,7 +6,7 @@ enum class ACTION
 	WALK
 };
 
-enum class OBJECT
+enum class GLTFOBJECT
 {
 	gltfTEST = 0,
 	CUBE
@@ -19,8 +19,10 @@ enum COLIDER
 
 enum ObjNum
 {
-	cObject = 0,
-	cModel
+	OBJECT = 0,
+	MODEL,
+	LIGHT,
+	SKYDOMELIGHT
 };
 
 enum Tag

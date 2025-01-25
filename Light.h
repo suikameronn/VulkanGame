@@ -5,5 +5,7 @@
 class Light :public Object
 {
 public:
+	Light();
+
 	glm::vec3 color;
 };

@@ -81,6 +81,9 @@
     <ClCompile Include="Light.cpp">
       <Filter>ソース ファイル\Lights</Filter>
     </ClCompile>
+    <ClCompile Include="SkyDomeLight.cpp">
+      <Filter>ソース ファイル\Lights</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -135,6 +138,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Light.h">
+      <Filter>ヘッダー ファイル\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyDomeLight.h">
       <Filter>ヘッダー ファイル\Lights</Filter>
     </ClInclude>
   </ItemGroup>

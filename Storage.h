@@ -56,7 +56,7 @@ struct Hash
 class Storage
 {
 private:
-	std::unordered_map<OBJECT, std::shared_ptr<GltfModel>> gltfModelStorage;
+	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>> gltfModelStorage;
 	//std::unordered_map<OBJECT, std::shared_ptr<Animation>> gltfAnimationStorage;
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
@@ -88,7 +88,7 @@ public:
 	std::vector<std::shared_ptr<Model>>::iterator sceneModelBegin() { return sceneModelStorage.begin(); }
 	std::vector<std::shared_ptr<Model>>::iterator sceneModelEnd() { return sceneModelStorage.end(); }
 
-	void addModel(OBJECT obj, GltfModel* geo);
+	void addModel(GLTFOBJECT obj, GltfModel* geo);
 	//void addAnimation(OBJECT obj, Animation* animation);
 	void addImageData(std::string, ImageData* image);
 	void addDescriptorInfo(PrimitiveTextureCount ptc, DescriptorInfo& info);
@@ -96,7 +96,7 @@ public:
 	void setCamera(std::shared_ptr<Camera> c);
 	void addModel(std::shared_ptr<Model> model);
 
-	std::shared_ptr<GltfModel> getgltfModel(OBJECT obj);
+	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
 	//std::shared_ptr<Animation> getAnimation(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
 
@@ -106,11 +106,11 @@ public:
 
 	std::shared_ptr<Camera> accessCamera();
 
-	void accessgltfModel(std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
-		std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr2);
+	void accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
+		std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr2);
 
-	bool containModel(OBJECT obj);
-	bool containAnimation(OBJECT obj);
+	bool containModel(GLTFOBJECT obj);
+	bool containAnimation(GLTFOBJECT obj);
 	bool containImageData(std::string path);
 	bool containDescriptorInfo(PrimitiveTextureCount ptc);
 

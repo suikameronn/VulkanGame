@@ -24,7 +24,7 @@ private:
 
 	FileManager();
 
-	int getModelResource(OBJECT obj);
+	int getModelResource(GLTFOBJECT obj);
 
 	uint32_t imageDataCount = 0;
 
@@ -33,7 +33,7 @@ private:
 	glm::vec3 maxPos;
 	glm::vec3 pivot;
 
-	std::vector<OBJECT> loadAnimationFiles;
+	std::vector<GLTFOBJECT> loadAnimationFiles;
 
 	std::string splitFileName(std::string filePath);
 
@@ -74,6 +74,7 @@ public:
 		fileManager = nullptr;
 	}
 
-	std::shared_ptr<GltfModel> loadModel(OBJECT obj);
+	std::shared_ptr<GltfModel> loadModel(GLTFOBJECT obj);
+	std::shared_ptr<ImageData> loadImage(std::string filePath);
 	//std::shared_ptr<Animation> loadAnimations(GltfModel* model, OBJECT obj);
 };

@@ -9,7 +9,7 @@ void Storage::cleanup()
 }
 
 //Storage‚ÉGltfModel‚ğ’Ç‰Á‚·‚é
-void Storage::addModel(OBJECT obj, GltfModel* model)
+void Storage::addModel(GLTFOBJECT obj, GltfModel* model)
 {
 	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
 
@@ -61,8 +61,8 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, 
 	end = descriptorStorage.end();
 }
 
-void Storage::accessgltfModel(std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
-	std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator& itr2)
+void Storage::accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
+	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr2)
 {
 	itr = gltfModelStorage.begin();
 	itr2 = gltfModelStorage.end();
@@ -75,7 +75,7 @@ std::shared_ptr<Camera> Storage::accessCamera()
 }
 
 //Storage‚Éw’è‚³‚ê‚ GltfModel‚ªŠù‚É‘¶İ‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğ•Ô‚·
-bool Storage::containModel(OBJECT obj)
+bool Storage::containModel(GLTFOBJECT obj)
 {
 	if (gltfModelStorage[obj] != nullptr)
 	{
@@ -127,7 +127,7 @@ bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
 }
 
 //Storage‚©‚çGltfModel‚ğ“Ç‚İæ‚é
-std::shared_ptr<GltfModel> Storage::getgltfModel(OBJECT obj)
+std::shared_ptr<GltfModel> Storage::getgltfModel(GLTFOBJECT obj)
 {
 	return gltfModelStorage[obj];
 }

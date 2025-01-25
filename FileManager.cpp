@@ -11,13 +11,13 @@ FileManager::FileManager()
 {
 }
 
-int FileManager::getModelResource(OBJECT obj)
+int FileManager::getModelResource(GLTFOBJECT obj)
 {
     switch (obj)
     {
-    case OBJECT::gltfTEST:
+    case GLTFOBJECT::gltfTEST:
         return IDR_MODEL1;
-    case OBJECT::CUBE:
+    case GLTFOBJECT::CUBE:
         return IDR_MODEL2;
     }
 
@@ -47,7 +47,7 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
     }
 }
 
-std::shared_ptr<GltfModel> FileManager::loadModel(OBJECT obj)
+std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)
 {
     Storage* storage = Storage::GetInstance();
     if (storage->containModel(obj))
@@ -663,4 +663,28 @@ void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
         material->index = model->materials.size();
         model->materials.push_back(material);
     }
+}
+
+std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
+{
+    std::string registerImageName = splitFileName(filePath);
+
+    Storage* storage = Storage::GetInstance();
+    if (storage->containImageData(registerImageName))
+    {
+        return storage->getImageData(registerImageName);
+    }
+
+    int width;
+    int height;
+    int texChannels;
+    unsigned char* pixels;
+
+    pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels,0);
+
+    ImageData* imageData = new ImageData(width, height, texChannels, pixels);
+
+    storage->addImageData(registerImageName,imageData);
+
+    return storage->getImageData(registerImageName);
 }

@@ -163,7 +163,7 @@ static int glueSetGltfModel(lua_State* lua)
 	{
 	case 1:
 		Model* model = dynamic_cast<Model*>(obj);
-		model->setgltfModel(FileManager::GetInstance()->loadModel(static_cast<OBJECT>(lua_tointeger(lua, -1))));
+		model->setgltfModel(FileManager::GetInstance()->loadModel(static_cast<GLTFOBJECT>(lua_tointeger(lua, -1))));
 		break;
 	}
 

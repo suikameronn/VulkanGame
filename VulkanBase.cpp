@@ -77,8 +77,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             (*model)->cleanupVulkan();
         }
 
-        std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator begin;
-        std::unordered_map<OBJECT, std::shared_ptr<GltfModel>>::iterator end;
+        std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator begin;
+        std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator end;
         storage->accessgltfModel(begin, end);
         for (auto itr = begin; itr != end; itr++)
         {
@@ -2024,7 +2024,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-            //throw std::runtime_error("failed to submit draw command buffer!");
+            throw std::runtime_error("failed to submit draw command buffer!");
         }
 
         VkPresentInfoKHR presentInfo{};
@@ -2416,6 +2416,118 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         descriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+    TextureData* VulkanBase::createSkyDomeTex(std::shared_ptr<ImageData> iblImage)
+    {
+        std::array<VkImageView, 3> attachments = {
+            colorImageView,
+            depthImageView,
+            swapChainImageViews[0]
+        };
+
+        VkFramebufferCreateInfo cubeMapFrameBuffer{};
+        cubeMapFrameBuffer.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        cubeMapFrameBuffer.renderPass = renderPass;
+        cubeMapFrameBuffer.attachmentCount = static_cast<uint32_t>(attachments.size());
+        cubeMapFrameBuffer.pAttachments = attachments.data();
+        cubeMapFrameBuffer.width = swapChainExtent.width;
+        cubeMapFrameBuffer.height = swapChainExtent.height;
+        cubeMapFrameBuffer.layers = 1;
+
+        std::array<VkFramebuffer, 6> frameBuffers;
+        for (int i = 0; i < 6; i++)
+        {
+            if (vkCreateFramebuffer(device, &cubeMapFrameBuffer, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(commandBuffers[0], &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = swapChainExtent;
+
+        std::array<VkClearValue, 2>clearValues{};
+        clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
+        clearValues[1].depthStencil = { 1.0f,0 };
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        Storage* storage = Storage::GetInstance();
+
+        PrimitiveTextureCount ptc;
+        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
+        {
+
+            drawMesh((*model)->getRootNode(), *model, commandBuffer);
+
+            if ((*model)->hasColider())
+            {
+                std::shared_ptr<Colider> colider = (*model)->getColider();
+                ptc.imageDataCount = 0;
+                ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
+
+                VkViewport viewport{};
+                viewport.x = 0.0f;
+                viewport.y = 0.0f;
+                viewport.width = (float)swapChainExtent.width;
+                viewport.height = (float)swapChainExtent.height;
+                viewport.minDepth = 0.0f;
+                viewport.maxDepth = 1.0f;
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+                VkRect2D scissor{};
+                scissor.offset = { 0, 0 };
+                scissor.extent = swapChainExtent;
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+                VkDeviceSize offsets[] = { 0 };
+
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBufferData()->vertBuffer, offsets);
+
+                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
+
+                vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
+            }
+
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
+
+        createImage()
+    }
+
+    TextureData* VulkanBase::createIBLTexDiffuse(std::shared_ptr<ImageData> iblImage)
+    {
+
+
+        return nullptr;
+    }
+
+    TextureData* VulkanBase::createIBLTexSpecular(std::shared_ptr<ImageData> iblImage)
+    {
+        return nullptr;
     }
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)

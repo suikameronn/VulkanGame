@@ -17,9 +17,9 @@
 class ImageData
 {
 private:
-	uint32_t width;
-	uint32_t height;
-	uint32_t texChannels;
+	int width;
+	int height;
+	int texChannels;
 	std::vector<unsigned char> pixels;
 
 public:
@@ -27,8 +27,9 @@ public:
 	ImageData(int width, int height,
 		int texChannels,unsigned char* pixels)
 	{
-		this->width = static_cast<uint32_t>(width);
-		this->height = static_cast<uint32_t>(height);
+		this->width = width;
+		this->height = height;
+		this->texChannels = texChannels;
 		this->pixels.resize(width * height * texChannels);
 		this->pixels.assign(pixels, pixels + ((width * height * texChannels) - 1));
 	}

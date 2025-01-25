@@ -55,10 +55,10 @@ void Scene::initLuaScript(std::string path)
 
 void Scene::registerOBJECT()
 {
-	lua_pushnumber(lua, (int)OBJECT::gltfTEST);
+	lua_pushnumber(lua, (int)GLTFOBJECT::gltfTEST);
 	lua_setglobal(lua, "gltfTEST");
 
-	lua_pushnumber(lua, (int)OBJECT::CUBE);
+	lua_pushnumber(lua, (int)GLTFOBJECT::CUBE);
 	lua_setglobal(lua, "CUBE");
 }
 
@@ -91,7 +91,7 @@ bool Scene::UpdateScene()
 		std::shared_ptr<Model> model;
 		switch (sceneSet[i]->getObjNum())
 		{
-		case ObjNum::cModel:
+		case ObjNum::MODEL:
 			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
 			model->Update();
 			break;
@@ -110,7 +110,7 @@ bool Scene::UpdateScene()
 
 	for(int i = 0;i < sceneSet.size() - 1;i++)
 	{
-		if (sceneSet[i]->getObjNum() == ObjNum::cModel)
+		if (sceneSet[i]->getObjNum() == ObjNum::MODEL)
 		{
 			std::shared_ptr<Model> model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
 
@@ -124,7 +124,7 @@ bool Scene::UpdateScene()
 				std::shared_ptr<Model> model2;
 				switch (sceneSet[j]->getObjNum())
 				{
-				case ObjNum::cModel:
+				case ObjNum::MODEL:
 					model2 = std::dynamic_pointer_cast<Model>(sceneSet[j]);
 					break;
 				default:
@@ -172,7 +172,7 @@ void Scene::setModels()
 	{
 		switch (sceneSet[i]->getObjNum())
 		{
-		case ObjNum::cModel:
+		case ObjNum::MODEL:
 			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
 			model->updateTransformMatrix();
 			Storage::GetInstance()->addModel(model);
@@ -202,7 +202,7 @@ std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float len
 		std::shared_ptr<Model> model2;
 		switch (sceneSet[i]->getObjNum())
 		{
-		case cModel:
+		case MODEL:
 			model2 = std::dynamic_pointer_cast<Model>(sceneSet[i]);
 			break;
 		default:

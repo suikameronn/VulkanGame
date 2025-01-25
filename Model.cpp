@@ -6,7 +6,7 @@ Model::Model()
 {
 	scene = Scene::GetInstance();
 
-	objNum = ObjNum::cModel;
+	objNum = ObjNum::MODEL;
 	tags.push_back(Tag::GROUND);
 
 	uniformBufferChange = true;
