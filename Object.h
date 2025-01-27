@@ -64,6 +64,13 @@ struct MappedBuffer
 	VkBuffer uniformBuffer;
 	VkDeviceMemory uniformBufferMemory;
 	void* uniformBufferMapped;
+
+	void destroy(VkDevice& device)
+	{
+		vkDestroyBuffer(device, uniformBuffer, nullptr);
+		vkFreeMemory(device, uniformBufferMemory, nullptr);
+		uniformBufferMapped = nullptr;
+	}
 };
 
 struct DescSetData

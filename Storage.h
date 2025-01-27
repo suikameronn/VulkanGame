@@ -1,10 +1,11 @@
 #pragma once
-#include"Camera.h"
-#include"Model.h"
 #include<bitset>
 #include<unordered_map>
 
 #include"EnumList.h"
+#include"Light.h"
+#include"Camera.h"
+#include"Model.h"
 
 enum IMAGE
 {
@@ -64,8 +65,17 @@ private:
 
 	std::shared_ptr<Camera> camera;
 	std::vector<std::shared_ptr<Model>> sceneModelStorage;
+	std::vector<std::shared_ptr<PointLight>> scenePointLightStorage;
+	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLightStorage;
 
-	Storage() {};
+	VkDescriptorSetLayout lightLayout;
+	VkDescriptorSet pointLightDescSet;
+	VkDescriptorSet directionalLightDescSet;
+
+	MappedBuffer pointLightsBuffer;
+	MappedBuffer directionalLightsBuffer;
+
+	Storage();
 	~Storage()
 	{
 		cleanup();
@@ -85,8 +95,13 @@ public:
 		return storage;
 	}
 
-	std::vector<std::shared_ptr<Model>>::iterator sceneModelBegin() { return sceneModelStorage.begin(); }
-	std::vector<std::shared_ptr<Model>>::iterator sceneModelEnd() { return sceneModelStorage.end(); }
+	std::vector<std::shared_ptr<Model>>& getModels() { return sceneModelStorage; }
+	std::vector<std::shared_ptr<PointLight>>& getPointLights() { return scenePointLightStorage; }
+	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
+
+	VkDescriptorSetLayout& getLightDescLayout() { return lightLayout; }
+	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
+	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
 
 	void addModel(GLTFOBJECT obj, GltfModel* geo);
 	//void addAnimation(OBJECT obj, Animation* animation);
@@ -95,10 +110,18 @@ public:
 
 	void setCamera(std::shared_ptr<Camera> c);
 	void addModel(std::shared_ptr<Model> model);
+	void addLight(std::shared_ptr<PointLight> light);
+	void addLight(std::shared_ptr<DirectionalLight> light);
+
+	void prepareLightsForVulkan(std::vector<std::shared_ptr<PointLight>>& pointLights
+		, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights);
 
 	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
+	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();
 	//std::shared_ptr<Animation> getAnimation(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
+	MappedBuffer& getPointLightsBuffer();
+	MappedBuffer& getDirectionalLightsBuffer();
 
 	DescriptorInfo* accessDescriptorInfo(PrimitiveTextureCount ptc);
 	void accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& begin,

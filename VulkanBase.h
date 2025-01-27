@@ -51,6 +51,20 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct PointLightUBO
+{
+    int lightCount;
+    std::array<glm::vec3, 100> pos;
+    std::array<glm::vec3,100> color;
+};
+
+struct DirectionalLightUBO
+{
+    int lightCount;
+    std::array<glm::vec3, 100> dir;
+    std::array<glm::vec3, 100> color;
+};
+
 struct MatricesUBO {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
@@ -221,11 +235,13 @@ private:
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createIndexBuffer(std::shared_ptr<Colider> colider);
+
     void createUniformBuffers(std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
     void createUniformBuffer(std::shared_ptr<Material> material);
+    void createUniformBuffer(int lightCount,MappedBuffer& mappedBuffer,unsigned long long size);
 
     void createShaderMaterialUBO(std::shared_ptr<Material> material);
 
@@ -249,9 +265,13 @@ private:
     void createCommandBuffers();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
+
     void updateUniformBuffers(std::shared_ptr<Model> model);
     void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void updateUniformBuffer(std::shared_ptr<Colider> colider);
+    void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, MappedBuffer& mappedBuffer);
+    void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& pointLights, MappedBuffer& mappedBuffer);
+
     void drawFrame();
     void drawMesh(GltfNode* node,std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
     VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -269,6 +289,8 @@ private:
     void createDescriptorInfos(std::shared_ptr<Model> model);
     void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
+
+    void createDescriptorData(MappedBuffer& mappedBuffer, VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
 
     void createEmptyImage();
 
@@ -324,6 +346,8 @@ public:
 
     void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
     void setModelData(std::shared_ptr<Model> model);
+    void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
+    void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
     void updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider);

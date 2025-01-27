@@ -11,7 +11,7 @@ void Scene::init(std::string luaScriptPath)
 
 	initFrameSetting();
 
-	setModels();
+	prepareRenderData();
 }
 
 Scene::Scene()
@@ -24,19 +24,11 @@ Scene::~Scene()
 
 void Scene::initFrameSetting()
 {
-	for (int i = 0; i < sceneSet.size(); i++)
+	for (int i = 0; i < sceneModels.size(); i++)
 	{
-		switch (sceneSet[i]->getObjNum())
-		{
-		case 0:
-			sceneSet[i]->initFrameSetting();
-			break;
-		case 1:
-			std::shared_ptr<Model> model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
-			model->initFrameSetting();
-			break;
-		}
+		sceneModels[i]->initFrameSetting();
 	}
+	player->initFrameSetting();
 }
 
 void Scene::initLuaScript(std::string path)
@@ -78,6 +70,10 @@ void Scene::registerFunctions()
 	lua_register(lua, "glueSetDefaultAnimationName", glueSetDefaultAnimationName);
 	lua_register(lua, "glueSetGravity", glueSetGravity);
 	lua_register(lua, "glueSetSlippery", glueSetSlippery);
+	lua_register(lua, "glueCreatePointLight", glueCreatePointLight);
+	lua_register(lua, "glueSetLightColor", glueSetLightColor);
+	lua_register(lua, "glueCreateDirectionalLight", glueCreateDirectionalLight);
+	lua_register(lua, "glueSetLightDirection", glueSetLightDirection);
 }
 
 bool Scene::UpdateScene()
@@ -86,80 +82,82 @@ bool Scene::UpdateScene()
 
 	camera->Update();
 
-	for (int i = 0; i < sceneSet.size(); i++)
+	player->Update();
+
+	for (int i = 0; i < sceneModels.size(); i++)
 	{
-		std::shared_ptr<Model> model;
-		switch (sceneSet[i]->getObjNum())
+		sceneModels[i]->Update();
+
+		if (sceneModels[i]->uniformBufferChange)
 		{
-		case ObjNum::MODEL:
-			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
-			model->Update();
-			break;
-		default:
+			sceneModels[i]->updateTransformMatrix();
+		}
+	}
+
+	for (int i = 0; i < sceneModels.size() - 1; i++)
+	{
+		if (!sceneModels[i]->hasColider())
+		{
 			continue;
 		}
-	}
 
-	for (int i = 0; i < sceneSet.size(); i++)
-	{
-		if (sceneSet[i]->uniformBufferChange)
+		for (int j = i + 1; j < sceneModels.size(); j++)
 		{
-			sceneSet[i]->updateTransformMatrix();
-		}
-	}
-
-	for(int i = 0;i < sceneSet.size() - 1;i++)
-	{
-		if (sceneSet[i]->getObjNum() == ObjNum::MODEL)
-		{
-			std::shared_ptr<Model> model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
-
-			if (!model->hasColider())
+			if (sceneModels[j]->hasColider())
 			{
-				continue;
-			}
-
-			for (int j = i + 1; j < sceneSet.size(); j++)
-			{
-				std::shared_ptr<Model> model2;
-				switch (sceneSet[j]->getObjNum())
+				if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionDepth, collisionVector))
 				{
-				case ObjNum::MODEL:
-					model2 = std::dynamic_pointer_cast<Model>(sceneSet[j]);
-					break;
-				default:
-					continue;
-				}
-
-				if (model2->hasColider())
-				{
-					if (model->getColider()->Intersect(model2->getColider(), collisionDepth, collisionVector))
+					if (sceneModels[i]->isMovable)
 					{
-						if (model->isMovable)
-						{
-							model->setPosition(model->getPosition() + slopeCollision(collisionVector));
-						}
+						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + slopeCollision(collisionVector));
+					}
 
-						if (model2->isMovable)
-						{
-							//model2->setPosition(model2->getPosition() + up * glm::dot(collisionVector,up));
-							model2->setPosition(model2->getPosition() + slopeCollision(collisionVector));
-						}
+					if (sceneModels[j]->isMovable)
+					{
+						sceneModels[j]->setPosition(sceneModels[j]->getPosition() + slopeCollision(collisionVector));
 					}
 				}
 			}
 		}
 	}
 
-	for (int i = 0;i < sceneSet.size();i++)
+	for (int i = 0; i < sceneModels.size(); i++)
 	{
-		if (sceneSet[i]->uniformBufferChange)
+		if (!sceneModels[i]->hasColider())
 		{
-			sceneSet[i]->updateTransformMatrix();
+			continue;
+		}
+
+		if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionDepth, collisionVector))
+		{
+			if (sceneModels[i]->isMovable)
+			{
+				sceneModels[i]->setPosition(sceneModels[i]->getPosition() + slopeCollision(collisionVector));
+			}
+
+			if (player->isMovable)
+			{
+				player->setPosition(player->getPosition() + slopeCollision(-collisionVector));
+			}
 		}
 	}
 
+	for (int i = 0; i < sceneModels.size(); i++)
+	{
+		if (sceneModels[i]->uniformBufferChange)
+		{
+			sceneModels[i]->updateTransformMatrix();
+		}
+	}
+	player->updateTransformMatrix();
+
 	return exit;
+}
+
+void Scene::prepareRenderData()
+{
+	setLights();
+	setModels();
 }
 
 void Scene::setModels()
@@ -167,20 +165,32 @@ void Scene::setModels()
 	Storage::GetInstance()->setCamera(camera);
 
 	//描画するモデルのポインタを積んでいく
-	std::shared_ptr<Model> model;
-	for (int i = 0;i < sceneSet.size();i++)
+	for (int i = 0;i < sceneModels.size();i++)
 	{
-		switch (sceneSet[i]->getObjNum())
-		{
-		case ObjNum::MODEL:
-			model = std::dynamic_pointer_cast<Model>(sceneSet[i]);
-			model->updateTransformMatrix();
-			Storage::GetInstance()->addModel(model);
-			break;
-		default:
-			continue;
-		}
+		sceneModels[i]->updateTransformMatrix();
+		Storage::GetInstance()->addModel(sceneModels[i]);
 	}
+
+	player->updateTransformMatrix();
+	Storage::GetInstance()->addModel(player);
+}
+
+void Scene::setLights()
+{
+	for (std::shared_ptr<PointLight> pl : scenePointLights)
+	{
+		pl->updateTransformMatrix();
+		Storage::GetInstance()->addLight(pl);
+	}
+
+	for (std::shared_ptr<DirectionalLight> dl : sceneDirectionalLights)
+	{
+		dl->updateTransformMatrix();
+		Storage::GetInstance()->addLight(dl);
+	}
+
+	//LightにVulkanでの変数などを持たせる
+	Storage::GetInstance()->prepareLightsForVulkan(scenePointLights,sceneDirectionalLights);
 }
 
 glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)
@@ -197,32 +207,22 @@ glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)
 
 std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)
 {
-	for (int i = 0; i < sceneSet.size(); i++)
+	for (int i = 0; i < sceneModels.size(); i++)
 	{
-		std::shared_ptr<Model> model2;
-		switch (sceneSet[i]->getObjNum())
-		{
-		case MODEL:
-			model2 = std::dynamic_pointer_cast<Model>(sceneSet[i]);
-			break;
-		default:
-			continue;
-		}
-
-		if (model == model2.get())
+		if (model == sceneModels[i].get())
 		{
 			continue;
 		}
 
-		if (!model2->hasColider())
+		if (!sceneModels[i]->hasColider())
 		{
 			continue;
 		}
 
-		std::shared_ptr<Colider> colider2 = model2->getColider();
+		std::shared_ptr<Colider> colider2 = sceneModels[i]->getColider();
 		if (colider2->Intersect(origin,dir,length))
 		{
-			return model2;
+			return sceneModels[i];
 		}
 	}
 

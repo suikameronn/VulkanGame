@@ -19,3 +19,13 @@ glueSetColiderScale(player,1.0,1.0,0.3)
 glueSetDefaultAnimationName(player,"Running")
 glueBindCamera(player)
 glueSetLuaPath(player,"LuaScripts/player.lua")
+
+local pointLight = glueCreatePointLight()
+glueSetLightColor(pointLight,1.0,1.0,1.0)
+glueSetPos(pointLight,0.0,0.0,0.0)
+
+local directionalLight = glueCreateDirectionalLight()
+glueSetLightColor(directionalLight,0.5,1.0,1.0)
+glueSetLightDirection(directionalLight,1.0,1.0,1.0)
+
+print("AAA")

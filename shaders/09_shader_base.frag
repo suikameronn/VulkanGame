@@ -32,10 +32,24 @@ layout (set = 1, binding = 3) uniform sampler2D normalMap;//法線マップ
 layout (set = 1, binding = 4) uniform sampler2D aoMap;
 layout (set = 1, binding = 5) uniform sampler2D emissiveMap;//光のマップ
 
+layout(set = 2, binding = 0) uniform PointLight
+{
+	int lightCount;
+	vec3[100] pos;
+	vec3[100] color;
+}pointLight;
+
+layout(set = 3,binding = 0) uniform DirectionalLight
+{
+	int lightCount;
+	vec3[100] dir;
+	vec3[100] color;
+}directionalLight;
+
 layout(location = 0) out vec4 outColor;
 
 vec3 Lpos = vec3(0.739942,-0.642788,0.198267);
-const vec4 ambient = vec4(0.051, 0.051, 0.051, 1.0);
+const vec3 ambient = vec3(0.11, 0.11, 0.11);
 float shininess = 50.0;
 
 const float directF0 = 0.4;
@@ -185,7 +199,7 @@ void main() {
 	float G = geometricOcclusion(alphaRoughness,NdotL,NdotV);
 	float D = microfacetDistribution(alphaRoughness,NdotH);
 
-	const vec3 u_LightColor = vec3(1.0);
+	const vec3 u_LightColor = vec3(2.0);
 
 	//拡散と鏡面の計算
 	vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor);
@@ -193,5 +207,10 @@ void main() {
 	// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
 	vec3 color = NdotL * u_LightColor * (diffuseReflect + specularReflect);
 
-	outColor = vec4(color,baseColor.a) + ambient;
+	outColor = vec4(color,baseColor.a);
+
+	if(pointLight.lightCount > 0)
+	{
+		outColor = vec4(1.0);
+	}
 }

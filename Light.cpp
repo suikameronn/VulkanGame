@@ -1,6 +1,11 @@
 #include"Light.h"
 
-Light::Light()
+PointLight::PointLight()
 {
-	objNum = LIGHT;
+	objNum = POINTLIGHT;
+}
+
+DirectionalLight::DirectionalLight()
+{
+	objNum = DIRECTIONALLIGHT;
 }

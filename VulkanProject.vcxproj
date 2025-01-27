@@ -165,7 +165,6 @@
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="SkyDomeLight.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
@@ -186,7 +185,6 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="SkyDomeLight.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>

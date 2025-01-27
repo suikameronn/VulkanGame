@@ -17,6 +17,7 @@
 #include"Player.h"
 #include"Camera.h"
 #include"EnumList.h"
+#include"Light.h"
 
 class Scene
 {
@@ -26,7 +27,9 @@ private:
 
 	void initFrameSetting();
 
+	void prepareRenderData();
 	void setModels();
+	void setLights();
 
 	float upBlend;
 	float collisionDepth;//è’ìÀéûÇÃÇﬂÇËçûÇÒÇæãóó£
@@ -63,8 +66,11 @@ public:
 	std::shared_ptr<Camera> camera;
 
 	void init(std::string luaScriptPath);
-
-	std::vector<std::shared_ptr<Object>> sceneSet;
+	
+	std::shared_ptr<Player> player;
+	std::vector<std::shared_ptr<Model>> sceneModels;
+	std::vector<std::shared_ptr<PointLight>> scenePointLights;
+	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;
 
 	bool UpdateScene();
 
@@ -122,9 +128,35 @@ static int glueCreateModel(lua_State* lua)
 	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
 	Model* model = new Model();
-	scene->sceneSet.push_back(std::shared_ptr<Object>(model));
+	scene->sceneModels.push_back(std::shared_ptr<Model>(model));
 
 	lua_pushlightuserdata(lua, model);
+
+	return 1;
+}
+
+static int glueCreatePointLight(lua_State* lua)
+{
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	PointLight* pointLight = new PointLight();
+	scene->scenePointLights.push_back(std::shared_ptr<PointLight>(pointLight));
+
+	lua_pushlightuserdata(lua, pointLight);
+
+	return 1;
+}
+
+static int glueCreateDirectionalLight(lua_State* lua)
+{
+	lua_getglobal(lua, "Scene");
+	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+	DirectionalLight* directionalLight = new DirectionalLight();
+	scene->sceneDirectionalLights.push_back(std::shared_ptr<DirectionalLight>(directionalLight));
+
+	lua_pushlightuserdata(lua, directionalLight);
 
 	return 1;
 }
@@ -134,8 +166,13 @@ static int glueCreatePlayer(lua_State* lua)
 	lua_getglobal(lua, "Scene");
 	Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
+	if (scene->player)
+	{
+		return -1;
+	}
+
 	Player* player = new Player();
-	scene->sceneSet.push_back(std::shared_ptr<Object>(player));
+	scene->player = std::shared_ptr<Player>(player);
 
 	lua_pushlightuserdata(lua, player);
 
@@ -261,6 +298,7 @@ static int glueSetColider(lua_State* lua)
 	switch (obj->getObjNum())
 	{
 	case 1:
+	case 2:
 		Model * model = dynamic_cast<Model*>(obj);
 		model->setColider();
 		model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
@@ -277,6 +315,7 @@ static int glueSetColiderScale(lua_State* lua)
 	switch (obj->getObjNum())
 	{
 	case 1:
+	case 2:
 		Model * model = dynamic_cast<Model*>(obj);
 		std::shared_ptr<Colider> colider = model->getColider();
 		if (colider)
@@ -299,6 +338,7 @@ static int glueSetDefaultAnimationName(lua_State* lua)
 	switch (obj->getObjNum())
 	{
 	case 1:
+	case 2:
 		Model * model = dynamic_cast<Model*>(obj);
 		model->setDefaultAnimationName(std::string(lua_tostring(lua, -1)));
 		break;
@@ -314,6 +354,7 @@ static int glueSetGravity(lua_State* lua)
 	switch (obj->getObjNum())
 	{
 	case 1:
+	case 2:
 		Model * model = dynamic_cast<Model*>(obj);
 		model->gravity = static_cast<float>(lua_tonumber(lua, -1));
 		break;
@@ -330,9 +371,62 @@ static int glueSetSlippery(lua_State* lua)
 	switch (obj->getObjNum())
 	{
 	case 1:
+	case 2:
 		Model * model = dynamic_cast<Model*>(obj);
 		model->slippery = slippery;
 		break;
+	}
+
+	return 0;
+}
+
+static int glueSetLightColor(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
+	glm::vec3 color =
+	{
+		static_cast<float>(lua_tonumber(lua, -3)),
+		static_cast<float>(lua_tonumber(lua, -2)),
+		static_cast<float>(lua_tonumber(lua, -1))
+	};
+
+	switch (obj->getObjNum())
+	{
+	case 3:
+	{
+		PointLight* pl = dynamic_cast<PointLight*>(obj);
+		pl->color = color;
+		break;
+	}
+	case 4:
+	{
+		DirectionalLight* dl = dynamic_cast<DirectionalLight*>(obj);
+		dl->color = color;
+		break;
+	}
+	}
+
+	return 0;
+}
+
+static int glueSetLightDirection(lua_State* lua)
+{
+	Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
+	glm::vec3 dir =
+	{
+		static_cast<float>(lua_tonumber(lua, -3)),
+		static_cast<float>(lua_tonumber(lua, -2)),
+		static_cast<float>(lua_tonumber(lua, -1))
+	};
+
+	switch (obj->getObjNum())
+	{
+	case 4:
+	{
+		DirectionalLight* dl = dynamic_cast<DirectionalLight*>(obj);
+		dl->direction = dir;
+		break;
+	}
 	}
 
 	return 0;

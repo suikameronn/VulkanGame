@@ -1,11 +1,21 @@
 #pragma once
 
 #include"Object.h"
+#include<vulkan/vulkan.h>
 
-class Light :public Object
+class PointLight :public Object
 {
 public:
-	Light();
+	PointLight();
 
 	glm::vec3 color;
+};
+
+class DirectionalLight:public Object
+{
+public:
+	DirectionalLight();
+
+	glm::vec3 color;
+	glm::vec3 direction;
 };

@@ -72,18 +72,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         emptyImage.destroy(device);
 
         Storage* storage = Storage::GetInstance();
-        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
+
+        for (auto gltfModel:storage->getgltfModel())
         {
-            (*model)->cleanupVulkan();
+            gltfModel.second->cleanUpVulkan(device);
         }
 
-        std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator begin;
-        std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator end;
-        storage->accessgltfModel(begin, end);
-        for (auto itr = begin; itr != end; itr++)
+        for (auto model:storage->getModels())
         {
-            itr->second->cleanUpVulkan(device);
+            model->cleanupVulkan();
         }
+
+        vkDestroyDescriptorSetLayout(device, storage->getLightDescLayout(),nullptr);//ライト共通の後処理
+        storage->getPointLightsBuffer().destroy(device);//ポイントライトのバッファの後処理
+        storage->getDirectionalLightsBuffer().destroy(device);//ディレクショナルライトのバッファの後処理
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -500,16 +502,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
-            if (material->getTexCount() > 0)
-            {
-                vertFile = "shaders/vert.spv";
-                fragFile = "shaders/frag.spv";
-            }
-            else
-            {
-                vertFile = "shaders/Notexture.vert.spv";
-                fragFile = "shaders/Notexture.frag.spv";
-            }
+            vertFile = "shaders/vert.spv";
+            fragFile = "shaders/frag.spv";
         }
         else if (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         {
@@ -674,10 +668,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pushConstant.size = sizeof(PushConstantObj);
         pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+        Storage* storage = Storage::GetInstance();
+
         std::vector<VkDescriptorSetLayout> layouts = { layout };
         if (material)
         {
             layouts.push_back(material->layout);
+        }
+        VkDescriptorSetLayout lightLayout = storage->getLightDescLayout();
+        if (lightLayout)
+        {
+            layouts.push_back(lightLayout);
+            layouts.push_back(lightLayout);
         }
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1319,6 +1321,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
+    void VulkanBase::createUniformBuffer(int lightCount,MappedBuffer& mappedBuffer,unsigned long long size)
+    {
+        VkDeviceSize bufferSize = size * lightCount;
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer.uniformBuffer, mappedBuffer.uniformBufferMemory);
+
+        vkMapMemory(device, mappedBuffer.uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer.uniformBufferMapped);
+    }
+
     void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
     {
         VkDeviceSize bufferSize = sizeof(MatricesUBO);
@@ -1382,6 +1393,48 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createUniformBuffer(model->getColider());
         }
+    }
+
+    void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights,MappedBuffer& mappedBuffer)
+    {
+        if (pointLights.size() == 0)
+        {
+            return;
+        }
+
+        PointLightUBO ubo;
+
+        int loopLimit = std::min(pointLights.size(), ubo.pos.size());
+
+        for (int i = 0; i < loopLimit; i++)
+        {
+            ubo.lightCount = loopLimit;
+            ubo.pos[i] = pointLights[i]->getPosition();
+            ubo.color[i] = pointLights[i]->color;
+        }
+
+        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(PointLightUBO));
+    }
+
+    void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& directionalLights, MappedBuffer& mappedBuffer)
+    {
+        if (directionalLights.size() == 0)
+        {
+            return;
+        }
+
+        DirectionalLightUBO ubo{};
+
+        int loopLimit = std::min(directionalLights.size(), ubo.dir.size());
+
+        for (int i = 0; i < loopLimit; i++)
+        {
+            ubo.lightCount = loopLimit;
+            ubo.dir[i] = directionalLights[i]->direction;
+            ubo.color[i] = directionalLights[i]->color;
+        }
+
+        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(DirectionalLightUBO));
     }
 
     void VulkanBase::updateUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
@@ -1831,6 +1884,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::drawMesh(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer)
     {
+        Storage* storage = Storage::GetInstance();
+
         if(node->mesh)
         {
             Mesh* mesh = node->mesh;
@@ -1870,6 +1925,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 {
                     descriptorSets.push_back(material->descriptorSet);
                 }
+                descriptorSets.push_back(storage->getPointLightDescriptorSet());
+                descriptorSets.push_back(storage->getDirectionalLightDescriptorSet());
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
@@ -1912,14 +1969,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         
         PrimitiveTextureCount ptc;
-        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
+        for (auto model:storage->getModels())
         {
 
-            drawMesh((*model)->getRootNode(),*model,commandBuffer);
+            drawMesh((model)->getRootNode(),model,commandBuffer);
 
-            if ((*model)->hasColider())
+            if ((model)->hasColider())
             {
-                std::shared_ptr<Colider> colider = (*model)->getColider();
+                std::shared_ptr<Colider> colider = (model)->getColider();
                 ptc.imageDataCount = 0;
                 ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
@@ -1999,10 +2056,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         Storage* storage = Storage::GetInstance();
-        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
+        for (auto model:storage->getModels())
         {
-            updateUniformBuffers(*model);
+            updateUniformBuffers(model);//3Dモデルの座標変換行列などを更新
         }
+
+        MappedBuffer pointMappedBuffer = storage->getPointLightsBuffer();
+        updateUniformBuffer(storage->getPointLights(), pointMappedBuffer);//ポイントライトの座標、色の更新
+
+        MappedBuffer directionalMappedBuffer = storage->getDirectionalLightsBuffer();
+        updateUniformBuffer(storage->getDirectionalLights(), directionalMappedBuffer);//ディレクショナルライトの向き、色の更新
 
         vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -2307,7 +2370,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorSetLayout(info.layout);
 
         /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline(nullptr,VK_PRIMITIVE_TOPOLOGY_LINE_LIST,info.layout, info.pLayout, info.pipeline);
+        createGraphicsPipeline(nullptr, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, info.layout, info.pLayout, info.pipeline);
 
         Storage::GetInstance()->addDescriptorInfo(ptc, info);
     }
@@ -2332,28 +2395,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createUniformBuffer(material);
 
         memcpy(material->sMaterialMappedBuffer.uniformBufferMapped, &material->shaderMaterial, sizeof(ShaderMaterial));
-    }
-
-    void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
-    {
-        /*テクスチャ関連の設定を持たせる*/
-        createTextureImage(gltfModel);
-        createTextureImageView(gltfModel);
-        createTextureSampler(gltfModel);
-
-        for (std::shared_ptr<Material> material : gltfModel->materials)
-        {
-            createShaderMaterialUBO(material);
-           /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
-           /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-            createDescriptorSetLayout(material);
-
-            /*ディスクリプタ用のメモリを空ける*/
-            allocateDescriptorSet(material);//マテリアルが複数ある場合エラー
-
-            /*ディスクリプタセットを作る*/
-            createDescriptorSet(material,gltfModel);
-        }
     }
 
     void VulkanBase::createEmptyImage()
@@ -2418,116 +2459,99 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
 
-    TextureData* VulkanBase::createSkyDomeTex(std::shared_ptr<ImageData> iblImage)
+    void VulkanBase::createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size,VkShaderStageFlags frag)
     {
-        std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapChainImageViews[0]
-        };
-
-        VkFramebufferCreateInfo cubeMapFrameBuffer{};
-        cubeMapFrameBuffer.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        cubeMapFrameBuffer.renderPass = renderPass;
-        cubeMapFrameBuffer.attachmentCount = static_cast<uint32_t>(attachments.size());
-        cubeMapFrameBuffer.pAttachments = attachments.data();
-        cubeMapFrameBuffer.width = swapChainExtent.width;
-        cubeMapFrameBuffer.height = swapChainExtent.height;
-        cubeMapFrameBuffer.layers = 1;
-
-        std::array<VkFramebuffer, 6> frameBuffers;
-        for (int i = 0; i < 6; i++)
+        if (!layout)
         {
-            if (vkCreateFramebuffer(device, &cubeMapFrameBuffer, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create framebuffer!");
+            VkDescriptorSetLayoutBinding uboLayoutBinding{};
+            uboLayoutBinding.binding = 0;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags = frag;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &uboLayoutBinding;
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
             }
         }
 
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &layout;
 
-        if (vkBeginCommandBuffer(commandBuffers[0], &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate descriptor sets!");
         }
 
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-        renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        if (descriptorSetCount > 100)
+        {
+            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+        }
+        descriptorSetCount++;
 
-        std::array<VkClearValue, 2>clearValues{};
-        clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
-        clearValues[1].depthStencil = { 1.0f,0 };
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = mappedBuffer.uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = size;
 
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = descriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
 
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBase::setPointLights(std::vector<std::shared_ptr<PointLight>> lights)
+    {
         Storage* storage = Storage::GetInstance();
 
-        PrimitiveTextureCount ptc;
-        for (auto model = storage->sceneModelBegin(); model != storage->sceneModelEnd(); model++)
+        createUniformBuffer(lights.size(), storage->getPointLightsBuffer(), sizeof(PointLightUBO));
+
+        createDescriptorData(storage->getPointLightsBuffer(), storage->getLightDescLayout(), storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
+
+    void VulkanBase::setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights)
+    {
+        Storage* storage = Storage::GetInstance();
+
+        createUniformBuffer(lights.size(), storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
+
+        createDescriptorData(storage->getDirectionalLightsBuffer(), storage->getLightDescLayout(), storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
+
+    void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
+    {
+        /*テクスチャ関連の設定を持たせる*/
+        createTextureImage(gltfModel);
+        createTextureImageView(gltfModel);
+        createTextureSampler(gltfModel);
+
+        for (std::shared_ptr<Material> material : gltfModel->materials)
         {
+            createShaderMaterialUBO(material);
+            /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
+            /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
+            createDescriptorSetLayout(material);
 
-            drawMesh((*model)->getRootNode(), *model, commandBuffer);
+            /*ディスクリプタ用のメモリを空ける*/
+            allocateDescriptorSet(material);//マテリアルが複数ある場合エラー
 
-            if ((*model)->hasColider())
-            {
-                std::shared_ptr<Colider> colider = (*model)->getColider();
-                ptc.imageDataCount = 0;
-                ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
-
-                VkViewport viewport{};
-                viewport.x = 0.0f;
-                viewport.y = 0.0f;
-                viewport.width = (float)swapChainExtent.width;
-                viewport.height = (float)swapChainExtent.height;
-                viewport.minDepth = 0.0f;
-                viewport.maxDepth = 1.0f;
-                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-                VkRect2D scissor{};
-                scissor.offset = { 0, 0 };
-                scissor.extent = swapChainExtent;
-                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-                VkDeviceSize offsets[] = { 0 };
-
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBufferData()->vertBuffer, offsets);
-
-                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
-
-                vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
-            }
-
+            /*ディスクリプタセットを作る*/
+            createDescriptorSet(material, gltfModel);
         }
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
-
-        createImage()
-    }
-
-    TextureData* VulkanBase::createIBLTexDiffuse(std::shared_ptr<ImageData> iblImage)
-    {
-
-
-        return nullptr;
-    }
-
-    TextureData* VulkanBase::createIBLTexSpecular(std::shared_ptr<ImageData> iblImage)
-    {
-        return nullptr;
     }
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)

@@ -3,6 +3,13 @@
 
 Storage* Storage::storage = nullptr;
 
+Storage::Storage()
+{
+	lightLayout = nullptr;
+	pointLightDescSet = nullptr;
+	directionalLightDescSet = nullptr;
+}
+
 void Storage::cleanup()
 {
 
@@ -47,6 +54,30 @@ void Storage::addModel(std::shared_ptr<Model> model)
 	sceneModelStorage.push_back(std::shared_ptr<Model>(model));
 }
 
+void Storage::addLight(std::shared_ptr<PointLight> pl)
+{
+	scenePointLightStorage.push_back(std::shared_ptr<PointLight>(pl));
+}
+
+void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
+{
+	sceneDirectionalLightStorage.push_back(std::shared_ptr<DirectionalLight>(dl));
+}
+
+void Storage::prepareLightsForVulkan(std::vector<std::shared_ptr<PointLight>>& pointLights
+	, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights)
+{
+	if (pointLights.size() > 0)
+	{
+		VulkanBase::GetInstance()->setPointLights(pointLights);
+	}
+
+	if (directionalLights.size() > 0)
+	{
+		VulkanBase::GetInstance()->setDirectionalLights(directionalLights);
+	}
+}
+
 //Storageから指定されたDescriptorInfoへの参照を返す
 DescriptorInfo* Storage::accessDescriptorInfo(PrimitiveTextureCount ptc)
 {
@@ -59,13 +90,6 @@ void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, 
 {
 	begin = descriptorStorage.begin();
 	end = descriptorStorage.end();
-}
-
-void Storage::accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
-	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr2)
-{
-	itr = gltfModelStorage.begin();
-	itr2 = gltfModelStorage.end();
 }
 
 //StorageのCameraにアクセスする
@@ -126,6 +150,11 @@ bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
 	}
 }
 
+std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& Storage::getgltfModel()
+{
+	return gltfModelStorage;
+}
+
 //StorageからGltfModelを読み取る
 std::shared_ptr<GltfModel> Storage::getgltfModel(GLTFOBJECT obj)
 {
@@ -142,4 +171,14 @@ std::shared_ptr<Animation> Storage::getAnimation(OBJECT obj)
 std::shared_ptr<ImageData> Storage::getImageData(std::string path)
 {
 	return imageDataStorage[path];
+}
+
+MappedBuffer& Storage::getPointLightsBuffer()
+{
+	return pointLightsBuffer;
+}
+
+MappedBuffer& Storage::getDirectionalLightsBuffer()
+{
+	return directionalLightsBuffer;
 }
