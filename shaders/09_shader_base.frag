@@ -117,6 +117,8 @@ void main() {
 	vec3 diffuseColor;
 	vec4 baseColor;
 
+	outColor = vec4(0.0);
+
 	vec3 f0 = vec3(0.04);//光が垂直に当たった時の反射率
 
 	if(shaderMaterial.alphaMask == 1.0f)
@@ -184,33 +186,33 @@ void main() {
 	vec3 n = (shaderMaterial.normalTextureIndex > -1) ? getNormal(shaderMaterial.normalTextureIndex) : normalize(inNormal);
 	n.y *= -1.0;
 	vec3 v = normalize(camPos - inPos);//頂点からカメラへのベクトル
-	vec3 l = normalize(Lpos);//頂点からライトへのベクトル
-	vec3 h = normalize(l+v);//lとvの中間のベクトル
-	vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
-	float NdotL = clamp(dot(n, l), 0.001, 1.0);
-	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
-	float NdotH = clamp(dot(n, h), 0.0, 1.0);
-	float LdotH = clamp(dot(l, h), 0.0, 1.0);
-	float VdotH = clamp(dot(v, h), 0.0, 1.0);
-
-	// マイクロファセット鏡面反射シェーディングモデルのシェーディング項を計算する
-	vec3 F = specularReflection(specularEnvironmentR0,specularEnvironmentR90,VdotH);
-	float G = geometricOcclusion(alphaRoughness,NdotL,NdotV);
-	float D = microfacetDistribution(alphaRoughness,NdotH);
-
-	const vec3 u_LightColor = vec3(2.0);
-
-	//拡散と鏡面の計算
-	vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor);
-	vec3 specularReflect = F * G * D / (4.0 * NdotL * NdotV);
-	// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
-	vec3 color = NdotL * u_LightColor * (diffuseReflect + specularReflect);
-
-	outColor = vec4(color,baseColor.a);
-
-	if(pointLight.lightCount > 0)
+	for(int i = 0;i < pointLight.lightCount;i++)
 	{
-		outColor = vec4(1.0);
+		vec3 l = normalize(inPos - pointLight.pos[i]);//頂点からライトへのベクトル
+		vec3 h = normalize(l+v);//lとvの中間のベクトル
+		vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
+
+		float NdotL = clamp(dot(n, l), 0.001, 1.0);
+		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
+		float NdotH = clamp(dot(n, h), 0.0, 1.0);
+		float LdotH = clamp(dot(l, h), 0.0, 1.0);
+		float VdotH = clamp(dot(v, h), 0.0, 1.0);
+
+		// マイクロファセット鏡面反射シェーディングモデルのシェーディング項を計算する
+		vec3 F = specularReflection(specularEnvironmentR0,specularEnvironmentR90,VdotH);
+		float G = geometricOcclusion(alphaRoughness,NdotL,NdotV);
+		float D = microfacetDistribution(alphaRoughness,NdotH);
+
+		//拡散と鏡面の計算
+		vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor);
+		vec3 specularReflect = F * G * D / (4.0 * NdotL * NdotV);
+		// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
+		vec3 color = NdotL * pointLight.color[i] * (diffuseReflect + specularReflect);
+		outColor += vec4(color[i]);
 	}
+
+	outColor.a = baseColor.a;
+
+	//outColor = vec4(color,baseColor.a);
 }

@@ -24,6 +24,14 @@ local pointLight = glueCreatePointLight()
 glueSetLightColor(pointLight,1.0,1.0,1.0)
 glueSetPos(pointLight,0.0,0.0,0.0)
 
+local pointLight2 = glueCreatePointLight()
+glueSetLightColor(pointLight2,1.0,1.0,1.0)
+glueSetPos(pointLight2,0.1,0.1,0.1)
+
+local pointLight3 = glueCreatePointLight()
+glueSetLightColor(pointLight3,1.0,1.0,1.0)
+glueSetPos(pointLight3,0.5,0.5,0.5)
+
 local directionalLight = glueCreateDirectionalLight()
 glueSetLightColor(directionalLight,0.5,1.0,1.0)
 glueSetLightDirection(directionalLight,1.0,1.0,1.0)

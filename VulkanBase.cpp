@@ -1402,13 +1402,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             return;
         }
 
-        PointLightUBO ubo;
+        PointLightUBO ubo{};
 
         int loopLimit = std::min(pointLights.size(), ubo.pos.size());
 
+        ubo.lightCount = loopLimit;
         for (int i = 0; i < loopLimit; i++)
         {
-            ubo.lightCount = loopLimit;
             ubo.pos[i] = pointLights[i]->getPosition();
             ubo.color[i] = pointLights[i]->color;
         }
@@ -1427,9 +1427,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         int loopLimit = std::min(directionalLights.size(), ubo.dir.size());
 
+        ubo.lightCount = loopLimit;
         for (int i = 0; i < loopLimit; i++)
         {
-            ubo.lightCount = loopLimit;
             ubo.dir[i] = directionalLights[i]->direction;
             ubo.color[i] = directionalLights[i]->color;
         }
@@ -2061,11 +2061,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             updateUniformBuffers(model);//3Dモデルの座標変換行列などを更新
         }
 
-        MappedBuffer pointMappedBuffer = storage->getPointLightsBuffer();
-        updateUniformBuffer(storage->getPointLights(), pointMappedBuffer);//ポイントライトの座標、色の更新
-
-        MappedBuffer directionalMappedBuffer = storage->getDirectionalLightsBuffer();
-        updateUniformBuffer(storage->getDirectionalLights(), directionalMappedBuffer);//ディレクショナルライトの向き、色の更新
+        updateUniformBuffer(storage->getPointLights(), storage->getPointLightsBuffer());//ポイントライトの座標、色の更新
+        updateUniformBuffer(storage->getDirectionalLights(), storage->getDirectionalLightsBuffer());//ディレクショナルライトの向き、色の更新
 
         vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -2518,7 +2515,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        createUniformBuffer(lights.size(), storage->getPointLightsBuffer(), sizeof(PointLightUBO));
+        createUniformBuffer(1, storage->getPointLightsBuffer(), sizeof(PointLightUBO));
 
         createDescriptorData(storage->getPointLightsBuffer(), storage->getLightDescLayout(), storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
@@ -2527,7 +2524,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        createUniformBuffer(lights.size(), storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
+        createUniformBuffer(1, storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
 
         createDescriptorData(storage->getDirectionalLightsBuffer(), storage->getLightDescLayout(), storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }

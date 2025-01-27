@@ -216,6 +216,9 @@ static int glueSetPos(lua_State* lua)
 	{
 	case 0:
 	case 1:
+	case 2:
+	case 3:
+	case 4:
 		float x = static_cast<float>(lua_tonumber(lua, -3));
 		float y = static_cast<float>(lua_tonumber(lua, -2));
 		float z = static_cast<float>(lua_tonumber(lua, -1));
