@@ -74,6 +74,7 @@ void Scene::registerFunctions()
 	lua_register(lua, "glueSetLightColor", glueSetLightColor);
 	lua_register(lua, "glueCreateDirectionalLight", glueCreateDirectionalLight);
 	lua_register(lua, "glueSetLightDirection", glueSetLightDirection);
+	lua_register(lua, "glueBindObject", glueBindObject);
 }
 
 bool Scene::UpdateScene()
@@ -190,7 +191,7 @@ void Scene::setLights()
 	}
 
 	//Light‚ÉVulkan‚Å‚Ì•Ï”‚È‚Ç‚ðŽ‚½‚¹‚é
-	Storage::GetInstance()->prepareLightsForVulkan(scenePointLights,sceneDirectionalLights);
+	Storage::GetInstance()->prepareLightsForVulkan();
 }
 
 glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)

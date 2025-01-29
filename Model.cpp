@@ -154,29 +154,6 @@ uint32_t Model::getimageDataCount()
 	return imageDataCount;
 }
 
-void Model::bindObject(std::weak_ptr<Object> obj)
-{
-	if (obj.expired())
-	{
-#ifdef _DEBUG
-		throw std::runtime_error("bindObject(Object* obj): bindObject is nullptr");
-#endif
-
-		return;
-	}
-
-	childObjects.push_back(obj);
-
-	sendPosToChildren(position);
-}
-
-void Model::bindCamera(std::weak_ptr<Camera> camera)
-{
-	cameraObj = camera;
-
-	sendPosToChildren(position);
-}
-
 void Model::switchPlayAnimation()
 {
 	currentPlayAnimationName = defaultAnimationName;
@@ -261,10 +238,7 @@ void Model::sendPosToChildren(glm::vec3 pos)
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
-		if (!itr->expired())
-		{
-			itr->lock()->setParentPos(pos);
-		}
+		(*itr)->setParentPos(pos);
 	}
 
 	if (!cameraObj.expired())

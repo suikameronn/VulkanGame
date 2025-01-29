@@ -434,3 +434,13 @@ static int glueSetLightDirection(lua_State* lua)
 
 	return 0;
 }
+
+static int glueBindObject(lua_State* lua)
+{
+	Object* parent = static_cast<Object*>(lua_touserdata(lua, -2));
+	Object* child = static_cast<Object*>(lua_touserdata(lua, -1));
+
+	parent->bindObject(child);
+
+	return 0;
+}

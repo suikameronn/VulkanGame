@@ -50,17 +50,8 @@ void Object::registerGlueFunctions()
 
 }
 
-void Object::bindObject(std::weak_ptr<Object> obj)
+void Object::bindObject(Object* obj)
 {
-	if (obj.expired())
-	{
-#ifdef _DEBUG
-		throw std::runtime_error("bindObject(Object* obj): bindObject is nullptr");
-#endif
-
-		return;
-	}
-
 	childObjects.push_back(obj);
 
 	sendPosToChildren(position);
@@ -141,9 +132,9 @@ void Object::sendPosToChildren(glm::vec3 pos)
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
-		if (!itr->expired())
+		if (*itr)
 		{
-			itr->lock()->setParentPos(pos);
+			(*itr)->setParentPos(pos);
 		}
 	}
 

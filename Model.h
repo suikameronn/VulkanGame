@@ -56,9 +56,6 @@ public:
 
 	void setDefaultAnimationName(std::string name);
 
-	void bindObject(std::weak_ptr<Object> obj);
-	void bindCamera(std::weak_ptr<Camera> camera);
-
 	void sendPosToChildren(glm::vec3 pos);
 
 	void setgltfModel(std::shared_ptr<GltfModel> model);

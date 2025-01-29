@@ -53,16 +53,16 @@ struct SwapChainSupportDetails {
 
 struct PointLightUBO
 {
-    alignas(16) int lightCount;
-    alignas(16) std::array<glm::vec3, 100> pos;
-    alignas(16) std::array<glm::vec3,100> color;
+    int lightCount;
+    std::array<glm::vec4,50> pos;
+    std::array<glm::vec4,50> color;
 };
 
 struct DirectionalLightUBO
 {
     alignas(16) int lightCount;
-    alignas(16) std::array<glm::vec3, 100> dir;
-    alignas(16) std::array<glm::vec3, 100> color;
+    alignas(16) std::array<glm::vec3, 50> dir;
+    alignas(16) std::array<glm::vec3, 50> color;
 };
 
 struct MatricesUBO {
@@ -111,6 +111,8 @@ struct ShaderBuffer
 class VulkanBase
 {
 private:
+    bool a;
+
     static VulkanBase* vulkanBase;
 
     VulkanBase() {};
@@ -241,7 +243,7 @@ private:
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
     void createUniformBuffer(std::shared_ptr<Material> material);
-    void createUniformBuffer(int lightCount,MappedBuffer& mappedBuffer,unsigned long long size);
+    void createUniformBuffer(int lightCount,MappedBuffer* mappedBuffer,unsigned long long size);
 
     void createShaderMaterialUBO(std::shared_ptr<Material> material);
 

@@ -2,7 +2,7 @@
 local model = glueCreateModel()
 glueSetGltfModel(model,CUBE)
 glueSetPos(model,0.0,0.0,0.0)
-glueSetScale(model,42.0,1.0,40.0)
+glueSetScale(model,142.0,1.0,140.0)
 glueSetColider(model,false)
 
 local model2 = glueCreateModel()
@@ -24,16 +24,24 @@ local pointLight = glueCreatePointLight()
 glueSetLightColor(pointLight,1.0,1.0,1.0)
 glueSetPos(pointLight,0.0,0.0,0.0)
 
+glueBindObject(player,pointLight)
+
 local pointLight2 = glueCreatePointLight()
 glueSetLightColor(pointLight2,1.0,1.0,1.0)
-glueSetPos(pointLight2,0.1,0.1,0.1)
+glueSetPos(pointLight2,0.1,-1.1,0.1)
+
+glueBindObject(player,pointLight2)
 
 local pointLight3 = glueCreatePointLight()
 glueSetLightColor(pointLight3,1.0,1.0,1.0)
-glueSetPos(pointLight3,0.5,0.5,0.5)
+glueSetPos(pointLight3,0.5,-0.5,0.5)
+
+glueBindObject(player,pointLight3)
 
 local directionalLight = glueCreateDirectionalLight()
 glueSetLightColor(directionalLight,0.5,1.0,1.0)
 glueSetLightDirection(directionalLight,1.0,1.0,1.0)
+
+glueBindObject(player,directionalLight)
 
 print("AAA")

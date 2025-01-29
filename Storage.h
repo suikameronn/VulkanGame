@@ -113,8 +113,7 @@ public:
 	void addLight(std::shared_ptr<PointLight> light);
 	void addLight(std::shared_ptr<DirectionalLight> light);
 
-	void prepareLightsForVulkan(std::vector<std::shared_ptr<PointLight>>& pointLights
-		, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights);
+	void prepareLightsForVulkan();
 
 	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
 	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();

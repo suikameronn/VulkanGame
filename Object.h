@@ -111,7 +111,7 @@ protected:
 	std::unique_ptr<PhysicBase> physicBase;
 
 	std::weak_ptr<Camera> cameraObj;
-	std::vector<std::weak_ptr<Object>> childObjects;
+	std::vector<Object*> childObjects;
 
 	float rotateSpeed;
 	float length;
@@ -144,7 +144,7 @@ public:
 
 	glm::mat4 transformMatrix;
 
-	void bindObject(std::weak_ptr<Object> obj);
+	void bindObject(Object* obj);
 	void bindCamera(std::weak_ptr<Camera> camera);
 	void sendPosToChildren(glm::vec3 pos);
 	void setParentPos(glm::vec3 parentPos);

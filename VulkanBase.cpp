@@ -1321,13 +1321,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanBase::createUniformBuffer(int lightCount,MappedBuffer& mappedBuffer,unsigned long long size)
+    void VulkanBase::createUniformBuffer(int lightCount,MappedBuffer* mappedBuffer,unsigned long long size)
     {
         VkDeviceSize bufferSize = size * lightCount;
+        bufferSize = 1616;
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer.uniformBuffer, mappedBuffer.uniformBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
-        vkMapMemory(device, mappedBuffer.uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer.uniformBufferMapped);
+        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
     }
 
     void VulkanBase::createUniformBuffer(std::shared_ptr<Model> model)
@@ -1407,13 +1408,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         int loopLimit = std::min(pointLights.size(), ubo.pos.size());
 
         ubo.lightCount = loopLimit;
+
         for (int i = 0; i < loopLimit; i++)
         {
-            ubo.pos[i] = pointLights[i]->getPosition();
-            ubo.color[i] = pointLights[i]->color;
+            ubo.pos[i] = glm::vec4(pointLights[i]->getPosition(),1.0f);
+            ubo.color[i] = glm::vec4(pointLights[i]->color,1.0f);
         }
 
-        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(PointLightUBO));
+        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
     }
 
     void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& directionalLights, MappedBuffer& mappedBuffer)
@@ -1424,14 +1426,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         DirectionalLightUBO ubo{};
-
+        
         int loopLimit = std::min(directionalLights.size(), ubo.dir.size());
 
         ubo.lightCount = loopLimit;
+        
         for (int i = 0; i < loopLimit; i++)
         {
-            ubo.dir[i] = directionalLights[i]->direction;
-            ubo.color[i] = directionalLights[i]->color;
+            ubo.dir[i] = glm::vec3(directionalLights[i]->direction);
+            ubo.color[i] = glm::vec3(directionalLights[i]->color);
         }
 
         memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(DirectionalLightUBO));
@@ -2497,7 +2500,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = mappedBuffer.uniformBuffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = size;
+        bufferInfo.range = 1616;
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -2515,18 +2518,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        createUniformBuffer(1, storage->getPointLightsBuffer(), sizeof(PointLightUBO));
+        createUniformBuffer(1, &storage->getPointLightsBuffer(), sizeof(PointLightUBO));
 
-        createDescriptorData(storage->getPointLightsBuffer(), storage->getLightDescLayout(), storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+        createDescriptorData(storage->getPointLightsBuffer(), storage->getLightDescLayout(),
+            storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     void VulkanBase::setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights)
     {
         Storage* storage = Storage::GetInstance();
 
-        createUniformBuffer(1, storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
+        createUniformBuffer(1, &storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
 
-        createDescriptorData(storage->getDirectionalLightsBuffer(), storage->getLightDescLayout(), storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+        createDescriptorData(storage->getDirectionalLightsBuffer(), storage->getLightDescLayout(),
+            storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)

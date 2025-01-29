@@ -56,25 +56,24 @@ void Storage::addModel(std::shared_ptr<Model> model)
 
 void Storage::addLight(std::shared_ptr<PointLight> pl)
 {
-	scenePointLightStorage.push_back(std::shared_ptr<PointLight>(pl));
+	scenePointLightStorage.push_back(pl);
 }
 
 void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 {
-	sceneDirectionalLightStorage.push_back(std::shared_ptr<DirectionalLight>(dl));
+	sceneDirectionalLightStorage.push_back(dl);
 }
 
-void Storage::prepareLightsForVulkan(std::vector<std::shared_ptr<PointLight>>& pointLights
-	, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights)
+void Storage::prepareLightsForVulkan()
 {
-	if (pointLights.size() > 0)
+	if (scenePointLightStorage.size() > 0)
 	{
-		VulkanBase::GetInstance()->setPointLights(pointLights);
+		VulkanBase::GetInstance()->setPointLights(scenePointLightStorage);
 	}
 
-	if (directionalLights.size() > 0)
+	if (sceneDirectionalLightStorage.size() > 0)
 	{
-		VulkanBase::GetInstance()->setDirectionalLights(directionalLights);
+		VulkanBase::GetInstance()->setDirectionalLights(sceneDirectionalLightStorage);
 	}
 }
 
