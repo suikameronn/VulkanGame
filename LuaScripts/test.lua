@@ -22,26 +22,22 @@ glueSetLuaPath(player,"LuaScripts/player.lua")
 
 local pointLight = glueCreatePointLight()
 glueSetLightColor(pointLight,1.0,1.0,1.0)
-glueSetPos(pointLight,0.0,0.0,0.0)
-
+glueSetPos(pointLight,100000.0,10000.0,10000.0)
 glueBindObject(player,pointLight)
 
 local pointLight2 = glueCreatePointLight()
 glueSetLightColor(pointLight2,1.0,1.0,1.0)
-glueSetPos(pointLight2,0.1,-1.1,0.1)
-
+glueSetPos(pointLight2,10.1,-11.1,10.1)
 glueBindObject(player,pointLight2)
 
 local pointLight3 = glueCreatePointLight()
 glueSetLightColor(pointLight3,1.0,1.0,1.0)
-glueSetPos(pointLight3,0.5,-0.5,0.5)
-
+glueSetPos(pointLight3,50.5,-50.5,50.5)
 glueBindObject(player,pointLight3)
 
 local directionalLight = glueCreateDirectionalLight()
-glueSetLightColor(directionalLight,0.5,1.0,1.0)
+glueSetLightColor(directionalLight,1.0,1.0,1.0)
 glueSetLightDirection(directionalLight,1.0,1.0,1.0)
-
 glueBindObject(player,directionalLight)
 
 print("AAA")

@@ -52,6 +52,7 @@ void Object::registerGlueFunctions()
 
 void Object::bindObject(Object* obj)
 {
+	parentPos = obj->getPosition();
 	childObjects.push_back(obj);
 
 	sendPosToChildren(position);
@@ -146,6 +147,8 @@ void Object::sendPosToChildren(glm::vec3 pos)
 
 void Object::setParentPos(glm::vec3 pos)
 {
+	position += pos - parentPos;
+
 	parentPos = pos;
 }
 

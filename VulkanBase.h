@@ -53,9 +53,9 @@ struct SwapChainSupportDetails {
 
 struct PointLightUBO
 {
-    int lightCount;
-    std::array<glm::vec4,50> pos;
-    std::array<glm::vec4,50> color;
+    alignas(16)int lightCount;
+    alignas(16) std::array<glm::vec4,50> pos;
+    alignas(16) std::array<glm::vec4,50> color;
 };
 
 struct DirectionalLightUBO

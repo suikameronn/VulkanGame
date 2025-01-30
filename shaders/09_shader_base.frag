@@ -32,14 +32,14 @@ layout (set = 1, binding = 3) uniform sampler2D normalMap;//法線マップ
 layout (set = 1, binding = 4) uniform sampler2D aoMap;
 layout (set = 1, binding = 5) uniform sampler2D emissiveMap;//光のマップ
 
-layout(std140,set = 2, binding = 0) uniform PointLightUBO
+layout(set = 2, binding = 0) uniform PointLightUBO
 {
 	int lightCount;
 	vec4[50] pos;
 	vec4[50] color;
 }pointLight;
 
-layout(std140,set = 3,binding = 0) uniform DirectionalLightUBO
+layout(set = 3,binding = 0) uniform DirectionalLightUBO
 {
 	int lightCount;
 	vec4[50] dir;
