@@ -2121,6 +2121,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 descriptorSets.push_back(storage->getPointLightDescriptorSet());
                 descriptorSets.push_back(storage->getDirectionalLightDescriptorSet());
 
+                for (int i = 0; i < shadowMapData.descriptorSets.size(); i++)
+                {
+                    descriptorSets.push_back(shadowMapData.descriptorSets[i]);
+                }
+
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
@@ -2783,6 +2788,61 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
 
+    void VulkanBase::createDescriptorData(ShadowMapData& shadowMapData)
+    {
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 0;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings = &samplerLayoutBinding;
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMapData.layout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &shadowMapData.layout;
+
+        for (int i = 0;i < shadowMapData.descriptorSets.size();i++)
+        {
+            if (vkAllocateDescriptorSets(device, &allocInfo, &shadowMapData.descriptorSets[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            if (descriptorSetCount > 100)
+            {
+                throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+            }
+            descriptorSetCount++;
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = shadowMapData.passData.imageAttachment[i].view;
+            imageInfo.sampler = shadowMapData.passData.sampler;
+
+            VkWriteDescriptorSet descriptorWrite{};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = shadowMapData.descriptorSets[i];
+            descriptorWrite.dstBinding = 1;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrite.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(device, 1, &descriptorWrite,0,nullptr);
+        }
+    }
+
     void VulkanBase::setPointLights(std::vector<std::shared_ptr<PointLight>> lights)
     {
         Storage* storage = Storage::GetInstance();
@@ -2968,11 +3028,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(MatricesUBO);
 
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = shadowMapData.passData.imageAttachment[i].view;
-            imageInfo.sampler = shadowMapData.passData.sampler;
-
             std::vector<VkWriteDescriptorSet> descriptorWrite(2);
             descriptorWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrite[0].dstSet = shadowMapData.passData.descriptorSets[i];
@@ -2982,19 +3037,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             descriptorWrite[0].descriptorCount = 1;
             descriptorWrite[0].pBufferInfo = &bufferInfo;
 
-            descriptorWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite[1].dstSet = shadowMapData.passData.descriptorSets[i];
-            descriptorWrite[1].dstBinding = 1;
-            descriptorWrite[1].dstArrayElement = 0;
-            descriptorWrite[1].descriptorCount = 1;
-            descriptorWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrite[1].pImageInfo = &imageInfo;
-
             vkUpdateDescriptorSets(device, 1, descriptorWrite.data(), 0, nullptr);
         }
 
         createShadowMapPipeline("shaders/shadowMapping.vert.spv"
             , shadowMapData.passData.layout, shadowMapData.passData.pipelineLayout, shadowMapData.passData.pipeline,shadowMapData.passData.renderPass);
+
+        createDescriptorData(shadowMapData);//デプスバッファをテクスチャとして利用するためのdescriptorSet
     }
 
     void VulkanBase::setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights)

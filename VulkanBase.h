@@ -167,8 +167,8 @@ struct ShadowMapData
     std::vector<MatricesUBO> matUBOs;
     std::vector<MappedBuffer> mappedBuffers;
 
-    VkDescriptorSetLayout shadowMapLayout;
-    std::vector<VkDescriptorSet> shadowMapDescriptorSets;
+    VkDescriptorSetLayout layout;
+    std::vector<VkDescriptorSet> descriptorSets;
 
     void setFrameCount(int frameCount)
     {
@@ -184,11 +184,6 @@ struct ShadowMapData
         {
             buffer.destroy(device);
         }
-    }
-
-    void prepareDescriptor()
-    {
-        
     }
 };
 
@@ -388,6 +383,7 @@ private:
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
 
     void createDescriptorData(MappedBuffer& mappedBuffer, VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
+    void createDescriptorData(ShadowMapData& shadowMapData);
 
     void createEmptyImage();
 
