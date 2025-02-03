@@ -6,6 +6,7 @@ layout (location = 2) in vec2 inUV0;
 layout (location = 3) in vec2 inUV1;
 layout (location = 4) in vec4 inColor0;
 layout (location = 5) in vec3 camPos;
+layout(location = 6) in vec4 inShadowCoords;
 
 layout (set = 1, binding = 0) uniform ShaderMaterial
 {
@@ -45,6 +46,8 @@ layout(set = 3,binding = 0) uniform DirectionalLightUBO
 	vec4[50] dir;
 	vec4[50] color;
 }directionalLight;
+
+layout(set = 4,binding = 0) uniform sampler2D shadowMap;
 
 layout(location = 0) out vec4 outColor;
 
@@ -109,6 +112,20 @@ float microfacetDistribution(float alphaRoughness,float NdotH)
 vec3 diffuse(vec3 diffuseColor)
 {
     return diffuseColor / PI;
+}
+
+float shadowCalc(vec4 shadowCoord, vec2 off)
+{
+	float shadow = 1.0;
+	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) 
+	{
+		float dist = texture( shadowMap, shadowCoord.st + off ).r;
+		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+		{
+			shadow = 0.0;
+		}
+	}
+	return shadow;
 }
 
 void main() {
@@ -239,6 +256,10 @@ void main() {
 	}
 
 	outColor.a = baseColor.a;
+
+	float shadow = shadowCalc(inShadowCoords,vec2(0.0));
+
+	outColor *= shadow;
 
 	//outColor = vec4(color,baseColor.a);
 }

@@ -4,7 +4,8 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
-    vec3 camPos;
+    vec4 camPos;
+    mat4[20] lightMVP;
 } matricesUBO;
 
 layout(binding = 1) uniform animationUniformBufferObject
@@ -33,6 +34,13 @@ layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
 layout(location = 5) out vec3 camPos;
+layout(location = 6) out vec4 outShadowCoords;
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0 );
 
 void main() {
     outColor0 = vec4(inColor,1.0);
@@ -62,9 +70,11 @@ void main() {
     outUV0 = inTexCoord1;
     outUV1 = inTexCoord2;
 
-    camPos = matricesUBO.camPos;
+    camPos = vec3(matricesUBO.camPos);
 
     gl_Position = matricesUBO.proj * matricesUBO.view * locPos;
     gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
+
+    outShadowCoords = ( biasMat * matricesUBO.lightMVP[0] * matricesUBO.model ) * vec4(inPosition, 1.0);
 }

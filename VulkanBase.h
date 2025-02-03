@@ -69,7 +69,9 @@ struct MatricesUBO {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec3 worldCameraPos;
+    alignas(16) glm::vec4 worldCameraPos;
+    alignas(16) int lightCount;
+    alignas(16) std::array<glm::mat4,20> lightMVP;
 };
 
 struct AnimationUBO
@@ -179,6 +181,8 @@ struct ShadowMapData
 
     void destroy(VkDevice& device)
     {
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
         passData.destroy(device);
         for (auto& buffer : mappedBuffers)
         {

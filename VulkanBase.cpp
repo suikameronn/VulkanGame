@@ -683,6 +683,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             layouts.push_back(lightLayout);
             layouts.push_back(lightLayout);
         }
+        layouts.push_back(shadowMapData.layout);
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1650,7 +1651,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             shadowMapData.matUBOs[i].model = glm::mat4(1.0f);
             shadowMapData.matUBOs[i].view = glm::lookAt(pointLights[i]->getPosition(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             shadowMapData.matUBOs[i].proj = camera->perspectiveMat;
-            shadowMapData.matUBOs[i].worldCameraPos = camera->getPosition();
+            shadowMapData.matUBOs[i].worldCameraPos = glm::vec4(camera->getPosition(),1.0f);
 
             memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(MatricesUBO));
         }
@@ -1665,26 +1666,40 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         */
     }
 
-    void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model) 
+    void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model)
     {
+        Storage* storage = Storage::GetInstance();
+        std::shared_ptr<Camera> camera = storage->accessCamera();
+
+        MatricesUBO ubo;
+
+        ubo.model = model->getTransformMatrix();
+        ubo.view = camera->viewMat;
+        ubo.proj = camera->perspectiveMat;
+        ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0f);
+
+        ubo.lightCount = storage->getLightCount();
+
+        std::vector<std::shared_ptr<PointLight>> pLights = storage->getPointLights();
+        for (int i = 0;i < pLights.size();i++)
         {
-            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
-
-            MatricesUBO ubo;
-
-            ubo.model= model->getTransformMatrix();
-            ubo.view = camera->viewMat;
-            ubo.proj = camera->perspectiveMat;
-            ubo.worldCameraPos = camera->getPosition();
-
-            memcpy(model->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
+            ubo.lightMVP[i] = camera->perspectiveMat
+                * glm::lookAt(pLights[i]->getPosition(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * pLights[i]->getTransformMatrix();
         }
+        std::vector<std::shared_ptr<DirectionalLight>> dLights = storage->getDirectionalLights();
+        for (int i = 0; i < pLights.size(); i++)
+        {
+            //ubo.lightMVP[i + pLights.size()] = camera->perspectiveMat
+            //    * glm::lookAt(dLights[i]->getPosition(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * dLights[i]->getTransformMatrix();
+        }
+
+        memcpy(model->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
 
         updateUniformBuffer(model->getRootNode(), model);
 
         if (model->hasColider())
         {
-            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
+            std::shared_ptr<Camera> camera = storage->accessCamera();
             std::shared_ptr<Colider> colider = model->getColider();
 
             MatricesUBO ubo;
@@ -1692,7 +1707,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
             ubo.proj = camera->perspectiveMat;
-            ubo.worldCameraPos = camera->getPosition();
+            ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0);
 
             memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
@@ -2833,7 +2848,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrite.dstSet = shadowMapData.descriptorSets[i];
-            descriptorWrite.dstBinding = 1;
+            descriptorWrite.dstBinding = 0;
             descriptorWrite.dstArrayElement = 0;
             descriptorWrite.descriptorCount = 1;
             descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2888,11 +2903,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::prepareShadowMapping(int lightCount)
     {
         shadowMapData.setFrameCount(lightCount);
+        shadowMapData.descriptorSets.resize(1);
 
         OffScreenPass passData{};
-
-        passData.setFrameCount(lightCount);
-
         passData.width = swapChainExtent.width;
         passData.height = swapChainExtent.height;
 

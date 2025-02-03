@@ -98,6 +98,7 @@ public:
 	std::vector<std::shared_ptr<Model>>& getModels() { return sceneModelStorage; }
 	std::vector<std::shared_ptr<PointLight>>& getPointLights() { return scenePointLightStorage; }
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
+	int getLightCount() { return scenePointLightStorage.size() + sceneDirectionalLightStorage.size(); }
 
 	VkDescriptorSetLayout& getLightDescLayout() { return lightLayout; }
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
