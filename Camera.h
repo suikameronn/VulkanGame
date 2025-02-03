@@ -22,6 +22,8 @@ private:
 
 	float theta, phi;
 
+	float zNear, zFar;
+
 	void calcViewMat();
 public:
 	glm::vec3 forward, right, up;
@@ -42,6 +44,8 @@ public:
 	void setViewAngle(float f);
 	float getViewAngle();
 	float getTheta();
+
+	void getzNearFar(float& near, float& far);
 
 	glm::vec3 getViewTarget();
 

@@ -61,8 +61,8 @@ struct PointLightUBO
 struct DirectionalLightUBO
 {
     alignas(16) int lightCount;
-    alignas(16) std::array<glm::vec3, 50> dir;
-    alignas(16) std::array<glm::vec3, 50> color;
+    alignas(16) std::array<glm::vec4, 50> dir;
+    alignas(16) std::array<glm::vec4, 50> color;
 };
 
 struct MatricesUBO {
@@ -106,6 +106,90 @@ struct ShaderBuffer
     VkDescriptorBufferInfo descriptor;
     int32_t count = 0;
     void* mapped = nullptr;
+};
+
+struct FrameBufferAttachment {
+    VkImage image;
+    VkDeviceMemory memory;
+    VkImageView view;
+
+    void destory(VkDevice& device)
+    {
+        vkDestroyImageView(device, view, nullptr);
+        vkDestroyImage(device, image, nullptr);
+        vkFreeMemory(device, memory, nullptr);
+    }
+};
+
+struct OffScreenPass {
+    int32_t width, height;
+    std::vector<VkFramebuffer> frameBuffer;
+    std::vector<FrameBufferAttachment> imageAttachment;
+    VkRenderPass renderPass;
+    VkSampler sampler;
+    VkDescriptorSetLayout layout;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    void setFrameCount(int count)
+    {
+        frameBuffer.resize(count);
+        imageAttachment.resize(count);
+        descriptorSets.resize(count);
+    }
+
+    void destroy(VkDevice& device)
+    {
+        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
+        for (auto& framebuffer : frameBuffer)
+        {
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+        }
+
+        for (auto& attachment : imageAttachment)
+        {
+            attachment.destory(device);
+        }
+
+        vkDestroySampler(device, sampler, nullptr);
+
+        vkDestroyRenderPass(device, renderPass, nullptr);
+    }
+};
+
+struct ShadowMapData
+{
+    OffScreenPass passData;
+    std::vector<MatricesUBO> matUBOs;
+    std::vector<MappedBuffer> mappedBuffers;
+
+    VkDescriptorSetLayout shadowMapLayout;
+    std::vector<VkDescriptorSet> shadowMapDescriptorSets;
+
+    void setFrameCount(int frameCount)
+    {
+        matUBOs.resize(frameCount);
+        mappedBuffers.resize(frameCount);
+        passData.setFrameCount(frameCount);
+    }
+
+    void destroy(VkDevice& device)
+    {
+        passData.destroy(device);
+        for (auto& buffer : mappedBuffers)
+        {
+            buffer.destroy(device);
+        }
+    }
+
+    void prepareDescriptor()
+    {
+        
+    }
 };
 
 class VulkanBase
@@ -161,7 +245,7 @@ private:
 
     VkCommandPool commandPool;
 
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_8_BIT;
 
     bool firstSendModel = true;
 
@@ -186,6 +270,8 @@ private:
 
     EmptyImage emptyImage;
 
+    ShadowMapData shadowMapData;
+
     void setUpComputingShader();
 
     void cleanup();
@@ -199,6 +285,8 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapChain();
+    void createImageSampler(VkSamplerMipmapMode mipMapMode, VkSamplerAddressMode addressMode
+        , VkFilter magFilter, VkFilter minFilter, VkSampler& sampler);
     void createImageViews();
     void createRenderPass();
 
@@ -207,6 +295,8 @@ private:
 
     void createGraphicsPipeline(std::shared_ptr<Material> material, VkPrimitiveTopology topology,
         VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createShadowMapPipeline(std::string vertexPath
+        , VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline, VkRenderPass& pass);
 
     void createFramebuffers();
     void createCommandPool();
@@ -268,14 +358,19 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
 
+    void setupShadowMapDepth(VkCommandBuffer& commandBuffer);
+
     void updateUniformBuffers(std::shared_ptr<Model> model);
     void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void updateUniformBuffer(std::shared_ptr<Colider> colider);
     void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, MappedBuffer& mappedBuffer);
-    void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& pointLights, MappedBuffer& mappedBuffer);
+    void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& directionalLights, MappedBuffer& mappedBuffer);
+    void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights);
 
     void drawFrame();
     void drawMesh(GltfNode* node,std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
+    void calcDepth(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, OffScreenPass& pass);
+
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -295,6 +390,10 @@ private:
     void createDescriptorData(MappedBuffer& mappedBuffer, VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
 
     void createEmptyImage();
+
+    void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
+    void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
+    void prepareShadowMapping(int lightCount);
 
 public:
 
@@ -348,8 +447,7 @@ public:
 
     void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
     void setModelData(std::shared_ptr<Model> model);
-    void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
-    void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
+    void setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
     void updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider);

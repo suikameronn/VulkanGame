@@ -66,15 +66,7 @@ void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 
 void Storage::prepareLightsForVulkan()
 {
-	if (scenePointLightStorage.size() > 0)
-	{
-		VulkanBase::GetInstance()->setPointLights(scenePointLightStorage);
-	}
-
-	if (sceneDirectionalLightStorage.size() > 0)
-	{
-		VulkanBase::GetInstance()->setDirectionalLights(sceneDirectionalLightStorage);
-	}
+	VulkanBase::GetInstance()->setLightData(scenePointLightStorage, sceneDirectionalLightStorage);
 }
 
 //Storage‚©‚çw’è‚³‚ê‚½DescriptorInfo‚Ö‚ÌQÆ‚ğ•Ô‚·

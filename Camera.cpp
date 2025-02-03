@@ -18,7 +18,10 @@ Camera::Camera()
 
 	setPosition(glm::vec3(0, 0, distance));
 
-	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, 0.1f, 10000.0f);
+	zNear = 0.1f;
+	zFar = 1000.0f;
+
+	perspectiveMat = glm::perspective(viewAngle, 800.0f / 600.0f, zNear,zFar);
 }
 
 void Camera::setPosition(glm::vec3 pos)

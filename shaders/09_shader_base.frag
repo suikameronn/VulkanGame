@@ -147,8 +147,8 @@ void main() {
 	{
 		//roughnessはg、metallicはbチャンネルにある
 		vec4 roughMetallic = texture(physicalDescriptorMap,shaderMaterial.physicalDescriptorTextureIndex == 0 ? inUV0:inUV1);
-		roughness *= roughMetallic.g;
-		metallic *= roughMetallic.b;
+		roughness = roughness * roughMetallic.g;
+		metallic = metallic * roughMetallic.b;
 	}
 	else
 	{
@@ -190,7 +190,32 @@ void main() {
 	for(int i = 0;i < pointLight.lightCount;i++)
 	{
 		vec3 l = normalize(pointLight.pos[i].xyz - inPos);//頂点からライトへのベクトル
-		float distance = length(pointLight.pos[i].xyz - inPos);
+		float dis = length(pointLight.pos[i].xyz - inPos);
+		vec3 h = normalize(l+v);//lとvの中間のベクトル
+		vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
+
+		float NdotL = clamp(dot(n, l), 0.001, 1.0);
+		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
+		float NdotH = clamp(dot(n, h), 0.0, 1.0);
+		float LdotH = clamp(dot(l, h), 0.0, 1.0);
+		float VdotH = clamp(dot(v, h), 0.0, 1.0);
+
+		// マイクロファセット鏡面反射シェーディングモデルのシェーディング項を計算する
+		vec3 F = specularReflection(specularEnvironmentR0,specularEnvironmentR90,VdotH);
+		float G = geometricOcclusion(alphaRoughness,NdotL,NdotV);
+		float D = microfacetDistribution(alphaRoughness,NdotH);
+
+		//拡散と鏡面の計算
+		vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor) / dis;
+		vec3 specularReflect = F * G * D / (4.0 * NdotL * NdotV) / dis;
+		// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
+		vec3 color = NdotL * (pointLight.color[i].rgb) * (diffuseReflect + specularReflect);
+		outColor += vec4(color,0.0f);
+	}
+
+	for(int i = 0;i < directionalLight.lightCount;i++)
+	{
+		vec3 l = normalize(directionalLight.dir[i].xyz);//頂点からライトへのベクトル
 		vec3 h = normalize(l+v);//lとvの中間のベクトル
 		vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 

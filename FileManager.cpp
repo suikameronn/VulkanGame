@@ -106,8 +106,8 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     GltfNode* root = new GltfNode();
     GltfModel* model = new GltfModel(root);
 
-    minPos = glm::vec3(100000.0, 10000.0, 10000.0);
-    maxPos = glm::vec3(-10000.0, -10000.0, -10000.0);
+    minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     loadTextures(model, gltfModel);
     loadMaterial(model, gltfModel);
