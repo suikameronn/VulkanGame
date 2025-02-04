@@ -51,6 +51,15 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct ModelDescriptor
+{
+    VkDescriptorSetLayout layout;
+    VkPipelineLayout texturePipelineLayout;
+    VkPipeline texturePipeline;
+    VkPipelineLayout coliderPipelineLayout;
+    VkPipeline coliderPipeline;
+};
+
 struct PointLightUBO
 {
     alignas(16)int lightCount;
@@ -63,6 +72,12 @@ struct DirectionalLightUBO
     alignas(16) int lightCount;
     alignas(16) std::array<glm::vec4, 50> dir;
     alignas(16) std::array<glm::vec4, 50> color;
+};
+
+struct ShadowMapUBO
+{
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
 };
 
 struct MatricesUBO {
@@ -258,6 +273,8 @@ private:
 
     int descriptorSetCount;
 
+    ModelDescriptor modelDescriptor;
+
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -272,6 +289,8 @@ private:
     ShadowMapData shadowMapData;
 
     void setUpComputingShader();
+
+    void prepareModelDescInfo();
 
     void cleanup();
     void cleanupSwapChain();
@@ -292,8 +311,7 @@ private:
     void createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout);
     void createDescriptorSetLayout(std::shared_ptr<Material> material);
 
-    void createGraphicsPipeline(std::shared_ptr<Material> material, VkPrimitiveTopology topology,
-        VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createGraphicsPipeline(VkPrimitiveTopology topology,VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createShadowMapPipeline(std::string vertexPath
         , VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline, VkRenderPass& pass);
 

@@ -35,12 +35,6 @@ void Storage::addImageData(std::string path,ImageData* image)
 	imageDataStorage[path] = std::shared_ptr<ImageData>(image);
 }
 
-//StorageにDescriptorInfoを追加する
-void Storage::addDescriptorInfo(PrimitiveTextureCount ptc, DescriptorInfo& info)
-{
-	descriptorStorage[ptc] = info;
-}
-
 //StorageにCameraを追加する
 void Storage::setCamera(std::shared_ptr<Camera> c)
 {
@@ -67,20 +61,6 @@ void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 void Storage::prepareLightsForVulkan()
 {
 	VulkanBase::GetInstance()->setLightData(scenePointLightStorage, sceneDirectionalLightStorage);
-}
-
-//Storageから指定されたDescriptorInfoへの参照を返す
-DescriptorInfo* Storage::accessDescriptorInfo(PrimitiveTextureCount ptc)
-{
-	return &descriptorStorage[ptc];
-}
-
-//StorageからDescriptorInfoのマップへの参照を返す
-void Storage::accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& begin,
-	std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& end)
-{
-	begin = descriptorStorage.begin();
-	end = descriptorStorage.end();
 }
 
 //StorageのCameraにアクセスする
@@ -119,19 +99,6 @@ bool Storage::containAnimation(OBJECT obj)
 bool Storage::containImageData(std::string path)
 {
 	if (imageDataStorage[path] != nullptr)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-//Storageに指定されたDescritporInfoがすでに存在するかどうかを返す
-bool Storage::containDescriptorInfo(PrimitiveTextureCount ptc)
-{
-	if (descriptorStorage.find(ptc) != descriptorStorage.end())
 	{
 		return true;
 	}

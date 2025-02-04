@@ -37,25 +37,13 @@ struct BufferObject
 
 struct DescriptorInfo
 {
-	VkDescriptorSetLayout layout;
 	VkPipelineLayout pLayout;
 	VkPipeline pipeline;
-
-	bool operator==(const DescriptorInfo& a) const
-	{
-		return layout == a.layout;
-	}
-
-	bool operator!=(const DescriptorInfo& a) const
-	{
-		return !(layout == a.layout);
-	}
 
 	void destroy(VkDevice& device)
 	{
 		vkDestroyPipeline(device, pipeline, nullptr);
 		vkDestroyPipelineLayout(device, pLayout, nullptr);
-		vkDestroyDescriptorSetLayout(device, layout, nullptr);
 	}
 };
 

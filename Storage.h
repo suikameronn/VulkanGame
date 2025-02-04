@@ -107,7 +107,6 @@ public:
 	void addModel(GLTFOBJECT obj, GltfModel* geo);
 	//void addAnimation(OBJECT obj, Animation* animation);
 	void addImageData(std::string, ImageData* image);
-	void addDescriptorInfo(PrimitiveTextureCount ptc, DescriptorInfo& info);
 
 	void setCamera(std::shared_ptr<Camera> c);
 	void addModel(std::shared_ptr<Model> model);
@@ -123,10 +122,6 @@ public:
 	MappedBuffer& getPointLightsBuffer();
 	MappedBuffer& getDirectionalLightsBuffer();
 
-	DescriptorInfo* accessDescriptorInfo(PrimitiveTextureCount ptc);
-	void accessDescriptorInfoItr(std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& begin,
-		std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator& end);
-
 	std::shared_ptr<Camera> accessCamera();
 
 	void accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
@@ -135,7 +130,6 @@ public:
 	bool containModel(GLTFOBJECT obj);
 	bool containAnimation(GLTFOBJECT obj);
 	bool containImageData(std::string path);
-	bool containDescriptorInfo(PrimitiveTextureCount ptc);
 
 	void FinishStorage()
 	{

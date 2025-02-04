@@ -7,7 +7,7 @@ layout (binding = 0) uniform UBO
     mat4 model;
     mat4 view;
     mat4 proj;
-    vec3 worldCameraPos;
+    vec4 worldCameraPos;
 } ubo;
 
 layout( push_constant ) uniform push_constant

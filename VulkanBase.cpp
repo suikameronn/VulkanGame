@@ -41,6 +41,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createSyncObjects();
         createDescriptorPool();
         createEmptyImage();
+        prepareModelDescInfo();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -90,17 +91,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         storage->getDirectionalLightsBuffer().destroy(device);//ディレクショナルライトのバッファの後処理
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
-        std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoBegin;
-        std::unordered_map<PrimitiveTextureCount, DescriptorInfo>::iterator infoEnd;
-        Storage::GetInstance()->accessDescriptorInfoItr(infoBegin, infoEnd);
-        for (auto itr = infoBegin; itr != infoEnd; itr++)
-        {
-            vkDestroyPipeline(device, itr->second.pipeline, nullptr);
-            vkDestroyPipelineLayout(device, itr->second.pLayout, nullptr);
-            vkDestroyDescriptorSetLayout(device, itr->second.layout, nullptr);
-        }
-
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -1649,7 +1639,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < pointLights.size(); i++)
         {
             shadowMapData.matUBOs[i].model = glm::mat4(1.0f);
-            shadowMapData.matUBOs[i].view = glm::lookAt(pointLights[i]->getPosition(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->direction, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             shadowMapData.matUBOs[i].proj = camera->perspectiveMat;
             shadowMapData.matUBOs[i].worldCameraPos = glm::vec4(camera->getPosition(),1.0f);
 
@@ -1765,7 +1755,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 allocInfo.descriptorPool = descriptorPool;
                 allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-                allocInfo.pSetLayouts = &info->layout;
+                allocInfo.pSetLayouts = &modelDescriptor.layout;
 
                 VkDescriptorSet descriptorSet;
 
@@ -1816,17 +1806,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::allocateDescriptorSet(std::shared_ptr<Model> model)
     {
-        PrimitiveTextureCount ptc;
-        ptc.imageDataCount = 0;
-        ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-        DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
-
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = &info->layout;
+        allocInfo.pSetLayouts = &modelDescriptor.layout;
 
         VkDescriptorSet descriptorSet;
 
@@ -2268,10 +2252,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             if ((model)->hasColider())
             {
                 std::shared_ptr<Colider> colider = (model)->getColider();
-                ptc.imageDataCount = 0;
-                ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, storage->accessDescriptorInfo(ptc)->pipeline);
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelDescriptor.coliderPipeline);
 
                 VkViewport viewport{};
                 viewport.x = 0.0f;
@@ -2294,7 +2276,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindIndexBuffer(commandBuffer, colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    storage->accessDescriptorInfo(ptc)->pLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
+                    modelDescriptor.coliderPipelineLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
 
                 vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
             }
@@ -2611,27 +2593,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             Mesh* mesh = node->mesh;
             for (int i = 0;i < mesh->primitives.size();i++)
             {
-                if (!Storage::GetInstance()->containDescriptorInfo(ptc))
-                {
-                    DescriptorInfo info{};
-
-                    /*ディスクリプタレイアウトを持たせる*/
-                    createDescriptorSetLayout(info.layout);
-
-                    /*グラフィックスパイプラインを作る*/
-                    createGraphicsPipeline(model->getGltfModel()->materials[mesh->primitives[i].materialIndex],
-                        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, info.layout, info.pLayout, info.pipeline);
-
-                    mesh->descriptorInfo = info;
-
-                    //Storage::GetInstance()->addDescriptorInfo(ptc, info);
-                }
-                else
-                {
-                    DescriptorInfo* info = Storage::GetInstance()->accessDescriptorInfo(ptc);
-
-                    mesh->descriptorInfo = *info;
-                }
+                mesh->descriptorInfo.pLayout = modelDescriptor.texturePipelineLayout;
+                mesh->descriptorInfo.pipeline = modelDescriptor.texturePipeline;
             }
         }
 
@@ -2639,29 +2602,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createDescriptorInfo(node->children[i], model);
         }
-    }
-
-    void VulkanBase::createDescriptorInfo(std::shared_ptr<Colider> colider)
-    {
-        uint32_t imageDataCount;
-        PrimitiveTextureCount ptc;
-        ptc.imageDataCount = 0;
-        ptc.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-        if (Storage::GetInstance()->containDescriptorInfo(ptc))
-        {
-            return;
-        }
-
-        DescriptorInfo info{};
-
-        /*ディスクリプタレイアウトを持たせる*/
-        createDescriptorSetLayout(info.layout);
-
-        /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline(nullptr, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, info.layout, info.pLayout, info.pipeline);
-
-        Storage::GetInstance()->addDescriptorInfo(ptc, info);
     }
 
     void VulkanBase::createDescriptorInfos(std::shared_ptr<Model> model)
@@ -2746,6 +2686,41 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         descriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBase::prepareModelDescInfo()
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(2);
+
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkDescriptorSetLayoutBinding uboLayoutBindingAnimation{};
+        uboLayoutBindingAnimation.binding = 1;
+        uboLayoutBindingAnimation.descriptorCount = 1;
+        uboLayoutBindingAnimation.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingAnimation.pImmutableSamplers = nullptr;
+        uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        bindings[0] = uboLayoutBinding;
+        bindings[1] = uboLayoutBindingAnimation;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = bindings.size();
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.layout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+
+        /*グラフィックスパイプラインを作る*/
+        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.texturePipelineLayout,modelDescriptor.texturePipeline);//普通の3Dモデル表示用
+        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout,modelDescriptor.coliderPipeline);//コライダー表示用
     }
 
     void VulkanBase::createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size,VkShaderStageFlags frag)
@@ -2989,7 +2964,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < lightCount; i++)
         {
-            createUniformBuffer(1, &shadowMapData.mappedBuffers[i], sizeof(MatricesUBO));
+            createUniformBuffer(1, &shadowMapData.mappedBuffers[i], sizeof(ShadowMapUBO));
         }
 
         VkDescriptorSetLayoutBinding layoutBinding;
@@ -3030,7 +3005,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = shadowMapData.mappedBuffers[i].uniformBuffer;
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(MatricesUBO);
+            bufferInfo.range = sizeof(ShadowMapUBO);
 
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
