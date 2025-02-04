@@ -132,7 +132,6 @@ public:
 	bool unlit = false;
 	float emissiveStrength = 1.0f;
 
-	VkDescriptorSetLayout layout;
 	VkDescriptorSet descriptorSet;
 	TexCoordSets texCoordSets;
 

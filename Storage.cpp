@@ -5,7 +5,6 @@ Storage* Storage::storage = nullptr;
 
 Storage::Storage()
 {
-	lightLayout = nullptr;
 	pointLightDescSet = nullptr;
 	directionalLightDescSet = nullptr;
 }

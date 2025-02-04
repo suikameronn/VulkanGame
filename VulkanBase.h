@@ -54,6 +54,9 @@ struct SwapChainSupportDetails {
 struct ModelDescriptor
 {
     VkDescriptorSetLayout layout;
+    VkDescriptorSetLayout materialLayout;
+    VkDescriptorSetLayout lightLayout;
+    VkDescriptorSetLayout shadowLayout;
     VkPipelineLayout texturePipelineLayout;
     VkPipeline texturePipeline;
     VkPipelineLayout coliderPipelineLayout;
@@ -184,7 +187,6 @@ struct ShadowMapData
     std::vector<MatricesUBO> matUBOs;
     std::vector<MappedBuffer> mappedBuffers;
 
-    VkDescriptorSetLayout layout;
     std::vector<VkDescriptorSet> descriptorSets;
 
     void setFrameCount(int frameCount)
@@ -196,8 +198,6 @@ struct ShadowMapData
 
     void destroy(VkDevice& device)
     {
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
-
         passData.destroy(device);
         for (auto& buffer : mappedBuffers)
         {
@@ -209,7 +209,7 @@ struct ShadowMapData
 class VulkanBase
 {
 private:
-    bool a;
+    bool isPreparedDescriptor;
 
     static VulkanBase* vulkanBase;
 
@@ -404,7 +404,7 @@ private:
     void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
 
-    void createDescriptorData(MappedBuffer& mappedBuffer, VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
+    void createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
     void createDescriptorData(ShadowMapData& shadowMapData);
 
     void createEmptyImage();

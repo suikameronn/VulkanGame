@@ -162,8 +162,6 @@ void GltfModel::cleanUpVulkan(VkDevice& device)
 {
 	for (std::shared_ptr<Material> material:materials)
 	{
-		vkDestroyDescriptorSetLayout(device,material->layout,nullptr);
-
 		vkDestroyBuffer(device, material->sMaterialMappedBuffer.uniformBuffer, nullptr);
 		vkFreeMemory(device, material->sMaterialMappedBuffer.uniformBufferMemory, nullptr);
 		material->sMaterialMappedBuffer.uniformBufferMapped = nullptr;

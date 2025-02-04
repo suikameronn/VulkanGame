@@ -39,10 +39,9 @@ inline bool operator==(const PrimitiveTextureCount& lhs, const PrimitiveTextureC
 struct Hash 
 {
 	size_t operator()(const DescriptorInfo info) const {
-		size_t a = std::hash<VkDescriptorSetLayout>()(info.layout);
-		size_t b = std::hash<VkPipeline>()(info.pipeline);
-		size_t c = std::hash<VkPipelineLayout>()(info.pLayout);
-		return a ^ b ^ c;
+		size_t a = std::hash<VkPipeline>()(info.pipeline);
+		size_t b = std::hash<VkPipelineLayout>()(info.pLayout);
+		return a ^ b;
 	}
 
 	size_t operator()(const PrimitiveTextureCount& ptc) const
@@ -68,7 +67,6 @@ private:
 	std::vector<std::shared_ptr<PointLight>> scenePointLightStorage;
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLightStorage;
 
-	VkDescriptorSetLayout lightLayout;
 	VkDescriptorSet pointLightDescSet;
 	VkDescriptorSet directionalLightDescSet;
 
@@ -100,7 +98,6 @@ public:
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
 	int getLightCount() { return scenePointLightStorage.size() + sceneDirectionalLightStorage.size(); }
 
-	VkDescriptorSetLayout& getLightDescLayout() { return lightLayout; }
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
 	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
 

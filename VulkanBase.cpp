@@ -23,6 +23,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::initVulkan(uint32_t limit) {
         descriptorSetCount = 0;
         limitVertexBoneDataSize = limit;
+        isPreparedDescriptor = false;
 
         createInstance();
         setupDebugMessenger();
@@ -41,7 +42,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createSyncObjects();
         createDescriptorPool();
         createEmptyImage();
-        prepareModelDescInfo();
     }
 
     void VulkanBase::cleanupSwapChain() {
@@ -86,7 +86,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             model->cleanupVulkan();
         }
 
-        vkDestroyDescriptorSetLayout(device, storage->getLightDescLayout(),nullptr);//ライト共通の後処理
         storage->getPointLightsBuffer().destroy(device);//ポイントライトのバッファの後処理
         storage->getDirectionalLightsBuffer().destroy(device);//ディレクショナルライトのバッファの後処理
 
@@ -481,12 +480,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layoutInfo.bindingCount = bindings.size();
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &material->layout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.materialLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
     }
 
-    void VulkanBase::createGraphicsPipeline(std::shared_ptr<Material> material, VkPrimitiveTopology topology,
+    void VulkanBase::createGraphicsPipeline(VkPrimitiveTopology topology,
         VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline) {
 
         std::string vertFile;
@@ -660,24 +659,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pushConstant.size = sizeof(PushConstantObj);
         pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        Storage* storage = Storage::GetInstance();
-
-        std::vector<VkDescriptorSetLayout> layouts = { layout };
-        if (material)
-        {
-            layouts.push_back(material->layout);
-        }
-        VkDescriptorSetLayout lightLayout = storage->getLightDescLayout();
-        if (lightLayout)
-        {
-            layouts.push_back(lightLayout);
-            layouts.push_back(lightLayout);
-        }
-        layouts.push_back(shadowMapData.layout);
+        std::vector<VkDescriptorSetLayout> layouts(5);
+        layouts[0] = layout;
+        layouts[1] = modelDescriptor.materialLayout;
+        layouts[2] = modelDescriptor.lightLayout;
+        layouts[3] = modelDescriptor.lightLayout;
+        layouts[4] = modelDescriptor.shadowLayout;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = layouts.size();
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
         pipelineLayoutInfo.pSetLayouts = layouts.data();
         pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
@@ -1786,7 +1777,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = &material->layout;
+        allocInfo.pSetLayouts = &modelDescriptor.materialLayout;
 
         VkDescriptorSet descriptorSet;
 
@@ -2108,18 +2099,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             for (int i = 0;i < mesh->primitives.size();i++)
             {
+                std::shared_ptr<Material> material = model->getGltfModel()->materials[mesh->primitives[i].materialIndex];
+
                 std::vector<VkDescriptorSet> descriptorSets = 
                 {
                     model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
+                    material->descriptorSet,
+                    storage->getPointLightDescriptorSet(),
+                    storage->getDirectionalLightDescriptorSet()
                 };
-                std::shared_ptr<Material> material = model->getGltfModel()->materials[mesh->primitives[i].materialIndex];
-                if (material)
-                {
-                    descriptorSets.push_back(material->descriptorSet);
-                }
-                descriptorSets.push_back(storage->getPointLightDescriptorSet());
-                descriptorSets.push_back(storage->getDirectionalLightDescriptorSet());
-
                 for (int i = 0; i < shadowMapData.descriptorSets.size(); i++)
                 {
                     descriptorSets.push_back(shadowMapData.descriptorSets[i]);
@@ -2584,10 +2572,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createDescriptorInfo(GltfNode* node, std::shared_ptr<Model> model)
     {
-        uint32_t imageDataCount;
-        PrimitiveTextureCount ptc;
-        ptc.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
         if(node->mesh)
         {
             Mesh* mesh = node->mesh;
@@ -2602,6 +2586,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createDescriptorInfo(node->children[i], model);
         }
+    }
+
+    void VulkanBase::createDescriptorInfo(std::shared_ptr<Colider> colider)
+    {
+        DescriptorInfo& info = colider->getDescInfo();
+
+        info.pLayout = modelDescriptor.coliderPipelineLayout;
+        info.pipeline = modelDescriptor.coliderPipeline;
     }
 
     void VulkanBase::createDescriptorInfos(std::shared_ptr<Model> model)
@@ -2690,60 +2682,115 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::prepareModelDescInfo()
     {
-        std::vector<VkDescriptorSetLayoutBinding> bindings(2);
-
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        VkDescriptorSetLayoutBinding uboLayoutBindingAnimation{};
-        uboLayoutBindingAnimation.binding = 1;
-        uboLayoutBindingAnimation.descriptorCount = 1;
-        uboLayoutBindingAnimation.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBindingAnimation.pImmutableSamplers = nullptr;
-        uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        bindings[0] = uboLayoutBinding;
-        bindings[1] = uboLayoutBindingAnimation;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = bindings.size();
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.layout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
-
-        /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.texturePipelineLayout,modelDescriptor.texturePipeline);//普通の3Dモデル表示用
-        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout,modelDescriptor.coliderPipeline);//コライダー表示用
-    }
-
-    void VulkanBase::createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size,VkShaderStageFlags frag)
-    {
-        if (!layout)
+        //まずVkDescriptorSetLayoutをあらかじめ作っておく
         {
+            //3Dモデルの座標変換用のレイアウト
+            std::vector<VkDescriptorSetLayoutBinding> bindings(2);
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding = 0;
             uboLayoutBinding.descriptorCount = 1;
             uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags = frag;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            VkDescriptorSetLayoutBinding uboLayoutBindingAnimation{};
+            uboLayoutBindingAnimation.binding = 1;
+            uboLayoutBindingAnimation.descriptorCount = 1;
+            uboLayoutBindingAnimation.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBindingAnimation.pImmutableSamplers = nullptr;
+            uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            bindings[0] = uboLayoutBinding;
+            bindings[1] = uboLayoutBindingAnimation;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = bindings.size();
+            layoutInfo.pBindings = bindings.data();
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.layout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+        }
+
+        {
+            //マテリアル用のレイアウト
+            std::vector<VkDescriptorSetLayoutBinding> bindings(MAX_TEXTURE_COUNT + 1);
+            VkDescriptorSetLayoutBinding uboLayoutBinding{};
+            uboLayoutBinding.binding = 0;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            bindings[0] = uboLayoutBinding;
+
+            for (int i = 1; i < MAX_TEXTURE_COUNT + 1; i++)
+            {
+                VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+                samplerLayoutBinding.binding = i;
+                samplerLayoutBinding.descriptorCount = 1;
+                samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                samplerLayoutBinding.pImmutableSamplers = nullptr;
+                samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+                bindings[i] = samplerLayoutBinding;
+            }
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = bindings.size();
+            layoutInfo.pBindings = bindings.data();
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.materialLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+        }
+
+        {
+            //ライト用のレイアウト
+            VkDescriptorSetLayoutBinding uboLayoutBinding{};
+            uboLayoutBinding.binding = 0;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             layoutInfo.bindingCount = 1;
             layoutInfo.pBindings = &uboLayoutBinding;
 
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.lightLayout) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create descriptor set layout!");
             }
         }
 
+        {
+            //シャドウマップ用
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding = 0;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &samplerLayoutBinding;
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.shadowLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+        }
+
+        /*グラフィックスパイプラインを作る*/
+        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.texturePipelineLayout,modelDescriptor.texturePipeline);//普通の3Dモデル表示用
+        createGraphicsPipeline(VK_PRIMITIVE_TOPOLOGY_LINE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout,modelDescriptor.coliderPipeline);//コライダー表示用
+    }
+
+    void VulkanBase::createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size,VkShaderStageFlags frag)
+    {
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
@@ -2780,27 +2827,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::createDescriptorData(ShadowMapData& shadowMapData)
     {
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 0;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &samplerLayoutBinding;
-
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMapData.layout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
+        //レイアウトはpreapreDescriptorにて作成済み
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = &shadowMapData.layout;
+        allocInfo.pSetLayouts = &modelDescriptor.shadowLayout;
 
         for (int i = 0;i < shadowMapData.descriptorSets.size();i++)
         {
@@ -2839,7 +2872,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         createUniformBuffer(1, &storage->getPointLightsBuffer(), sizeof(PointLightUBO));
 
-        createDescriptorData(storage->getPointLightsBuffer(), storage->getLightDescLayout(),
+        createDescriptorData(storage->getPointLightsBuffer(), modelDescriptor.lightLayout,
             storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
@@ -2849,12 +2882,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         createUniformBuffer(1, &storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
 
-        createDescriptorData(storage->getDirectionalLightsBuffer(), storage->getLightDescLayout(),
+        createDescriptorData(storage->getDirectionalLightsBuffer(), modelDescriptor.lightLayout,
             storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
     {
+        if (!isPreparedDescriptor)
+        {
+            prepareModelDescInfo();//このクラス全体で使用するレイアウトをあらかじめ用意しておく
+            isPreparedDescriptor = true;
+        }
+
         /*テクスチャ関連の設定を持たせる*/
         createTextureImage(gltfModel);
         createTextureImageView(gltfModel);
@@ -2865,7 +2904,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             createShaderMaterialUBO(material);
             /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
             /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-            createDescriptorSetLayout(material);
+            //createDescriptorSetLayout(material);
 
             /*ディスクリプタ用のメモリを空ける*/
             allocateDescriptorSet(material);//マテリアルが複数ある場合エラー
