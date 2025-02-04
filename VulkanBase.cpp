@@ -2905,19 +2905,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         shadowMapData.setFrameCount(lightCount);
         shadowMapData.descriptorSets.resize(1);
 
-        OffScreenPass passData{};
-        passData.width = swapChainExtent.width;
-        passData.height = swapChainExtent.height;
+        shadowMapData.passData.width = swapChainExtent.width;
+        shadowMapData.passData.height = swapChainExtent.height;
 
-        for (auto& attachment : passData.imageAttachment)
+        for (auto& attachment : shadowMapData.passData.imageAttachment)
         {
-            createImage(passData.width, passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM,
+            createImage(shadowMapData.passData.width, shadowMapData.passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
             attachment.view = createImageView(attachment.image, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            VK_FILTER_LINEAR, VK_FILTER_LINEAR, passData.sampler);
+            VK_FILTER_LINEAR, VK_FILTER_LINEAR, shadowMapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
         attachmentDescription.format = VK_FORMAT_D16_UNORM;
@@ -2965,53 +2964,45 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassCreateInfo.pDependencies = dependencies.data();
 
-        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &passData.renderPass) != VK_SUCCESS)
+        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &shadowMapData.passData.renderPass) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create renderpass");
         }
 
         // Create frame buffer
-        for (int i = 0; i < passData.frameBuffer.size(); i++)
+        for (int i = 0; i < shadowMapData.passData.frameBuffer.size(); i++)
         {
             VkFramebufferCreateInfo fbufCreateInfo{};
             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = passData.renderPass;
+            fbufCreateInfo.renderPass = shadowMapData.passData.renderPass;
             fbufCreateInfo.attachmentCount = 1;
-            fbufCreateInfo.pAttachments = &passData.imageAttachment[i].view;
-            fbufCreateInfo.width = passData.width;
-            fbufCreateInfo.height = passData.height;
+            fbufCreateInfo.pAttachments = &shadowMapData.passData.imageAttachment[i].view;
+            fbufCreateInfo.width = shadowMapData.passData.width;
+            fbufCreateInfo.height = shadowMapData.passData.height;
             fbufCreateInfo.layers = 1;
 
-            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &passData.frameBuffer[i]))
+            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMapData.passData.frameBuffer[i]))
             {
                 throw std::runtime_error("failed create frame buffer");
             }
         }
-
-        shadowMapData.passData = passData;
 
         for (int i = 0; i < lightCount; i++)
         {
             createUniformBuffer(1, &shadowMapData.mappedBuffers[i], sizeof(MatricesUBO));
         }
 
-        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
-        layoutBindings[0].binding = 0;
-        layoutBindings[0].descriptorCount = 1;
-        layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        layoutBindings[0].pImmutableSamplers = nullptr;
-        layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        layoutBindings[1].binding = 1;
-        layoutBindings[1].descriptorCount = 1;
-        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        layoutBindings[1].pImmutableSamplers = nullptr;
-        layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding layoutBinding;
+        layoutBinding.binding = 0;
+        layoutBinding.descriptorCount = 1;
+        layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBinding.pImmutableSamplers = nullptr;
+        layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = layoutBindings.data();
+        layoutInfo.pBindings = &layoutBinding;
 
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMapData.passData.layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
@@ -3041,16 +3032,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(MatricesUBO);
 
-            std::vector<VkWriteDescriptorSet> descriptorWrite(2);
-            descriptorWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite[0].dstSet = shadowMapData.passData.descriptorSets[i];
-            descriptorWrite[0].dstBinding = 0;
-            descriptorWrite[0].dstArrayElement = 0;
-            descriptorWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrite[0].descriptorCount = 1;
-            descriptorWrite[0].pBufferInfo = &bufferInfo;
+            VkWriteDescriptorSet descriptorWrite{};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = shadowMapData.passData.descriptorSets[i];
+            descriptorWrite.dstBinding = 0;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pBufferInfo = &bufferInfo;
 
-            vkUpdateDescriptorSets(device, 1, descriptorWrite.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(1), &descriptorWrite, 0, nullptr);
         }
 
         createShadowMapPipeline("shaders/shadowMapping.vert.spv"
