@@ -61,6 +61,20 @@ struct ModelDescriptor
     VkPipeline texturePipeline;
     VkPipelineLayout coliderPipelineLayout;
     VkPipeline coliderPipeline;
+
+    void destroy(VkDevice& device)
+    {
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+        vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, lightLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, shadowLayout, nullptr);
+
+        vkDestroyPipelineLayout(device, texturePipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, coliderPipelineLayout, nullptr);
+
+        vkDestroyPipeline(device, texturePipeline, nullptr);
+        vkDestroyPipeline(device, coliderPipeline, nullptr);
+    }
 };
 
 struct PointLightUBO
@@ -79,6 +93,7 @@ struct DirectionalLightUBO
 
 struct ShadowMapUBO
 {
+    alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 };
@@ -184,7 +199,7 @@ struct OffScreenPass {
 struct ShadowMapData
 {
     OffScreenPass passData;
-    std::vector<MatricesUBO> matUBOs;
+    std::vector<ShadowMapUBO> matUBOs;
     std::vector<MappedBuffer> mappedBuffers;
 
     std::vector<VkDescriptorSet> descriptorSets;

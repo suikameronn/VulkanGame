@@ -39,12 +39,6 @@ struct DescriptorInfo
 {
 	VkPipelineLayout pLayout;
 	VkPipeline pipeline;
-
-	void destroy(VkDevice& device)
-	{
-		vkDestroyPipeline(device, pipeline, nullptr);
-		vkDestroyPipelineLayout(device, pLayout, nullptr);
-	}
 };
 
 struct MappedBuffer

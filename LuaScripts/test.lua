@@ -40,7 +40,7 @@ glueBindObject(player,pointLight3)
 
 local directionalLight = glueCreateDirectionalLight()
 glueSetLightColor(directionalLight,0.1,0.1,0.1)
-glueSetLightDirection(directionalLight,1.0,-1.0,1.0)
-glueBindObject(player,directionalLight)
+glueSetLightDirection(directionalLight,100.0,-100.0,100.0)
+--glueBindObject(player,directionalLight)
 
 print("AAA")

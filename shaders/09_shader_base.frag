@@ -122,7 +122,7 @@ float shadowCalc(vec4 shadowCoord, vec2 off)
 		float dist = texture( shadowMap, shadowCoord.st + off ).r;
 		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
 		{
-			shadow = 0.0;
+			shadow = 0.1;
 		}
 	}
 	return shadow;
@@ -251,15 +251,13 @@ void main() {
 		vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor);
 		vec3 specularReflect = F * G * D / (4.0 * NdotL * NdotV);
 		// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
-		vec3 color = NdotL * (pointLight.color[i].rgb) * (diffuseReflect + specularReflect);
+		vec3 color = NdotL * (directionalLight.color[i].rgb) * (diffuseReflect + specularReflect);
 		outColor += vec4(color,0.0f);
 	}
-
-	outColor.a = baseColor.a;
-
-	float shadow = shadowCalc(inShadowCoords,vec2(0.0));
+	
+	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
 
 	outColor *= shadow;
-
+	outColor.a = baseColor.a;
 	//outColor = vec4(color,baseColor.a);
 }

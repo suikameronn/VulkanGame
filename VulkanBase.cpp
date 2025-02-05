@@ -71,8 +71,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         cleanupSwapChain();
 
         emptyImage.destroy(device);
-
         shadowMapData.destroy(device);
+        modelDescriptor.destroy(device);
 
         Storage* storage = Storage::GetInstance();
 
@@ -723,16 +723,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         bindingDescription.stride = sizeof(Vertex);
 
-        VkVertexInputAttributeDescription attributeDescription{};
-        attributeDescription.binding = 0;
-        attributeDescription.location = 0;
-        attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription.offset = offsetof(Vertex, pos);
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3);
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SINT;
+        attributeDescriptions[1].offset = offsetof(Vertex, boneID1);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, weight1);
 
         vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(1);
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.pVertexAttributeDescriptions = &attributeDescription;
+        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -807,11 +817,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         depthStencil.front = {};
         depthStencil.back = {};
 
-        std::vector<VkDescriptorSetLayout> layouts = { layout };
+        std::vector<VkDescriptorSetLayout> layouts(2);
+        layouts[0] = layout;
+        layouts[1] = modelDescriptor.layout;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = layouts.size();
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
         pipelineLayoutInfo.pSetLayouts = layouts.data();
         pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
@@ -1629,12 +1641,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < pointLights.size(); i++)
         {
-            shadowMapData.matUBOs[i].model = glm::mat4(1.0f);
-            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->direction, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            shadowMapData.matUBOs[i].model = glm::translate(glm::mat4(1.0f), -directionalLights[i]->direction);
+            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->direction * glm::vec3(1.0f,-1.0f,1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             shadowMapData.matUBOs[i].proj = camera->perspectiveMat;
-            shadowMapData.matUBOs[i].worldCameraPos = glm::vec4(camera->getPosition(),1.0f);
 
-            memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(MatricesUBO));
+            memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(ShadowMapUBO));
         }
 
         /*
@@ -1661,13 +1672,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         ubo.lightCount = storage->getLightCount();
 
+        std::vector<std::shared_ptr<DirectionalLight>> dLights = storage->getDirectionalLights();
         std::vector<std::shared_ptr<PointLight>> pLights = storage->getPointLights();
-        for (int i = 0;i < pLights.size();i++)
+        for (int i = 0; i < pLights.size(); i++)
         {
             ubo.lightMVP[i] = camera->perspectiveMat
-                * glm::lookAt(pLights[i]->getPosition(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * pLights[i]->getTransformMatrix();
+                * glm::lookAt(dLights[0]->direction * glm::vec3(1.0f,-1.0f,1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
         }
-        std::vector<std::shared_ptr<DirectionalLight>> dLights = storage->getDirectionalLights();
+
         for (int i = 0; i < pLights.size(); i++)
         {
             //ubo.lightMVP[i + pLights.size()] = camera->perspectiveMat
@@ -2101,17 +2113,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             {
                 std::shared_ptr<Material> material = model->getGltfModel()->materials[mesh->primitives[i].materialIndex];
 
-                std::vector<VkDescriptorSet> descriptorSets = 
+                std::vector<VkDescriptorSet> descriptorSets =
                 {
                     model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
                     material->descriptorSet,
                     storage->getPointLightDescriptorSet(),
                     storage->getDirectionalLightDescriptorSet()
                 };
-                for (int i = 0; i < shadowMapData.descriptorSets.size(); i++)
-                {
-                    descriptorSets.push_back(shadowMapData.descriptorSets[i]);
-                }
+                descriptorSets.push_back(shadowMapData.descriptorSets[0]);
+
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
@@ -2160,10 +2170,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
+            std::vector<VkDescriptorSet> descriptorSets(2);
+            descriptorSets[0] = pass.descriptorSets[0];
+
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
+                descriptorSets[1] = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pass.pipelineLayout, 0, 1, &pass.descriptorSets[0], 0, nullptr);
+                    pass.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
                 vkCmdPushConstants(commandBuffer, pass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
@@ -2184,7 +2199,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         renderPassInfo.renderPass = shadowMapData.passData.renderPass;
         renderPassInfo.framebuffer = shadowMapData.passData.frameBuffer[0];
         renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.renderArea.extent.width = shadowMapData.passData.width;
+        renderPassInfo.renderArea.extent.height = shadowMapData.passData.height;
 
         VkClearValue clearValue{};
         clearValue.depthStencil = { 1.0f,0 };
@@ -2193,7 +2209,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
+        vkCmdSetDepthBias(commandBuffer, 1.75f, 0.0f, 5.75f);
 
         Storage* storage = Storage::GetInstance();
         for (auto& model : storage->getModels())
@@ -2904,7 +2920,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             createShaderMaterialUBO(material);
             /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
             /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-            //createDescriptorSetLayout(material);
 
             /*ディスクリプタ用のメモリを空ける*/
             allocateDescriptorSet(material);//マテリアルが複数ある場合エラー

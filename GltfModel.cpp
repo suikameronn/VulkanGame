@@ -15,11 +15,6 @@ void GltfModel::deleteNodes(GltfNode* node,VkDevice& device)
 		deleteNodes(node->children[i],device);
 	}
 
-	if (node->mesh)
-	{
-		node->mesh->descriptorInfo.destroy(device);
-	}
-
 	delete node;
 }
 

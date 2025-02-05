@@ -5,6 +5,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec4 camPos;
+    int lightCount;
     mat4[20] lightMVP;
 } matricesUBO;
 
@@ -58,11 +59,21 @@ void main() {
 
         locPos = matricesUBO.model * PushConstants.modelMatrix * skinMat * vec4(inPosition,1.0);
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix * skinMat))) * inNormal);
+
+        outShadowCoords = matricesUBO.lightMVP[0] * locPos;
+        outShadowCoords.y = -outShadowCoords.y;
+        outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
+        outShadowCoords = biasMat * outShadowCoords;
     }
     else
     {
         locPos = matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix))) * inNormal);
+
+        outShadowCoords = matricesUBO.lightMVP[0] * locPos;
+        outShadowCoords.y = -outShadowCoords.y;
+        outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
+        outShadowCoords = biasMat * outShadowCoords;
     }
 
     outWorldPos = locPos.xyz / locPos.w;
@@ -75,6 +86,4 @@ void main() {
     gl_Position = matricesUBO.proj * matricesUBO.view * locPos;
     gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
-
-    outShadowCoords = ( biasMat * matricesUBO.lightMVP[0] * matricesUBO.model ) * vec4(inPosition, 1.0);
 }
