@@ -428,6 +428,8 @@ private:
     void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     void prepareShadowMapping(int lightCount);
 
+    void calcOrthoData(glm::vec3 lightVec,float& left, float& top, float& right, float& bottom,glm::vec3 min,glm::vec3 max);
+
 public:
 
     static VulkanBase* GetInstance()

@@ -139,3 +139,41 @@ MappedBuffer& Storage::getDirectionalLightsBuffer()
 {
 	return directionalLightsBuffer;
 }
+
+void Storage::calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax)
+{
+	boundingMin = glm::vec3(FLT_MAX);
+	boundingMax = glm::vec3(-FLT_MAX);
+
+	for (auto model : storage->getModels())
+	{
+		glm::vec3 minimum = (model->scale * model->getGltfModel()->initPoseMin) + model->getPosition();
+		glm::vec3 max = (model->scale * model->getGltfModel()->initPoseMax) + model->getPosition();
+
+		if (boundingMin.x > minimum.x)
+		{
+			boundingMin.x = minimum.x;
+		}
+		if (boundingMin.y > minimum.y)
+		{
+			boundingMin.y = minimum.y;
+		}
+		if (boundingMin.z > minimum.z)
+		{
+			boundingMin.z = minimum.z;
+		}
+
+		if (boundingMax.x < max.x)
+		{
+			boundingMax.x = max.x;
+		}
+		if (boundingMax.y < max.y)
+		{
+			boundingMax.y = max.y;
+		}
+		if (boundingMax.z < max.z)
+		{
+			boundingMax.z = max.z;
+		}
+	}
+}

@@ -139,3 +139,9 @@ float Camera::getTheta()
 {
 	return theta;
 }
+
+void Camera::getzNearFar(float& near, float& far)
+{
+	near = zNear;
+	far = zFar;
+}

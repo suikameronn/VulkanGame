@@ -124,6 +124,8 @@ public:
 	void accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
 		std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr2);
 
+	void calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax);
+
 	bool containModel(GLTFOBJECT obj);
 	bool containAnimation(GLTFOBJECT obj);
 	bool containImageData(std::string path);

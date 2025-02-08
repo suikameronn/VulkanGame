@@ -18,13 +18,13 @@ int main() {
 
 #endif
 
-    glfwInit();
+    glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);//ウィンドウの作成
 
 
-    GameManager* gameManager = GameManager::GetInstance();
-    gameManager->initGame();
+    GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
+    gameManager->initGame();//ゲームループの開始
 
     return EXIT_SUCCESS;
 }

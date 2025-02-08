@@ -26,8 +26,6 @@ private:
 	static Scene* instance;
 
 	void initFrameSetting();
-
-	void prepareRenderData();
 	void setModels();
 	void setLights();
 

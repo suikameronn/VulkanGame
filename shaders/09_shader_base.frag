@@ -117,7 +117,9 @@ vec3 diffuse(vec3 diffuseColor)
 float shadowCalc(vec4 shadowCoord, vec2 off)
 {
 	float shadow = 1.0;
-	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) 
+	vec2 clampST = clamp(shadowCoord.st,vec2(0.0),vec2(1.0));
+
+	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 && clampST == shadowCoord.st) 
 	{
 		float dist = texture( shadowMap, shadowCoord.st + off ).r;
 		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 

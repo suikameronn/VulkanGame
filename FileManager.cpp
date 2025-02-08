@@ -69,8 +69,8 @@ std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)
 
     allVertNum = 0;
     pivot = glm::vec3(0.0);
-    minPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
-    maxPos = glm::vec3(-1000.0f, -1000.0f, -1000.0f);
+    minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     GltfModel* model = loadGLTFModel(scene, gltfModel);
     model->initPoseMin = minPos;
