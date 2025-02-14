@@ -472,10 +472,10 @@ void Colider::addIfUniqueEdge(
 	size_t a,
 	size_t b)
 {
-	auto reverse = std::find(                       //      0--<--3
-		edges.begin(),                              //     / \ B /   A: 2-0
-		edges.end(),                                //    / A \ /    B: 0-2
-		std::make_pair(faces[b], faces[a]) //   1-->--2
+	auto reverse = std::find(
+		edges.begin(),
+		edges.end(),
+		std::make_pair(faces[b], faces[a])
 	);
 
 	if (reverse != edges.end()) {

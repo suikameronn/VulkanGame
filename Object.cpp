@@ -1,6 +1,6 @@
 #include"Object.h"
 
-Object::Object()
+Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 {
 	objNum = ObjNum::OBJECT;
 
@@ -25,7 +25,7 @@ Object::Object()
 	length = 1.0f;
 }
 
-bool Object::containTag(Tag tag)
+bool Object::containTag(Tag tag)//オブジェクトがそのタグを持っているかどうか
 {
 	for (auto itr = tags.begin(); itr != tags.end(); itr++)
 	{
@@ -38,7 +38,7 @@ bool Object::containTag(Tag tag)
 	return false;
 }
 
-void Object::setLuaScript(std::string path)
+void Object::setLuaScript(std::string path)//luaスクリプトを設定
 {
 	luaPath = path;
 	lua = luaL_newstate();
@@ -50,7 +50,7 @@ void Object::registerGlueFunctions()
 
 }
 
-void Object::bindObject(Object* obj)
+void Object::bindObject(Object* obj)//オブジェクトに親子関係を設定する
 {
 	parentPos = obj->getPosition();
 	childObjects.push_back(obj);
@@ -58,14 +58,14 @@ void Object::bindObject(Object* obj)
 	sendPosToChildren(position);
 }
 
-void Object::bindCamera(std::weak_ptr<Camera> camera)
+void Object::bindCamera(std::weak_ptr<Camera> camera)//カメラがそのオブジェクトを追従させる
 {
 	cameraObj = camera;
 
 	sendPosToChildren(position);
 }
 
-glm::vec3 Object::inputMove()
+glm::vec3 Object::inputMove()//キー入力から移動させる
 {
 	glm::vec3 moveDirec;
 	auto controller = Controller::GetInstance();
@@ -100,12 +100,12 @@ glm::vec3 Object::inputMove()
 	return moveDirec;
 }
 
-void Object::Update()
+void Object::Update()//更新処理
 {
 	customUpdate();
 }
 
-void Object::setPosition(glm::vec3 pos)
+void Object::setPosition(glm::vec3 pos)//座標の設定
 {
 	if (position == pos)
 	{
@@ -114,7 +114,7 @@ void Object::setPosition(glm::vec3 pos)
 
 	position = pos;
 
-	sendPosToChildren(position);
+	sendPosToChildren(position);//子オブジェクトがいる場合、それも更新する
 
 	uniformBufferChange = true;
 }
@@ -129,7 +129,7 @@ glm::mat4 Object::getTransformMatrix()
 	return transformMatrix;
 }
 
-void Object::sendPosToChildren(glm::vec3 pos)
+void Object::sendPosToChildren(glm::vec3 pos)//子オブジェクトを追従させる
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
@@ -145,14 +145,14 @@ void Object::sendPosToChildren(glm::vec3 pos)
 	}
 }
 
-void Object::setParentPos(glm::vec3 pos)
+void Object::setParentPos(glm::vec3 pos)//親オブジェクトを追従する
 {
 	position += pos - parentPos;
 
 	parentPos = pos;
 }
 
-void Object::initFrameSetting()
+void Object::initFrameSetting()//初回フレームの設定を行う
 {
 	if (lua)
 	{

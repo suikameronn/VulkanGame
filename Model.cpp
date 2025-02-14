@@ -2,7 +2,7 @@
 #include"Scene.h"
 #include"VulkanBase.h"
 
-Model::Model()
+Model::Model()//3Dモデルを持つクラス
 {
 	scene = Scene::GetInstance();
 
@@ -74,11 +74,11 @@ Model::Model(std::string luaScriptPath)
 	currentPlayAnimationName = "none";
 }
 
-void Model::cleanupVulkan()
+void Model::cleanupVulkan()//Vulkanの変数の後処理
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();
 
-	for (size_t i = 0; i < pointBuffers.size(); i++)
+	for (size_t i = 0; i < pointBuffers.size(); i++)//頂点用バッファの解放
 	{
 		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
 		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
@@ -87,10 +87,12 @@ void Model::cleanupVulkan()
 		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
 	}
 
+	//uniform bufferの解放
 	vkDestroyBuffer(device, modelViewMappedBuffer.uniformBuffer, nullptr);
 	vkFreeMemory(device, modelViewMappedBuffer.uniformBufferMemory, nullptr);
 	modelViewMappedBuffer.uniformBufferMapped = nullptr;
 
+	//アニメーションのユニフォームバッファの解放
 	for (int i = 0; i < animationMappedBuffers.size(); i++)
 	{
 		vkDestroyBuffer(device, animationMappedBuffers[i].uniformBuffer, nullptr);
@@ -100,7 +102,7 @@ void Model::cleanupVulkan()
 
 	if (colider)
 	{
-		colider->cleanupVulkan();
+		colider->cleanupVulkan();//コライダーの変数の後処理
 	}
 }
 
@@ -109,7 +111,7 @@ MappedBuffer* Model::getAnimationMappedBufferData()
 	return animationMappedBuffers.data();
 }
 
-void Model::setDefaultAnimationName(std::string name)
+void Model::setDefaultAnimationName(std::string name)//初期状態で再生するアニメーションを設定する
 {
 #ifdef DEBUG
 	bool animationExist = false;
@@ -131,7 +133,7 @@ void Model::setDefaultAnimationName(std::string name)
 	currentPlayAnimationName = name;
 }
 
-void Model::setgltfModel(std::shared_ptr<GltfModel> model)
+void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 {
 	gltfModel = model;
 
@@ -143,6 +145,7 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)
 		i++;
 	}
 
+	//バッファを用意する
 	descSetDatas.resize(model->primitiveCount);
 	jointMatrices.resize(model->jointNum);
 	pointBuffers.resize(model->meshCount);
@@ -168,7 +171,7 @@ void Model::switchPlayAnimation(std::string nextAnimation)
 	}
 }
 
-void Model::playAnimation()
+void Model::playAnimation()//アニメーション用の行列を計算する
 {
 	if (currentPlayAnimationName != "none")
 	{
@@ -205,7 +208,7 @@ void Model::setPosition(glm::vec3 pos)
 	uniformBufferChange = true;
 }
 
-void Model::updateTransformMatrix()
+void Model::updateTransformMatrix()//座標変換行列を計算する
 {
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 
@@ -249,7 +252,7 @@ void Model::sendPosToChildren(glm::vec3 pos)
 
 void Model::Update()
 {
-	customUpdate();
+	customUpdate();//オブジェクト固有の更新処理
 
 	if (physicBase)
 	{
@@ -257,7 +260,7 @@ void Model::Update()
 		setPosition(getPosition() + physicBase->getVelocity());
 	}
 
-	playAnimation();
+	playAnimation();//アニメーションの再生
 }
 
 void Model::customUpdate()
@@ -265,7 +268,7 @@ void Model::customUpdate()
 
 }
 
-void Model::initFrameSetting()
+void Model::initFrameSetting()//初回フレームの処理
 {
 	if (lua)
 	{
@@ -286,6 +289,7 @@ void Model::initFrameSetting()
 	}
 }
 
+//ボックスコライダーと線分の衝突判定を行う
 std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength)
 {
 	for (int i = 1; i <= maxLength; i++)
@@ -300,6 +304,7 @@ std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLe
 	return nullptr;
 }
 
+//下のほうにあるオブジェクトが床かどうか調べる
 bool Model::isGround()
 {
 	std::shared_ptr<Model> model = rayCast(position + up * 0.1f, glm::vec3(0.0f, -1.0, 0.0f), 1.0f);

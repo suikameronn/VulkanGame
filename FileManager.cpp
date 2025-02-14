@@ -47,17 +47,17 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
     }
 }
 
-std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)
+std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dモデルを返す
 {
     Storage* storage = Storage::GetInstance();
-    if (storage->containModel(obj))
+    if (storage->containModel(obj))//すでに3Dモデルをファイルから読み取り済みなら
     {
-        return storage->getgltfModel(obj);
+        return storage->getgltfModel(obj);//ストレージクラスから渡す
     }
 
     void* ptr = nullptr;
     int size = 0;
-    loadgltfModel(getModelResource(obj),&ptr, size);
+    loadgltfModel(getModelResource(obj),&ptr, size);//ファイルを取得する
 
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
@@ -72,16 +72,16 @@ std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-    GltfModel* model = loadGLTFModel(scene, gltfModel);
+    GltfModel* model = loadGLTFModel(scene, gltfModel);//ファイルからgltfモデルのデータを読み取る
     model->initPoseMin = minPos;
     model->initPoseMax = maxPos;
 
-    storage->addModel(obj, model);
+    storage->addModel(obj, model);//ストレージにモデルを加える
 
     return storage->getgltfModel(obj);
 }
 
-void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel)
+void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel)//画像データを読み取り、テクスチャデータを作成する
 {
     for (tinygltf::Texture tex : gltfModel.textures)
     {
@@ -100,7 +100,7 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
     }
 }
 
-GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)
+GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
 {
     float scale = 1.0f;
     GltfNode* root = new GltfNode();
@@ -109,24 +109,24 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-    loadTextures(model, gltfModel);
-    loadMaterial(model, gltfModel);
+    loadTextures(model, gltfModel);//テクスチャの読み取り
+    loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
-    for (size_t i = 0; i < scene.nodes.size(); i++)
+    for (size_t i = 0; i < scene.nodes.size(); i++)//gltfのノードの読み取り
     {
         const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
         loadNode(nullptr, model->getRootNode(),model, gltfNode, scene.nodes[i], gltfModel, scale);
     }
 
-    loadSkin(model, gltfModel);
+    loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
     for (int i = 0; i < model->skins.size(); i++)
     {
-        setSkin(model->getRootNode(),model);
+        setSkin(model->getRootNode(), model);//スキンの設定
     }
 
     if (gltfModel.animations.size() > 0)
     {
-        loadAnimations(model, scene, gltfModel);
+        loadAnimations(model, scene, gltfModel);//アニメーションの取得
     }
 
     return model;
@@ -141,17 +141,17 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
     current->skinIndex = gltfNode.skin;
     current->matrix = glm::mat4(1.0f);
 
-    glm::vec3 translation = glm::vec3(0.0f);
+    glm::vec3 translation = glm::vec3(0.0f);//平行移動行列
     if (gltfNode.translation.size() == 3) {
         translation = glm::make_vec3(gltfNode.translation.data());
         current->translation = translation;
     }
-    glm::mat4 rotation = glm::mat4(1.0f);
+    glm::mat4 rotation = glm::mat4(1.0f);//回転行列
     if (gltfNode.rotation.size() == 4) {
         glm::quat q = glm::make_quat(gltfNode.rotation.data());
         current->rotation = glm::mat4(q);
     }
-    glm::vec3 scale = glm::vec3(1.0f);
+    glm::vec3 scale = glm::vec3(1.0f);//拡大行列
     if (gltfNode.scale.size() == 3) {
         scale = glm::make_vec3(gltfNode.scale.data());
         current->scale = scale;
@@ -171,7 +171,7 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
 
     if (gltfNode.mesh > -1)
     {
-        processMesh(gltfNode, gltfModel, current,model);
+        processMesh(gltfNode, gltfModel, current,model);//メッシュの読み取り
     }
 
     if (parent)
@@ -180,7 +180,7 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
     }
 }
 
-
+//メッシュの読み取り
 void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model)
 {
     const tinygltf::Mesh gltfMesh = gltfModel.meshes[gltfNode.mesh];
@@ -194,7 +194,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     {
         const tinygltf::Primitive glPrimitive = gltfMesh.primitives[i];
 
-        processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);
+        processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);//プリミティブの読み取り
 
         model->primitiveCount++;
     }
@@ -202,6 +202,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     currentNode->mesh = mesh;
 }
 
+//aabb用の頂点座標の最小と最大を計算
 void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
 {
     for (int i = 0; i < 3; i++)
@@ -221,6 +222,7 @@ void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
     }
 }
 
+//プリミティブの読み取り
 void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel,GltfModel* model)
 {
     const float* bufferPos = nullptr;
@@ -665,6 +667,7 @@ void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
     }
 }
 
+//画像の読み取り
 std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
 {
     std::string registerImageName = splitFileName(filePath);
