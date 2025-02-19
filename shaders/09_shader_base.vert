@@ -61,7 +61,6 @@ void main() {
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix * skinMat))) * inNormal);
 
         outShadowCoords = matricesUBO.lightMVP[0] * locPos;
-        outShadowCoords.y = -outShadowCoords.y;
         outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
         outShadowCoords = biasMat * outShadowCoords;
     }
@@ -71,7 +70,6 @@ void main() {
         outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix))) * inNormal);
 
         outShadowCoords = matricesUBO.lightMVP[0] * locPos;
-        outShadowCoords.y = -outShadowCoords.y;
         outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
         outShadowCoords = biasMat * outShadowCoords;
     }

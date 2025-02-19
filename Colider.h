@@ -118,7 +118,7 @@ public:
 	DescriptorInfo& getDescInfo();
 	DescSetData& getDescSetData() { return descSetData; }
 
-	virtual bool Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector);
+	virtual bool Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector);
 	virtual bool Intersect(std::shared_ptr<Colider> oppColider);
 	virtual bool Intersect(glm::vec3 origin, glm::vec3 dir, float length);
 

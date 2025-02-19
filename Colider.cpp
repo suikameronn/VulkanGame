@@ -90,7 +90,7 @@ void Colider::reflectMovement(glm::mat4& transform)
 	}
 }
 
-bool Colider::Intersect(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionVector)
+bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector)
 {
 	bool collision = false;
 	
@@ -115,11 +115,14 @@ bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
 {
 	glm::vec3 endPoint = origin + dir * length;
 
-	if (endPoint.x >= transformedMin.x && endPoint.x <= transformedMax.x)
+	if (endPoint.x >= transformedMin.x && endPoint.x <= transformedMax.x
+		|| endPoint.x <= transformedMin.x && endPoint.x >= transformedMax.x)
 	{
-		if (endPoint.y >= transformedMin.y && endPoint.y <= transformedMax.y)
+		if (endPoint.y >= transformedMin.y && endPoint.y <= transformedMax.y
+			|| endPoint.y <= transformedMin.y && endPoint.y >= transformedMax.y)
 		{
-			if (endPoint.z >= transformedMin.z && endPoint.z <= transformedMax.z)
+			if (endPoint.z >= transformedMin.z && endPoint.z <= transformedMax.z
+				|| endPoint.z <= transformedMin.z && endPoint.z >= transformedMax.z)
 			{
 				return true;
 			}
@@ -212,9 +215,9 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthV
 
 	glm::vec3 dir = -support;
 
-	int count = 0;
+	int count = 50;
 
-	while (true)
+	while (count)
 	{
 		support = getSupportVector(oppColider, dir);
 
@@ -230,6 +233,8 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthV
 			EPA(oppColider,simplex, collisionDepthVec);
 			return true;
 		}
+
+		count--;
 	}
 
 	return false;
@@ -395,7 +400,8 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 
 	glm::vec3 minNormal;
 	float minDistance = FLT_MAX;
-	while (minDistance == FLT_MAX)
+	int limit = 50;
+	while (minDistance == FLT_MAX && limit > 0)
 	{
 		minNormal = normals[minFace];
 		minDistance = normals[minFace].w;
@@ -461,9 +467,11 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 			normals.insert(normals.end(), newNormals.begin(), newNormals.end());
 
 		}
+
+		limit--;
 	}
 
-	collisionDepthVec = minNormal * (minDistance);
+	collisionDepthVec = minNormal * (minDistance + 0.3f);//—V‚Ñ‚ð‚Æ‚Á‚Ä‚¨‚­
 }
 
 void Colider::addIfUniqueEdge(

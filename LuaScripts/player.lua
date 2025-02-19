@@ -1,2 +1,2 @@
-setJumpHeight(13.0)
+setJumpHeight(9.0)
 setSpeed(3.0)

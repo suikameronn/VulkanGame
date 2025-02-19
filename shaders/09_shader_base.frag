@@ -51,10 +51,6 @@ layout(set = 4,binding = 0) uniform sampler2D shadowMap;
 
 layout(location = 0) out vec4 outColor;
 
-vec3 Lpos = vec3(0.739942,-0.642788,0.198267);
-const vec3 ambient = vec3(0.11, 0.11, 0.11);
-float shininess = 50.0;
-
 const float directF0 = 0.4;
 const float minimumRoughness = 0.04;
 
@@ -117,14 +113,17 @@ vec3 diffuse(vec3 diffuseColor)
 float shadowCalc(vec4 shadowCoord, vec2 off)
 {
 	float shadow = 1.0;
-	vec2 clampST = clamp(shadowCoord.st,vec2(0.0),vec2(1.0));
 
-	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 && clampST == shadowCoord.st) 
+	if(shadowCoord.s >= 0.0 && shadowCoord.s <= 1.0 
+	&& shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0)
 	{
-		float dist = texture( shadowMap, shadowCoord.st + off ).r;
-		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+		if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
 		{
-			shadow = 0.1;
+			float dist = texture( shadowMap, shadowCoord.st + off ).r;
+			if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+			{
+				shadow = 0.1;
+			}
 		}
 	}
 	return shadow;
@@ -261,5 +260,4 @@ void main() {
 
 	outColor *= shadow;
 	outColor.a = baseColor.a;
-	//outColor = vec4(color,baseColor.a);
 }

@@ -9,7 +9,8 @@ enum class ACTION
 enum class GLTFOBJECT
 {
 	gltfTEST = 0,
-	CUBE
+	ASPHALT,
+	LEATHER
 };
 
 enum COLIDER

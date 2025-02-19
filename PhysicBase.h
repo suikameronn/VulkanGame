@@ -32,6 +32,7 @@ public:
 	virtual void Update(bool isAccelerateReset = true);
 
 	void setZeroVelocity();
+	void cancelGravity();
 
 	virtual void setAcceleration(glm::vec3 acceleration);
 

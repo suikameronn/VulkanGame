@@ -50,6 +50,9 @@ public:
 	~Model() {};
 
 	float gravity;
+	void setZeroVelocity();
+	void cancelGravity();
+
 	float slippery;
 
 	glm::vec3 scale;
@@ -62,7 +65,7 @@ public:
 	GltfNode* getRootNode() { return gltfModel->getRootNode(); }
 	std::shared_ptr<GltfModel> getGltfModel() { return gltfModel; }
 
-	void setMaterial(std::shared_ptr<Material> material) { this->material = material; }
+	void setBaseColor(glm::vec4 baseColor);
 
 	void switchPlayAnimation();
 	void switchPlayAnimation(std::string nextAnimation);

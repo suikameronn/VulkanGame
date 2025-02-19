@@ -74,22 +74,11 @@ glm::vec3 Player::inputMove()
 
 	if (isGround())
 	{
-		gravity = 1.0f;
 		physicBase->setZeroVelocity();
 
 		if (controller->getKey(GLFW_KEY_SPACE))
 		{
-			jumpHeight += 1.0f;
-		} 
-		
-
-		if (jumpHeight > 0.0f)
-		{
-			if ((!controller->getKey(GLFW_KEY_SPACE)) || jumpHeight >= maxJumpHeight)
-			{
-				physicBase->addVelocity(up * maxJumpHeight);
-				jumpHeight = 0.0f;
-			}
+			physicBase->addVelocity(up * maxJumpHeight);
 		}
 	}
 

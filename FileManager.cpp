@@ -17,8 +17,10 @@ int FileManager::getModelResource(GLTFOBJECT obj)
     {
     case GLTFOBJECT::gltfTEST:
         return IDR_MODEL1;
-    case GLTFOBJECT::CUBE:
+    case GLTFOBJECT::ASPHALT:
         return IDR_MODEL2;
+    case GLTFOBJECT::LEATHER:
+        return IDR_MODEL3;
     }
 
     return -1;

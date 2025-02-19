@@ -1,14 +1,15 @@
 
 local model = glueCreateModel()
-glueSetGltfModel(model,CUBE)
+glueSetGltfModel(model,ASPHALT)
 glueSetPos(model,0.0,0.0,0.0)
-glueSetScale(model,142.0,1.0,140.0)
+glueSetScale(model,142.0,5.0,140.0)
+glueSetRotate(model,0.0,0.0,0.0)
 glueSetColider(model,false)
 
 local model2 = glueCreateModel()
-glueSetGltfModel(model2,CUBE)
-glueSetPos(model2,40.0,39.0,0.0)
-glueSetScale(model2,1.0,40.0,40.0)
+glueSetGltfModel(model2,LEATHER)
+glueSetPos(model2,-230.0,0.0,0.0)
+glueSetScale(model2,50.0,10.0,50.0)
 glueSetColider(model2,false)
 
 local player = glueCreatePlayer()
@@ -22,13 +23,12 @@ glueSetLuaPath(player,"LuaScripts/player.lua")
 
 local pointLight = glueCreatePointLight()
 glueSetLightColor(pointLight,1.0,1.0,1.0)
-glueSetPos(pointLight,0.1,5.0,0.1)
+glueSetPos(pointLight,1.1,5.0,1.1)
 glueBindObject(player,pointLight)
 
---[[
 local pointLight2 = glueCreatePointLight()
 glueSetLightColor(pointLight2,1.0,1.0,1.0)
-glueSetPos(pointLight2,0.1,1.1,0.1)
+glueSetPos(pointLight2,1.1,1.1,3.1)
 glueBindObject(player,pointLight2)
 
 local pointLight3 = glueCreatePointLight()
@@ -36,11 +36,10 @@ glueSetLightColor(pointLight3,1.0,1.0,1.0)
 glueSetPos(pointLight3,-1.0,3.0,-1.0)
 glueBindObject(player,pointLight3)
 
-]]
-
 local directionalLight = glueCreateDirectionalLight()
-glueSetLightColor(directionalLight,0.1,0.1,0.1)
-glueSetLightDirection(directionalLight,100.0,-100.0,100.0)
---glueBindObject(player,directionalLight)
+glueSetLightColor(directionalLight,1.0,1.0,1.0)
+glueSetLightDirection(directionalLight,-200.0,-200.0,-200.0)
+glueBindObject(player,directionalLight)
+glueSetPos(directionalLight,200,200,200)
 
 print("AAA")

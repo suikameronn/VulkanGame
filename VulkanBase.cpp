@@ -1593,7 +1593,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         
         for (int i = 0; i < loopLimit; i++)
         {
-            ubo.dir[i] = glm::vec4(directionalLights[i]->direction,0.0f);
+            ubo.dir[i] = glm::vec4(directionalLights[i]->direction ,0.0f);
             ubo.color[i] = glm::vec4(directionalLights[i]->color,0.0f);
         }
 
@@ -1635,72 +1635,23 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::calcOrthoData(glm::vec3 lightVec,float& left, float& top, float& right, float& bottom,glm::vec3 min,glm::vec3 max)
-    {
-        std::array<glm::vec3,8> boundingVertices;
-        boundingVertices[0] = glm::vec3(min.x, min.y, min.z);
-        boundingVertices[1] = glm::vec3(max.x, min.y, min.z);
-        boundingVertices[2] = glm::vec3(max.x, min.y, max.z);
-        boundingVertices[3] = glm::vec3(min.x, min.y, max.z);
-        boundingVertices[4] = glm::vec3(min.x, max.y, min.z);
-        boundingVertices[5] = glm::vec3(max.x, max.y, min.z);
-        boundingVertices[6] = glm::vec3(max.x, max.y, max.z);
-        boundingVertices[7] = glm::vec3(min.x, max.y, max.z);
-
-        std::array<glm::vec3, 6> normals;
-        std::array<int, 18> normalIndices = { 0,1,2,0,4,7,2,5,6,0,4,5,3,2,6,4,7,6 };
-        std::array<glm::vec3, 6> faceVertex;
-        //下、左、右、手前、後ろ、上
-
-        for (int i = 0; i < 18; i += 3)
-        {
-            normals[i / 3] = glm::cross(boundingVertices[normalIndices[i + 1]] - boundingVertices[normalIndices[i]], boundingVertices[normalIndices[i + 2]] - boundingVertices[normalIndices[i]]);
-            faceVertex[i / 3] = (boundingVertices[normalIndices[i]] + boundingVertices[normalIndices[i + 1]] + boundingVertices[normalIndices[i + 2]]) / 3;
-        }
-
-        std::array<float,6> scholar;
-        for (int i = 0; i < 6; i++)
-        {
-            scholar[i] = glm::dot(faceVertex[i] - glm::vec3(70.0f,100.0f,100.0f), normals[i]) / glm::dot(lightVec, normals[i]);
-        }
-
-        top = (faceVertex[5] + (lightVec * scholar[5])).y;
-        bottom = (faceVertex[0] + (lightVec * scholar[0])).y;
-        right = (faceVertex[2] + (lightVec * scholar[2])).x;
-        left = (faceVertex[1] + (lightVec * scholar[1])).x;
-    }
-
     void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights)
     {
         Storage* storage = Storage::GetInstance();
 
         std::shared_ptr<Camera> camera = storage->accessCamera();
-        float zNear, zFar;
-        camera->getzNearFar(zNear, zFar);
 
         glm::vec3 min, max;
         storage->calcSceneBoundingBox(min, max);
         float left, top, right, bottom;
 
-        for (int i = 0; i < pointLights.size(); i++)
+        for (int i = 0; i < directionalLights.size(); i++)
         {
-            shadowMapData.matUBOs[i].model = glm::translate(glm::mat4(1.0f), -directionalLights[i]->direction);
-            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->direction * glm::vec3(1.0f,-1.0f,1.0f), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f));
-
-            calcOrthoData(directionalLights[i]->direction * glm::vec3(1.0f, -1.0f, 1.0f), left, top, right, bottom, min, max);
-            shadowMapData.matUBOs[i].proj = glm::ortho(left, right,bottom,top, zNear, zFar);
+            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->getPosition(), directionalLights[i]->getPosition() + directionalLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+            shadowMapData.matUBOs[i].proj = shadowMapData.proj;
 
             memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(ShadowMapUBO));
         }
-
-        /*
-        for (int i = 0; i < directionalLights.size(); i++)
-        {
-            shadowMapData.matUBOs[i + pointLights.size()].model = glm::mat4(1.0f);
-            shadowMapData.matUBOs[i + pointLights.size()].view = glm::lookAt(directionalLights[i]->direction, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            shadowMapData.matUBOs[i + pointLights.size()].proj = camera->perspectiveMat;
-        }
-        */
     }
 
     void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model)
@@ -1723,17 +1674,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         std::vector<std::shared_ptr<DirectionalLight>> dLights = storage->getDirectionalLights();
         std::vector<std::shared_ptr<PointLight>> pLights = storage->getPointLights();
-        for (int i = 0; i < pLights.size(); i++)
+        for (int i = 0; i < dLights.size(); i++)
         {
             float zFar, zNear;
             camera->getzNearFar(zNear, zFar);
 
-
-            calcOrthoData(dLights[i]->direction * glm::vec3(1.0f, -1.0f, 1.0f), left, top, right, bottom, min, max);
-            glm::mat4 projection = glm::ortho(left, right, bottom, top, zNear, zFar);
-
-            ubo.lightMVP[i] = projection
-                * glm::lookAt(dLights[0]->direction * glm::vec3(1.0f,-1.0f,1.0f), camera->getViewTarget(), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);
+            ubo.lightMVP[i] = shadowMapData.proj
+                * glm::lookAt(dLights[i]->getPosition(), dLights[i]->getPosition() + dLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
         for (int i = 0; i < pLights.size(); i++)
@@ -2217,7 +2164,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             VkRect2D scissor{};
             scissor.offset = { 0, 0 };
-            scissor.extent = swapChainExtent;
+            scissor.extent = { (uint32_t)pass.width,(uint32_t)pass.height};
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
             VkDeviceSize offsets[] = { 0 };
@@ -2990,9 +2937,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         shadowMapData.setFrameCount(lightCount);
         shadowMapData.descriptorSets.resize(1);
+        shadowMapData.shadowMapScale = 4;
 
-        shadowMapData.passData.width = swapChainExtent.width;
-        shadowMapData.passData.height = swapChainExtent.height;
+        shadowMapData.proj = glm::ortho(shadowMapLeft, shadowMapRight, shadowMapBottom, shadowMapTop, shadowMapNear, shadowMapFar);
+
+        shadowMapData.passData.width = swapChainExtent.width * shadowMapData.shadowMapScale;
+        shadowMapData.passData.height = swapChainExtent.height * shadowMapData.shadowMapScale;
 
         for (auto& attachment : shadowMapData.passData.imageAttachment)
         {
@@ -3141,7 +3091,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         setPointLights(pointLights);
         setDirectionalLights(dirLights);
 
-        prepareShadowMapping(pointLights.size()/* + dirLights.size()*/);
+        prepareShadowMapping(dirLights.size());
     }
 
     void VulkanBase::setModelData(std::shared_ptr<Model> model)

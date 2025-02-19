@@ -47,7 +47,6 @@ void main()
     {
         gl_Position = ubo.proj * ubo.view * matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
     }
-
-    gl_Position.y = -gl_Position.y;
+    
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }

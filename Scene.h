@@ -25,6 +25,8 @@ private:
 
 	static Scene* instance;
 
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
 	void initFrameSetting();
 	void setModels();
 	void setLights();
@@ -38,7 +40,7 @@ private:
 	void registerOBJECT();
 	void registerFunctions();
 
-	glm::vec3 slopeCollision(glm::vec3 collisionVector);
+	bool groundCollision(glm::vec3 collisionVector);
 
 	Scene();
 	~Scene();
@@ -263,7 +265,7 @@ static int glueSetScale(lua_State* lua)
 	return 0;
 }
 
-static int glueSetDiffuse(lua_State* lua)
+static int glueSetBaseColor(lua_State* lua)
 {
 	Object* obj = static_cast<Object*>(lua_touserdata(lua, -5));
 
@@ -275,8 +277,8 @@ static int glueSetDiffuse(lua_State* lua)
 		float g = static_cast<float>(lua_tonumber(lua, -3));
 		float b = static_cast<float>(lua_tonumber(lua, -2));
 		float a = static_cast<float>(lua_tonumber(lua, -1));
-		glm::vec4 diffuse = glm::vec4(r, g, b, a);
-		//model->setDiffuse(diffuse);
+		glm::vec4 baseColor = glm::vec4(r, g, b, a);
+		model->setBaseColor(baseColor);
 	}
 
 	return 0;

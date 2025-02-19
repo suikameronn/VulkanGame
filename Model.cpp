@@ -208,6 +208,11 @@ void Model::setPosition(glm::vec3 pos)
 	uniformBufferChange = true;
 }
 
+void Model::setBaseColor(glm::vec4 baseColor)
+{
+
+}
+
 void Model::updateTransformMatrix()//À•W•ÏŠ·s—ñ‚ðŒvŽZ‚·‚é
 {
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
@@ -317,4 +322,20 @@ bool Model::isGround()
 	}
 
 	return false;
+}
+
+void Model::setZeroVelocity()
+{
+	if (physicBase)
+	{
+		physicBase->setZeroVelocity();
+	}
+}
+
+void Model::cancelGravity()
+{
+	if (physicBase)
+	{
+		physicBase->cancelGravity();
+	}
 }

@@ -2,7 +2,7 @@
 
 PhysicBase::PhysicBase()
 {
-	gravity = glm::vec3(0.0, -1.0f, 0.0f);
+	gravity = glm::vec3(0.0, -0.3f, 0.0f);
 
 	deltaTime = 0.0f;
 
@@ -46,4 +46,9 @@ void PhysicBase::addVelocity(glm::vec3 addVelocity)
 glm::vec3 PhysicBase::getVelocity()
 {
 	return velocity;
+}
+
+void PhysicBase::cancelGravity()
+{
+	addVelocity(-gravity);
 }

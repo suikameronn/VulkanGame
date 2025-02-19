@@ -51,8 +51,11 @@ void Scene::registerOBJECT()//enumをスクリプトと共有する
 	lua_pushnumber(lua, (int)GLTFOBJECT::gltfTEST);
 	lua_setglobal(lua, "gltfTEST");//キャラクター
 
-	lua_pushnumber(lua, (int)GLTFOBJECT::CUBE);
-	lua_setglobal(lua, "CUBE");//立方体
+	lua_pushnumber(lua, (int)GLTFOBJECT::ASPHALT);
+	lua_setglobal(lua, "ASPHALT");//アスファルト
+
+	lua_pushnumber(lua, (int)GLTFOBJECT::LEATHER);
+	lua_setglobal(lua, "LEATHER");//白い革
 }
 
 void Scene::registerFunctions()//luaに関数を登録
@@ -64,7 +67,7 @@ void Scene::registerFunctions()//luaに関数を登録
 	lua_register(lua, "glueSetPos", glueSetPos);//座標の設定
 	lua_register(lua, "glueSetRotate", glueSetRotate);//向きを設定
 	lua_register(lua, "glueSetScale", glueSetScale);//モデルのスケールの設定
-	lua_register(lua, "glueSetDiffuse", glueSetDiffuse);//Diffuseカラーの設定
+	lua_register(lua, "glueSetBaseColor", glueSetBaseColor);//Diffuseカラーの設定
 	lua_register(lua, "glueBindCamera", glueBindCamera);//カメラが追従するオブジェクトを設定する
 	lua_register(lua, "glueSetColider", glueSetColider);//モデルにコライダーを付ける
 	lua_register(lua, "glueSetColiderScale", glueSetColiderScale);//コライダーのスケールを設定
@@ -107,16 +110,16 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 		{
 			if (sceneModels[j]->hasColider())
 			{
-				if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionDepth, collisionVector))//GJKによる当たり判定を行う
+				if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
 				{
 					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
 					{
-						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + slopeCollision(collisionVector));//衝突を解消する
+						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
 					}
 
 					if (sceneModels[j]->isMovable)
 					{
-						sceneModels[j]->setPosition(sceneModels[j]->getPosition() + slopeCollision(collisionVector));
+						sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
 					}
 				}
 			}
@@ -131,16 +134,21 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 			continue;
 		}
 
-		if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionDepth, collisionVector))
+		if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionVector))
 		{
 			if (sceneModels[i]->isMovable)
 			{
-				sceneModels[i]->setPosition(sceneModels[i]->getPosition() + slopeCollision(collisionVector));
+				sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);
 			}
 
 			if (player->isMovable)
 			{
-				player->setPosition(player->getPosition() + slopeCollision(-collisionVector));
+				if (groundCollision(collisionVector))
+				{
+					player->cancelGravity();
+				}
+
+				player->setPosition(player->getPosition() - collisionVector);
 			}
 		}
 	}
@@ -190,17 +198,13 @@ void Scene::setLights()
 	Storage::GetInstance()->prepareLightsForVulkan();
 }
 
-glm::vec3 Scene::slopeCollision(glm::vec3 collisionVector)//滑り具合を調整する
+bool Scene::groundCollision(glm::vec3 collisionVector)//滑り具合を調整する
 {
-	if (collisionVector.y > 0.5f)//侵入しているベクトルが上向きだったら
-	{
-		return collisionVector * glm::vec3(0.0f, 1.0f, 0.0f);//床が斜めでも上向きに移動するようにする
-															 //斜め上に移動させると、無限に斜め下に落ちて行ってしまう
-	}
-	else
-	{
-		return collisionVector;
-	}
+	glm::vec3 v = -glm::normalize(collisionVector);
+
+	float dot = glm::dot(v, up);
+
+	return dot > 0;
 }
 
 std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)//光線を飛ばして、コライダーを探す

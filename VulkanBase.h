@@ -198,6 +198,9 @@ struct OffScreenPass {
 
 struct ShadowMapData
 {
+    glm::mat4 proj;
+
+    int shadowMapScale;
     OffScreenPass passData;
     std::vector<ShadowMapUBO> matUBOs;
     std::vector<MappedBuffer> mappedBuffers;
@@ -225,6 +228,13 @@ class VulkanBase
 {
 private:
     bool isPreparedDescriptor;
+
+    const float shadowMapTop = -500;
+    const float shadowMapBottom = 500;
+    const float shadowMapRight = 500;
+    const float shadowMapLeft = -500;
+    const float shadowMapNear = 0.1f;
+    const float shadowMapFar = 1000.0f;
 
     static VulkanBase* vulkanBase;
 
@@ -427,8 +437,6 @@ private:
     void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
     void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     void prepareShadowMapping(int lightCount);
-
-    void calcOrthoData(glm::vec3 lightVec,float& left, float& top, float& right, float& bottom,glm::vec3 min,glm::vec3 max);
 
 public:
 
