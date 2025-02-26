@@ -4,6 +4,7 @@ Scene* Scene::instance = nullptr;
 
 void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 {
+	startPoint = glm::vec3(0.0f);
 
 	camera = std::make_shared<Camera>();
 
@@ -27,6 +28,7 @@ void Scene::initFrameSetting()
 		sceneModels[i]->initFrameSetting();//オブジェクトの初期化処理
 	}
 	player->initFrameSetting();//プレイヤークラスのみ別枠
+	player->setPosition(startPoint);//プレイヤーを初期位置に
 
 	setLights();//ライトの他のクラスのデータを用意
 	setModels();//モデルの他のクラスのデータを用意
@@ -60,25 +62,45 @@ void Scene::registerOBJECT()//enumをスクリプトと共有する
 
 void Scene::registerFunctions()//luaに関数を登録
 {
-	lua_register(lua, "glueCreateModel", glueCreateModel);//3Dモデルクラスの追加
-	lua_register(lua, "glueCreatePlayer", glueCreatePlayer);//プレイヤーの追加
-	lua_register(lua, "glueSetLuaPath", glueSetLuaPath);//スクリプトをオブジェクトに追加
-	lua_register(lua, "glueSetGltfModel",glueSetGltfModel);//gltfモデルの追加
-	lua_register(lua, "glueSetPos", glueSetPos);//座標の設定
-	lua_register(lua, "glueSetRotate", glueSetRotate);//向きを設定
-	lua_register(lua, "glueSetScale", glueSetScale);//モデルのスケールの設定
-	lua_register(lua, "glueSetBaseColor", glueSetBaseColor);//Diffuseカラーの設定
-	lua_register(lua, "glueBindCamera", glueBindCamera);//カメラが追従するオブジェクトを設定する
-	lua_register(lua, "glueSetColider", glueSetColider);//モデルにコライダーを付ける
-	lua_register(lua, "glueSetColiderScale", glueSetColiderScale);//コライダーのスケールを設定
-	lua_register(lua, "glueSetDefaultAnimationName", glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
-	lua_register(lua, "glueSetGravity", glueSetGravity);//オブジェクトに重量を効かせる
-	lua_register(lua, "glueSetSlippery", glueSetSlippery);//摩擦力を設定する
-	lua_register(lua, "glueCreatePointLight", glueCreatePointLight);//ポイントライトを作成
-	lua_register(lua, "glueSetLightColor", glueSetLightColor);//ライトのカラーを設定
-	lua_register(lua, "glueCreateDirectionalLight", glueCreateDirectionalLight);//平行光源を作成
-	lua_register(lua, "glueSetLightDirection", glueSetLightDirection);//平行光源の方向を設定
-	lua_register(lua, "glueBindObject", glueBindObject);//オブジェクトに親子関係を設定する
+	lua_register(lua, "glueCreateModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
+	lua_register(lua, "glueCreatePlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
+	lua_register(lua, "glueSetLuaPath", glueSceneFunction::glueSetLuaPath);//スクリプトをオブジェクトに追加
+	lua_register(lua, "glueSetGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加
+	lua_register(lua, "glueSetPos", glueSceneFunction::glueSetPos);//座標の設定
+	lua_register(lua, "glueSetRotate", glueSceneFunction::glueSetRotate);//向きを設定
+	lua_register(lua, "glueSetScale", glueSceneFunction::glueSetScale);//モデルのスケールの設定
+	lua_register(lua, "glueSetBaseColor", glueSceneFunction::glueSetBaseColor);//Diffuseカラーの設定
+	lua_register(lua, "glueBindCamera", glueSceneFunction::glueBindCamera);//カメラが追従するオブジェクトを設定する
+	lua_register(lua, "glueSetColider", glueSceneFunction::glueSetColider);//モデルにコライダーを付ける
+	lua_register(lua, "glueSetColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
+	lua_register(lua, "glueSetDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
+	lua_register(lua, "glueSetGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
+	lua_register(lua, "glueSetSlippery", glueSceneFunction::glueSetSlippery);//摩擦力を設定する
+	lua_register(lua, "glueCreatePointLight", glueSceneFunction::glueCreatePointLight);//ポイントライトを作成
+	lua_register(lua, "glueSetLightColor", glueSceneFunction::glueSetLightColor);//ライトのカラーを設定
+	lua_register(lua, "glueCreateDirectionalLight", glueSceneFunction::glueCreateDirectionalLight);//平行光源を作成
+	lua_register(lua, "glueSetLightDirection", glueSceneFunction::glueSetLightDirection);//平行光源の方向を設定
+	lua_register(lua, "glueBindObject", glueSceneFunction::glueBindObject);//オブジェクトに親子関係を設定する
+	lua_register(lua, "glueSetStartPoint", glueSceneFunction::glueSetStartPoint);//初期座標の設定
+	lua_register(lua, "glueSetLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
+}
+
+void Scene::setStartPoint(glm::vec3 point)
+{
+	startPoint = point;
+}
+
+void Scene::setLimitY(float y)
+{
+	limitY = y;
+}
+
+void Scene::resetStatus()
+{
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end(); itr++)
+	{
+		(*itr)->clearGroundingObject();//接地されているオブジェクトの登録の初期化
+	}
 }
 
 bool Scene::UpdateScene()//シーン全体のアップデート処理
@@ -88,6 +110,7 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 	camera->Update();
 
 	player->Update();
+	player->updateTransformMatrix();
 
 	for (int i = 0; i < sceneModels.size(); i++)
 	{
@@ -98,6 +121,10 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 			sceneModels[i]->updateTransformMatrix();//MVPのモデル行列を更新する
 		}
 	}
+
+	//std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(100)));//処理を停止する
+
+	resetStatus();//シーン全体のオブジェクトのリセット処理を行う
 
 	for (int i = 0; i < sceneModels.size() - 1; i++)//モデル同士の当たり判定を行う
 	{
@@ -115,11 +142,19 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
 					{
 						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+						if (groundCollision(collisionVector))
+						{
+							sceneModels[i]->addGroundingObject(sceneModels[j]);
+						}
 					}
 
 					if (sceneModels[j]->isMovable)
 					{
 						sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
+						if (groundCollision(-collisionVector))
+						{
+							sceneModels[j]->addGroundingObject(sceneModels[i]);
+						}
 					}
 				}
 			}
@@ -146,6 +181,7 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 				if (groundCollision(collisionVector))
 				{
 					player->cancelGravity();
+					sceneModels[i]->addGroundingObject(player);
 				}
 
 				player->setPosition(player->getPosition() - collisionVector);
@@ -161,6 +197,11 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 		}
 	}
 	player->updateTransformMatrix();
+
+	if (player->getPosition().y < limitY)
+	{
+		player->restart(startPoint);
+	}
 
 	return exit;
 }

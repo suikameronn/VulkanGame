@@ -24,6 +24,8 @@ public:
 	void initFrameSetting() override;
 
 	void customUpdate() override;
+
+	void restart(glm::vec3 startPoint);
 };
 
 static int glueSetSpeed(lua_State* lua)

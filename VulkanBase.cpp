@@ -443,7 +443,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = bindings.size();
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
@@ -477,7 +477,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = bindings.size();
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.materialLayout) != VK_SUCCESS) {
@@ -957,7 +957,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     uint32_t VulkanBase::calcMipMapLevel(uint32_t width, uint32_t height)
     {
-        return std::floor(std::log2(std::max(width, height))) + 1;
+        return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
     }
 
     void VulkanBase::createTextureImage()
@@ -1565,7 +1565,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         PointLightUBO ubo{};
 
-        int loopLimit = std::min(pointLights.size(), ubo.pos.size());
+        int loopLimit = static_cast<int>(std::min(pointLights.size(), ubo.pos.size()));
 
         ubo.lightCount = loopLimit;
 
@@ -1587,7 +1587,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         DirectionalLightUBO ubo{};
         
-        int loopLimit = std::min(directionalLights.size(), ubo.dir.size());
+        int loopLimit = static_cast<int>(std::min(directionalLights.size(), ubo.dir.size()));
 
         ubo.lightCount = loopLimit;
         
@@ -1643,7 +1643,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         glm::vec3 min, max;
         storage->calcSceneBoundingBox(min, max);
-        float left, top, right, bottom;
 
         for (int i = 0; i < directionalLights.size(); i++)
         {
@@ -1668,7 +1667,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         ubo.lightCount = storage->getLightCount();
 
-        float left, top, right, bottom;
         glm::vec3 min, max;
         storage->calcSceneBoundingBox(min, max);
 
@@ -1739,7 +1737,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = poolSizes.size();
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(100);
 
@@ -2251,7 +2249,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         Storage* storage = Storage::GetInstance();
         
-        PrimitiveTextureCount ptc;
         for (auto model:storage->getModels())
         {
 
@@ -2725,7 +2722,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = bindings.size();
+            layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
             layoutInfo.pBindings = bindings.data();
 
             if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.layout) != VK_SUCCESS) {
@@ -2758,7 +2755,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = bindings.size();
+            layoutInfo.bindingCount =static_cast<uint32_t>(bindings.size());
             layoutInfo.pBindings = bindings.data();
 
             if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &modelDescriptor.materialLayout) != VK_SUCCESS) {

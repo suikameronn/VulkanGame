@@ -96,7 +96,7 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
     }
 
     model->textureDatas.resize(gltfModel.textures.size());
-    for (int i = 0; i < model->textureDatas.size(); i++)
+    for (size_t i = 0; i < model->textureDatas.size(); i++)
     {
         model->textureDatas[i] = new TextureData();
     }
@@ -121,7 +121,7 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     }
 
     loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
-    for (int i = 0; i < model->skins.size(); i++)
+    for (size_t i = 0; i < model->skins.size(); i++)
     {
         setSkin(model->getRootNode(), model);//スキンの設定
     }
@@ -192,7 +192,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     mesh->meshIndex = model->meshCount;
     model->meshCount++;
 
-    for (unsigned int i = 0; i < gltfMesh.primitives.size(); i++)
+    for (size_t i = 0; i < gltfMesh.primitives.size(); i++)
     {
         const tinygltf::Primitive glPrimitive = gltfMesh.primitives[i];
 
@@ -528,7 +528,7 @@ int FileManager::splitPos(std::string text, std::array<float, 4>& coliderSetting
 
     for(int i = 0;i < 3;i++)
     {
-        spacePos = text.find(" ",beforeSpacePos);
+        spacePos = static_cast<int>(text.find(" ",beforeSpacePos));
         if (spacePos == std::string::npos)
         {
             return -1;
@@ -598,7 +598,7 @@ void FileManager::setSkin(GltfNode* node,GltfModel* model)
         node->skin = model->skins[node->skinIndex];
     }
 
-    for (int i = 0; i < node->children.size(); i++)
+    for (size_t i = 0; i < node->children.size(); i++)
     {
         setSkin(node->children[i], model);
     }
@@ -606,7 +606,7 @@ void FileManager::setSkin(GltfNode* node,GltfModel* model)
 
 std::string FileManager::splitFileName(std::string filePath)
 {
-    int pos = filePath.rfind('/');
+    int pos = static_cast<int>(filePath.rfind('/'));
     filePath = filePath.substr(pos + 1, filePath.length() - pos);
 
     return filePath;
@@ -664,7 +664,7 @@ void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
             material->emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
         }
 
-        material->index = model->materials.size();
+        material->index = static_cast<int>(model->materials.size());
         model->materials.push_back(material);
     }
 }

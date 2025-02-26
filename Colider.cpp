@@ -29,7 +29,7 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	coliderIndices = { 1,0,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };//描画用のインデックス配列
 
 	satIndices.resize(3 * 6);
-	//satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
+	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
 
 	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
@@ -62,7 +62,7 @@ glm::vec3* Colider::getColiderOriginalVertices()
 
 int Colider::getColiderVerticesSize()
 {
-	return originalVertexPos.size();
+	return static_cast<int>(originalVertexPos.size());
 }
 
 int* Colider::getColiderIndices()
@@ -72,7 +72,7 @@ int* Colider::getColiderIndices()
 
 int Colider::getColiderIndicesSize()
 {
-	return coliderIndices.size();
+	return static_cast<int>(coliderIndices.size());
 }
 
 glm::mat4 Colider::getScaleMat()
@@ -92,20 +92,32 @@ void Colider::reflectMovement(glm::mat4& transform)
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector)
 {
+	float collisionDepth;
 	bool collision = false;
 	
 	collision = GJK(oppColider,collisionVector);
+
+	/*
+	collision = SAT(oppColider, collisionDepth, collisionVector);
+	collisionVector = collisionVector * collisionDepth;
+	*/
 
 	return collision;
 }
 
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 {
+	float collisionDepth;
 	bool collision = false;
 
 	glm::vec3 collisionVector;
 
 	collision = GJK(oppColider, collisionVector);
+
+	/*
+	collision = SAT(oppColider, collisionDepth, collisionVector);
+	collisionVector = collisionVector * collisionDepth;
+	*/
 
 	return collision;
 }
@@ -136,7 +148,7 @@ bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, gl
 {
 	std::array<glm::vec3, 12> normals;
 
-	collisionDepth = 1000000.0f;
+	collisionDepth = FLT_MAX;
 	collisionNormal = { 0.0f,0.0f,0.0f };
 
 	glm::vec3* oppVertices = oppColider->getColiderVertices();
@@ -217,7 +229,7 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthV
 
 	int count = 50;
 
-	while (count)
+	while (count > 0)
 	{
 		support = getSupportVector(oppColider, dir);
 
@@ -400,7 +412,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 
 	glm::vec3 minNormal;
 	float minDistance = FLT_MAX;
-	int limit = 50;
+	int limit = 100;
 	while (minDistance == FLT_MAX && limit > 0)
 	{
 		minNormal = normals[minFace];
@@ -471,7 +483,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 		limit--;
 	}
 
-	collisionDepthVec = minNormal * (minDistance + 0.3f);//遊びをとっておく
+	collisionDepthVec = minNormal * (minDistance + 0.001f);//遊びをとっておく
 }
 
 void Colider::addIfUniqueEdge(

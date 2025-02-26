@@ -22,13 +22,6 @@ void Storage::addModel(GLTFOBJECT obj, GltfModel* model)
 	VulkanBase::GetInstance()->setGltfModelData(gltfModelStorage[obj]);
 }
 
-/*
-void Storage::addAnimation(OBJECT obj, Animation* animation)
-{
-	gltfAnimationStorage[obj] = std::shared_ptr<Animation>(animation);
-}
-*/
-
 void Storage::addImageData(std::string path,ImageData* image)
 {
 	imageDataStorage[path] = std::shared_ptr<ImageData>(image);
@@ -80,20 +73,6 @@ bool Storage::containModel(GLTFOBJECT obj)
 		return false;
 	}
 }
-
-/*
-bool Storage::containAnimation(OBJECT obj)
-{
-	if (gltfAnimationStorage[obj] != nullptr)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-*/
 
 bool Storage::containImageData(std::string path)
 {

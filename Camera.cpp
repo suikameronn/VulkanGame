@@ -103,9 +103,9 @@ void Camera::customUpdate()
 	calcViewMat();
 }
 
-void Camera::setParentPos(glm::vec3 pos)
+void Camera::setParentPos(glm::vec3 lastPos, glm::vec3 position)
 {
-	parentPos = pos;
+	parentPos = position;
 }
 
 void Camera::setSpherePos(float theta, float phi)

@@ -8,9 +8,17 @@ glueSetColider(model,false)
 
 local model2 = glueCreateModel()
 glueSetGltfModel(model2,LEATHER)
-glueSetPos(model2,-230.0,0.0,0.0)
+glueSetPos(model2,-250.0,0.0,0.0)
 glueSetScale(model2,50.0,10.0,50.0)
 glueSetColider(model2,false)
+glueSetLuaPath(model2,"LuaScripts/wall1.lua")
+
+local model3 = glueCreateModel()
+glueSetGltfModel(model3,LEATHER)
+glueSetPos(model3,-250.0,0.0,130.0)
+glueSetScale(model3,50.0,10.0,50.0)
+glueSetColider(model3,false)
+glueSetLuaPath(model3,"LuaScripts/wall2.lua")
 
 local player = glueCreatePlayer()
 glueSetGltfModel(player,gltfTEST)
@@ -41,5 +49,8 @@ glueSetLightColor(directionalLight,1.0,1.0,1.0)
 glueSetLightDirection(directionalLight,-200.0,-200.0,-200.0)
 glueBindObject(player,directionalLight)
 glueSetPos(directionalLight,200,200,200)
+
+glueSetLimitY(-150)
+glueSetStartPoint(0.0,100.0,0.0)
 
 print("AAA")

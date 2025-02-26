@@ -21,6 +21,7 @@ void PhysicBase::Update(bool isAccelerateReset)
 
 	velocity += gravity + acceleration * deltaTime;
 
+
 	if (isAccelerateReset)
 	{
 		acceleration = glm::vec3(0.0f);

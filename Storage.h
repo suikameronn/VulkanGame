@@ -57,7 +57,6 @@ class Storage
 {
 private:
 	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>> gltfModelStorage;
-	//std::unordered_map<OBJECT, std::shared_ptr<Animation>> gltfAnimationStorage;
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
 	std::unordered_map<PrimitiveTextureCount, DescriptorInfo,Hash> descriptorStorage;
@@ -96,13 +95,12 @@ public:
 	std::vector<std::shared_ptr<Model>>& getModels() { return sceneModelStorage; }
 	std::vector<std::shared_ptr<PointLight>>& getPointLights() { return scenePointLightStorage; }
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
-	int getLightCount() { return scenePointLightStorage.size() + sceneDirectionalLightStorage.size(); }
+	int getLightCount() { return static_cast<int>(scenePointLightStorage.size() + sceneDirectionalLightStorage.size()); }
 
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
 	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
 
 	void addModel(GLTFOBJECT obj, GltfModel* geo);
-	//void addAnimation(OBJECT obj, Animation* animation);
 	void addImageData(std::string, ImageData* image);
 
 	void setCamera(std::shared_ptr<Camera> c);
@@ -114,20 +112,15 @@ public:
 
 	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
 	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();
-	//std::shared_ptr<Animation> getAnimation(OBJECT obj);
 	std::shared_ptr<ImageData> getImageData(std::string path);
 	MappedBuffer& getPointLightsBuffer();
 	MappedBuffer& getDirectionalLightsBuffer();
 
 	std::shared_ptr<Camera> accessCamera();
 
-	void accessgltfModel(std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr,
-		std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>::iterator& itr2);
-
 	void calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax);
 
 	bool containModel(GLTFOBJECT obj);
-	bool containAnimation(GLTFOBJECT obj);
 	bool containImageData(std::string path);
 
 	void FinishStorage()

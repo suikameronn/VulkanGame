@@ -107,8 +107,11 @@ public:
 	void reflectMovement(glm::mat4& transform);
 	glm::mat4& getTransformMatrix() { return transform; }
 
-	int getSatIndicesSize() { return satIndices.size(); }
+	/*
+	int getSatIndicesSize() { return static_cast<int>(satIndices.size()); }
 	uint32_t* getSatIndicesPointer() { return satIndices.data(); }
+	*/
+
 	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
 
 	void setDescriptorSet(VkDescriptorSet descriptorSet);

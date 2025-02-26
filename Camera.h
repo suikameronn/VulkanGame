@@ -35,7 +35,7 @@ public:
 
 	void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition() { return position; }
-	void setParentPos(glm::vec3 pos);
+	void setParentPos(glm::vec3 lastPos, glm::vec3 position);
 	void setDistance(float distance);
 	void setOffsetPos(glm::vec3 offset);
 

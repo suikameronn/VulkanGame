@@ -1,3 +1,5 @@
+#include"Scene.h"
+
 #include"Object.h"
 
 Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
@@ -43,26 +45,28 @@ void Object::setLuaScript(std::string path)//luaスクリプトを設定
 	luaPath = path;
 	lua = luaL_newstate();
 	luaL_openlibs(lua);
+
+	registerGlueFunctions();
 }
 
 void Object::registerGlueFunctions()
 {
-
+	lua_register(lua, "glueSetPos", glueObjectFunction::glueSetPos);
+	lua_register(lua, "glueSetRotate", glueObjectFunction::glueSetRotate);
 }
 
 void Object::bindObject(Object* obj)//オブジェクトに親子関係を設定する
 {
-	parentPos = obj->getPosition();
 	childObjects.push_back(obj);
 
-	sendPosToChildren(position);
+	sendPosToChildren();
 }
 
 void Object::bindCamera(std::weak_ptr<Camera> camera)//カメラがそのオブジェクトを追従させる
 {
 	cameraObj = camera;
 
-	sendPosToChildren(position);
+	sendPosToChildren();
 }
 
 glm::vec3 Object::inputMove()//キー入力から移動させる
@@ -100,8 +104,54 @@ glm::vec3 Object::inputMove()//キー入力から移動させる
 	return moveDirec;
 }
 
+void Object::sendTransformToLua()
+{
+	if (lua)
+	{
+		lua_getglobal(lua, "position");
+		lua_pushnumber(lua, position.x);
+		lua_setfield(lua, -2, "x");
+		lua_pushnumber(lua, position.y);
+		lua_setfield(lua, -2, "y");
+		lua_pushnumber(lua, position.z);
+		lua_setfield(lua, -2, "z");
+		lua_pop(lua, -1);
+
+		lua_getglobal(lua, "rotate");
+		lua_pushnumber(lua, rotate.x);
+		lua_setfield(lua, -2, "x");
+		lua_pushnumber(lua, rotate.y);
+		lua_setfield(lua, -2, "y");
+		lua_pushnumber(lua, rotate.z);
+		lua_setfield(lua, -2, "z");
+		lua_pop(lua, -1);
+	}
+}
+
+void Object::receiveTransformFromLua()
+{
+	if (lua)
+	{
+		float x, y, z;
+
+		lua_getglobal(lua, "position");
+		x = static_cast<float>(lua_tonumber(lua, -4));
+		y = static_cast<float>(lua_tonumber(lua, -3));
+		z = static_cast<float>(lua_tonumber(lua, -2));
+		lua_pop(lua, -1);
+
+		lua_getglobal(lua, "rotate");
+		x = static_cast<float>(lua_tonumber(lua, -4));
+		y = static_cast<float>(lua_tonumber(lua, -3));
+		z = static_cast<float>(lua_tonumber(lua, -2));
+		lua_pop(lua, -1);
+	}
+}
+
 void Object::Update()//更新処理
 {
+
+
 	customUpdate();
 }
 
@@ -114,7 +164,7 @@ void Object::setPosition(glm::vec3 pos)//座標の設定
 
 	position = pos;
 
-	sendPosToChildren(position);//子オブジェクトがいる場合、それも更新する
+	sendPosToChildren();//子オブジェクトがいる場合、それも更新する
 
 	uniformBufferChange = true;
 }
@@ -129,36 +179,72 @@ glm::mat4 Object::getTransformMatrix()
 	return transformMatrix;
 }
 
-void Object::sendPosToChildren(glm::vec3 pos)//子オブジェクトを追従させる
+void Object::sendPosToChildren()//子オブジェクトを追従させる
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
 		if (*itr)
 		{
-			(*itr)->setParentPos(pos);
+			(*itr)->setParentPos(lastPos,position);
 		}
 	}
 
 	if (!cameraObj.expired())
 	{
-		cameraObj.lock()->setParentPos(pos);
+		cameraObj.lock()->setParentPos(lastPos,position);
 	}
 }
 
-void Object::setParentPos(glm::vec3 pos)//親オブジェクトを追従する
+void Object::setParentPos(glm::vec3 lastPos,glm::vec3 currentPos)//親オブジェクトを追従する
 {
-	position += pos - parentPos;
+	position += currentPos - lastPos;
+}
 
-	parentPos = pos;
+void Object::createTransformTable()
+{
+	lua_newtable(coroutine);
+	lua_pushstring(coroutine, "x");
+	lua_pushnumber(coroutine, position.x);
+	lua_pushstring(coroutine, "y");
+	lua_pushnumber(coroutine, position.y);
+	lua_pushstring(coroutine,"z");
+	lua_pushnumber(coroutine, position.z);
+	lua_setglobal(coroutine, "Position");
+
+	lua_newtable(coroutine);
+	lua_pushstring(coroutine, "x");
+	lua_pushnumber(coroutine, rotate.x);
+	lua_pushstring(coroutine, "y");
+	lua_pushnumber(coroutine, rotate.y);
+	lua_pushstring(coroutine, "z");
+	lua_pushnumber(coroutine, rotate.z);
+	lua_setglobal(coroutine, "Rotate");
 }
 
 void Object::initFrameSetting()//初回フレームの設定を行う
 {
 	if (lua)
 	{
-		lua_pushlightuserdata(lua, this);
-		lua_setglobal(lua, "Data");
-
 		luaL_dofile(lua, luaPath.c_str());
+		coroutine = lua_newthread(lua);
+		lua_getglobal(coroutine, "Update");
+
+		createTransformTable();
 	}
+}
+
+glm::vec3 Object::getLastPosition()
+{
+	return lastPos;
+}
+
+Rotate Object::getLastRotate()
+{
+	return lastRotate;
+}
+
+void Object::setLastFrameTransform()
+{
+	lastPos = position;
+	lastRotate = rotate;
 }

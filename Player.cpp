@@ -128,3 +128,14 @@ void Player::setMaxJumpHeight(float height)
 {
 	maxJumpHeight = height;
 }
+
+void Player::restart(glm::vec3 startPoint)
+{
+	setZeroVelocity();
+
+	rotate.x = rotate.getRadian(0.0f);
+	rotate.y = rotate.getRadian(0.0f);
+	rotate.z = rotate.getRadian(0.0f);
+
+	setPosition(startPoint);
+}

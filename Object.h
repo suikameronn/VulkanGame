@@ -85,6 +85,7 @@ class Object
 protected:
 
 	lua_State* lua;
+	lua_State* coroutine;
 	std::string luaPath;
 
 	ObjNum objNum;
@@ -98,7 +99,10 @@ protected:
 	float rotateSpeed;
 	float length;
 
-	glm::vec3 parentPos;
+	glm::vec3 lastPos;
+	Rotate lastRotate;
+	glm::vec3 lastScale;
+
 	glm::vec3 position;
 
 	virtual glm::vec3 inputMove();
@@ -128,19 +132,70 @@ public:
 
 	void bindObject(Object* obj);
 	void bindCamera(std::weak_ptr<Camera> camera);
-	void sendPosToChildren(glm::vec3 pos);
-	void setParentPos(glm::vec3 parentPos);
+	void sendPosToChildren();
+	void setParentPos(glm::vec3 lastPos, glm::vec3 currentPos);
 
 	virtual void setPosition(glm::vec3 pos);
 	glm::vec3 getPosition();
 
+	glm::vec3 getLastPosition();
+	Rotate getLastRotate();
+	glm::vec3 getLastScale();
+	virtual void setLastFrameTransform();//一つ前のフレームの座標などのデータを設定
+
 	glm::mat4 getTransformMatrix();
 
-	glm::mat4 getRodriguesMatrix(glm::vec3 axis, float theta);
-
+	virtual void createTransformTable();
 	virtual void initFrameSetting();
 	virtual void registerGlueFunctions();
 	virtual void updateTransformMatrix() {};
 	virtual void Update();
-	virtual void customUpdate() {}
+	virtual void customUpdate() {};
+	virtual void sendTransformToLua();
+	virtual void receiveTransformFromLua();
 };
+
+namespace glueObjectFunction//Objectクラス用のglue関数
+{
+	static int glueSetPos(lua_State* lua)
+	{
+		//lua_getglobal(lua, "object");
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
+
+		switch (obj->getObjNum())
+		{
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		{
+			float x = static_cast<float>(lua_tonumber(lua, -4));
+			float y = static_cast<float>(lua_tonumber(lua, -3));
+			float z = static_cast<float>(lua_tonumber(lua, -2));
+			obj->setPosition(glm::vec3(x, y, z));
+			break;
+		}
+		}
+
+		return 0;
+	}
+
+	static int glueSetRotate(lua_State* lua)
+	{
+		//lua_getglobal(lua, "object");
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
+
+		switch (obj->getObjNum())
+		{
+		case 0:
+		case 1:
+			obj->rotate.x = static_cast<float>(lua_tonumber(lua, -4));
+			obj->rotate.y = static_cast<float>(lua_tonumber(lua, -3));
+			obj->rotate.z = static_cast<float>(lua_tonumber(lua, -2));
+			break;
+		}
+
+		return 0;
+	}
+}
