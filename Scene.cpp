@@ -7,6 +7,7 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 	startPoint = glm::vec3(0.0f);
 
 	camera = std::make_shared<Camera>();
+	Storage::GetInstance()->setCamera(camera);
 
 	initLuaScript(luaScriptPath);//luaからステージのデータを読み取り
 
@@ -31,6 +32,10 @@ void Scene::initFrameSetting()
 	player->setPosition(startPoint);//プレイヤーを初期位置に
 
 	setLights();//ライトの他のクラスのデータを用意
+
+	Storage::GetInstance()->prepareDescriptorData();//descriptorSetの用意
+	Storage::GetInstance()->prepareLightsForVulkan();//LightにVulkanでの変数などを持たせる
+
 	setModels();//モデルの他のクラスのデータを用意
 }
 
@@ -208,8 +213,6 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 
 void Scene::setModels()
 {
-	Storage::GetInstance()->setCamera(camera);
-
 	//描画するモデルのポインタを積んでいく
 	for (int i = 0;i < sceneModels.size();i++)
 	{
@@ -223,20 +226,26 @@ void Scene::setModels()
 
 void Scene::setLights()
 {
+	Storage* storage = Storage::GetInstance();
+
+	hdriMap = FileManager::GetInstance()->loadImage("textures/hdri_map.hdr");//キューブマップ用の画像の用意
+	storage->setCubemapTexture(hdriMap);
+
+	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
+	cubemap->setgltfModel(FileManager::GetInstance()->loadModel(GLTFOBJECT::CUBEMAP));;
+	storage->setCubeMapModel(cubemap);
+
 	for (std::shared_ptr<PointLight> pl : scenePointLights)
 	{
 		pl->updateTransformMatrix();
-		Storage::GetInstance()->addLight(pl);
+		storage->addLight(pl);
 	}
 
 	for (std::shared_ptr<DirectionalLight> dl : sceneDirectionalLights)
 	{
 		dl->updateTransformMatrix();
-		Storage::GetInstance()->addLight(dl);
+		storage->addLight(dl);
 	}
-
-	//LightにVulkanでの変数などを持たせる
-	Storage::GetInstance()->prepareLightsForVulkan();
 }
 
 bool Scene::groundCollision(glm::vec3 collisionVector)//滑り具合を調整する

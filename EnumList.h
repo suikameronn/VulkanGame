@@ -10,7 +10,8 @@ enum class GLTFOBJECT
 {
 	gltfTEST = 0,
 	ASPHALT,
-	LEATHER
+	LEATHER,
+	CUBEMAP
 };
 
 enum COLIDER

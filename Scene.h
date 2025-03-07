@@ -28,6 +28,8 @@ private:
 
 	static Scene* instance;
 
+	std::shared_ptr<ImageData> hdriMap;
+
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	glm::vec3 startPoint;//‰ŠúÀ•W
@@ -78,6 +80,7 @@ public:
 	void setLimitY(float y);//yÀ•W‚Ì‰ºŒÀ‚Ìİ’è
 	
 	std::shared_ptr<Player> player;
+	std::shared_ptr<Model> cubemap;
 	std::vector<std::shared_ptr<Model>> sceneModels;
 	std::vector<std::shared_ptr<PointLight>> scenePointLights;
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;

@@ -21,6 +21,8 @@ int FileManager::getModelResource(GLTFOBJECT obj)
         return IDR_MODEL2;
     case GLTFOBJECT::LEATHER:
         return IDR_MODEL3;
+    case GLTFOBJECT::CUBEMAP:
+        return IDR_MODEL4;
     }
 
     return -1;

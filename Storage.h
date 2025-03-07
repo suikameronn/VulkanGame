@@ -18,18 +18,6 @@ struct PrimitiveTextureCount
 {
 	uint32_t imageDataCount;
 	VkPrimitiveTopology topology;
-
-	/*
-	bool operator==(PrimitiveTextureCount& another)
-	{
-		return (imageDataCount == another.imageDataCount) && (topology == another.topology);
-	}
-
-	bool operator!=(PrimitiveTextureCount& another)
-	{
-		return !((imageDataCount == another.imageDataCount) && (topology == another.topology));
-	}
-	*/
 };
 
 inline bool operator==(const PrimitiveTextureCount& lhs, const PrimitiveTextureCount& rhs) {
@@ -62,6 +50,8 @@ private:
 	std::unordered_map<PrimitiveTextureCount, DescriptorInfo,Hash> descriptorStorage;
 
 	std::shared_ptr<Camera> camera;
+	std::shared_ptr<Model> cubemap;
+	std::shared_ptr<ImageData> cubemapImage;
 	std::vector<std::shared_ptr<Model>> sceneModelStorage;
 	std::vector<std::shared_ptr<PointLight>> scenePointLightStorage;
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLightStorage;
@@ -91,7 +81,10 @@ public:
 
 		return storage;
 	}
-
+	
+	void setCubemapTexture(std::shared_ptr<ImageData> image);
+	std::shared_ptr<ImageData> getCubemapImage();
+	std::shared_ptr<Model> getCubeMap() { return cubemap; }
 	std::vector<std::shared_ptr<Model>>& getModels() { return sceneModelStorage; }
 	std::vector<std::shared_ptr<PointLight>>& getPointLights() { return scenePointLightStorage; }
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
@@ -100,6 +93,7 @@ public:
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
 	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
 
+	void setCubeMapModel(std::shared_ptr<Model> cube) { cubemap = cube; }
 	void addModel(GLTFOBJECT obj, GltfModel* geo);
 	void addImageData(std::string, ImageData* image);
 
@@ -108,7 +102,8 @@ public:
 	void addLight(std::shared_ptr<PointLight> light);
 	void addLight(std::shared_ptr<DirectionalLight> light);
 
-	void prepareLightsForVulkan();
+	void prepareDescriptorData();//ライトのバッファの用意
+	void prepareLightsForVulkan();//descriptorSetの用意
 
 	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
 	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();

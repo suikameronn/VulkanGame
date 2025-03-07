@@ -18,8 +18,6 @@ void Storage::cleanup()
 void Storage::addModel(GLTFOBJECT obj, GltfModel* model)
 {
 	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
-
-	VulkanBase::GetInstance()->setGltfModelData(gltfModelStorage[obj]);
 }
 
 void Storage::addImageData(std::string path,ImageData* image)
@@ -52,7 +50,21 @@ void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 
 void Storage::prepareLightsForVulkan()
 {
-	VulkanBase::GetInstance()->setLightData(scenePointLightStorage, sceneDirectionalLightStorage);
+	VulkanBase::GetInstance()->setLightData(scenePointLightStorage, sceneDirectionalLightStorage);//ライト用のバッファの用意
+	VulkanBase::GetInstance()->setCubeMapModel(cubemap);//キューブマップ用のバッファの用意
+}
+
+//descriptorSetの用意
+void Storage::prepareDescriptorData()
+{
+	//DescriptorSetLayoutを用意する
+	VulkanBase::GetInstance()->prepareDescriptorData(static_cast<int>(sceneDirectionalLightStorage.size()) + scenePointLightStorage.size());
+
+	for (auto gltfModel : gltfModelStorage)
+	{
+		//gltfMdodelクラスのテクスチャなどを用意する
+		VulkanBase::GetInstance()->setGltfModelData(gltfModel.second);
+	}
 }
 
 //StorageのCameraにアクセスする
@@ -155,4 +167,14 @@ void Storage::calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMa
 			boundingMax.z = max.z;
 		}
 	}
+}
+
+void Storage::setCubemapTexture(std::shared_ptr<ImageData> image)
+{
+	cubemapImage = image;
+}
+
+std::shared_ptr<ImageData> Storage::getCubemapImage()
+{
+	return cubemapImage;
 }

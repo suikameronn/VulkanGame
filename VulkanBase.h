@@ -30,6 +30,13 @@
 extern GLFWwindow* window;
 
 #define MAX_TEXTURE_COUNT 5
+#define CUBEMAP_FACE_COUNT 6
+#define CUBEMAP_FACE_FRONT 0
+#define CUBEMAP_FACE_BACK 1
+#define CUBEMAP_FACE_RIGHT 2
+#define CUBEMAP_FACE_LEFT 3
+#define CUBEMAP_FACE_TOP 4
+#define CUBEMAP_FACE_BOTTOM 5
 
 enum Extension
 {
@@ -56,9 +63,10 @@ struct ModelDescriptor
     VkDescriptorSetLayout layout;
     VkDescriptorSetLayout materialLayout;
     VkDescriptorSetLayout lightLayout;
-    VkDescriptorSetLayout shadowLayout;
+
     VkPipelineLayout texturePipelineLayout;
     VkPipeline texturePipeline;
+    
     VkPipelineLayout coliderPipelineLayout;
     VkPipeline coliderPipeline;
 
@@ -67,7 +75,6 @@ struct ModelDescriptor
         vkDestroyDescriptorSetLayout(device, layout, nullptr);
         vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, lightLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, shadowLayout, nullptr);
 
         vkDestroyPipelineLayout(device, texturePipelineLayout, nullptr);
         vkDestroyPipelineLayout(device, coliderPipelineLayout, nullptr);
@@ -119,7 +126,7 @@ struct PushConstantObj
     glm::mat4 modelMatrix;
 };
 
-struct EmptyImage
+struct ImageDescriptor
 {
     TextureData* emptyTex;
     VkDescriptorSetLayout layout;
@@ -205,6 +212,7 @@ struct ShadowMapData
     std::vector<ShadowMapUBO> matUBOs;
     std::vector<MappedBuffer> mappedBuffers;
 
+    VkDescriptorSetLayout layout;
     std::vector<VkDescriptorSet> descriptorSets;
 
     void setFrameCount(int frameCount)
@@ -217,6 +225,54 @@ struct ShadowMapData
     void destroy(VkDevice& device)
     {
         passData.destroy(device);
+
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
+        for (auto& buffer : mappedBuffers)
+        {
+            buffer.destroy(device);
+        }
+    }
+};
+
+struct CubemapData
+{
+    glm::mat4 view;
+    glm::mat4 proj;
+
+    OffScreenPass passData;
+    std::vector<MatricesUBO> matUBOs;
+    std::vector<MappedBuffer> mappedBuffers;
+
+    TextureData* multiTexture;//キューブマッピング用のテクスチャデータ
+
+    VkDescriptorSetLayout layout;
+    VkDescriptorSet descriptorSet;
+
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+
+    CubemapData()
+    {
+        multiTexture = new TextureData();
+    }
+
+    void setFrameCount(int frameCount)
+    {
+        matUBOs.resize(frameCount);
+        mappedBuffers.resize(frameCount);
+        passData.setFrameCount(frameCount);
+    }
+
+    void destroy(VkDevice& device)
+    {
+        multiTexture->destroy(device);
+        passData.destroy(device);
+
+        vkDestroyPipeline(device, pipeline,nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
         for (auto& buffer : mappedBuffers)
         {
             buffer.destroy(device);
@@ -227,7 +283,6 @@ struct ShadowMapData
 class VulkanBase
 {
 private:
-    bool isPreparedDescriptor;
 
     const float shadowMapTop = -500;
     const float shadowMapBottom = 500;
@@ -309,13 +364,15 @@ private:
 
     VkDescriptorPool descriptorPool;
 
-    EmptyImage emptyImage;
+    ImageDescriptor emptyImage;//空のテクスチャ用データ
 
-    ShadowMapData shadowMapData;
+    CubemapData cubemapData;//キューブマッピング用のデータ
+
+    ShadowMapData shadowMapData;//シャドウマップ用のデータ
 
     void setUpComputingShader();
 
-    void prepareModelDescInfo();
+    void prepareModelDescLayouts();
 
     void cleanup();
     void cleanupSwapChain();
@@ -336,8 +393,10 @@ private:
     void createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout);
     void createDescriptorSetLayout(std::shared_ptr<Material> material);
 
-    void createGraphicsPipeline(VkPrimitiveTopology topology,VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
+    void createGraphicsPipeline(std::string vertFile, std::string fragFile, VkPrimitiveTopology topology,VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline);
     void createShadowMapPipeline(std::string vertexPath
+        , VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline, VkRenderPass& pass);
+    void createCalcCubeMapPipeline(std::string vertexPath,std::string fragPath
         , VkDescriptorSetLayout& layout, VkPipelineLayout& pLayout, VkPipeline& pipeline, VkRenderPass& pass);
 
     void createFramebuffers();
@@ -350,21 +409,24 @@ private:
     bool hasStencilComponent(VkFormat format);
     uint32_t calcMipMapLevel(uint32_t width, uint32_t height);
 
-    void createTextureImage();
-    void createTextureImage(std::shared_ptr<GltfModel> gltfModel);
-    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+    void createTextureImage(TextureData& textureData,std::shared_ptr<ImageData> image);//デフォルトのテクスチャの画像データの作成
+    void createTextureImage();//空のテクスチャを作成
+    void createTextureImage(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのマテリアルにテクスチャ用データを作成
+    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels,uint32_t layerCount);
 
-    void createTextureImageView();
-    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);
+    void createTextureImageView(TextureData& textureData);//デフォルトのテクスチャのビューを作成
+    void createTextureImageView();//空のテクスチャのビューを作成
+    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのテクスチャのビューを作成
     
-    void createTextureSampler();
-    void createTextureSampler(std::shared_ptr<GltfModel> gltfModel);
+    void createTextureSampler(TextureData* textureData);//デフォルトのテクスチャのサンプラーの作成
+    void createTextureSampler();//空のテクスチャのサンプラーの作成
+    void createTextureSampler(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのテクスチャのサンプラーの作成
     
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+    VkImageView createImageView(VkImage image, VkImageViewType type, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount);//テクスチャのビューを作成
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height,uint32_t layerCount);
     void createVertexBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
@@ -381,15 +443,16 @@ private:
 
     void createDescriptorPool();
 
-    void allocateDescriptorSets(std::shared_ptr<Model> model);
-    void allocateDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
-    void allocateDescriptorSet(std::shared_ptr<Model> model);
+    void allocateDescriptorSets(VkDescriptorSetLayout& layout,std::shared_ptr<Model> model);
+    void allocateDescriptorSet(VkDescriptorSetLayout& layout, GltfNode* node,std::shared_ptr<Model> model);
+    void allocateDescriptorSet(VkDescriptorSetLayout& layout,std::shared_ptr<Model> model);
     void allocateDescriptorSet(std::shared_ptr<Material> material);
 
     void createDescriptorSets(std::shared_ptr<Model> model);
     void createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorSet(std::shared_ptr<Model> model);
     void createDescriptorSet(std::shared_ptr<Material> material, std::shared_ptr<GltfModel> gltfModel);
+    void createDescriptorSet_CubeMap(GltfNode* node, std::shared_ptr<Model> model);
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     VkCommandBuffer beginSingleTimeCommands();
@@ -410,6 +473,7 @@ private:
     void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights);
 
     void drawFrame();
+    void drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
     void drawMesh(GltfNode* node,std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
     void calcDepth(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, OffScreenPass& pass);
 
@@ -425,18 +489,21 @@ private:
     bool checkValidationLayerSupport();
 
     void createMeshesData(std::shared_ptr<Model> model);
-    void createDescriptorInfos(std::shared_ptr<Model> model);
-    void createDescriptorInfo(GltfNode* node,std::shared_ptr<Model> model);
+    void createDescriptorInfos(VkPipelineLayout& pLayout, VkPipeline& pipeline, std::shared_ptr<Model> model);
+    void createDescriptorInfo(VkPipelineLayout& pLayout, VkPipeline& pipeline, GltfNode* node,std::shared_ptr<Model> model);
     void createDescriptorInfo(std::shared_ptr<Colider> colider);
 
     void createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size, VkShaderStageFlags frag);
-    void createDescriptorData(ShadowMapData& shadowMapData);
+    void createDescriptorData_ShadowMap(std::vector<VkDescriptorSet>& descriptorSets, OffScreenPass& pass, VkDescriptorSetLayout& layout);
 
     void createEmptyImage();
 
     void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
     void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     void prepareShadowMapping(int lightCount);
+    void prepareCubemapTextures();
+    void createSamplerCube2D();//6枚のテクスチャを作成
+    void drawSamplerCube(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, int index);
 
 public:
 
@@ -488,8 +555,11 @@ public:
         return device;
     }
 
+    void prepareDescriptorData(int lightCount);
+
     void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
     void setModelData(std::shared_ptr<Model> model);
+    void setCubeMapModel(std::shared_ptr<Model> cubemap);
     void setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 

@@ -5,6 +5,7 @@
 #define IDR_MODEL1                      101
 #define IDR_MODEL2						102
 #define IDR_MODEL3						103
+#define IDR_MODEL4						104
 
 // Next default values for new objects
 // 
