@@ -14,42 +14,48 @@
 
 enum IMAGE;
 
+//画像やgltfモデルの読み込みを担当するクラス
 class FileManager
 {
 private:
 	static FileManager* fileManager;
 
-	const std::string aabbCalc = "Running";
-	const int aabbRate = 60;
-
 	FileManager();
 
+	//埋め込められたgltfモデルを取得する
 	int getModelResource(GLTFOBJECT obj);
 
-	uint32_t imageDataCount = 0;
-
-	uint32_t allVertNum;
+	//コライダーの計算用変数
 	glm::vec3 minPos;
 	glm::vec3 maxPos;
-	glm::vec3 pivot;
 
-	std::vector<GLTFOBJECT> loadAnimationFiles;
+	//std::vector<GLTFOBJECT> loadAnimationFiles;
 
+	//与えられた文字列からファイルの名前のみを取得する
 	std::string splitFileName(std::string filePath);
 
+	//gltfモデルの読み込みを開始する
 	GltfModel* loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel);
+	//gltfモデルのノードを再帰的に読み込む
 	void loadNode(GltfNode* parent,GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
+	//gltfモデルのメッシュを読み込む
 	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model);
+	//AABBのためにgltfモデルの頂点のxyzの各軸の最小値と最大値を求める
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
+	//gltfモデルのプリミティブ単位で読み込む
 	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel,GltfModel* model);
+	//gltfモデルのアニメーションを読み込む
 	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
-	int splitPos(std::string text,std::array<float, 4>& coliderSetting);
+	//gltfモデルのスケルトンを読み込む
 	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
+	//自前のModelクラスにスケルトンを設定する
 	void setSkin(GltfNode* node, GltfModel* model);
 
+	//テクスチャを読み込む
 	void loadTextures(GltfModel* model,const tinygltf::Model gltfModel);
+	//マテリアルをメッシュに設定する
 	void loadMaterial(GltfModel* model,tinygltf::Model gltfModel);
-
+	//埋め込まれたgltfモデルを取得する
 	void loadgltfModel(int id, void** ptr, int& size);
 
 public:
@@ -74,7 +80,8 @@ public:
 		fileManager = nullptr;
 	}
 
+	//luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
 	std::shared_ptr<GltfModel> loadModel(GLTFOBJECT obj);
+	//luaスクリプトからSceneクラスを介して呼び出される。新しい画像が求められたときのみ、解析処理をする
 	std::shared_ptr<ImageData> loadImage(std::string filePath);
-	//std::shared_ptr<Animation> loadAnimations(GltfModel* model, OBJECT obj);
 };

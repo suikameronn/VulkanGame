@@ -2,7 +2,6 @@
 
 Player::Player()
 {
-	jumpHeight = 0.0f;
 	controllable = true;
 	moveSpeed = 1.0f;
 
@@ -11,19 +10,20 @@ Player::Player()
 
 Player::Player(std::string luaScriptPath)
 {
-	jumpHeight = 0.0f;
 	controllable = true;
 	moveSpeed = 1.0f;
 
 	physicBase = std::make_unique<PhysicBase>();
 }
 
+//luaから呼び出される関数を登録される
 void Player::registerGlueFunctions()
 {
-	lua_register(lua, "setSpeed", glueSetSpeed);
-	lua_register(lua, "setJumpHeight", glueSetJumpHeight);
+	lua_register(lua, "setSpeed", glueSetSpeed);//移動速度の設定
+	lua_register(lua, "setJumpHeight", glueSetJumpHeight);//ジャンプの高さの設定
 }
 
+//キー入力からプレイヤーを移動させる
 glm::vec3 Player::inputMove()
 {
 	glm::vec3 moveDirec;
@@ -85,6 +85,7 @@ glm::vec3 Player::inputMove()
 	return moveDirec;
 }
 
+//初回フレームのみ実行
 void Player::initFrameSetting()
 {
 	if (lua)
@@ -108,6 +109,7 @@ void Player::initFrameSetting()
 	}
 }
 
+//キー入力の取得
 void Player::customUpdate()
 {
 	if (gltfModel->animations.size() > 0)
@@ -119,16 +121,19 @@ void Player::customUpdate()
 	setPosition(this->position + moveDirec);
 }
 
+//移動速度を設定する
 void Player::setSpeed(float s)
 {
 	moveSpeed = s;
 }
 
+//ジャンプの高さを設定する
 void Player::setMaxJumpHeight(float height)
 {
 	maxJumpHeight = height;
 }
 
+//リスタート地点へプレイヤーをワープさせる
 void Player::restart(glm::vec3 startPoint)
 {
 	setZeroVelocity();

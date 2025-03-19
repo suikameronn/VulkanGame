@@ -14,38 +14,48 @@ void Storage::cleanup()
 
 }
 
-//StorageにGltfModelを追加する
+//gltfモデルを読み込んだ際に、このクラスに格納する。
+//再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
 void Storage::addModel(GLTFOBJECT obj, GltfModel* model)
 {
 	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
 }
 
+//上と同様、画像を読み込んだ際にこのクラスに格納する
 void Storage::addImageData(std::string path,ImageData* image)
 {
 	imageDataStorage[path] = std::shared_ptr<ImageData>(image);
 }
 
-//StorageにCameraを追加する
+//VulkanBaseからカメラにアクセス出るように、Sceneクラスのカメラを設定する
 void Storage::setCamera(std::shared_ptr<Camera> c)
 {
 	camera = c;
 }
 
-//StorageにModelを追加する
+//Sceneクラスでluaで設定されたオブジェクトはこのクラスに格納し、このクラスからVulkanBaseでそのオブジェクトのレンダリングを行う
 void Storage::addModel(std::shared_ptr<Model> model)
 {
 	VulkanBase::GetInstance()->setModelData(model);
 	sceneModelStorage.push_back(std::shared_ptr<Model>(model));
 }
 
+//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
 void Storage::addLight(std::shared_ptr<PointLight> pl)
 {
 	scenePointLightStorage.push_back(pl);
 }
 
+//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
 void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 {
 	sceneDirectionalLightStorage.push_back(dl);
+}
+
+//通常のレンダリングで必要なdescriptorSetの作成
+void Storage::prepareDescriptorSets()
+{
+	VulkanBase::GetInstance()->prepareDescriptorSets();
 }
 
 void Storage::prepareLightsForVulkan()
@@ -67,13 +77,14 @@ void Storage::prepareDescriptorData()
 	}
 }
 
-//StorageのCameraにアクセスする
+//カメラへの参照を返す
 std::shared_ptr<Camera> Storage::accessCamera()
 {
 	return camera;
 }
 
-//Storageに指定されあGltfModelが既に存在しているかどうかを返す
+//求められたリソースがすでにこのクラスに格納されているかどうかを返す
+//この関数では、その判定のみを担う
 bool Storage::containModel(GLTFOBJECT obj)
 {
 	if (gltfModelStorage[obj] != nullptr)
@@ -86,6 +97,8 @@ bool Storage::containModel(GLTFOBJECT obj)
 	}
 }
 
+//求められたリソースがすでにこのクラスに格納されているかどうかを返す
+//この関数では、その判定のみを担う
 bool Storage::containImageData(std::string path)
 {
 	if (imageDataStorage[path] != nullptr)
@@ -98,39 +111,39 @@ bool Storage::containImageData(std::string path)
 	}
 }
 
+//このクラスにすでに格納されたgltfModelを返す
 std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& Storage::getgltfModel()
 {
 	return gltfModelStorage;
 }
 
-//StorageからGltfModelを読み取る
+//このクラスにすでに格納されたgltfModelのmapを返す
 std::shared_ptr<GltfModel> Storage::getgltfModel(GLTFOBJECT obj)
 {
 	return gltfModelStorage[obj];
 }
 
-/*
-std::shared_ptr<Animation> Storage::getAnimation(OBJECT obj)
-{
-	return gltfAnimationStorage[obj];
-}
-*/
-
+//このクラスにすでに格納された画像を返す
 std::shared_ptr<ImageData> Storage::getImageData(std::string path)
 {
 	return imageDataStorage[path];
 }
 
+//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
+//同じ種類のライトがいくつあろうと、このバッファは一つのみ
 MappedBuffer& Storage::getPointLightsBuffer()
 {
 	return pointLightsBuffer;
 }
 
+//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
+//同じ種類のライトがいくつあろうと、このバッファは一つのみ
 MappedBuffer& Storage::getDirectionalLightsBuffer()
 {
 	return directionalLightsBuffer;
 }
 
+//コライダー用のAABBを計算する
 void Storage::calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax)
 {
 	boundingMin = glm::vec3(FLT_MAX);
@@ -169,11 +182,13 @@ void Storage::calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMa
 	}
 }
 
+//キューブマッピング用のHDRI画像を設定する
 void Storage::setCubemapTexture(std::shared_ptr<ImageData> image)
 {
 	cubemapImage = image;
 }
 
+//HDRI画像を返す、キューブマップ作成時のVulkanBaseから呼び出される
 std::shared_ptr<ImageData> Storage::getCubemapImage()
 {
 	return cubemapImage;

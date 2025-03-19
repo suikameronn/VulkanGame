@@ -1,5 +1,7 @@
 #include"Light.h"
 
+//各種設定はluaからSceneクラスを開始して設定される
+
 PointLight::PointLight()
 {
 	objNum = POINTLIGHT;

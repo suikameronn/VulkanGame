@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0,binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -10,16 +10,19 @@ layout(set = 0,binding = 0) uniform UniformBufferObject {
 } matricesUBO;
 
 layout(location = 0) in vec3 inPosition;
+//IBLのspecularのBRDFの事前計算以外では使わない
+layout(location = 1) in vec2 inUV;
 
-layout (location = 0) out vec3 outTexCoords;
+layout (location = 0) out vec3 localPos;
+layout (location = 1) out vec2 outUV;
 
 void main() 
 {
     mat4 viewMat = mat4(mat3(matricesUBO.view));
 
     gl_Position = matricesUBO.proj * viewMat * vec4(inPosition,1.0);
-    gl_Position.z = 1.0;
-    gl_Position.w = 1.0;
 
-    outTexCoords = inPosition;
+    localPos = inPosition;
+
+    outUV = inUV;
 }

@@ -5,6 +5,7 @@
 
 extern GLFWwindow* window;
 
+//キー入力用のenum
 enum
 {
 	a = 97,
@@ -59,6 +60,7 @@ struct KeyChar
 	unsigned int charInfo;
 };
 
+//コントローラの入力を受け取る
 class Controller
 {
 private:

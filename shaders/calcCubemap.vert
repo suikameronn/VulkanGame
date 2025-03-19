@@ -15,12 +15,10 @@ layout (location = 0) out vec3 localPos;
 
 void main() 
 {
+    mat4 viewMat = mat4(mat3(matricesUBO.view));
+
+    gl_Position = matricesUBO.proj * viewMat * vec4(inPosition,1.0);
+
     localPos = inPosition;
-
-    vec4 pos;
-    pos = matricesUBO.model * vec4(inPosition,1.0);
-
-    gl_Position = matricesUBO.proj * matricesUBO.view * pos;
-    gl_Position.y = -gl_Position.y;
-    gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
+    localPos.y = -localPos.y;
 }

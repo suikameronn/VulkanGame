@@ -11,6 +11,7 @@ FileManager::FileManager()
 {
 }
 
+//–„‚ß‚ß‚ç‚ê‚½gltfƒ‚ƒfƒ‹‚ğæ“¾‚·‚é
 int FileManager::getModelResource(GLTFOBJECT obj)
 {
     switch (obj)
@@ -28,6 +29,7 @@ int FileManager::getModelResource(GLTFOBJECT obj)
     return -1;
 }
 
+//–„‚ß‚Ü‚ê‚½gltfƒ‚ƒfƒ‹‚ğæ“¾‚·‚é
 void FileManager::loadgltfModel(int id, void** ptr, int& size)
 {
     HRESULT hr = S_OK;
@@ -51,6 +53,7 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
     }
 }
 
+//luaƒXƒNƒŠƒvƒg‚©‚çSceneƒNƒ‰ƒX‚ğ‰î‚µ‚ÄŒÄ‚Ño‚³‚ê‚éBV‚µ‚¢ƒ‚ƒfƒ‹‚ğ‹‚ß‚ç‚ê‚½‚Æ‚«‚Ì‚İA‰ğÍˆ—‚ğ‚·‚é
 std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚·
 {
     Storage* storage = Storage::GetInstance();
@@ -71,8 +74,6 @@ std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚
     binary = gltfContext.LoadBinaryFromMemory(&gltfModel, &error, &warning, static_cast<unsigned char*>(ptr), size);
     const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//ƒfƒtƒHƒ‹ƒgƒV[ƒ“‚ª‚ ‚ê‚Î‚»‚ê‚ğA‚È‚¯‚ê‚ÎÅ‰‚ÌƒV[ƒ“
 
-    allVertNum = 0;
-    pivot = glm::vec3(0.0);
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
@@ -85,6 +86,7 @@ std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚
     return storage->getgltfModel(obj);
 }
 
+//ƒeƒNƒXƒ`ƒƒ‚ğ“Ç‚İ‚Ş
 void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel)//‰æ‘œƒf[ƒ^‚ğ“Ç‚İæ‚èAƒeƒNƒXƒ`ƒƒƒf[ƒ^‚ğì¬‚·‚é
 {
     for (tinygltf::Texture tex : gltfModel.textures)
@@ -104,6 +106,7 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
     }
 }
 
+//–„‚ß‚Ü‚ê‚½gltfƒ‚ƒfƒ‹‚ğæ“¾‚·‚é
 GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)//gltfƒ‚ƒfƒ‹‚Ìƒf[ƒ^‚ğ“Ç‚İæ‚é
 {
     float scale = 1.0f;
@@ -136,7 +139,7 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     return model;
 }
 
-
+//gltfƒ‚ƒfƒ‹‚Ìƒm[ƒh‚ğÄ‹A“I‚É“Ç‚İ‚Ş
 void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale)
 {
     current->index = nodeIndex;
@@ -270,7 +273,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         normByteStride = normAccessor.ByteStride(normView) ? (normAccessor.ByteStride(normView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
     }
 
-    // UVs
+    //uv‚Ì“Ç‚İæ‚è
     if (glPrimitive.attributes.find("TEXCOORD_0") != glPrimitive.attributes.end()) {
         const tinygltf::Accessor& uvAccessor = glModel.accessors[glPrimitive.attributes.find("TEXCOORD_0")->second];
         const tinygltf::BufferView& uvView = glModel.bufferViews[uvAccessor.bufferView];
@@ -284,7 +287,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         uv1ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
     }
 
-    // Vertex colors
+    //’¸“_ƒJƒ‰[‚Ì“Ç‚İæ‚è
     if (glPrimitive.attributes.find("COLOR_0") != glPrimitive.attributes.end()) {
         const tinygltf::Accessor& accessor = glModel.accessors[glPrimitive.attributes.find("COLOR_0")->second];
         const tinygltf::BufferView& view = glModel.bufferViews[accessor.bufferView];
@@ -292,8 +295,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         color0ByteStride = accessor.ByteStride(view) ? (accessor.ByteStride(view) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
     }
 
-    // Skinning
-    // Joints
+    //ƒXƒPƒ‹ƒgƒ“‚Ì”Ô†‚Ì“Ç‚İæ‚è
     if (glPrimitive.attributes.find("JOINTS_0") != glPrimitive.attributes.end()) {
         const tinygltf::Accessor& jointAccessor = glModel.accessors[glPrimitive.attributes.find("JOINTS_0")->second];
         const tinygltf::BufferView& jointView = glModel.bufferViews[jointAccessor.bufferView];
@@ -302,6 +304,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         jointByteStride = jointAccessor.ByteStride(jointView) ? (jointAccessor.ByteStride(jointView) / tinygltf::GetComponentSizeInBytes(jointComponentType)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
     }
 
+    //ƒXƒPƒ‹ƒgƒ“‚ÌƒEƒFƒCƒg‚Ì“Ç‚İæ‚è
     if (glPrimitive.attributes.find("WEIGHTS_0") != glPrimitive.attributes.end()) {
         const tinygltf::Accessor& weightAccessor = glModel.accessors[glPrimitive.attributes.find("WEIGHTS_0")->second];
         const tinygltf::BufferView& weightView = glModel.bufferViews[weightAccessor.bufferView];
@@ -315,6 +318,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         hasSkin = true;
     }
 
+    //’¸“_‚ÉŠe—v‘f‚ğİ’è‚µ‚Ä‚¢‚­
     for (size_t v = 0; v < posAccessor.count; v++) {
         Vertex vert;
         vert.pos = glm::vec3(glm::make_vec3(&bufferPos[v * posByteStride]));
@@ -336,17 +340,12 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
                 vert.boneID1 = glm::ivec4(glm::make_vec4(&buf[v * jointByteStride]));
                 break;
             }
-            default:
-                // Not supported by spec
-                std::cerr << "Joint component type " << jointComponentType << " not supported!" << std::endl;
-                break;
             }
         }
         else {
             vert.boneID1 = glm::ivec4(0);
         }
         vert.weight1 = hasSkin ? glm::make_vec4(&bufferWeights[v * weightByteStride]) : glm::vec4(0.0f);
-        // Fix for all zero weights
         if (glm::length(vert.weight1) == 0.0f) {
             vert.weight1 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
         }
@@ -386,9 +385,6 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
             }
             break;
         }
-        default:
-            std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
-            return;
         }
     }
 
@@ -402,6 +398,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
     indexStart += indexCount;
 }
 
+//gltfƒ‚ƒfƒ‹‚ÌƒAƒjƒ[ƒVƒ‡ƒ“‚ğ“Ç‚İ‚Ş
 void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
 {
     for (tinygltf::Animation anim : gltfModel.animations) 
@@ -412,7 +409,7 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
             animation.name = std::to_string(model->animations.size());
         }
 
-        // Samplers
+        //ƒAƒjƒ[ƒVƒ‡ƒ“‚ÌƒTƒ“ƒvƒŠƒ“ƒO‚Ìİ’è
         for (auto& samp : anim.samplers) {
             AnimationSampler sampler{};
 
@@ -426,7 +423,7 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
                 sampler.interpolation = AnimationSampler::InterpolationType::CUBICSPLINE;
             }
 
-            // Read sampler input time values
+            //ƒAƒjƒ[ƒVƒ‡ƒ“‚ÌƒL[‚ÌŠÔ‚Ìæ“¾
             {
                 const tinygltf::Accessor& accessor = gltfModel.accessors[samp.input];
                 const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
@@ -450,7 +447,7 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
                 }
             }
 
-            // Read sampler output T/R/S values 
+            //ƒAƒjƒ[ƒVƒ‡ƒ“‚ÌƒL[‚ÌˆÚ“®/‰ñ“]/Šg‘å‚Ìİ’è
             {
                 const tinygltf::Accessor& accessor = gltfModel.accessors[samp.output];
                 const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
@@ -492,7 +489,7 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
             animation.samplers.push_back(sampler);
         }
 
-        // Channels
+        //ˆÚ“®/‰ñ“]/Šg‘å‚Ìİ’è
         for (auto& source : anim.channels) {
             AnimationChannel channel{};
 
@@ -522,38 +519,14 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
     }
 }
 
-int FileManager::splitPos(std::string text, std::array<float, 4>& coliderSetting)
-{
-    int spacePos = 0;
-    int beforeSpacePos = 0;
-    std::string substr;
-
-    for(int i = 0;i < 3;i++)
-    {
-        spacePos = static_cast<int>(text.find(" ",beforeSpacePos));
-        if (spacePos == std::string::npos)
-        {
-            return -1;
-        }
-
-        substr = text.substr(beforeSpacePos, spacePos - beforeSpacePos - 1);
-        coliderSetting[i] = std::stof(substr);
-
-        beforeSpacePos = spacePos + 1;
-    }
-    substr = text.substr(beforeSpacePos, text.length() - beforeSpacePos);
-    coliderSetting[3] = std::stof(substr);
-
-    return 0;
-}
-
+//gltfƒ‚ƒfƒ‹‚ÌƒXƒPƒ‹ƒgƒ“‚ğ“Ç‚İ‚Ş
 void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
 {
     for (tinygltf::Skin& source : gltfModel.skins) {
         Skin* newSkin = new Skin{};
         newSkin->name = source.name;
 
-        // Find skeleton root node
+        //ƒ‹[ƒgƒm[ƒh‚Ìİ’è
         if (source.skeleton > -1) {
             newSkin->skeletonRoot = model->nodeFromIndex(source.skeleton);
         }
@@ -563,7 +536,7 @@ void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
         }
 
 
-        // Find joint nodes
+        //ƒXƒPƒ‹ƒgƒ“‚ª”Ô†‚Åw’è‚µ‚½ƒm[ƒh‚ğŒ©‚Â‚¯AModelƒNƒ‰ƒX‚ÌƒXƒPƒ‹ƒgƒ“‚Éƒm[ƒh‚ğİ’è‚µ‚Ä‚¢‚­
         int globalHasSkinNodeIndex = 1;
         for (int jointIndex : source.joints) {
             GltfNode* node = model->nodeFromIndex(jointIndex);
@@ -575,7 +548,7 @@ void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
         }
         model->jointNum = globalHasSkinNodeIndex;
 
-        // Get inverse bind matrices from buffer
+        //ƒ{[ƒ“‹óŠÔ‚É–ß‚·s—ñ‚ğİ’è‚µ‚Ä‚¢‚­
         if (source.inverseBindMatrices > -1) {
             const tinygltf::Accessor& accessor = gltfModel.accessors[source.inverseBindMatrices];
             const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
@@ -584,15 +557,11 @@ void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
             memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
         }
 
-        if (newSkin->joints.size() > 128) {
-            std::cerr << "[WARNING] Skin " << newSkin->name << " has " << newSkin->joints.size() << " joints, which is higher than the supported maximum of " << 128 << "\n";
-            std::cerr << "[WARNING] glTF scene may display wrong/incomplete\n";
-        }
-
         model->skins.push_back(newSkin);
     }
 }
 
+//©‘O‚ÌModelƒNƒ‰ƒX‚ÉƒXƒPƒ‹ƒgƒ“‚ğİ’è‚·‚é
 void FileManager::setSkin(GltfNode* node,GltfModel* model)
 {
     if (node->skinIndex > -1)
@@ -606,6 +575,7 @@ void FileManager::setSkin(GltfNode* node,GltfModel* model)
     }
 }
 
+//—^‚¦‚ç‚ê‚½•¶š—ñ‚©‚çƒtƒ@ƒCƒ‹‚Ì–¼‘O‚Ì‚İ‚ğæ“¾‚·‚é
 std::string FileManager::splitFileName(std::string filePath)
 {
     int pos = static_cast<int>(filePath.rfind('/'));
@@ -614,6 +584,7 @@ std::string FileManager::splitFileName(std::string filePath)
     return filePath;
 }
 
+//ƒ}ƒeƒŠƒAƒ‹‚ğƒƒbƒVƒ…‚Éİ’è‚·‚é
 void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
 {
     for (tinygltf::Material& mat : gltfModel.materials)

@@ -12,11 +12,9 @@ const uint32_t HEIGHT = 600;
 GLFWwindow* window;
 
 int main() {
-#ifdef _DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
-    _CrtSetBreakAlloc(28744);
+    //_CrtSetBreakAlloc(28744);
 
-#endif
 
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

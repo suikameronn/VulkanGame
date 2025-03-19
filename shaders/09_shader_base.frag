@@ -49,6 +49,11 @@ layout(set = 3,binding = 0) uniform DirectionalLightUBO
 
 layout(set = 4,binding = 0) uniform sampler2D shadowMap;
 
+layout(set = 5,binding = 0) uniform samplerCube diffuseMap;
+
+layout(set = 6,binding = 0) uniform samplerCube specularReflectionMap;
+layout(set = 7,binding = 0) uniform sampler2D specularBRDFMap;
+
 layout(location = 0) out vec4 outColor;
 
 const float directF0 = 0.4;
@@ -127,6 +132,11 @@ float shadowCalc(vec4 shadowCoord, vec2 off)
 		}
 	}
 	return shadow;
+}
+
+vec3 IBL(float roughness)
+{
+	
 }
 
 void main() {

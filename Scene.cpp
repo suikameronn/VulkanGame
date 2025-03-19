@@ -22,6 +22,7 @@ Scene::~Scene()
 {
 }
 
+//初回フレームのみ実行 ステージ上のすべてのオブジェクトの初回フレーム時の設定を行う
 void Scene::initFrameSetting()
 {
 	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの初期化処理
@@ -31,28 +32,32 @@ void Scene::initFrameSetting()
 	player->initFrameSetting();//プレイヤークラスのみ別枠
 	player->setPosition(startPoint);//プレイヤーを初期位置に
 
+	Storage::GetInstance()->prepareDescriptorSets();
+
 	setLights();//ライトの他のクラスのデータを用意
 
-	Storage::GetInstance()->prepareDescriptorData();//descriptorSetの用意
 	Storage::GetInstance()->prepareLightsForVulkan();//LightにVulkanでの変数などを持たせる
+	Storage::GetInstance()->prepareDescriptorData();//descriptorSetの用意
 
 	setModels();//モデルの他のクラスのデータを用意
 }
 
-void Scene::initLuaScript(std::string path)//luaスクリプトの読み取り
+//luaスクリプトの読み取り、実行
+void Scene::initLuaScript(std::string path)
 {
 	lua = luaL_newstate();
 	luaL_openlibs(lua);
 
-	lua_pushlightuserdata(lua, this);
+	lua_pushlightuserdata(lua, this);//このSceneのインスタンスをluaの仮想マシンに送る
 	lua_setglobal(lua, "Scene");//インスタンスをluaスクリプトで使えるようにする
 
-	registerOBJECT();
-	registerFunctions();
+	registerOBJECT();//gltfモデルを指定しるための番号を送る
+	registerFunctions();//スクリプトから呼び出す関数を登録する
 
-	luaL_dofile(lua,path.c_str());
+	luaL_dofile(lua,path.c_str());//スクリプトの実行
 }
 
+//luaの仮想マシンにgltfモデルを指定するための番号を設定する
 void Scene::registerOBJECT()//enumをスクリプトと共有する
 {
 	lua_pushnumber(lua, (int)GLTFOBJECT::gltfTEST);
@@ -65,7 +70,7 @@ void Scene::registerOBJECT()//enumをスクリプトと共有する
 	lua_setglobal(lua, "LEATHER");//白い革
 }
 
-void Scene::registerFunctions()//luaに関数を登録
+void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 {
 	lua_register(lua, "glueCreateModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
 	lua_register(lua, "glueCreatePlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
@@ -80,7 +85,6 @@ void Scene::registerFunctions()//luaに関数を登録
 	lua_register(lua, "glueSetColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
 	lua_register(lua, "glueSetDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
 	lua_register(lua, "glueSetGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
-	lua_register(lua, "glueSetSlippery", glueSceneFunction::glueSetSlippery);//摩擦力を設定する
 	lua_register(lua, "glueCreatePointLight", glueSceneFunction::glueCreatePointLight);//ポイントライトを作成
 	lua_register(lua, "glueSetLightColor", glueSceneFunction::glueSetLightColor);//ライトのカラーを設定
 	lua_register(lua, "glueCreateDirectionalLight", glueSceneFunction::glueCreateDirectionalLight);//平行光源を作成
@@ -90,16 +94,19 @@ void Scene::registerFunctions()//luaに関数を登録
 	lua_register(lua, "glueSetLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
 }
 
+//初期座標の設定
 void Scene::setStartPoint(glm::vec3 point)
 {
 	startPoint = point;
 }
 
+//y座標の下限の設定
 void Scene::setLimitY(float y)
 {
 	limitY = y;
 }
 
+//オブジェクトの接地判定などをリセット
 void Scene::resetStatus()
 {
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end(); itr++)
@@ -108,26 +115,24 @@ void Scene::resetStatus()
 	}
 }
 
-bool Scene::UpdateScene()//シーン全体のアップデート処理
+bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 {
 	bool exit = false;
 
-	camera->Update();
+	camera->Update();//カメラの更新処理
 
-	player->Update();
-	player->updateTransformMatrix();
+	player->Update();//プレイヤーの更新処理
+	player->updateTransformMatrix();//プレイヤーの座標変換行列の更新
 
-	for (int i = 0; i < sceneModels.size(); i++)
+	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの更新処理
 	{
-		sceneModels[i]->Update();
+		sceneModels[i]->Update();//オブジェクトの更新処理
 
 		if (sceneModels[i]->uniformBufferChange)//オブジェクトの位置や向きが変わった場合
 		{
 			sceneModels[i]->updateTransformMatrix();//MVPのモデル行列を更新する
 		}
 	}
-
-	//std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(100)));//処理を停止する
 
 	resetStatus();//シーン全体のオブジェクトのリセット処理を行う
 
@@ -147,13 +152,14 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
 					{
 						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
-						if (groundCollision(collisionVector))
+						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
+															 //つまり、床のようなオブジェクトの上に載っている状況の場合
 						{
-							sceneModels[i]->addGroundingObject(sceneModels[j]);
+							sceneModels[i]->addGroundingObject(sceneModels[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
 						}
 					}
 
-					if (sceneModels[j]->isMovable)
+					if (sceneModels[j]->isMovable)//上と同様
 					{
 						sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
 						if (groundCollision(-collisionVector))
@@ -167,6 +173,7 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 	}
 
 	//Playerクラスとモデルクラスの当たり判定
+	//他、上のModelクラス同士の処理と同様
 	for (int i = 0; i < sceneModels.size(); i++)
 	{
 		if (!sceneModels[i]->hasColider())
@@ -194,6 +201,7 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 		}
 	}
 
+	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
 	for (int i = 0; i < sceneModels.size(); i++)
 	{
 		if (sceneModels[i]->uniformBufferChange)//衝突解消によってモデルが移動したら、再度行列の更新
@@ -203,27 +211,30 @@ bool Scene::UpdateScene()//シーン全体のアップデート処理
 	}
 	player->updateTransformMatrix();
 
+	//もしプレイヤーがステージの下限を超えたら、リスタートさせる
 	if (player->getPosition().y < limitY)
 	{
 		player->restart(startPoint);
 	}
 
-	return exit;
+	return exit;//ウィンドウを閉じようとした場合は、falsを送り、ゲームの終了処理をさせる 
 }
 
+//ステージ上のオブジェクトにVulkanの変数を設定する
 void Scene::setModels()
 {
 	//描画するモデルのポインタを積んでいく
 	for (int i = 0;i < sceneModels.size();i++)
 	{
-		sceneModels[i]->updateTransformMatrix();
-		Storage::GetInstance()->addModel(sceneModels[i]);
+		sceneModels[i]->updateTransformMatrix();//座標変換行列の更新
+		Storage::GetInstance()->addModel(sceneModels[i]);//gpu上に頂点用などのバッファーを確保する
 	}
 
-	player->updateTransformMatrix();
-	Storage::GetInstance()->addModel(player);
+	player->updateTransformMatrix();//座標変換行列の更新
+	Storage::GetInstance()->addModel(player);//プレイヤーの扱う3Dモデルにおいても同様バッファーを確保する
 }
 
+//ステージ上のライトにVulkanの変数を設定する
 void Scene::setLights()
 {
 	Storage* storage = Storage::GetInstance();
@@ -238,17 +249,18 @@ void Scene::setLights()
 	for (std::shared_ptr<PointLight> pl : scenePointLights)
 	{
 		pl->updateTransformMatrix();
-		storage->addLight(pl);
+		storage->addLight(pl);//バッファーの確保
 	}
 
 	for (std::shared_ptr<DirectionalLight> dl : sceneDirectionalLights)
 	{
 		dl->updateTransformMatrix();
-		storage->addLight(dl);
+		storage->addLight(dl);//バッファーの確保
 	}
 }
 
-bool Scene::groundCollision(glm::vec3 collisionVector)//滑り具合を調整する
+//コライダーが床に接地しているかの判定 trueの場合はその床の移動を追従する
+bool Scene::groundCollision(glm::vec3 collisionVector)
 {
 	glm::vec3 v = -glm::normalize(collisionVector);
 
@@ -257,7 +269,8 @@ bool Scene::groundCollision(glm::vec3 collisionVector)//滑り具合を調整する
 	return dot > 0;
 }
 
-std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)//光線を飛ばして、コライダーを探す
+//四角形を延ばして、衝突判定を行う、接地判定に使われる
+std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)
 {
 	for (int i = 0; i < sceneModels.size(); i++)
 	{

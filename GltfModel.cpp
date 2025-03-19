@@ -48,10 +48,12 @@ GltfNode* GltfModel::nodeFromIndex(int index)
 	return node;
 }
 
+//アニメーションの各ノードの更新処理
 void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex)
 {
 	if (parent->mesh && parent->skin)
 	{
+		//このノードの所属するジョイントのアニメーション行列を計算
 		parent->update(jointMatrices[parent->globalHasSkinNodeIndex],updatedIndex);
 	}
 
@@ -61,6 +63,7 @@ void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat
 	}
 }
 
+//アニメーション長さを取得
 float GltfModel::animationDuration(std::string animationName)
 {
 	Animation& animation = animations[animationName];
@@ -68,7 +71,8 @@ float GltfModel::animationDuration(std::string animationName)
 	return animation.end - animation.start;
 }
 
-void GltfModel::updateAnimation(float animationTime,Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+//指定したアニメーションの行列を取得
+void GltfModel::updateAnimation(double animationTime,Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
 {
 	if (animations.empty()) {
 		std::cout << ".glTF does not contain animation." << std::endl;
@@ -86,16 +90,16 @@ void GltfModel::updateAnimation(float animationTime,Animation& animation, std::v
 
 		for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
 			if ((animationTime >= sampler.inputs[i]) && (animationTime <= sampler.inputs[i + 1])) {
-				float u = std::max(0.0f, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+				float u = static_cast<float>(std::max(0.0, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]));
 				if (u <= 1.0f) {
 					switch (channel.path) {
-					case AnimationChannel::PathType::TRANSLATION:
+					case AnimationChannel::PathType::TRANSLATION://平行移動
 						sampler.translate(i, animationTime, channel.node);
 						break;
-					case AnimationChannel::PathType::SCALE:
+					case AnimationChannel::PathType::SCALE://スケール
 						sampler.scale(i, animationTime, channel.node);
 						break;
-					case AnimationChannel::PathType::ROTATION:
+					case AnimationChannel::PathType::ROTATION://回転
 						sampler.rotate(i, animationTime, channel.node);
 						break;
 					}
@@ -111,6 +115,7 @@ void GltfModel::updateAnimation(float animationTime,Animation& animation, std::v
 	}
 }
 
+//AABBの計算
 void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
 {
 	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX));
@@ -134,6 +139,7 @@ void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
 	}
 }
 
+//gltfモデルの初期ポーズの頂点の座標の最小値最大値の取得
 void GltfModel::getVertexMinMax(GltfNode* node)
 {
 	if (node->bvh.valid)
@@ -148,11 +154,7 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 	}
 }
 
-std::map<float, std::pair<glm::vec3, glm::vec3>>& GltfModel::getAnimationAABB(std::string animationName)
-{
-	return animations[animationName].coliderVertices;
-}
-
+//gpu上のバッファなどの削除処理
 void GltfModel::cleanUpVulkan(VkDevice& device)
 {
 	for (std::shared_ptr<Material> material:materials)
@@ -164,6 +166,7 @@ void GltfModel::cleanUpVulkan(VkDevice& device)
 
 	for (int i = 0; i < textureDatas.size(); i++)
 	{
+		//テクスチャのデータの破棄
 		textureDatas[i]->destroy(device);
 	}
 

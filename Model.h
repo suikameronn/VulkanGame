@@ -9,40 +9,51 @@
 
 class Scene;
 
-template<typename T>
-uint32_t getSize(T v)
-{
-	return v.size();
-}
-
+//3Dモデルを持つオブジェクトを担うクラス
 class Model:public Object
 {
 protected:
+
+	//レイキャスト時使用
 	Scene* scene;
 
-	uint32_t imageDataCount;
-
+	//物理挙動用
 	std::unique_ptr<PhysicBase> physicBase;
 
+	//gltfモデルへの参照
 	std::shared_ptr<GltfModel> gltfModel;
 
+	//mvp行列用のバッファー
 	MappedBuffer modelViewMappedBuffer;
+	//gltfモデルの頂点関連用のバッファ
 	std::vector<BufferObject> pointBuffers;
+	//アニメーション用行列のバッファ
 	std::vector<MappedBuffer> animationMappedBuffers;
+	//アニメーション用行列の配列
 	std::vector<std::array<glm::mat4, 128>> jointMatrices;
 
+	//アニメーション開始時間
 	clock_t startTime;
+	//現在の時間
 	clock_t currentTime;
+	//アニメーションの再生時間
 	double deltaTime;
+	//アニメーションの切り替えフラッグ、アニメーション開始時間をリセット
+	//同一アニメーションをループさせる際、アニメーションが終了したときもtrueに
 	bool animationChange;
 
+	//gltfモデルのマテリアルの上書き用
 	std::shared_ptr<Material> material;
+	//コライダー
 	std::shared_ptr<Colider> colider;
 
+	//アイドル時に再生するアニメーションの名前
 	std::string defaultAnimationName;
+	//現在再生しているアニメーションの名前
 	std::string currentPlayAnimationName;
+	//gltfモデルの持つアニメーションの名前の配列
 	std::vector<std::string> animationNames;
-
+	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
 	std::vector<std::weak_ptr<Model>> groundingObjects;
 
 public:
@@ -53,12 +64,11 @@ public:
 
 	void registerGlueFunctions() override;//glue関数の設定
 
-	float gravity;
+	float gravity;//重力の強さ
 	void setZeroVelocity();//速度のリセット
 	void cancelGravity();//重力の打ち消し
 
-	float slippery;
-
+	//スケール
 	glm::vec3 scale;
 
 	void setDefaultAnimationName(std::string name);//デフォルトのアニメーションを設定
@@ -80,13 +90,15 @@ public:
 	BufferObject* getPointBufferData() { return pointBuffers.data(); }//頂点用バッファの取得
 	MappedBuffer& getModelViewMappedBuffer() { return modelViewMappedBuffer; }//モデルビュー行列用のバッファの取得
 	MappedBuffer* getAnimationMappedBufferData();//アニメーション用の行列のバッファの取得
-	uint32_t getimageDataCount();
 
+	//衝突を解消時、このオブジェクトを動かせるかどうか、障害物の場合、このオブジェクトは動かさないため,falseとなる
 	bool isMovable;
+	//コライダーを持っているかどうか
 	bool hasColider();
 	void setColider();//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
 
+	
 	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength);
 
 	void updateTransformMatrix() override;//座標変換行列の更新
@@ -113,11 +125,13 @@ public:
 	void clearGroundingObject();
 };
 
+/*以下の静的関数はluaスクリプト上から呼び出される*/
+
 namespace glueModelFunction//Modelクラス用のglue関数
 {
+	//Modelクラスのスケールの設定
 	static int glueSetScale(lua_State* lua)
 	{
-		//lua_getglobal(lua, "object");
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
 
 		switch (obj->getObjNum())

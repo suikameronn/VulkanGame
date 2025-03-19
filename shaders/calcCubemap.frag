@@ -15,8 +15,9 @@ vec2 SampleSphericalMap(vec3 v)
     return uv;
 }
 
-void main() {
-	vec2 uv = SampleSphericalMap(normalize(inPos)); // make sure to normalize localPos
+void main() 
+{
+	vec2 uv = SampleSphericalMap(normalize(inPos));
     vec3 color = texture(hdriTexture, uv).rgb;
     
     outColor = vec4(color, 1.0);

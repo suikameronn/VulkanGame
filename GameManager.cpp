@@ -6,7 +6,7 @@ void GameManager::initGame()//初期化設定
 {
     frameDuration = (1.0f / fps) * 1000.0f;//設定されたフレームレートから、1フレームでの最低の処理時間を設定
 
-    VulkanBase::GetInstance()->initVulkan(limitBoneDataSize);//Vulkanのデータの一部をあらかじめ用意しておく
+    VulkanBase::GetInstance()->initVulkan();//Vulkanのデータの一部をあらかじめ用意しておく
 
     createScene();//ステージの読み込み
 }
@@ -55,13 +55,17 @@ void GameManager::mainGameLoop()//メインゲームループ
     exitScene();
 }
 
+//ステージを出る
 void GameManager::exitScene()
 {
+    //ステージを破棄
     scene->Destroy();
 
+    //ゲーム全体を終了
     FinishGame();
 }
 
+//ゲーム全体の終了処理
 void GameManager::FinishGame()
 {
     FinishInstance();

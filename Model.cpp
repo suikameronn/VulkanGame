@@ -36,7 +36,6 @@ Model::Model()//3Dモデルを持つクラス
 	colider = nullptr;
 
 	gravity = 0.0f;
-	slippery = 0.0f;
 
 	defaultAnimationName = "Idle";
 }
@@ -69,7 +68,6 @@ Model::Model(std::string luaScriptPath)
 	colider = nullptr;
 
 	gravity = 0.0f;
-	slippery = 0.0f;
 
 	defaultAnimationName = "none";
 	currentPlayAnimationName = "none";
@@ -160,16 +158,13 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 	animationMappedBuffers.resize(model->primitiveCount);
 }
 
-uint32_t Model::getimageDataCount()
-{
-	return imageDataCount;
-}
-
+//再生するアニメーションをアイドル時に再生するものにする
 void Model::switchPlayAnimation()
 {
 	currentPlayAnimationName = defaultAnimationName;
 }
 
+//アニメーションを切り替える
 void Model::switchPlayAnimation(std::string nextAnimation)
 {
 	if (currentPlayAnimationName != nextAnimation)
@@ -183,8 +178,11 @@ void Model::playAnimation()//アニメーション用の行列を計算する
 {
 	if (currentPlayAnimationName != "none")
 	{
+		//アニメーションを再生し終えた
+		//あるいは、アニメーションが切り替わった場合
 		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName) || animationChange)
 		{
+			//再生時間を再び計測し始める
 			animationChange = false;
 			startTime = clock();
 		}
@@ -193,6 +191,7 @@ void Model::playAnimation()//アニメーション用の行列を計算する
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
 
+		//アニメーション行列の計算
 		gltfModel->updateAnimation(deltaTime, gltfModel->animations[currentPlayAnimationName], jointMatrices);
 	}
 }
@@ -201,6 +200,7 @@ std::array<glm::mat4, 128>& Model::getJointMatrices(int index)
 {
 	return this->jointMatrices[index];
 }
+
 
 void Model::setPosition(glm::vec3 pos)
 {
@@ -211,7 +211,7 @@ void Model::setPosition(glm::vec3 pos)
 
 	position = pos;
 
-	sendPosToChildren();
+	sendPosToChildren();//子オブジェクトに移動を伝える
 
 	uniformBufferChange = true;
 }
@@ -227,12 +227,13 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	if (colider)
 	{
-		colider->reflectMovement(transformMatrix);
+		colider->reflectMovement(transformMatrix);//コライダーにオブジェクトのトランスフォームの変更を反映させる
 	}
 
 	uniformBufferChange = false;
 }
 
+//コライダーの設定
 void Model::setColider()
 {
 	colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
@@ -250,6 +251,7 @@ bool Model::hasColider()
 	}
 }
 
+//カメラと子オブジェクト以外にも、自分の真上に載っているオブジェクトも追従させる
 void Model::sendPosToChildren()
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
@@ -264,7 +266,7 @@ void Model::sendPosToChildren()
 
 	if (!cameraObj.expired())
 	{
-		cameraObj.lock()->setParentPos(lastPos, position);
+		cameraObj.lock()->setParentPos(position);
 	}
 }
 
@@ -419,6 +421,8 @@ void Model::Update()
 		int nresult;
 		lua_resume(coroutine, nullptr, 0, &nresult);//luaのコルーチンの再開
 
+		/*luaスクリプト上で更新されたトランスフォームをc++上にも反映させる*/
+
 		receiveTransformFromLua();//luaから座標などを受け取る
 	}
 
@@ -455,14 +459,14 @@ void Model::initFrameSetting()//初回フレームの処理
 
 	if (colider)
 	{
-		colider->initFrameSettings();
+		colider->initFrameSettings();//コライダーの初期設定
 	}
 }
 
-//ボックスコライダーと線分の衝突判定を行う
+//ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う
 std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength)
 {
-	for (float i = 0.1; i <= maxLength; i += 0.1f)
+	for (float i = 0.1f; i <= maxLength; i += 0.1f)
 	{
 		std::shared_ptr<Model> hitModel = scene->raycast(origin,dir,i,this);
 		if (hitModel)
@@ -489,16 +493,20 @@ bool Model::isGround()
 	return false;
 }
 
+//当たり判定の結果、真上にいたオブジェクトを自分の移動に追従させるため、配列に追加する
+//ただし、この配列は毎フレーム初期化される
 void Model::addGroundingObject(std::weak_ptr<Model> object)
 {
 	groundingObjects.push_back(object);
 }
 
+//真上に載っているオブジェクトの配列の初期化
 void Model::clearGroundingObject()
 {
 	groundingObjects.clear();
 }
 
+//速度の停止
 void Model::setZeroVelocity()
 {
 	if (physicBase)
@@ -507,6 +515,7 @@ void Model::setZeroVelocity()
 	}
 }
 
+//重力の打ち消し
 void Model::cancelGravity()
 {
 	if (physicBase)

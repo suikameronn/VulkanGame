@@ -12,31 +12,23 @@ class PhysicBase
 {
 private:
 
+	//重力
 	glm::vec3 gravity;
-
-	std::chrono::system_clock::time_point prevFrameTime;
-	glm::vec3 prevPos;
-
-	std::chrono::system_clock::time_point frameTime;
-
-	float deltaTime;
-
-	glm::vec3 currentPos;
+	//速度
 	glm::vec3 velocity;
-	glm::vec3 acceleration;
 
 public:
 
 	PhysicBase();
 
+	//速度の更新処理
 	virtual void Update(bool isAccelerateReset = true);
-
+	//速度のリセット
 	void setZeroVelocity();
+	//重力を打ち消す(地面に足をつけているとき)
 	void cancelGravity();
-
-	virtual void setAcceleration(glm::vec3 acceleration);
-
+	//速度を向きも含めて加える
 	virtual void addVelocity(glm::vec3 addVelocity);
-
+	//現在の速度を取得する
 	virtual glm::vec3 getVelocity();
 };

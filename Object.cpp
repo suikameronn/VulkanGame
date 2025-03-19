@@ -27,7 +27,7 @@ Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 	length = 1.0f;
 }
 
-bool Object::containTag(Tag tag)//オブジェクトがそのタグを持っているかどうか
+bool Object::containTag(Tag tag)//指定されたタグを持っているかどうかを返す
 {
 	for (auto itr = tags.begin(); itr != tags.end(); itr++)
 	{
@@ -40,7 +40,7 @@ bool Object::containTag(Tag tag)//オブジェクトがそのタグを持っているかどうか
 	return false;
 }
 
-void Object::setLuaScript(std::string path)//luaスクリプトを設定
+void Object::setLuaScript(std::string path)//行動パターン用のluaスクリプトを設定する 実行はしない
 {
 	luaPath = path;
 	lua = luaL_newstate();
@@ -49,20 +49,21 @@ void Object::setLuaScript(std::string path)//luaスクリプトを設定
 	registerGlueFunctions();
 }
 
+//luaから呼び出される静的関数の登録
 void Object::registerGlueFunctions()
 {
 	lua_register(lua, "glueSetPos", glueObjectFunction::glueSetPos);
 	lua_register(lua, "glueSetRotate", glueObjectFunction::glueSetRotate);
 }
 
-void Object::bindObject(Object* obj)//オブジェクトに親子関係を設定する
+void Object::bindObject(Object* obj)//引数のオブジェクトを子オブジェクトとして設定する
 {
 	childObjects.push_back(obj);
 
 	sendPosToChildren();
 }
 
-void Object::bindCamera(std::weak_ptr<Camera> camera)//カメラがそのオブジェクトを追従させる
+void Object::bindCamera(std::weak_ptr<Camera> camera)//カメラを自分に追従させる
 {
 	cameraObj = camera;
 
@@ -74,8 +75,10 @@ glm::vec3 Object::inputMove()//キー入力から移動させる
 	glm::vec3 moveDirec;
 	auto controller = Controller::GetInstance();
 
-	if (cameraObj.expired())
+	if (cameraObj.expired())//このオブジェクトがカメラを追従させている場合
 	{
+		//このオブジェクトの正面、右のベクトルをカメラに合わせる
+		//これで、オブジェクトが視点のに合わせて進むようになる
 		forward = cameraObj.lock()->forward;
 		right = cameraObj.lock()->right;
 	}
@@ -104,6 +107,7 @@ glm::vec3 Object::inputMove()//キー入力から移動させる
 	return moveDirec;
 }
 
+//luaスクリプトに自身の現在の座標、回転の値を送る
 void Object::sendTransformToLua()
 {
 	if (lua)
@@ -128,6 +132,7 @@ void Object::sendTransformToLua()
 	}
 }
 
+//luaスクリプトから、座標、回転の値を受け取る
 void Object::receiveTransformFromLua()
 {
 	if (lua)
@@ -164,7 +169,7 @@ void Object::setPosition(glm::vec3 pos)//座標の設定
 
 	position = pos;
 
-	sendPosToChildren();//子オブジェクトがいる場合、それも更新する
+	sendPosToChildren();//子オブジェクトがいる場合、追従させる
 
 	uniformBufferChange = true;
 }
@@ -174,12 +179,13 @@ glm::vec3 Object::getPosition()
 	return position;
 }
 
+//モデル行列を取得
 glm::mat4 Object::getTransformMatrix()
 {
 	return transformMatrix;
 }
 
-void Object::sendPosToChildren()//子オブジェクトを追従させる
+void Object::sendPosToChildren()//自分の移動を子オブジェクトに送り、子オブジェクトを自分の移動に追従させる
 {
 	for (auto itr = childObjects.begin(); itr != childObjects.end(); itr++)
 	{
@@ -191,15 +197,16 @@ void Object::sendPosToChildren()//子オブジェクトを追従させる
 
 	if (!cameraObj.expired())
 	{
-		cameraObj.lock()->setParentPos(lastPos,position);
+		cameraObj.lock()->setParentPos(position);
 	}
 }
 
-void Object::setParentPos(glm::vec3 lastPos,glm::vec3 currentPos)//親オブジェクトを追従する
+void Object::setParentPos(glm::vec3 lastPos,glm::vec3 currentPos)//親オブジェクトの移動を受け取り、親オブジェクトの移動に追従する
 {
 	position += currentPos - lastPos;
 }
 
+//luaの仮想マシンに、自身の座標と回転を記録する変数を作成
 void Object::createTransformTable()
 {
 	lua_newtable(coroutine);
@@ -221,7 +228,7 @@ void Object::createTransformTable()
 	lua_setglobal(coroutine, "Rotate");
 }
 
-void Object::initFrameSetting()//初回フレームの設定を行う
+void Object::initFrameSetting()//初回フレームのみ実行、luaスクリプトを実行する
 {
 	if (lua)
 	{
@@ -229,10 +236,11 @@ void Object::initFrameSetting()//初回フレームの設定を行う
 		coroutine = lua_newthread(lua);
 		lua_getglobal(coroutine, "Update");
 
-		createTransformTable();
+		createTransformTable();//lua上に変数の作成
 	}
 }
 
+//前回フレームのトランスフォームを取得する
 glm::vec3 Object::getLastPosition()
 {
 	return lastPos;
@@ -243,6 +251,7 @@ Rotate Object::getLastRotate()
 	return lastRotate;
 }
 
+//一つ前のフレームの座標などのデータを設定
 void Object::setLastFrameTransform()
 {
 	lastPos = position;

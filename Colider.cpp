@@ -32,11 +32,10 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
 
-	color = glm::vec4(255.0f, 255.0f, 255.0f, 1.0f);
-
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 }
 
+//Modelクラスの初期座標から座標変換を適用する
 void Colider::initFrameSettings()
 {
 	scaleMat = glm::scale(scale);
@@ -50,36 +49,43 @@ void Colider::initFrameSettings()
 	std::copy(originalVertexPos.begin(), originalVertexPos.end(), coliderVertices.begin());
 }
 
+//座標変換を加えたコライダーの頂点を取得
 glm::vec3* Colider::getColiderVertices()
 {
 	return coliderVertices.data();
 }
 
+//コライダーの頂点を取得
 glm::vec3* Colider::getColiderOriginalVertices()
 {
 	return originalVertexPos.data();
 }
 
+//コライダーの頂点を取得
 int Colider::getColiderVerticesSize()
 {
 	return static_cast<int>(originalVertexPos.size());
 }
 
+//コライダーの頂点のインデックスを取得
 int* Colider::getColiderIndices()
 {
 	return (int*)coliderIndices.data();
 }
 
+//コライダーの頂点のインデックスのサイズを取得
 int Colider::getColiderIndicesSize()
 {
 	return static_cast<int>(coliderIndices.size());
 }
 
+//コライダーのスケール行列を取得
 glm::mat4 Colider::getScaleMat()
 {
 	return scaleMat;
 }
 
+//Modelクラスの移動などをコライダーにも反映
 void Colider::reflectMovement(glm::mat4& transform)
 {
 	for (int i = 0; i < coliderVertices.size(); i++)
@@ -90,6 +96,7 @@ void Colider::reflectMovement(glm::mat4& transform)
 	}
 }
 
+//SAT用当たり判定の実行
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector)
 {
 	float collisionDepth;
@@ -105,6 +112,7 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisio
 	return collision;
 }
 
+//GJK用当たり判定の実行
 bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 {
 	float collisionDepth;
@@ -122,7 +130,7 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 	return collision;
 }
 
-//線分と直方体の当たり判定
+//ボックスレイキャスト用の当たり判定の実行
 bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
 {
 	glm::vec3 endPoint = origin + dir * length;
@@ -144,6 +152,7 @@ bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
 	return false;
 }
 
+//分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
 bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal)
 {
 	std::array<glm::vec3, 12> normals;
@@ -195,6 +204,7 @@ bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, gl
 	return true;
 }
 
+//サポート写像を求める(SAT用)
 void Colider::projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis)
 {
 	min = glm::dot(this->coliderVertices[0], axis);
@@ -218,9 +228,10 @@ void Colider::projection(float& min, float& max, glm::vec3& minVertex, glm::vec3
 	}
 }
 
+//GJK法での当たり判定を実行
 bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthVec)
 {
-	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));//適当な方向のサポート写像を求める
 
 	Simplex simplex;
 	simplex.push_front(support);
@@ -229,20 +240,20 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthV
 
 	int count = 50;
 
-	while (count > 0)
+	while (count > 0)//検査回数に制限を設ける
 	{
-		support = getSupportVector(oppColider, dir);
+		support = getSupportVector(oppColider, dir);//サポート写像を求める
 
-		if (glm::dot(support, dir) <= 0.0f)
+		if (glm::dot(support, dir) <= 0.0f)//もし求めたサポート写像が原点の方向と向きが逆だったら、当たり判定を終了
 		{
 			return false;
 		}
 
-		simplex.push_front(support);
+		simplex.push_front(support);//ベクトルを追加
 
-		if (nextSimplex(simplex, dir))
+		if (nextSimplex(simplex, dir))//単体の更新、四角錐内に原点が含まれていたら、EPAに移行
 		{
-			EPA(oppColider,simplex, collisionDepthVec);
+			EPA(oppColider,simplex, collisionDepthVec);//衝突を解消するためのベクトルの計算
 			return true;
 		}
 
@@ -252,6 +263,7 @@ bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthV
 	return false;
 }
 
+//引数の方向ベクトルの向きで最も遠い頂点を求める
 glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 {
 	glm::vec3  maxPoint = glm::vec3(0.0f);
@@ -269,20 +281,22 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 	return maxPoint;
 }
 
+//サポート写像を求める
 glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir)
 {
 	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
 }
 
+//線分同士でわかる範囲でミンコフスキー差が原点を含みそうか調べる
 bool Colider::Line(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
 	glm::vec3 b = simplex[1];
 
 	glm::vec3 ab = b - a;
-	glm::vec3 ao = -a;
+	glm::vec3 ao = -a;//a0:原点方向のベクトル
 
-	if (sameDirection(ab, ao)) 
+	if (sameDirection(ab, ao))//bが原点方向に位置しない=単体を三角形にしても原点を含まない
 	{		
 		dir = glm::cross(glm::cross(ab, ao), ab);
 	}
@@ -295,6 +309,7 @@ bool Colider::Line(Simplex& simplex, glm::vec3& dir)
 	return false;
 }
 
+//三角形でわかる範囲でミンコフスキー差が原点を含みそうか調べる
 bool Colider::Triangle(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
@@ -347,6 +362,7 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3& dir)
 	return false;
 }
 
+//四角錐でわかる範囲でミンコフスキー差が原点を含むか調べる
 bool Colider::Tetrahedron(Simplex& simplex, glm::vec3& dir)
 {
 	glm::vec3 a = simplex[0];
@@ -384,6 +400,7 @@ bool Colider::Tetrahedron(Simplex& simplex, glm::vec3& dir)
 	return true;
 }
 
+//GJKの次の単体を求める
 bool Colider::nextSimplex(Simplex& simplex, glm::vec3& dir)
 {
 	switch (simplex.size) {
@@ -395,6 +412,7 @@ bool Colider::nextSimplex(Simplex& simplex, glm::vec3& dir)
 	return false;
 }
 
+//GJK法後にEPA法で衝突を解消するためのベクトルを取得
 void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec3& collisionDepthVec)
 {
 	std::vector<glm::vec3> polytope;
@@ -486,6 +504,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 	collisionDepthVec = minNormal * (minDistance + 0.001f);//遊びをとっておく
 }
 
+//同一の線分を含まなければその頂点を単体に含める
 void Colider::addIfUniqueEdge(
 	std::vector<std::pair<size_t, size_t>>& edges,
 	const std::vector<size_t>& faces,
@@ -507,6 +526,7 @@ void Colider::addIfUniqueEdge(
 	}
 }
 
+//面の法線を取得
 std::pair<std::vector<glm::vec4>, size_t> Colider::getFaceNormals(
 	std::vector<glm::vec3>& vertices,
 	std::vector<size_t>& faces)
@@ -559,6 +579,7 @@ DescriptorInfo& Colider::getDescInfo()
 	return descInfo;
 }
 
+//コライダー用のgpu上のバッファの破棄
 void Colider::cleanupVulkan()
 {
 	VkDevice device = VulkanBase::GetInstance()->GetDevice();

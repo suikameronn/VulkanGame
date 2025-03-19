@@ -14,52 +14,39 @@ enum IMAGE
 
 class ImageData;
 
-struct PrimitiveTextureCount
-{
-	uint32_t imageDataCount;
-	VkPrimitiveTopology topology;
-};
-
-inline bool operator==(const PrimitiveTextureCount& lhs, const PrimitiveTextureCount& rhs) {
-	return lhs.imageDataCount == rhs.imageDataCount && lhs.topology == rhs.topology;
-}
-
-struct Hash 
-{
-	size_t operator()(const DescriptorInfo info) const {
-		size_t a = std::hash<VkPipeline>()(info.pipeline);
-		size_t b = std::hash<VkPipelineLayout>()(info.pLayout);
-		return a ^ b;
-	}
-
-	size_t operator()(const PrimitiveTextureCount& ptc) const
-	{
-		size_t a = std::hash<uint32_t>()(ptc.imageDataCount);
-		size_t b = std::hash<VkPrimitiveTopology>()(ptc.topology);
-
-		return a ^ b;
-	}
-};
-
+//読み込んだ画像やgltfモデルなどを記録しておくクラス
+//画像やgltfモデルなどのリソースが求められた場合、まずこのクラスにすでに格納されていないか確認をする
 class Storage
 {
 private:
+	//gltfモデルが格納される
 	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>> gltfModelStorage;
+	//ファイル名をキーとして、画像データを格納する
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
-	std::unordered_map<PrimitiveTextureCount, DescriptorInfo,Hash> descriptorStorage;
-
+	//VulkanBaseからアクセスできるようにSceneクラスのカメラへの参照を持たせる、以下同様
 	std::shared_ptr<Camera> camera;
+	//キューブマッピング用立方体
 	std::shared_ptr<Model> cubemap;
+	//キューブマッピング用HDRI画像
 	std::shared_ptr<ImageData> cubemapImage;
+
+	//画面上に現れるオブジェクトを格納する
 	std::vector<std::shared_ptr<Model>> sceneModelStorage;
+	//シーン内のポイントライトを格納する
 	std::vector<std::shared_ptr<PointLight>> scenePointLightStorage;
+	//シーン内の平行光源を格納する
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLightStorage;
 
+	//ポイントライト用のDescriptorSet 色と座標を持つuniform buffer
 	VkDescriptorSet pointLightDescSet;
+	//平行光源用のDescriptorSet 色と方向を持つuniform buffer
 	VkDescriptorSet directionalLightDescSet;
 
+	//ライトのデータは種類ごとに一つのバッファー上に配列として格納する
+	//ポイントライトのuniform bufferを格納するためのバッファー
 	MappedBuffer pointLightsBuffer;
+	//平行光源ライトのuniform bufferを格納するためのバッファー
 	MappedBuffer directionalLightsBuffer;
 
 	Storage();
@@ -82,42 +69,71 @@ public:
 		return storage;
 	}
 	
+	//キューブマッピング用のHDRI画像を設定する
 	void setCubemapTexture(std::shared_ptr<ImageData> image);
+	//HDRI画像を返す、キューブマップ作成時のVulkanBaseから呼び出される
 	std::shared_ptr<ImageData> getCubemapImage();
+	//キューブマッピング用の立方体を返す、キューブマップ作成時のVulkanBaseから呼び出される
 	std::shared_ptr<Model> getCubeMap() { return cubemap; }
+	//画面上のオブジェクトを返す、レンダリング時にVulkanBaseから呼び出される
 	std::vector<std::shared_ptr<Model>>& getModels() { return sceneModelStorage; }
+	//ポイントライトを返す、レンダリング時にVulkanBaseから呼び出される
 	std::vector<std::shared_ptr<PointLight>>& getPointLights() { return scenePointLightStorage; }
+	//平行光源を返す、レンダリング時にVulkanBaseから呼び出される
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
+	//ポイントライトと平行光源の数を取得する
 	int getLightCount() { return static_cast<int>(scenePointLightStorage.size() + sceneDirectionalLightStorage.size()); }
 
+	//ポイントライトと平行光源のdescriptorSetを返す。ライトは配列としてまとめてgpuに渡すため、descriptorSetは種類ごとに一つ
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
 	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
 
+	//キューブマッピング用の立方体を設定
 	void setCubeMapModel(std::shared_ptr<Model> cube) { cubemap = cube; }
+
+	//gltfモデルを読み込んだ際に、このクラスに格納する。
+	//再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
 	void addModel(GLTFOBJECT obj, GltfModel* geo);
+	//上と同様、画像を読み込んだ際にこのクラスに格納する
 	void addImageData(std::string, ImageData* image);
 
+	//VulkanBaseからカメラにアクセス出るように、Sceneクラスのカメラを設定する
 	void setCamera(std::shared_ptr<Camera> c);
+
+	//Sceneクラスでluaで設定されたオブジェクトはこのクラスに格納し、このクラスからVulkanBaseでそのオブジェクトのレンダリングを行う
 	void addModel(std::shared_ptr<Model> model);
+	//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
 	void addLight(std::shared_ptr<PointLight> light);
 	void addLight(std::shared_ptr<DirectionalLight> light);
 
+	void prepareDescriptorSets();//通常のレンダリングで必要なdescriptorSetの作成
 	void prepareDescriptorData();//ライトのバッファの用意
 	void prepareLightsForVulkan();//descriptorSetの用意
 
+	//このクラスにすでに格納されたgltfModelを返す
 	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
-	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();
+	//このクラスにすでに格納された画像を返す
 	std::shared_ptr<ImageData> getImageData(std::string path);
+	//このクラスにすでに格納されたgltfModelのmapを返す
+	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();
+	
+	//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
+	//同じ種類のライトがいくつあろうと、このバッファは一つのみ
 	MappedBuffer& getPointLightsBuffer();
 	MappedBuffer& getDirectionalLightsBuffer();
 
+	//カメラへの参照を返す
 	std::shared_ptr<Camera> accessCamera();
 
+	//コライダー用のAABBを計算する
 	void calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax);
 
+	//求められたリソースがすでにこのクラスに格納されているかどうかを返す
+	//この関数では、その判定のみを担う
 	bool containModel(GLTFOBJECT obj);
 	bool containImageData(std::string path);
 
+	//デストラクタ
 	void FinishStorage()
 	{
 		delete storage;

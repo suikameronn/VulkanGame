@@ -18,17 +18,18 @@ struct GltfNode;
 struct Animation;
 struct BoundingBox;
 
+//頂点データ
 struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord0;
+	glm::vec3 pos;//座標
+	glm::vec3 color;//頂点カラー
+	glm::vec2 texCoord0;//uv座標
 	glm::vec2 texCoord1;
-	glm::vec3 normal;
+	glm::vec3 normal;//法線
 
 	uint32_t index;
-	glm::ivec4 boneID1;
+	glm::ivec4 boneID1;//影響受けるジョイントの番号
 
-	glm::vec4 weight1;
+	glm::vec4 weight1;//ジョイントの影響度
 
 	Vertex()
 	{
@@ -47,6 +48,7 @@ struct Vertex {
 		}
 	};
 
+	//ジョイントと影響度を設定
 	void addBoneData(uint32_t boneID, float weight)
 	{
 		for (int i = 0; i < 4; ++i)
@@ -62,6 +64,7 @@ struct Vertex {
 	}
 };
 
+//AABB用の構造体
 struct BoundingBox
 {
 	glm::vec3 min;
@@ -98,15 +101,17 @@ struct BoundingBox
 	}
 };
 
+//頂点をまとめる用のプリミティブ
+//プリミティブ単位でマテリアルを指定される
 struct Primitive
 {
-	int primitiveIndex;
-	int firstIndex;
-	int indexCount;
-	int vertexCount;
-	int materialIndex;
+	int primitiveIndex;//番号
+	int firstIndex;//インデックスバッファ内のこのプリミティブのインデックスの開始位置
+	int indexCount;//プリミティブのインデックスの数
+	int vertexCount;//頂点の数
+	int materialIndex;//このプリミティブが持つマテリアルの番号
 	bool hasIndices;
-	BoundingBox bb;
+	BoundingBox bb;//aabb
 
 	Primitive(int primitiveIndex,int firstIndex, int indexCount, int vertexCount,int materialIndex)
 		: primitiveIndex(primitiveIndex),firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), materialIndex(materialIndex) {
@@ -120,6 +125,7 @@ struct Primitive
 	}
 };
 
+//スケルトンの構造体
 struct Skin
 {
 	std::string name;
@@ -128,12 +134,13 @@ struct Skin
 	std::vector<GltfNode*> joints;
 };
 
+//プリミティブをひとまとめにしたもの
 struct Mesh
 {
 	//Meshの持つ頂点をバッファから参照するためのindex
 	uint32_t meshIndex;
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
+	std::vector<Vertex> vertices;//頂点配列
+	std::vector<uint32_t> indices;//インデックス配列
 	std::vector<Primitive> primitives;
 	DescriptorInfo descriptorInfo;
 
@@ -152,7 +159,7 @@ struct GltfNode
 	GltfNode* parent;
 	uint32_t index;
 	std::vector<GltfNode*> children;
-	glm::mat4 matrix;
+	glm::mat4 matrix;//ローカル空間へ変換用行列
 	std::string name;
 	Mesh* mesh;
 	Skin* skin;
@@ -181,13 +188,13 @@ struct GltfNode
 		}
 	}
 
-	glm::mat4 localMatrix()
+	glm::mat4 localMatrix()//このノードのローカル空間への変換行列の計算
 	{
 		return glm::translate(glm::mat4(1.0f), translation) * 
 			glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
 	}
 
-	glm::mat4 getMatrix()
+	glm::mat4 getMatrix()//再帰的にこのノードまでの変換行列を求める
 	{
 		glm::mat4 mat = localMatrix();
 		GltfNode* p = parent;
@@ -199,6 +206,7 @@ struct GltfNode
 		return mat;
 	}
 
+	//このノードが所属するスケルトンのアニメーション行列を計算する
 	void update(std::array<glm::mat4, 128>& jointMatrices,size_t& updatedIndex)
 	{
 		glm::mat4 m = getMatrix();
@@ -220,6 +228,7 @@ struct GltfNode
 			jointMatrices[i] = jointMat;
 		}
 
+		//計算し終えたジョイントを記録して、メモ化を行い、同じジョイントの行列を計算しない
 		updatedIndex = numJoints;
 	}
 
@@ -234,6 +243,7 @@ struct GltfNode
 	}
 };
 
+//アニメーションのキーの持つ行列が移動、回転、拡大のどれに関するか示す
 struct AnimationChannel {
 	enum PathType { TRANSLATION, ROTATION, SCALE };
 	PathType path;
@@ -241,16 +251,17 @@ struct AnimationChannel {
 	uint32_t samplerIndex;
 };
 
+//アニメーションの保管に関する構造体
 struct AnimationSampler {
 	enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
 	InterpolationType interpolation;
 	std::vector<float> inputs;
 	std::vector<glm::vec4> outputsVec4;
 	std::vector<float> outputs;
-	glm::vec4 cubicSplineInterpolation(size_t index, float time, uint32_t stride)
+	glm::vec4 cubicSplineInterpolation(size_t index, double time, uint32_t stride)
 	{
 		float delta = inputs[index + 1] - inputs[index];
-		float t = (time - inputs[index]) / delta;
+		float t = static_cast<float>((time - inputs[index]) / delta);
 		const size_t current = index * stride * 3;
 		const size_t next = (index + 1) * stride * 3;
 		const size_t A = 0;
@@ -270,11 +281,12 @@ struct AnimationSampler {
 		return pt;
 	}
 
-	void translate(size_t index, float time, GltfNode* node)
+	//平行移動の補間
+	void translate(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
-			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			float u = static_cast<float>(std::max(0.0, time - inputs[index]) / (inputs[index + 1] - inputs[index]));
 			node->translation = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
 			break;
 		}
@@ -289,11 +301,12 @@ struct AnimationSampler {
 		}
 	}
 
-	void scale(size_t index, float time, GltfNode* node)
+	//拡大の補間
+	void scale(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
-			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			float u = static_cast<float>(std::max(0.0, time - inputs[index]) / (inputs[index + 1] - inputs[index]));
 			node->scale = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
 			break;
 		}
@@ -308,11 +321,12 @@ struct AnimationSampler {
 		}
 	}
 
-	void rotate(size_t index, float time, GltfNode* node)
+	//回転の補間
+	void rotate(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
-			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			float u = static_cast<float>(std::max(0.0, time - inputs[index]) / (inputs[index + 1] - inputs[index]));
 			glm::quat q1;
 			q1.x = outputsVec4[index].x;
 			q1.y = outputsVec4[index].y;
@@ -349,16 +363,16 @@ struct AnimationSampler {
 	}
 };
 
+//アニメーション全体の構造体
 struct Animation {
 	std::string name;
 	std::vector<AnimationSampler> samplers;
 	std::vector<AnimationChannel> channels;
-	float start = std::numeric_limits<float>::max();
-	float end = std::numeric_limits<float>::min();
-
-	std::map<float, std::pair<glm::vec3,glm::vec3>> coliderVertices;
+	float start = std::numeric_limits<float>::max();//アニメーションの開始時間
+	float end = std::numeric_limits<float>::min();//終了時間
 };
 
+//読み込んだgltfモデル全体のクラス
 class GltfModel
 {
 private:
@@ -374,17 +388,26 @@ public:
 		this->setup = false;
 	}
 	~GltfModel();
+
 	void deleteNodes(GltfNode* node,VkDevice& device);
 
 	bool setup;
+	
+	//メッシュの数、プリミティブの数、ジョイントの数、Modelクラスに設定した際の、バッファの作成時に利用
 	int meshCount;
 	int primitiveCount;
 	int jointNum;
+
+	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;
+	//スケルトン 通常は一つ
 	std::vector<Skin*> skins;
 
+	//gltfモデルで使われる画像データ
 	std::vector < std::shared_ptr<ImageData>> imageDatas;
+	//同じくテクスチャデータ
 	std::vector<TextureData*> textureDatas;
+	//同じくマテリアルデータ Primitive構造体のmaterialIndexから指定される
 	std::vector<std::shared_ptr<Material>> materials;
 
 	BoundingBox boundingBox;
@@ -394,14 +417,18 @@ public:
 	GltfNode* nodeFromIndex(int index);
 	GltfNode* findNode(GltfNode* parent,int index);
 
+	//AABBの計算
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
+	//gltfモデルの初期ポーズの頂点の座標の最小値最大値の取得
 	void getVertexMinMax(GltfNode* node);
 	
+	//アニメーションの各ノードの更新処理
 	void updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex);
 
+	//アニメーションの長さを取得
 	float animationDuration(std::string animationName);
-	void updateAnimation(float animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
-	std::map<float, std::pair<glm::vec3, glm::vec3>>& getAnimationAABB(std::string animationName);
-
+	//指定したアニメーションの行列を取得
+	void updateAnimation(double animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+	//gpu上のバッファなどの削除処理
 	void cleanUpVulkan(VkDevice& device);
 };

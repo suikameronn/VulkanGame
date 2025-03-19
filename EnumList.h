@@ -1,11 +1,6 @@
 #pragma once
 
-enum class ACTION
-{
-	IDLE,
-	WALK
-};
-
+//gltfモデルの種類を指定する
 enum class GLTFOBJECT
 {
 	gltfTEST = 0,
@@ -14,11 +9,13 @@ enum class GLTFOBJECT
 	CUBEMAP
 };
 
+//コライダーの形状
 enum COLIDER
 {
 	BOX
 };
 
+//オブジェクトのタイプを示す
 enum ObjNum
 {
 	OBJECT = 0,
@@ -28,6 +25,7 @@ enum ObjNum
 	DIRECTIONALLIGHT
 };
 
+//オブジェクトの性質を示す
 enum Tag
 {
 	NONE = 0,
