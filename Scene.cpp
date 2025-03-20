@@ -92,6 +92,7 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "glueBindObject", glueSceneFunction::glueBindObject);//オブジェクトに親子関係を設定する
 	lua_register(lua, "glueSetStartPoint", glueSceneFunction::glueSetStartPoint);//初期座標の設定
 	lua_register(lua, "glueSetLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
+	lua_register(lua, "glueSetHDRIMap", glueSceneFunction::glueSetHDRIMap);//HDRI画像の設定
 }
 
 //初期座標の設定
@@ -104,6 +105,13 @@ void Scene::setStartPoint(glm::vec3 point)
 void Scene::setLimitY(float y)
 {
 	limitY = y;
+}
+
+//HDRIマップの設定
+void Scene::setHDRIMap(std::string imagePath)
+{
+	hdriMap = FileManager::GetInstance()->loadImage(imagePath);
+	Storage::GetInstance()->setCubemapTexture(hdriMap);
 }
 
 //オブジェクトの接地判定などをリセット
@@ -238,9 +246,6 @@ void Scene::setModels()
 void Scene::setLights()
 {
 	Storage* storage = Storage::GetInstance();
-
-	hdriMap = FileManager::GetInstance()->loadImage("textures/hdri_map.hdr");//キューブマップ用の画像の用意
-	storage->setCubemapTexture(hdriMap);
 
 	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
 	cubemap->setgltfModel(FileManager::GetInstance()->loadModel(GLTFOBJECT::CUBEMAP));;

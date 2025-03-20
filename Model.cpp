@@ -209,6 +209,7 @@ void Model::setPosition(glm::vec3 pos)
 		return;
 	}
 
+	lastPos = position;
 	position = pos;
 
 	sendPosToChildren();//子オブジェクトに移動を伝える

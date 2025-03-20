@@ -267,9 +267,6 @@ struct IBLSpecularBRDF
     //画像サイズ
     uint32_t size;
 
-    //ミップマップレベル
-    uint32_t mipmapLevel;
-
     //オフスクリーンレンダリング用のデータ
     OffScreenPass passData;
 
@@ -281,11 +278,6 @@ struct IBLSpecularBRDF
 
     //specularとspecular用のコンピュートシェーダへのパス
     std::string vertShaderPath, fragShaderPath;
-
-    void setMipmapLevel(uint32_t level)
-    {
-        mipmapLevel = level;
-    }
 
     //レンダリングの出力先のサイズを設定
     void setRenderSize(uint32_t s)

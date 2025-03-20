@@ -1916,6 +1916,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
+        //カラーアタッチメント用のレイアウトをシェーダで使うためのレイアウトにする
+        else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
         else {
             throw std::invalid_argument("unsupported layout transition!");
         }
@@ -5097,6 +5106,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         //一つの視点のみから立方体の面をレンダリングして、2DのLUTを作成する
         createLUT(iblSpecularBRDF, cubemapData.mappedBuffers[0]);
+
+        //レンダリングした画像をシェーダで読み取るためのテクスチャに変換する
+        transitionImageLayout(iblSpecularBRDF.passData.imageAttachment[0].image, VK_FORMAT_R8G8B8A8_UNORM
+            , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 1);
 
         //立方体の一つの面のみのレンダリング結果をLUTとして利用
         //通常レンダリング時に使うDescriptorSet関連のデータを作成

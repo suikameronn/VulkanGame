@@ -5,10 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="ヘッダー ファイル">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="リソース ファイル">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -16,28 +12,29 @@
     <Filter Include="ソース ファイル\LoadModel">
       <UniqueIdentifier>{9faa75b5-6077-4c30-92ae-f1ca6a9e94b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\LoadModel">
-      <UniqueIdentifier>{452c546e-1157-4489-b5de-2e853ea9ce9a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\Lights">
-      <UniqueIdentifier>{4cac4a24-a511-466b-ae6b-2183316919ae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\Lights">
       <UniqueIdentifier>{2c1a1d75-3295-433d-bdab-de4bea32f3fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Vulkan">
+      <UniqueIdentifier>{8e5f75bc-37c1-40c7-a477-7fa13b6cef96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\LoadModel">
+      <UniqueIdentifier>{452c546e-1157-4489-b5de-2e853ea9ce9a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\Vulkan">
       <UniqueIdentifier>{3fcbab67-6893-4a1b-a6db-ccfb3dda7ed3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\Vulkan">
-      <UniqueIdentifier>{8e5f75bc-37c1-40c7-a477-7fa13b6cef96}</UniqueIdentifier>
+    <Filter Include="ヘッダー ファイル\Lights">
+      <UniqueIdentifier>{4cac4a24-a511-466b-ae6b-2183316919ae}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
     <ClCompile Include="Object.cpp">
       <Filter>ソース ファイル</Filter>
@@ -54,9 +51,6 @@
     <ClCompile Include="VulkanBase.cpp">
       <Filter>ソース ファイル\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Storage.cpp">
-      <Filter>ソース ファイル\LoadModel</Filter>
-    </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -72,20 +66,23 @@
     <ClCompile Include="AnimController.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Colider.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="PhysicBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Light.cpp">
       <Filter>ソース ファイル\Lights</Filter>
     </ClCompile>
+    <ClCompile Include="Colider.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Storage.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Scene.h">
-      <Filter>ヘッダー ファイル\LoadModel</Filter>
-    </ClInclude>
     <ClInclude Include="Material.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
@@ -103,9 +100,6 @@
     </ClInclude>
     <ClInclude Include="VulkanBase.h">
       <Filter>ヘッダー ファイル\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Storage.h">
-      <Filter>ヘッダー ファイル\LoadModel</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>ヘッダー ファイル</Filter>
@@ -136,6 +130,12 @@
     </ClInclude>
     <ClInclude Include="Light.h">
       <Filter>ヘッダー ファイル\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Storage.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

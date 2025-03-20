@@ -108,6 +108,9 @@ public:
 
 	//四角形を延ばして、衝突判定を行う、接地判定に使われる
 	std::shared_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model);
+
+	//HDRIマップの設定
+	void setHDRIMap(std::string imagePath);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/
@@ -510,6 +513,17 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
 		scene->setLimitY(y);
+
+		return 0;
+	}
+
+	//キューブマップとIBLのもとのHDRI画像を設定する
+	static int glueSetHDRIMap(lua_State* lua)
+	{
+		lua_getglobal(lua, "Scene");
+		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+		scene->setHDRIMap(lua_tostring(lua, -2));
 
 		return 0;
 	}

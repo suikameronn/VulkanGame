@@ -134,9 +134,33 @@ float shadowCalc(vec4 shadowCoord, vec2 off)
 	return shadow;
 }
 
-vec3 IBL(float roughness)
+//粗さを考慮したフレネルの式
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-	
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
+
+//IBLのライトの効果を計算
+vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 reflection,vec3 baseColor,float roughness,float metallic)
+{
+	vec3 F = fresnelSchlickRoughness(max(dot(normal,view),0.0),f0,roughness);
+
+	vec3 irradiance = texture(diffuseMap,normal).rgb;
+	vec3 diffuse = irradiance * baseColor;
+
+	const float MAX_REFLECTION_LOD = 4.0;
+	vec3 prefilteredColor = textureLod(specularReflectionMap,reflection,roughness * MAX_REFLECTION_LOD).rgb;
+	vec2 brdf = texture(specularBRDFMap,vec2(max(dot(normal,view), 0.0),roughness)).rg;
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+	float ao = 1.0f;
+	if(shaderMaterial.occlusionTextureIndex > -1)
+	{
+		ao = texture(aoMap,shaderMaterial.baseColorTextureIndex == 0 ? inUV0 : inUV1).r;
+	}
+	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse) + specular) * ao;
+
+	return vec4(ambient,0.0f);
 }
 
 void main() {
@@ -214,13 +238,13 @@ void main() {
 	vec3 n = (shaderMaterial.normalTextureIndex > -1) ? getNormal(shaderMaterial.normalTextureIndex) : normalize(inNormal);
 	n.y *= -1.0;
 	vec3 v = normalize(camPos - inPos);//頂点からカメラへのベクトル
+	vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
 	for(int i = 0;i < pointLight.lightCount;i++)
 	{
 		vec3 l = normalize(pointLight.pos[i].xyz - inPos);//頂点からライトへのベクトル
 		float dis = length(pointLight.pos[i].xyz - inPos);
 		vec3 h = normalize(l+v);//lとvの中間のベクトル
-		vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
 		float NdotL = clamp(dot(n, l), 0.001, 1.0);
 		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
@@ -245,7 +269,6 @@ void main() {
 	{
 		vec3 l = normalize(directionalLight.dir[i].xyz);//頂点からライトへのベクトル
 		vec3 h = normalize(l+v);//lとvの中間のベクトル
-		vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
 		float NdotL = clamp(dot(n, l), 0.001, 1.0);
 		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
@@ -266,8 +289,10 @@ void main() {
 		outColor += vec4(color,0.0f);
 	}
 	
-	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
+	outColor += getIBL(f0,n,v,reflection,baseColor.rgb,roughness,metallic);
 
+	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
 	outColor *= shadow;
+
 	outColor.a = baseColor.a;
 }

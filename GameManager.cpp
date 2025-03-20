@@ -14,7 +14,7 @@ void GameManager::initGame()//初期化設定
 void GameManager::createScene()//luaからステージの様子を読み込む
 {
     scene = Scene::GetInstance();//luaから読み取ったデータからステージの様子を持つクラス
-    scene->init("LuaScripts/test.lua");//ステージの読み込み
+    scene->init("LuaScripts/scene.lua");//ステージの読み込み
 
     mainGameLoop();//ゲームループ
 }

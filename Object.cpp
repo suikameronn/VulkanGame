@@ -204,6 +204,8 @@ void Object::sendPosToChildren()//自分の移動を子オブジェクトに送り、子オブジェク
 void Object::setParentPos(glm::vec3 lastPos,glm::vec3 currentPos)//親オブジェクトの移動を受け取り、親オブジェクトの移動に追従する
 {
 	position += currentPos - lastPos;
+
+	std::cout << currentPos - lastPos << std::endl;
 }
 
 //luaの仮想マシンに、自身の座標と回転を記録する変数を作成
