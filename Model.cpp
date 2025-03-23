@@ -5,8 +5,6 @@
 
 Model::Model()//3Dモデルを持つクラス
 {
-	isMeshColider = false;
-
 	scene = Scene::GetInstance();
 
 	objNum = ObjNum::MODEL;
@@ -44,8 +42,6 @@ Model::Model()//3Dモデルを持つクラス
 
 Model::Model(std::string luaScriptPath)
 {
-	isMeshColider = false;
-
 	tags.push_back(Tag::GROUND);
 	uniformBufferChange = true;
 
@@ -232,14 +228,7 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	if (colider)
 	{
-		if (isMeshColider)
-		{
-			colider->reflectMovement(transformMatrix,jointMatrices);//コライダーにオブジェクトのトランスフォームの変更を反映させる
-		}
-		else
-		{
-			colider->reflectMovement(transformMatrix);
-		}
+		colider->reflectMovement(transformMatrix);//コライダーにオブジェクトのトランスフォームの変更を反映させる
 	}
 
 	uniformBufferChange = false;
@@ -248,9 +237,7 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 //コライダーの設定
 void Model::setColider()
 {
-	colider = std::shared_ptr<Colider>(new Colider(isMeshColider,gltfModel->vertexCount,gltfModel->indexCount,gltfModel->initPoseMin, gltfModel->initPoseMax));
-
-	colider->setMeshColider(gltfModel);
+	colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
 }
 
 bool Model::hasColider()

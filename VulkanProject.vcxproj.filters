@@ -63,6 +63,9 @@
     <ClCompile Include="GltfModel.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
+    <ClCompile Include="AnimController.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="PhysicBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>

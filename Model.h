@@ -71,9 +71,6 @@ public:
 	//スケール
 	glm::vec3 scale;
 
-	//コライダーはメッシュかどうか
-	bool isMeshColider;
-
 	void setDefaultAnimationName(std::string name);//デフォルトのアニメーションを設定
 
 	void sendPosToChildren();//子オブジェクトに親の移動を反映

@@ -5,7 +5,6 @@
 
 #include"Object.h"
 #include"EnumList.h"
-#include"GltfModel.h"
 
 #include<random>
 
@@ -71,17 +70,6 @@ private:
 	std::vector<glm::vec3> coliderVertices;
 	//座標変換を加える前のコライダーの頂点の座標
 	std::vector<glm::vec3> originalVertexPos;
-	//メッシュコライダーか否かのフラッグ
-	bool isMeshColider;
-	//メッシュコライダー用のインデックス
-	std::vector<uint32_t> meshColiderIndices;
-	//メッシュコライダー用の座標変換を加える前の頂点配列
-	std::vector<glm::vec3> initialVertcesPos;
-	//メッシュコライダー用の座標変換済みの頂点配列
-	std::vector<glm::vec3> transformedVerticesPos;
-	//メッシュコライダーの頂点の座標以外の情報を記録
-	std::vector<MeshColiderVertexOption> meshColiderVertexOptions;
-
 
 	//コライダー描画用のインデックス
 	std::vector<uint32_t> coliderIndices;
@@ -125,25 +113,10 @@ private:
 	std::pair<std::vector<glm::vec4>, size_t> getFaceNormals(
 		std::vector<glm::vec3>& vertices,
 		std::vector<size_t>& faces);
-	
-	/*メッシュコライダー用の関数*/
-	//メッシュコライダー用の衝突判定
-	bool meshIntersect(std::shared_ptr<Colider> oppColider,glm::vec3& collisionVec);
-	//三角形同士の衝突判定と面の法線から解消ベクトルを計算する
-	bool triangleIntersect(std::array<glm::vec3, 3>& vertices, std::array<glm::vec3, 3>& startPoints, std::array<glm::vec3, 3>& lines, glm::vec3 meshNormal
-		, std::array<glm::vec3, 3>& oppStartPoints, std::array<glm::vec3, 3>& oppLines, float& distance, glm::vec3& intersectPoint);
-	//線分と平面の衝突判定
-	int linePlaneIntersect(glm::vec3 vertex, glm::vec3 meshNormal, glm::vec3 startPoint, glm::vec3 line, float& t);
-	//三角形と線分の衝突判定
-	bool lineTriangleIntersect(std::array<glm::vec3, 3>& vertices, glm::vec3 oppStartPoint, glm::vec3 oppLine,
-		float& distance, glm::vec3& intersectPoint);
-	//線分同士の交差判定
-	bool lintLineIntersect(glm::vec3 startPoint, glm::vec3 endPoint, glm::vec3 startPoint2, glm::vec3 endPoint2
-	,float& distance,glm::vec3& intersectPoint);
 
 public:
 	//引数からAABBを計算する
-	Colider(bool isMesh, int vertexNum,int indexNum, glm::vec3 min, glm::vec3 max);
+	Colider(glm::vec3 min,glm::vec3 max);
 
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings();
@@ -153,7 +126,6 @@ public:
 	glm::mat4 getScaleMat();
 	//Modelクラスの移動などをコライダーにも反映
 	void reflectMovement(glm::mat4& transform);
-	void reflectMovement(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>>& animationMatrix);
 
 	/*
 	int getSatIndicesSize() { return static_cast<int>(satIndices.size()); }
@@ -190,15 +162,4 @@ public:
 	int getColiderIndicesSize();
 	//コライダー用のgpu上のバッファの破棄
 	void cleanupVulkan();
-
-	/*メッシュコライダー用の関数*/
-	//コライダーの頂点に座標変換を加える
-	void setMeshColider(std::shared_ptr<GltfModel> gltfModel);
-	void calcTransformedVertices(glm::mat4& transform);
-	void calcTransformedVertices(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>> animationMatrix);
-
-	//メッシュコライダーのインデックスを取得、メッシュではない場合は、コライダー描画用のインデックスを渡す
-	std::vector<uint32_t>& getMeshColiderIndices();
-	//頂点配列を渡す、メッシュでない場合はAABBの頂点を渡す
-	std::vector<glm::vec3>& getMeshColiderVertices();
 };
