@@ -396,6 +396,9 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
     mesh->primitives.push_back(primitive);
 
     indexStart += indexCount;
+
+    model->vertexCount += vertexCount;
+    model->indexCount += indexCount;
 }
 
 //gltfモデルのアニメーションを読み込む

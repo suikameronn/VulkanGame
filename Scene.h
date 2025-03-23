@@ -348,13 +348,14 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	//オブジェクトにコライダーを設定する
 	static int glueSetColider(lua_State* lua)
 	{
-		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -3));
 
 		switch (obj->getObjNum())
 		{
 		case 1:
 		case 2:
 			Model * model = dynamic_cast<Model*>(obj);
+			model->isMeshColider = static_cast<bool>(lua_toboolean(lua, -2));
 			model->setColider();
 			model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
 			break;

@@ -372,6 +372,13 @@ struct Animation {
 	float end = std::numeric_limits<float>::min();//終了時間
 };
 
+struct MeshColiderVertexOption
+{
+	glm::ivec4 boneID;
+	glm::vec4 weight;
+	uint32_t skinIndex;
+};
+
 //読み込んだgltfモデル全体のクラス
 class GltfModel
 {
@@ -386,6 +393,7 @@ public:
 		this->meshCount = 0;
 		this->primitiveCount = 0;
 		this->setup = false;
+		this->indexCount = 0;
 	}
 	~GltfModel();
 
@@ -393,9 +401,11 @@ public:
 
 	bool setup;
 	
-	//メッシュの数、プリミティブの数、ジョイントの数、Modelクラスに設定した際の、バッファの作成時に利用
+	//メッシュの数、プリミティブの数、頂点の数、インデックスの数、ジョイントの数、Modelクラスに設定した際の、バッファの作成時に利用
 	int meshCount;
 	int primitiveCount;
+	int vertexCount;
+	int indexCount;
 	int jointNum;
 
 	//アニメーションの名前をキーとして、アニメーションを記録
@@ -431,4 +441,9 @@ public:
 	void updateAnimation(double animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
 	//gpu上のバッファなどの削除処理
 	void cleanUpVulkan(VkDevice& device);
+
+	//メッシュコライダーに頂点とインデックスを渡す
+	void setModelVertexIndex(std::vector<glm::vec3>& verticesPos,std::vector<MeshColiderVertexOption>& options, std::vector<uint32_t>& indices);
+	void setModelVertexIndex(GltfNode* node,uint32_t& globalIndex, int& vertexCount,std::vector<glm::vec3>& verticesPos
+		,std::vector<MeshColiderVertexOption>& options, std::vector<uint32_t>& indices);
 };

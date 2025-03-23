@@ -66,6 +66,11 @@ vec4 srgbToLinear(vec4 srgbIn)//sRGBからリニアに変換
 	return vec4(pow(srgbIn.xyz,vec3(2.2)),srgbIn.w);
 }
 
+vec3 srgbToLinear(vec3 srgbIn)
+{
+	return pow(srgbIn,vec3(2.2));
+}
+
 vec4 linearToSrgb(vec4 srgbIn)//リニアからsRGBに変換
 {
 	return vec4(pow(srgbIn.xyz,vec3(1.0/2.2)),srgbIn.w);
@@ -145,11 +150,11 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 reflection,vec3 baseColor,float r
 {
 	vec3 F = fresnelSchlickRoughness(max(dot(normal,view),0.0),f0,roughness);
 
-	vec3 irradiance = texture(diffuseMap,normal).rgb;
+	vec3 irradiance = srgbToLinear(texture(diffuseMap,normal).rgb);
 	vec3 diffuse = irradiance * baseColor;
 
 	const float MAX_REFLECTION_LOD = 4.0;
-	vec3 prefilteredColor = textureLod(specularReflectionMap,reflection,roughness * MAX_REFLECTION_LOD).rgb;
+	vec3 prefilteredColor = srgbToLinear(textureLod(specularReflectionMap,reflection,roughness * MAX_REFLECTION_LOD).rgb);
 	vec2 brdf = texture(specularBRDFMap,vec2(max(dot(normal,view), 0.0),roughness)).rg;
 	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
@@ -161,6 +166,27 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 reflection,vec3 baseColor,float r
 	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse) + specular) * ao;
 
 	return vec4(ambient,0.0f);
+}
+
+
+vec3 tonecurve(vec3 color)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
+}
+
+//HDRをLDRに変換
+vec4 tonemap(vec4 color)
+{
+	vec3 outcolor = tonecurve(color.rgb);
+	outcolor = outcolor * (1.0f / tonecurve(vec3(11.2f)));	
+	return vec4(pow(outcolor, vec3(1.0f / 2.2)), color.a);
 }
 
 void main() {
@@ -292,7 +318,13 @@ void main() {
 	outColor += getIBL(f0,n,v,reflection,baseColor.rgb,roughness,metallic);
 
 	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
-	outColor *= shadow;
 
-	outColor.a = baseColor.a;
+	if(shaderMaterial.alphaMask == 1)
+	{
+		outColor = vec4(outColor.rgb * shadow,baseColor.a);
+	}
+	else
+	{
+		outColor = vec4(outColor.rgb * shadow,1.0);
+	}
 }

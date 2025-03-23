@@ -2,7 +2,7 @@
 
 #include"VulkanBase.h"
 
-Colider::Colider(glm::vec3 min, glm::vec3 max)
+Colider::Colider(bool isMesh,int vertexNum,int indexNum,glm::vec3 min, glm::vec3 max)
 {
 	this->min = min;
 	this->max = max;
@@ -33,6 +33,15 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
 
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+	isMeshColider = isMesh;
+	if (isMeshColider)
+	{
+		initialVertcesPos.resize(vertexNum);
+		transformedVerticesPos.resize(vertexNum);
+		meshColiderVertexOptions.resize(vertexNum);
+		meshColiderIndices.resize(indexNum);
+	}
 }
 
 //Modelクラスの初期座標から座標変換を適用する
@@ -94,6 +103,28 @@ void Colider::reflectMovement(glm::mat4& transform)
 		transformedMin = transform * glm::vec4(min, 1.0f);
 		transformedMax = transform * glm::vec4(max, 1.0f);
 	}
+
+	if (isMeshColider)
+	{
+		calcTransformedVertices(transform);
+	}
+}
+
+//Modelクラスの移動などをコライダーにも反映
+void Colider::reflectMovement(glm::mat4& transform,std::vector<std::array<glm::mat4,128>>& animationMatrix)
+{
+	//AABBの更新
+	for (int i = 0; i < coliderVertices.size(); i++)
+	{
+		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
+		transformedMin = transform * glm::vec4(min, 1.0f);
+		transformedMax = transform * glm::vec4(max, 1.0f);
+	}
+
+	if (isMeshColider)
+	{//メッシュコライダーの場合、メッシュの更新
+		calcTransformedVertices(transform,animationMatrix);
+	}
 }
 
 //SAT用当たり判定の実行
@@ -102,7 +133,23 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisio
 	float collisionDepth;
 	bool collision = false;
 	
-	collision = GJK(oppColider,collisionVector);
+	if (!isMeshColider || !oppColider->isMeshColider)
+	{
+		collision = GJK(oppColider, collisionVector);
+	}
+
+	if (collision || true)
+	{
+		if (isMeshColider || oppColider->isMeshColider)
+		{
+			collision = meshIntersect(oppColider, collisionVector);
+
+			if (collision)
+			{
+				std::cout << "AA" << std::endl;
+			}
+		}
+	}
 
 	/*
 	collision = SAT(oppColider, collisionDepth, collisionVector);
@@ -118,7 +165,7 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 	float collisionDepth;
 	bool collision = false;
 
-	glm::vec3 collisionVector;
+	glm::vec3 collisionVector = glm::vec3(0.0f);
 
 	collision = GJK(oppColider, collisionVector);
 
@@ -602,4 +649,305 @@ glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFin
 	float dot = glm::dot(point, lineVector);
 
 	return lineStart + dot * lineVector;
+}
+
+/*メッシュコライダー用の関数*/////////////////////////////////////////////////////////////////////////////////////
+
+//メッシュコライダーのインデックスを取得、メッシュではない場合は、コライダー描画用のインデックスを渡す
+std::vector<uint32_t>& Colider::getMeshColiderIndices()
+{
+	if (isMeshColider)
+	{
+		return meshColiderIndices;
+	}
+
+	//メッシュでないコライダーの場合
+	//コライダーの描画用のインデックスを渡す
+	return coliderIndices;
+}
+
+//メッシュコライダーの当たり判定時に自身のコライダーのタイプに合わせた頂点配列を渡す
+std::vector<glm::vec3>& Colider::getMeshColiderVertices()
+{
+	if (isMeshColider)
+	{
+		return transformedVerticesPos;
+	}
+
+	return coliderVertices;
+}
+
+//gltfModelの初期の座標の頂点をコライダーにコピーする
+void Colider::setMeshColider(std::shared_ptr<GltfModel> gltfModel)
+{
+	if (!isMeshColider)
+	{
+		return;
+	}
+
+	gltfModel->setModelVertexIndex(initialVertcesPos,meshColiderVertexOptions, meshColiderIndices);
+
+	std::copy(initialVertcesPos.begin(), initialVertcesPos.end(), transformedVerticesPos.begin());
+}
+
+//コライダーの頂点に座標変換を加える(アニメーションはなし)
+void Colider::calcTransformedVertices(glm::mat4& transform)
+{
+	for (int i = 0;i < initialVertcesPos.size();i++)
+	{
+		transformedVerticesPos[i] = glm::vec3(transform * glm::vec4(initialVertcesPos[i], 1.0f));
+	}
+}
+
+void Colider::calcTransformedVertices(glm::mat4& transform,std::vector<std::array<glm::mat4,128>> animationMatrix)
+{
+	for (int i = 0;i < transformedVerticesPos.size();i++)
+	{
+		glm::mat4 animation = glm::mat4(0.0f);
+		for (int j = 0; j < 4; j++)
+		{
+			animation += animationMatrix[meshColiderVertexOptions[i].skinIndex][j] * meshColiderVertexOptions[i].weight[j];
+		}
+
+		if (animation == glm::mat4(0.0f))
+		{
+			animation = glm::mat4(1.0f);
+		}
+
+		transformedVerticesPos[i] = transform * animation * glm::vec4(initialVertcesPos[i], 1.0f);
+	}
+}
+
+bool Colider::meshIntersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVec)
+{
+	//自身のインデックス配列、頂点配列を取得
+	std::vector<uint32_t> indices = getMeshColiderIndices();
+	std::vector<glm::vec3> vertices = getMeshColiderVertices();
+
+	//相手のインデックス配列、頂点配列を取得
+	std::vector<uint32_t> oppIndices = oppColider->getMeshColiderIndices();
+	std::vector<glm::vec3> oppVertices = oppColider->getMeshColiderVertices();
+
+	//衝突していたメッシュの数を数える
+	int intersectCount = 0;
+
+	//三角形同士の衝突判定を行う
+	//衝突判定内では、すべての座標をp1を原点とする
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		//自身のコライダーの三角形の頂点と面法線とその線分のベクトルを計算する
+		glm::vec3 p1 = vertices[indices[i]];
+		glm::vec3 p2 = vertices[indices[i + 1]] - p1;
+		glm::vec3 p3 = vertices[indices[i + 2]] - p1;
+
+		glm::vec3 meshNormal = glm::cross(p2, p3);
+		std::array<glm::vec3, 3> points = { p1,p2,p3 };
+		std::array<glm::vec3, 3> startPoints = { p1,p1,p2 };
+		std::array<glm::vec3, 3> lines = { p2, p3,p3 - p2 };
+
+		for (int j = 0; j < oppIndices.size(); j += 3)
+		{
+			//相手の三角形の頂点とその線分に加え、線分の始点も計算する
+			glm::vec3 q1 = oppVertices[oppIndices[j]] - p1;
+			glm::vec3 q2 = oppVertices[oppIndices[j + 1]] - p1;
+			glm::vec3 q3 = oppVertices[oppIndices[j + 2]] - p1;
+
+			std::array<glm::vec3, 3> oppLines = { q2,q3,q3 - q2 };
+			std::array<glm::vec3, 3> oppStartPoints = { q1,q1,q2 };
+
+			//p1を原点とする
+			points[0] = glm::vec3(0.0f);
+
+			//三角形との交点と線分押し点からの距離
+			float distance;
+			glm::vec3 intersectPoint;
+			if (triangleIntersect(points,startPoints,lines, meshNormal, oppStartPoints, oppLines, distance, intersectPoint))
+			{
+				collisionVec += glm::normalize(meshNormal) * distance;
+				intersectCount++;
+			}
+		}
+	}
+
+	if (intersectCount > 0)
+	{
+		//最後にすべての衝突解消ベクトルの平均をとる
+		collisionVec /= intersectCount;
+		std::cout << collisionVec << std::endl;
+
+		return true;
+	}
+
+	return false;
+}
+
+//三角形同士の衝突判定と面の法線から解消ベクトルを計算する
+bool Colider::triangleIntersect(std::array<glm::vec3, 3>& vertices,std::array<glm::vec3,3>& startPoints,std::array<glm::vec3,3>& lines,glm::vec3 meshNormal
+	, std::array<glm::vec3, 3>& oppStartPoints, std::array<glm::vec3, 3>& oppLines,float& distance, glm::vec3& intersectPoint)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		float t = 0.0f;
+
+		int linePlaneIntersectCase = linePlaneIntersect(vertices[0], meshNormal, oppStartPoints[i], oppLines[i],t);
+
+		if (linePlaneIntersectCase != -1)
+		{
+			std::cout << linePlaneIntersectCase << std::endl;
+		}
+
+		switch (linePlaneIntersectCase)
+		{
+		case -1:
+			continue;
+		case 0:
+			//線分は平面上にはある
+			//次は線分が三角形内にあるかしらべる
+			for (int j = 0; j < 3; j++)
+			{
+				if (lintLineIntersect(startPoints[j],lines[j], oppStartPoints[i], oppLines[i], distance, intersectPoint))
+				{
+					return true;
+				}
+			}
+			return false;
+
+		case 1:
+			//線分と平面は交差している
+			//交差点は三角形上にあるかどうかを調べる
+
+			//線分と交点までの距離と交点の座標
+			if (lineTriangleIntersect(vertices, oppStartPoints[i], oppLines[i], distance, intersectPoint))
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	return false;
+}
+
+//線分と無限平面上の関係をしらべる 
+int Colider::linePlaneIntersect(glm::vec3 vertex, glm::vec3 meshNormal, glm::vec3 startPoint, glm::vec3 line, float& t)
+{
+	glm::vec3 point = vertex - startPoint;
+
+	float t1 = glm::dot(meshNormal, point);
+	float t2 = glm::dot(meshNormal, startPoint);
+
+	if (t2 == 0.0f)
+	{
+		if (t1 == 0.0f)
+		{//線分が平面上にある
+			return 0;
+		}
+		else
+		{//線分は平面と平行だが、線分が平面上にない
+			return -1;
+		}
+	}
+	else
+	{
+		if (t1 >= 0.0f && t1 <= 1.0f)
+		{//線分と平面は交差している
+			return 1;
+		}
+		else
+		{//線分と平面は交差していない
+			return -1;
+		}
+	}
+}
+
+//三角形と線分の衝突判定
+bool Colider::lineTriangleIntersect(std::array<glm::vec3, 3>& vertices
+	, glm::vec3 oppStartPoint, glm::vec3 oppLine, float& distance, glm::vec3& intersectPoint)
+{
+	//線分の逆ベクトルを得る
+	glm::vec3 invLine = -oppLine;
+
+	glm::mat3 mat;
+	mat[0] = vertices[1];
+	mat[1] = vertices[2];
+	mat[2] = invLine;
+
+	//クラメルの公式の分母
+	float det1 = glm::determinant(mat);
+
+	if (det1 <= 0.0f)
+	{//線分と三角形が平行
+		return false;
+	}
+
+	glm::vec3 vec = oppStartPoint - vertices[0];
+
+	//式の各係数が0以上1以下かを調べる
+	//条件を満たすとき、交点の座標は三角形上にある
+	mat[0] = vec;
+	mat[1] = vertices[2];
+	mat[2] = invLine;
+	float u = glm::determinant(mat) / det1;
+
+	if (u >= 0.0f && u <= 1.0f)
+	{
+		//列優先に気を付ける
+		mat[0] = vertices[1];
+		mat[1] = vec;
+		mat[2] = invLine;
+
+		float v = glm::determinant(mat) / det1;
+		if (v >= 0.0f && v <= 1.0f && (u + v) <= 1.0f)
+		{
+			mat[0] = vertices[1];
+			mat[1] = vertices[2];
+			mat[2] = vec;
+
+			float t = glm::determinant(mat) / det1;
+
+			if (t < 0.0f)
+			{
+				return false;
+			}
+
+			distance = t;
+			intersectPoint = oppStartPoint + glm::normalize(oppLine) * t;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//線分同士の交差判定
+bool Colider::lintLineIntersect(glm::vec3 startPoint, glm::vec3 endPoint, glm::vec3 startPoint2, glm::vec3 endPoint2
+	, float& distance, glm::vec3& intersectPoint)
+{
+	glm::vec3 d1 = endPoint - startPoint;
+	glm::vec3 d2 = endPoint2 - startPoint2;
+	glm::vec3 d3 = startPoint - startPoint2;
+
+	glm::vec3 cross = glm::cross(d1, d2);
+
+	float dot = glm::dot(cross, cross);
+
+	if (dot == 0.0f)
+	{//線分は平行
+		return false;
+	}
+
+	float u = glm::dot(glm::cross(d3, d2), cross) / dot;
+	float v = glm::dot(glm::cross(d3, d1), cross) / dot;
+
+	if (u >= 0.0f && u <= 1.0f
+		&& v >= 0.0f && v <= 1.0f)
+	{
+		distance = u;
+		intersectPoint = startPoint + u * d1;
+
+		return true;
+	}
+
+	return false;
 }
