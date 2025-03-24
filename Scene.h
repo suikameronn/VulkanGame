@@ -118,6 +118,7 @@ public:
 // スタックの内容を表示する関数 デバッグ用
 static void printStack(lua_State* L) {
 	int top = lua_gettop(L); // スタックのトップインデックスを取得
+	
 	std::cout << "Stack size: " << top << std::endl;
 	for (int i = 1; i <= top; ++i) {
 		int t = lua_type(L, i);

@@ -73,6 +73,6 @@ glueSetLimitY(-150)
 glueSetStartPoint(0.0,100.0,0.0)
 
 --背景やIBLで使うHDRI画像の設定
-glueSetHDRIMap("textures/grass.hdr")
+glueSetHDRIMap("textures/hdri_map.hdr")
 
 print("AAA")

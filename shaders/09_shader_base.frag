@@ -294,5 +294,10 @@ void main() {
 	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
 	outColor *= shadow;
 
-	outColor.a = baseColor.a;
+	outColor.a = 1.0;
+
+	if(shaderMaterial.alphaMask != 0)
+	{
+		outColor.a = baseColor.a;
+	}
 }
