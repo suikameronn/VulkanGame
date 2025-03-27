@@ -12,6 +12,8 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
+#include"font.h"
+
 enum IMAGE;
 
 //画像やgltfモデルの読み込みを担当するクラス
@@ -28,6 +30,8 @@ private:
 	//コライダーの計算用変数
 	glm::vec3 minPos;
 	glm::vec3 maxPos;
+	int vertexNum;
+	int indexNum;
 
 	//std::vector<GLTFOBJECT> loadAnimationFiles;
 
@@ -43,7 +47,7 @@ private:
 	//AABBのためにgltfモデルの頂点のxyzの各軸の最小値と最大値を求める
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
 	//gltfモデルのプリミティブ単位で読み込む
-	void processPrimitive(Mesh* mesh,int& indexStart,tinygltf::Primitive glPrimitive,tinygltf::Model glModel,GltfModel* model);
+	void processPrimitive(Mesh* mesh, int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel, GltfModel* model);
 	//gltfモデルのアニメーションを読み込む
 	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
 	//gltfモデルのスケルトンを読み込む
@@ -84,4 +88,6 @@ public:
 	std::shared_ptr<GltfModel> loadModel(GLTFOBJECT obj);
 	//luaスクリプトからSceneクラスを介して呼び出される。新しい画像が求められたときのみ、解析処理をする
 	std::shared_ptr<ImageData> loadImage(std::string filePath);
+	//
+	
 };

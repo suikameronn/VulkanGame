@@ -228,16 +228,30 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	if (colider)
 	{
-		colider->reflectMovement(transformMatrix);//コライダーにオブジェクトのトランスフォームの変更を反映させる
+		if (colider->isConvex)
+		{
+			colider->reflectMovement(transformMatrix, jointMatrices);//コライダーにオブジェクトのトランスフォームの変更を反映させる
+		}
+		else
+		{
+			colider->reflectMovement(transformMatrix);
+		}
 	}
 
 	uniformBufferChange = false;
 }
 
 //コライダーの設定
-void Model::setColider()
+void Model::setColider(bool isConvex)
 {
-	colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
+	if (isConvex)
+	{
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel));
+	}
+	else
+	{
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
+	}
 }
 
 bool Model::hasColider()

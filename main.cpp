@@ -11,7 +11,7 @@ const uint32_t HEIGHT = 600;
 
 GLFWwindow* window;
 
-//#ifdef _DEBUG
+#ifdef _DEBUG
 int main() {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
     //_CrtSetBreakAlloc(28744);
@@ -27,8 +27,6 @@ int main() {
 
     return EXIT_SUCCESS;
 }
-
-/*
 #else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
@@ -43,4 +41,3 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return EXIT_SUCCESS;
 }
 #endif
-*/

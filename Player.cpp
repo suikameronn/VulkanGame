@@ -112,11 +112,6 @@ void Player::initFrameSetting()
 //ƒL[“ü—Í‚ÌŽæ“¾
 void Player::customUpdate()
 {
-	if (gltfModel->animations.size() > 0)
-	{
-		playAnimation();
-	}
-
 	glm::vec3 moveDirec = inputMove();
 	setPosition(this->position + moveDirec);
 }

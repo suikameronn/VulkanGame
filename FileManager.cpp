@@ -2,7 +2,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
 
-
 #include"FileManager.h"
 
 FileManager* FileManager::fileManager = nullptr;
@@ -116,6 +115,9 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
+    vertexNum = 0;
+    indexNum = 0;
+
     loadTextures(model, gltfModel);//テクスチャの読み取り
     loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
@@ -124,6 +126,9 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
         const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
         loadNode(nullptr, model->getRootNode(),model, gltfNode, scene.nodes[i], gltfModel, scale);
     }
+
+    model->vertexNum = vertexNum;
+    model->indexNum = indexNum;
 
     loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
     for (size_t i = 0; i < model->skins.size(); i++)
@@ -192,6 +197,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
 {
     const tinygltf::Mesh gltfMesh = gltfModel.meshes[gltfNode.mesh];
     int indexStart = 0;
+    int vertexNum = 0;;
 
     Mesh* mesh = new Mesh();
     mesh->meshIndex = model->meshCount;
@@ -396,6 +402,8 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
     mesh->primitives.push_back(primitive);
 
     indexStart += indexCount;
+    vertexNum += vertexCount;
+    indexNum += indexStart;
 }
 
 //gltfモデルのアニメーションを読み込む

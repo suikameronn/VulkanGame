@@ -11,13 +11,13 @@ glueSetRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
 --第二引数として、衝突解消時、このModelも動かすかどうかを決める
 --このModelは床のため動かさない、よってfalse
-glueSetColider(model,false)
+glueSetAABBColider(model,false)
 
 local model2 = glueCreateModel()
 glueSetGltfModel(model2,LEATHER)
 glueSetPos(model2,-250.0,0.0,0.0)
 glueSetScale(model2,50.0,10.0,50.0)
-glueSetColider(model2,false)
+glueSetAABBColider(model2,false)
 --Modelの行動パターン用のluaスクリプトの設定
 glueSetLuaPath(model2,"LuaScripts/wall1.lua")
 
@@ -25,14 +25,14 @@ local model3 = glueCreateModel()
 glueSetGltfModel(model3,LEATHER)
 glueSetPos(model3,-250.0,0.0,130.0)
 glueSetScale(model3,50.0,10.0,50.0)
-glueSetColider(model3,false)
+glueSetAABBColider(model3,false)
 glueSetLuaPath(model3,"LuaScripts/wall2.lua")
 
 --プレイヤーの作成
 local player = glueCreatePlayer()
 glueSetGltfModel(player,gltfTEST)
 glueSetScale(player,10.0,10.0,10.0)
-glueSetColider(player,true)
+glueSetConvexColider(player,true)
 glueSetColiderScale(player,1.0,1.0,0.3)
 --アイドル時に再生するアニメーションを指定
 glueSetDefaultAnimationName(player,"Idle")

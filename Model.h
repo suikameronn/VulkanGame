@@ -95,7 +95,7 @@ public:
 	bool isMovable;
 	//コライダーを持っているかどうか
 	bool hasColider();
-	void setColider();//コライダーの設定
+	void setColider(bool isConvex);//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
 
 	

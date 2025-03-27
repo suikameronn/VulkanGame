@@ -46,8 +46,6 @@ const mat4 biasMat = mat4(
 void main() {
     outColor0 = vec4(inColor,1.0);
 
-    mat4 boneMat = mat4(0.0);
-
     vec4 locPos;
     if(animationUBO.boneCount > 0)
     {

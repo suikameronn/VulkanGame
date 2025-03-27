@@ -81,7 +81,8 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "glueSetScale", glueSceneFunction::glueSetScale);//モデルのスケールの設定
 	lua_register(lua, "glueSetBaseColor", glueSceneFunction::glueSetBaseColor);//Diffuseカラーの設定
 	lua_register(lua, "glueBindCamera", glueSceneFunction::glueBindCamera);//カメラが追従するオブジェクトを設定する
-	lua_register(lua, "glueSetColider", glueSceneFunction::glueSetColider);//モデルにコライダーを付ける
+	lua_register(lua, "glueSetAABBColider", glueSceneFunction::glueSetAABBColider);//モデルにAABBコライダーを付ける
+	lua_register(lua, "glueSetConvexColider", glueSceneFunction::glueSetConvexColider);//モデルに凸包のコライダーを付ける
 	lua_register(lua, "glueSetColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
 	lua_register(lua, "glueSetDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
 	lua_register(lua, "glueSetGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
