@@ -118,6 +118,7 @@ public:
 // スタックの内容を表示する関数 デバッグ用
 static void printStack(lua_State* L) {
 	int top = lua_gettop(L); // スタックのトップインデックスを取得
+	
 	std::cout << "Stack size: " << top << std::endl;
 	for (int i = 1; i <= top; ++i) {
 		int t = lua_type(L, i);
@@ -345,8 +346,8 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		return 0;
 	}
 
-	//オブジェクトにコライダーを設定する
-	static int glueSetColider(lua_State* lua)
+	//オブジェクトにAABBコライダーを設定する
+	static int glueSetAABBColider(lua_State* lua)
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 
@@ -355,7 +356,25 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		case 1:
 		case 2:
 			Model * model = dynamic_cast<Model*>(obj);
-			model->setColider();
+			model->setColider(false);
+			model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
+			break;
+		}
+
+		return 0;
+	}
+
+	//オブジェクトに凸法のコライダーを設定する
+	static int glueSetConvexColider(lua_State* lua)
+	{
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+
+		switch (obj->getObjNum())
+		{
+		case 1:
+		case 2:
+			Model * model = dynamic_cast<Model*>(obj);
+			model->setColider(true);
 			model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
 			break;
 		}

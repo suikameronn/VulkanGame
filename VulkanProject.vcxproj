@@ -113,13 +113,20 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
+<<<<<<< HEAD
       <PreprocessorDefinitions>_DEBUG</PreprocessorDefinitions>
+=======
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;</PreprocessorDefinitions>
+>>>>>>> master
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+<<<<<<< HEAD
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+=======
+>>>>>>> master
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,6 +163,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Colider.cpp" />
     <ClCompile Include="Controller.cpp" />
+    <ClCompile Include="font.cpp" />
     <ClCompile Include="GltfModel.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="GameManager.cpp" />
@@ -175,6 +183,8 @@
     <ClInclude Include="Colider.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="EnumList.h" />
+    <ClInclude Include="font.h" />
+    <ClInclude Include="FontData.h" />
     <ClInclude Include="GltfModel.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="GameManager.h" />
@@ -187,6 +197,7 @@
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
+    <ClInclude Include="UI.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>
   <ItemGroup>

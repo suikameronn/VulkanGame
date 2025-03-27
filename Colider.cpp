@@ -4,6 +4,8 @@
 
 Colider::Colider(glm::vec3 min, glm::vec3 max)
 {
+	isConvex = false;
+
 	this->min = min;
 	this->max = max;
 
@@ -35,6 +37,59 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 }
 
+Colider::Colider(std::shared_ptr<GltfModel> model)
+{
+	isConvex = true;
+
+	scale = glm::vec3(1.0f);
+	scaleMat = glm::scale(scale);
+
+	originalVertexPos.resize(model->vertexNum);
+	convexVertexData.resize(model->vertexNum);
+	coliderIndices.resize(model->indexNum);
+
+	int loadedVertexCount = 0;
+	int loadedIndexCount = 0;
+
+	setVertices(model->getRootNode(), loadedVertexCount, loadedIndexCount);
+
+	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+}
+
+//凸法のオブジェクトように頂点を設定する
+void Colider::setVertices(GltfNode* node,int& loadedVertexCount,int& loadedIndexCount)
+{
+	for (int i = 0; i < node->children.size(); i++)
+	{
+		setVertices(node->children[i], loadedVertexCount, loadedIndexCount);
+	}
+
+	if (node->mesh)
+	{
+		Mesh* mesh = node->mesh;
+
+		glm::mat4 nodeMat = node->getMatrix();
+
+		for (int i = 0; i < mesh->vertices.size(); i++)
+		{
+			originalVertexPos[i + loadedVertexCount] = mesh->vertices[i].pos;
+
+			convexVertexData[i + loadedVertexCount].skinIndex = node->globalHasSkinNodeIndex;
+			convexVertexData[i + loadedVertexCount].boneID = mesh->vertices[i].boneID1;
+			convexVertexData[i + loadedVertexCount].weight = mesh->vertices[i].weight1;
+			convexVertexData[i + loadedVertexCount].nodeMatrix = nodeMat;
+		}
+
+		for (int i = 0; i < mesh->indices.size(); i++)
+		{
+			coliderIndices[i + loadedIndexCount] = mesh->indices[i] + loadedVertexCount;
+		}
+
+		loadedVertexCount += static_cast<int>(mesh->vertices.size());
+		loadedIndexCount += static_cast<int>(mesh->indices.size());
+	}
+}
+
 //Modelクラスの初期座標から座標変換を適用する
 void Colider::initFrameSettings()
 {
@@ -42,10 +97,10 @@ void Colider::initFrameSettings()
 
 	for (int i = 0; i < originalVertexPos.size(); i++)
 	{
-		originalVertexPos[i] = scaleMat * glm::vec4(originalVertexPos[i],1.0);
+		originalVertexPos[i] = scaleMat * glm::vec4(originalVertexPos[i], 1.0);
 	}
 
-	coliderVertices.resize(8);
+	coliderVertices.resize(originalVertexPos.size());
 	std::copy(originalVertexPos.begin(), originalVertexPos.end(), coliderVertices.begin());
 }
 
@@ -91,6 +146,29 @@ void Colider::reflectMovement(glm::mat4& transform)
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
+		transformedMin = transform * glm::vec4(min, 1.0f);
+		transformedMax = transform * glm::vec4(max, 1.0f);
+	}
+}
+
+//Modelクラスの移動などをコライダーにも反映
+void Colider::reflectMovement(glm::mat4& transform,std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+{
+	glm::mat4 skinMat;
+
+	for (int i = 0; i < coliderVertices.size(); i++)
+	{
+		skinMat = glm::mat4(0.0f);
+		for (int j = 0; j < 4; j++)
+		{
+			skinMat += jointMatrices[convexVertexData[i].skinIndex][convexVertexData[i].boneID[j]] * convexVertexData[i].weight[j];
+		}
+		if (skinMat == glm::mat4(0.0f) || convexVertexData[i].skinIndex == -1)
+		{
+			skinMat = glm::mat4(1.0f);
+		}
+
+		coliderVertices[i] = transform * convexVertexData[i].nodeMatrix * skinMat * glm::vec4(originalVertexPos[i], 1.0f);
 		transformedMin = transform * glm::vec4(min, 1.0f);
 		transformedMax = transform * glm::vec4(max, 1.0f);
 	}
@@ -501,7 +579,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 		limit--;
 	}
 
-	collisionDepthVec = minNormal * (minDistance + 0.001f);//遊びをとっておく
+	collisionDepthVec = minNormal * (minDistance + 0.0000f);//遊びをとっておく
 }
 
 //同一の線分を含まなければその頂点を単体に含める

@@ -2123,6 +2123,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createUniformBuffer(std::shared_ptr<Colider> colider)
     {
         VkDeviceSize bufferSize = sizeof(MatricesUBO);
+        if (colider->isConvex)
+        {
+            bufferSize += sizeof(AnimationUBO);
+        }
 
         MappedBuffer* mappedBuffer = colider->getMappedBufferData();
 

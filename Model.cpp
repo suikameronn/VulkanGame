@@ -151,11 +151,7 @@ void Model::switchPlayAnimation()
 //アニメーションを切り替える
 void Model::switchPlayAnimation(std::string nextAnimation)
 {
-	if (currentPlayAnimationName != nextAnimation)
-	{
-		animationChange = true;
-		currentPlayAnimationName = nextAnimation;
-	}
+	nextPlayAnimationName = nextAnimation;
 }
 
 void Model::playAnimation()//アニメーション用の行列を計算する
@@ -164,12 +160,15 @@ void Model::playAnimation()//アニメーション用の行列を計算する
 	{
 		//アニメーションを再生し終えた
 		//あるいは、アニメーションが切り替わった場合
-		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName) || animationChange)
+		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName)
+			|| currentPlayAnimationName != nextPlayAnimationName)
 		{
+			currentPlayAnimationName = nextPlayAnimationName;
 			//再生時間を再び計測し始める
 			animationChange = false;
 			startTime = clock();
 		}
+
 
 		currentTime = clock();
 
@@ -212,16 +211,30 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	if (colider)
 	{
-		colider->reflectMovement(transformMatrix);//コライダーにオブジェクトのトランスフォームの変更を反映させる
+		if (colider->isConvex)
+		{
+			colider->reflectMovement(transformMatrix, jointMatrices);//コライダーにオブジェクトのトランスフォームの変更を反映させる
+		}
+		else
+		{
+			colider->reflectMovement(transformMatrix);
+		}
 	}
 
 	uniformBufferChange = false;
 }
 
 //コライダーの設定
-void Model::setColider()
+void Model::setColider(bool isConvex)
 {
-	colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
+	if (isConvex)
+	{
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel));
+	}
+	else
+	{
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
+	}
 }
 
 bool Model::hasColider()
@@ -396,6 +409,7 @@ void Model::Update()
 	if (physicBase)
 	{
 		physicBase->Update();//物理演算の更新
+
 		setPosition(getPosition() + physicBase->getVelocity());//物理演算の位置を加える
 	}
 

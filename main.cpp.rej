@@ -1,0 +1,14 @@
+diff a/main.cpp b/main.cpp	(rejected hunks)
+@@ -14,8 +14,12 @@
+ GLFWwindow* window;
+ 
+ #ifdef _DEBUG
++<<<<<<< HEAD
+ int main() 
+ {
++=======
++int main() {
++>>>>>>> master
+     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//���������[�N���o�p
+     //_CrtSetBreakAlloc(28744);
+ 

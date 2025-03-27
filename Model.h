@@ -51,8 +51,11 @@ protected:
 	std::string defaultAnimationName;
 	//現在再生しているアニメーションの名前
 	std::string currentPlayAnimationName;
+	//次の再生する予定のアニメーション
+	std::string nextPlayAnimationName;
 	//gltfモデルの持つアニメーションの名前の配列
 	std::vector<std::string> animationNames;
+
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
 	std::vector<std::weak_ptr<Model>> groundingObjects;
 
@@ -70,6 +73,9 @@ public:
 
 	//スケール
 	glm::vec3 scale;
+
+	//自分が床の上に立っているかどうか、立っている場合は重力の影響を無視する
+	bool isGrounding;
 
 	void setDefaultAnimationName(std::string name);//デフォルトのアニメーションを設定
 
@@ -95,7 +101,7 @@ public:
 	bool isMovable;
 	//コライダーを持っているかどうか
 	bool hasColider();
-	void setColider();//コライダーの設定
+	void setColider(bool isConvex);//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
 
 	

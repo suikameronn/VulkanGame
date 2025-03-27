@@ -74,12 +74,15 @@ glm::vec3 Player::inputMove()
 
 	if (isGround())
 	{
-		physicBase->setZeroVelocity();
-
 		if (controller->getKey(GLFW_KEY_SPACE))
 		{
+			physicBase->setZeroVelocity();
 			physicBase->addVelocity(up * maxJumpHeight);
 		}
+	}
+	else
+	{
+		switchPlayAnimation("Floating");
 	}
 
 	return moveDirec;
@@ -112,11 +115,6 @@ void Player::initFrameSetting()
 //ƒL[“ü—Í‚ÌŽæ“¾
 void Player::customUpdate()
 {
-	if (gltfModel->animations.size() > 0)
-	{
-		playAnimation();
-	}
-
 	glm::vec3 moveDirec = inputMove();
 	setPosition(this->position + moveDirec);
 }

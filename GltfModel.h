@@ -397,6 +397,8 @@ public:
 	int meshCount;
 	int primitiveCount;
 	int jointNum;
+	int vertexNum;
+	int indexNum;
 
 	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;

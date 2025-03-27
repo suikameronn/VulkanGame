@@ -295,7 +295,12 @@ void main() {
 	outColor *= shadow;
 
 	outColor.a = 1.0;
+<<<<<<< HEAD
 	if(shaderMaterial.alphaMask == 1)
+=======
+
+	if(shaderMaterial.alphaMask != 0)
+>>>>>>> master
 	{
 		outColor.a = baseColor.a;
 	}
