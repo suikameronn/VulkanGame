@@ -16,7 +16,7 @@ void Storage::cleanup()
 
 //gltfモデルを読み込んだ際に、このクラスに格納する。
 //再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
-void Storage::addModel(GLTFOBJECT obj, GltfModel* model)
+void Storage::addModel(std::string obj, GltfModel* model)
 {
 	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
 }
@@ -85,9 +85,9 @@ std::shared_ptr<Camera> Storage::accessCamera()
 
 //求められたリソースがすでにこのクラスに格納されているかどうかを返す
 //この関数では、その判定のみを担う
-bool Storage::containModel(GLTFOBJECT obj)
+bool Storage::containModel(std::string path)
 {
-	if (gltfModelStorage[obj] != nullptr)
+	if (gltfModelStorage[path] != nullptr)
 	{
 		return true;
 	}
@@ -112,13 +112,13 @@ bool Storage::containImageData(std::string path)
 }
 
 //このクラスにすでに格納されたgltfModelを返す
-std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& Storage::getgltfModel()
+std::unordered_map<std::string, std::shared_ptr<GltfModel>>& Storage::getgltfModel()
 {
 	return gltfModelStorage;
 }
 
 //このクラスにすでに格納されたgltfModelのmapを返す
-std::shared_ptr<GltfModel> Storage::getgltfModel(GLTFOBJECT obj)
+std::shared_ptr<GltfModel> Storage::getgltfModel(std::string obj)
 {
 	return gltfModelStorage[obj];
 }

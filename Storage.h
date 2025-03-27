@@ -20,7 +20,7 @@ class Storage
 {
 private:
 	//gltfモデルが格納される
-	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>> gltfModelStorage;
+	std::unordered_map<std::string, std::shared_ptr<GltfModel>> gltfModelStorage;
 	//ファイル名をキーとして、画像データを格納する
 	std::unordered_map<std::string, std::shared_ptr<ImageData>> imageDataStorage;
 
@@ -93,7 +93,7 @@ public:
 
 	//gltfモデルを読み込んだ際に、このクラスに格納する。
 	//再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
-	void addModel(GLTFOBJECT obj, GltfModel* geo);
+	void addModel(std::string obj, GltfModel* geo);
 	//上と同様、画像を読み込んだ際にこのクラスに格納する
 	void addImageData(std::string, ImageData* image);
 
@@ -111,11 +111,11 @@ public:
 	void prepareLightsForVulkan();//descriptorSetの用意
 
 	//このクラスにすでに格納されたgltfModelを返す
-	std::shared_ptr<GltfModel> getgltfModel(GLTFOBJECT obj);
+	std::shared_ptr<GltfModel> getgltfModel(std::string obj);
 	//このクラスにすでに格納された画像を返す
 	std::shared_ptr<ImageData> getImageData(std::string path);
 	//このクラスにすでに格納されたgltfModelのmapを返す
-	std::unordered_map<GLTFOBJECT, std::shared_ptr<GltfModel>>& getgltfModel();
+	std::unordered_map<std::string, std::shared_ptr<GltfModel>>& getgltfModel();
 	
 	//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
 	//同じ種類のライトがいくつあろうと、このバッファは一つのみ
@@ -130,7 +130,7 @@ public:
 
 	//求められたリソースがすでにこのクラスに格納されているかどうかを返す
 	//この関数では、その判定のみを担う
-	bool containModel(GLTFOBJECT obj);
+	bool containModel(std::string obj);
 	bool containImageData(std::string path);
 
 	//デストラクタ
