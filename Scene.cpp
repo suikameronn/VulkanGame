@@ -121,7 +121,10 @@ void Scene::resetStatus()
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end(); itr++)
 	{
 		(*itr)->clearGroundingObject();//接地されているオブジェクトの登録の初期化
+		(*itr)->isGrounding = false;
 	}
+
+	player->isGrounding = false;
 }
 
 bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
@@ -164,6 +167,7 @@ bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
 															 //つまり、床のようなオブジェクトの上に載っている状況の場合
 						{
+							sceneModels[j]->isGrounding = true;
 							sceneModels[i]->addGroundingObject(sceneModels[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
 						}
 					}
@@ -173,6 +177,7 @@ bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 						sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
 						if (groundCollision(-collisionVector))
 						{
+							sceneModels[i]->isGrounding = true;
 							sceneModels[j]->addGroundingObject(sceneModels[i]);
 						}
 					}
@@ -201,6 +206,7 @@ bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 			{
 				if (groundCollision(collisionVector))
 				{
+					player->isGrounding = true;
 					player->cancelGravity();
 					sceneModels[i]->addGroundingObject(player);
 				}
@@ -272,7 +278,7 @@ bool Scene::groundCollision(glm::vec3 collisionVector)
 
 	float dot = glm::dot(v, up);
 
-	return dot > 0;
+	return dot >= 0;
 }
 
 //四角形を延ばして、衝突判定を行う、接地判定に使われる

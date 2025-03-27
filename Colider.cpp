@@ -579,7 +579,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 		limit--;
 	}
 
-	collisionDepthVec = minNormal * (minDistance + 0.001f);//—V‚Ñ‚ğ‚Æ‚Á‚Ä‚¨‚­
+	collisionDepthVec = minNormal * (minDistance + 0.0000f);//—V‚Ñ‚ğ‚Æ‚Á‚Ä‚¨‚­
 }
 
 //“¯ˆê‚Ìü•ª‚ğŠÜ‚Ü‚È‚¯‚ê‚Î‚»‚Ì’¸“_‚ğ’P‘Ì‚ÉŠÜ‚ß‚é

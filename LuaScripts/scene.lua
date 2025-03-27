@@ -32,7 +32,7 @@ glueSetLuaPath(model3,"LuaScripts/wall2.lua")
 local player = glueCreatePlayer()
 glueSetGltfModel(player,gltfTEST)
 glueSetScale(player,10.0,10.0,10.0)
-glueSetConvexColider(player,true)
+glueSetAABBColider(player,true)
 glueSetColiderScale(player,1.0,1.0,0.3)
 --アイドル時に再生するアニメーションを指定
 glueSetDefaultAnimationName(player,"Idle")

@@ -167,11 +167,7 @@ void Model::switchPlayAnimation()
 //アニメーションを切り替える
 void Model::switchPlayAnimation(std::string nextAnimation)
 {
-	if (currentPlayAnimationName != nextAnimation)
-	{
-		animationChange = true;
-		currentPlayAnimationName = nextAnimation;
-	}
+	nextPlayAnimationName = nextAnimation;
 }
 
 void Model::playAnimation()//アニメーション用の行列を計算する
@@ -180,12 +176,15 @@ void Model::playAnimation()//アニメーション用の行列を計算する
 	{
 		//アニメーションを再生し終えた
 		//あるいは、アニメーションが切り替わった場合
-		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName) || animationChange)
+		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName)
+			|| currentPlayAnimationName != nextPlayAnimationName)
 		{
+			currentPlayAnimationName = nextPlayAnimationName;
 			//再生時間を再び計測し始める
 			animationChange = false;
 			startTime = clock();
 		}
+
 
 		currentTime = clock();
 
@@ -426,6 +425,7 @@ void Model::Update()
 	if (physicBase)
 	{
 		physicBase->Update();//物理演算の更新
+
 		setPosition(getPosition() + physicBase->getVelocity());//物理演算の位置を加える
 	}
 
