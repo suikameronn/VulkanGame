@@ -207,7 +207,6 @@ bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 				if (groundCollision(collisionVector))
 				{
 					player->isGrounding = true;
-					player->cancelGravity();
 					sceneModels[i]->addGroundingObject(player);
 				}
 

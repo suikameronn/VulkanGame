@@ -27,6 +27,8 @@ public:
 	void setZeroVelocity();
 	//重力を打ち消す(地面に足をつけているとき)
 	void cancelGravity();
+	//重力を加える
+	void addGravity();
 	//速度を向きも含めて加える
 	virtual void addVelocity(glm::vec3 addVelocity);
 	//現在の速度を取得する

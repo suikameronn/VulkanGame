@@ -36,6 +36,9 @@ public:
 	void customUpdate() override;
 	//リスタート地点へプレイヤーをワープさせる
 	void restart(glm::vec3 startPoint);
+
+
+	void Update() override;
 };
 
 /*以下の静的関数はluaから呼び出される*/

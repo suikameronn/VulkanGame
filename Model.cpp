@@ -496,7 +496,7 @@ std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLe
 //下のほうにあるオブジェクトが床かどうか調べる
 bool Model::isGround()
 {
-	std::shared_ptr<Model> model = rayCast(position + up * 0.1f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f);
+	std::shared_ptr<Model> model = rayCast(position + up * 0.001f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f);
 	if (model)
 	{
 		if (model->containTag(Tag::GROUND))

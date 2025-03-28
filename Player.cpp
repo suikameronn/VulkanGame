@@ -76,12 +76,12 @@ glm::vec3 Player::inputMove()
 	{
 		if (controller->getKey(GLFW_KEY_SPACE))
 		{
-			physicBase->setZeroVelocity();
 			physicBase->addVelocity(up * maxJumpHeight);
 		}
 	}
 	else
 	{
+		physicBase->addGravity();
 		switchPlayAnimation("Floating");
 	}
 
@@ -141,4 +141,15 @@ void Player::restart(glm::vec3 startPoint)
 	rotate.z = rotate.getRadian(0.0f);
 
 	setPosition(startPoint);
+}
+
+void Player::Update()
+{
+	setLastFrameTransform();
+
+	customUpdate();//オブジェクト固有の更新処理
+
+	setPosition(getPosition() + physicBase->getVelocity());
+
+	playAnimation();//アニメーションの再生
 }
