@@ -31,9 +31,6 @@
     <Filter Include="ヘッダー ファイル\Lights">
       <UniqueIdentifier>{4cac4a24-a511-466b-ae6b-2183316919ae}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\UI">
-      <UniqueIdentifier>{aee487d1-a53a-4630-808c-26860ddd8105}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -66,9 +63,6 @@
     <ClCompile Include="GltfModel.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
     </ClCompile>
-    <ClCompile Include="AnimController.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="PhysicBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -82,9 +76,6 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Storage.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="font.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -141,15 +132,6 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Storage.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="FontData.h">
-      <Filter>ヘッダー ファイル\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="UI.h">
-      <Filter>ヘッダー ファイル\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="font.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

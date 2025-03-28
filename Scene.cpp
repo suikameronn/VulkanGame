@@ -254,7 +254,7 @@ void Scene::setLights()
 	Storage* storage = Storage::GetInstance();
 
 	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
-	cubemap->setgltfModel(FileManager::GetInstance()->loadModel(GLTFOBJECT::CUBEMAP));;
+	cubemap->setgltfModel(FileManager::GetInstance()->loadModel("models/cubemap.glb"));
 	storage->setCubeMapModel(cubemap);
 
 	for (std::shared_ptr<PointLight> pl : scenePointLights)

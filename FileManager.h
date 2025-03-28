@@ -85,7 +85,7 @@ public:
 	}
 
 	//luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
-	std::shared_ptr<GltfModel> loadModel(GLTFOBJECT obj);
+	std::shared_ptr<GltfModel> loadModel(std::string modelPath);
 	//luaスクリプトからSceneクラスを介して呼び出される。新しい画像が求められたときのみ、解析処理をする
 	std::shared_ptr<ImageData> loadImage(std::string filePath);
 	//

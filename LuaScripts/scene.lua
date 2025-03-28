@@ -1,7 +1,7 @@
 --Modelオブジェクトの作成
 local model = glueCreateModel()
 --Modelオブジェクトにgltfモデルをセット
-glueSetGltfModel(model,ASPHALT)
+glueSetGltfModel(model,"models/concrete.glb")
 --初期座標の設定
 glueSetPos(model,0.0,0.0,0.0)
 --スケールの設定
@@ -14,7 +14,7 @@ glueSetRotate(model,0.0,0.0,0.0)
 glueSetAABBColider(model,false)
 
 local model2 = glueCreateModel()
-glueSetGltfModel(model2,LEATHER)
+glueSetGltfModel(model2,"models/leather.glb")
 glueSetPos(model2,-250.0,0.0,0.0)
 glueSetScale(model2,50.0,10.0,50.0)
 glueSetAABBColider(model2,false)
@@ -22,7 +22,7 @@ glueSetAABBColider(model2,false)
 glueSetLuaPath(model2,"LuaScripts/wall1.lua")
 
 local model3 = glueCreateModel()
-glueSetGltfModel(model3,LEATHER)
+glueSetGltfModel(model3,"models/leather.glb")
 glueSetPos(model3,-250.0,0.0,130.0)
 glueSetScale(model3,50.0,10.0,50.0)
 glueSetAABBColider(model3,false)
@@ -30,7 +30,7 @@ glueSetLuaPath(model3,"LuaScripts/wall2.lua")
 
 --プレイヤーの作成
 local player = glueCreatePlayer()
-glueSetGltfModel(player,gltfTEST)
+glueSetGltfModel(player,"models/PlayerModel.glb")
 glueSetScale(player,10.0,10.0,10.0)
 glueSetAABBColider(player,true)
 glueSetColiderScale(player,1.0,1.0,0.3)

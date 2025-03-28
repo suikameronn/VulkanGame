@@ -119,22 +119,6 @@ MappedBuffer* Model::getAnimationMappedBufferData()
 
 void Model::setDefaultAnimationName(std::string name)//初期状態で再生するアニメーションを設定する
 {
-#ifdef DEBUG
-	bool animationExist = false;
-	for (int i = 0; i < animationNames.size(); i++)
-	{
-		if (animationNames[i] == name)
-		{
-			animaitonExist = true;
-			break;
-		}
-	}
-	if (!animationExist)
-	{
-		defaultAnimation = "none";
-		return;
-	}
-#endif
 	defaultAnimationName = name;
 	currentPlayAnimationName = name;
 }

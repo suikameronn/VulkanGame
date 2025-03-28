@@ -53,24 +53,23 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
 }
 
 //luaƒXƒNƒŠƒvƒg‚©‚çSceneƒNƒ‰ƒX‚ğ‰î‚µ‚ÄŒÄ‚Ño‚³‚ê‚éBV‚µ‚¢ƒ‚ƒfƒ‹‚ğ‹‚ß‚ç‚ê‚½‚Æ‚«‚Ì‚İA‰ğÍˆ—‚ğ‚·‚é
-std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚·
+std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚·
 {
     Storage* storage = Storage::GetInstance();
-    if (storage->containModel(obj))//‚·‚Å‚É3Dƒ‚ƒfƒ‹‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İæ‚èÏ‚İ‚È‚ç
-    {
-        return storage->getgltfModel(obj);//ƒXƒgƒŒ[ƒWƒNƒ‰ƒX‚©‚ç“n‚·
-    }
 
-    void* ptr = nullptr;
-    int size = 0;
-    loadgltfModel(getModelResource(obj),&ptr, size);//ƒtƒ@ƒCƒ‹‚ğæ“¾‚·‚é
+    std::string path = splitFileName(modelPath);
+
+    if (storage->containModel(path))//‚·‚Å‚É3Dƒ‚ƒfƒ‹‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İæ‚èÏ‚İ‚È‚ç
+    {
+        return storage->getgltfModel(path);//ƒXƒgƒŒ[ƒWƒNƒ‰ƒX‚©‚ç“n‚·
+    }
 
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
     std::string error;
     std::string warning;
     bool binary = false;
-    binary = gltfContext.LoadBinaryFromMemory(&gltfModel, &error, &warning, static_cast<unsigned char*>(ptr), size);
+    binary = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, modelPath);
     const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//ƒfƒtƒHƒ‹ƒgƒV[ƒ“‚ª‚ ‚ê‚Î‚»‚ê‚ğA‚È‚¯‚ê‚ÎÅ‰‚ÌƒV[ƒ“
 
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
@@ -80,9 +79,9 @@ std::shared_ptr<GltfModel> FileManager::loadModel(GLTFOBJECT obj)//3Dƒ‚ƒfƒ‹‚ğ•Ô‚
     model->initPoseMin = minPos;
     model->initPoseMax = maxPos;
 
-    storage->addModel(obj, model);//ƒXƒgƒŒ[ƒW‚Éƒ‚ƒfƒ‹‚ğ‰Á‚¦‚é
+    storage->addModel(path, model);//ƒXƒgƒŒ[ƒW‚Éƒ‚ƒfƒ‹‚ğ‰Á‚¦‚é
 
-    return storage->getgltfModel(obj);
+    return storage->getgltfModel(path);
 }
 
 //ƒeƒNƒXƒ`ƒƒ‚ğ“Ç‚İ‚Ş

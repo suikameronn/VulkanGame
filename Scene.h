@@ -244,7 +244,7 @@ namespace glueSceneFunction//SceneƒNƒ‰ƒX‚Ì—p‚ÌglueŠÖ”
 		{
 		case 1:
 			Model * model = dynamic_cast<Model*>(obj);
-			model->setgltfModel(FileManager::GetInstance()->loadModel(static_cast<GLTFOBJECT>(lua_tointeger(lua, -1))));
+			model->setgltfModel(FileManager::GetInstance()->loadModel(lua_tostring(lua,-1)));
 			break;
 		}
 

@@ -515,6 +515,9 @@ class VulkanBase
 {
 private:
 
+    //キューブマップ用の立方体のモデル
+    const std::string cubemapPath = "cubemap.glb";
+
     //シャドウマップ作成時の平衡投影行列用の範囲の変数
     const float shadowMapTop = -500;
     const float shadowMapBottom = 500;

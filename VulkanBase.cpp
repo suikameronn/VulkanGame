@@ -4603,7 +4603,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkCmdBeginRenderPass(commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            drawSamplerCube(storage->getgltfModel(GLTFOBJECT::CUBEMAP)->getRootNode(), storage->getCubeMap()
+            drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
                 , passData.width, passData.width, commandBuffers[0], i, passData.descriptorSets
                 ,passData.pipelineLayout,passData.pipeline);
 
@@ -4703,7 +4703,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 constant.roughness = static_cast<float>(j) / static_cast<float>(iblSpecular.mipmapLevel);
                 vkCmdPushConstants(commandBuffers[0], iblSpecular.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SpecularPushConstant), &constant);
 
-                drawSamplerCube(storage->getgltfModel(GLTFOBJECT::CUBEMAP)->getRootNode(), storage->getCubeMap()
+                drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
                     ,iblSpecular.mipmapLevelSize[j], iblSpecular.mipmapLevelSize[j], commandBuffers[0], i,iblSpecular.descriptorSets
                     ,iblSpecular.pipelineLayout,iblSpecular.pipeline[j]);
 
@@ -4772,7 +4772,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        drawSamplerCube(storage->getgltfModel(GLTFOBJECT::CUBEMAP)->getRootNode(), storage->getCubeMap()
+        drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
             , iblSpecular.passData.width, iblSpecular.passData.height, commandBuffers[0], 0/*ˆê‚Â‚Ì–Ê‚µ‚©ƒŒƒ“ƒ_ƒŠƒ“ƒO‚µ‚È‚¢‚Ì‚Å0‚ÅŒÅ’è*/, iblSpecular.passData.descriptorSets
             , iblSpecular.passData.pipelineLayout, iblSpecular.passData.pipeline);
 
