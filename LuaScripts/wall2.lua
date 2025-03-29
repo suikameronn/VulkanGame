@@ -35,8 +35,8 @@ function Update()
     
     local speed = 1.0
 
-    local destPos1 = {x = Position.x,y = Position.y + 250.0,z = Position.z}
-    local destPos2 = {x = Position.x,y = Position.y,z = Position.z}
+    local destPos1 = {x = Position.x,y = Position.y,z = Position.z + 135.0}
+    local destPos2 = {x = Position.x,y = Position.y,z = Position.z - 135.0}
 
     while true do
         Move(destPos1,speed)

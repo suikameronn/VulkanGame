@@ -22,6 +22,13 @@
 #include<chrono>
 #include <thread>
 
+enum
+{
+	GAME_CONTINUE = 0,
+	GAME_FINISH,
+	GAME_RESTART
+};
+
 //luaから読み取ったステージの情報などが格納される
 class Scene
 {
@@ -104,10 +111,10 @@ public:
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;
 
 	//ステージ上のオブジェクトなどの更新処理
-	bool UpdateScene();
+	int UpdateScene();
 
 	//四角形を延ばして、衝突判定を行う、接地判定に使われる
-	std::shared_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model);
+	std::shared_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal);
 
 	//HDRIマップの設定
 	void setHDRIMap(std::string imagePath);
@@ -226,10 +233,18 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 		std::string path = std::string(lua_tostring(lua, -1));
 
-		lua_getglobal(lua, "Scene");
-		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
-
 		obj->setLuaScript(path);
+
+		return 0;
+	}
+
+	//luaスクリプトを実行し始めるフレームを遅延させる
+	static int glueSetDelayStartLua(lua_State* lua)
+	{
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+		int delayFrame = static_cast<int>(lua_tointeger(lua, -1));
+
+		obj->setDelayFrameCount(delayFrame);
 
 		return 0;
 	}

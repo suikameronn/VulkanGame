@@ -29,7 +29,7 @@ glm::vec3 PhysicBase::getVelocity()
 
 void PhysicBase::cancelGravity()
 {
-	velocity.y = 0.0f;
+	velocity.y = -0.3f;
 }
 
 void PhysicBase::addGravity()

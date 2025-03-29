@@ -371,6 +371,8 @@ void Model::receiveTransformFromLua()//スクリプトで変化した座標などを取得
 		rotate.y = y;
 		rotate.z = z;
 
+		//std::cout << rotate.z << std::endl;
+
 		lua_getglobal(coroutine, "Scale");
 		lua_pushstring(coroutine, "x");
 		lua_gettable(coroutine, -2);
@@ -413,7 +415,7 @@ void Model::Update()
 		setPosition(getPosition() + physicBase->getVelocity());//物理演算の位置を加える
 	}
 
-	if (coroutine)
+	if (coroutine && passFrameCount >= delayFrameCount)
 	{
 		sendTransformToLua();//luaに座標などを送る
 		
@@ -426,6 +428,11 @@ void Model::Update()
 	}
 
 	playAnimation();//アニメーションの再生
+
+	if (passFrameCount < MAXFRAMECOUNT)
+	{
+		passFrameCount++;
+	}
 }
 
 void Model::customUpdate()
@@ -463,11 +470,11 @@ void Model::initFrameSetting()//初回フレームの処理
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う
-std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength)
+std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal)
 {
 	for (float i = 0.1f; i <= maxLength; i += 0.1f)
 	{
-		std::shared_ptr<Model> hitModel = scene->raycast(origin,dir,i,this);
+		std::shared_ptr<Model> hitModel = scene->raycast(origin,dir,i,this,normal);
 		if (hitModel)
 		{
 			return hitModel;
@@ -478,9 +485,9 @@ std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLe
 }
 
 //下のほうにあるオブジェクトが床かどうか調べる
-bool Model::isGround()
+bool Model::isGround(glm::vec3& normal)
 {
-	std::shared_ptr<Model> model = rayCast(position + up * 0.001f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f);
+	std::shared_ptr<Model> model = rayCast(position + up * 1.0f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f,normal);
 	if (model)
 	{
 		if (model->containTag(Tag::GROUND))

@@ -169,7 +169,7 @@ public:
 	//GJK用当たり判定の実行
 	virtual bool Intersect(std::shared_ptr<Colider> oppColider);
 	//ボックスレイキャスト用の当たり判定の実行
-	virtual bool Intersect(glm::vec3 origin, glm::vec3 dir, float length);
+	virtual bool Intersect(glm::vec3 origin, glm::vec3 dir, float length,glm::vec3& normal);
 
 	//座標変換を加えていないコライダーの頂点を取得
 	glm::vec3* getColiderOriginalVertices();

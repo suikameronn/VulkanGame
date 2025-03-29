@@ -26,9 +26,27 @@ Colider::Colider(glm::vec3 min, glm::vec3 max)
 	originalVertexPos[6] = glm::vec3(max.x, max.y, max.z);
 	originalVertexPos[7] = glm::vec3(min.x, max.y, max.z);
 
-	coliderIndices.resize(12);
-
-	coliderIndices = { 1,0,1,2,2,3,3,0,0,4,1,5,2,6,3,7,4,5,5,6,6,7,7,4 };//描画用のインデックス配列
+	coliderIndices =
+	{
+		//下面
+		0,1,3,
+		1,2,3,
+		//上面
+		4,7,5,
+		7,6,5,
+		//前面
+		0,4,1,
+		4,5,1,
+		//背面
+		3,2,7,
+		2,6,7,
+		//左面
+		0,3,4,
+		3,7,4,
+		//右面
+		1,5,2,
+		5,6,2
+	};
 
 	satIndices.resize(3 * 6);
 	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
@@ -209,8 +227,9 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
 }
 
 //ボックスレイキャスト用の当たり判定の実行
-bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
+bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length,glm::vec3& normal)
 {
+	/*
 	glm::vec3 endPoint = origin + dir * length;
 
 	if (endPoint.x >= transformedMin.x && endPoint.x <= transformedMax.x
@@ -224,6 +243,48 @@ bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length)
 			{
 				return true;
 			}
+		}
+	}
+	*/
+
+	const float epsilon = 0.0001f;
+
+	for (int i = 0; i < coliderIndices.size(); i += 3)
+	{
+		glm::vec3 e1 = coliderVertices[coliderIndices[i + 1]] - coliderVertices[coliderIndices[i]];
+		glm::vec3 e2 = coliderVertices[coliderIndices[i + 2]] - coliderVertices[coliderIndices[i]];
+
+		glm::vec3 h = glm::cross(dir, e2);
+
+		float dot = glm::dot(h, e1);
+		if (dot >= -epsilon && dot <= epsilon)
+		{//線分は三角形と平行
+			continue;
+		}
+
+		float inv = 1.0f / dot;
+		glm::vec3 v = origin - coliderVertices[coliderIndices[i]];
+		float u = inv * glm::dot(h, v);
+
+		if (u < 0.0f || u > 1.0f)
+		{
+			continue;
+		}
+
+		glm::vec3 q = glm::cross(v, e1);
+		float f = inv * glm::dot(dir, q);
+		if (f < 0.0f || u + f > 1.0f)
+		{
+			continue;
+		}
+
+		float t = inv * glm::dot(e2, q);
+
+		if (t > -epsilon && t <= length)
+		{
+			normal = glm::normalize(glm::cross(e1, e2));
+
+			return true;
 		}
 	}
 

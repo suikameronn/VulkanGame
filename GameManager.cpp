@@ -31,7 +31,7 @@ void GameManager::mainGameLoop()//メインゲームループ
 
         VulkanBase::GetInstance()->render();//オブジェクトのレンダリング
 
-        if (exit || glfwWindowShouldClose(window))//メインゲームループの終了処理
+        if (exit == GAME_FINISH || exit == GAME_RESTART || glfwWindowShouldClose(window))//メインゲームループの終了処理
         {
             break;
         }
@@ -61,12 +61,27 @@ void GameManager::exitScene()
     //ステージを破棄
     scene->Destroy();
 
-    //ゲーム全体を終了
-    FinishGame();
+    if (exit == GAME_FINISH || glfwWindowShouldClose(window))
+    {
+        //ゲーム全体を終了
+        FinishGame();
+    }
+    else if(exit == GAME_RESTART)
+    {
+        RestartGame();
+    }
 }
 
 //ゲーム全体の終了処理
 void GameManager::FinishGame()
 {
     FinishInstance();
+}
+
+//ゲームのリスタート処理 読み取ったリソースは解放しない
+void GameManager::RestartGame()
+{
+    VulkanBase::GetInstance()->FinishVulkanBase();
+
+    initGame();
 }

@@ -27,7 +27,7 @@ private:
 	long long elapsed;
 
 	//ゲームの終了フラッグ
-	bool exit = false;
+	int exit = GAME_CONTINUE;
 	//ステージのインスタンス
 	Scene* scene;
 
@@ -80,4 +80,6 @@ public:
 	void exitScene();
 	//ゲーム全体の終了処理
 	void FinishGame();
+	//読み取ったデータはそのままにゲームリスタートさせる
+	void RestartGame();
 };

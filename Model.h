@@ -105,7 +105,7 @@ public:
 	std::shared_ptr<Colider> getColider() { return colider; }
 
 	
-	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength);
+	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal);
 
 	void updateTransformMatrix() override;//座標変換行列の更新
 
@@ -126,7 +126,7 @@ public:
 
 	void initFrameSetting() override;//初期フレームのみの処理
 
-	bool isGround();//オブジェクトが床に接しているかどうか
+	bool isGround(glm::vec3& normal);//オブジェクトが床に接しているかどうか
 	void addGroundingObject(std::weak_ptr<Model> object);//床に接していたらそれを追加
 	void clearGroundingObject();
 };

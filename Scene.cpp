@@ -75,6 +75,7 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "glueCreateModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
 	lua_register(lua, "glueCreatePlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
 	lua_register(lua, "glueSetLuaPath", glueSceneFunction::glueSetLuaPath);//スクリプトをオブジェクトに追加
+	lua_register(lua, "glueSetDelayStartLua", glueSceneFunction::glueSetDelayStartLua);//スクリプトの実行開始タイミングを設定
 	lua_register(lua, "glueSetGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加
 	lua_register(lua, "glueSetPos", glueSceneFunction::glueSetPos);//座標の設定
 	lua_register(lua, "glueSetRotate", glueSceneFunction::glueSetRotate);//向きを設定
@@ -127,9 +128,9 @@ void Scene::resetStatus()
 	player->isGrounding = false;
 }
 
-bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
+int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 {
-	bool exit = false;
+	int exit = GAME_CONTINUE;
 
 	camera->Update();//カメラの更新処理
 
@@ -231,6 +232,11 @@ bool Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 		player->restart(startPoint);
 	}
 
+	if (Controller::GetInstance()->getKey(GLFW_KEY_ESCAPE))
+	{
+		exit = GAME_FINISH;
+	}
+
 	return exit;//ウィンドウを閉じようとした場合は、falsを送り、ゲームの終了処理をさせる 
 }
 
@@ -281,7 +287,7 @@ bool Scene::groundCollision(glm::vec3 collisionVector)
 }
 
 //四角形を延ばして、衝突判定を行う、接地判定に使われる
-std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model)
+std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal)
 {
 	for (int i = 0; i < sceneModels.size(); i++)
 	{
@@ -296,7 +302,7 @@ std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float len
 		}
 
 		std::shared_ptr<Colider> colider2 = sceneModels[i]->getColider();
-		if (colider2->Intersect(origin,dir,length))//コライダーと線分の衝突判定
+		if (colider2->Intersect(origin,dir,length,normal))//コライダーと線分の衝突判定
 		{
 			return sceneModels[i];
 		}

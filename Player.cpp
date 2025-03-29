@@ -72,8 +72,13 @@ glm::vec3 Player::inputMove()
 		switchPlayAnimation("Running");
 	}
 
-	if (isGround())
+	glm::vec3 groundNormal;
+	if (isGround(groundNormal))
 	{
+
+
+		physicBase->cancelGravity();
+
 		if (controller->getKey(GLFW_KEY_SPACE))
 		{
 			physicBase->addVelocity(up * maxJumpHeight);

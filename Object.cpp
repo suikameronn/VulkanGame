@@ -49,6 +49,12 @@ void Object::setLuaScript(std::string path)//行動パターン用のluaスクリプトを設定
 	registerGlueFunctions();
 }
 
+//luaスクリプトを実行するのを遅延するフレーム数を設定する
+void Object::setDelayFrameCount(int delay)
+{
+	delayFrameCount = delay;
+}
+
 //luaから呼び出される静的関数の登録
 void Object::registerGlueFunctions()
 {
@@ -155,8 +161,6 @@ void Object::receiveTransformFromLua()
 
 void Object::Update()//更新処理
 {
-
-
 	customUpdate();
 }
 

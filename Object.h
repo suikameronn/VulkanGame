@@ -26,6 +26,9 @@
 #include"Camera.h"
 #include"PhysicBase.h"
 
+//経過したフレーム数の最大数
+#define MAXFRAMECOUNT 10000
+
 //頂点バッファーとインデックスバッファの構造体
 //Modelクラスが持つ
 struct BufferObject
@@ -94,6 +97,11 @@ class Object
 {
 protected:
 
+	//経過したフレーム数
+	int passFrameCount;
+	//luaスクリプトを実行するのを遅延するフレーム数
+	int delayFrameCount;
+
 	//行動パターン用luaスクリプトの仮想マシンにアクセスる変数
 	lua_State* lua;
 	//スクリプトのコルーチン再開用
@@ -144,6 +152,9 @@ public:
 
 	//行動パターン用のluaスクリプトを設定する 実行はしない
 	void setLuaScript(std::string path);
+
+	//luaスクリプトを実行するのを遅らせるフレーム数を設定する
+	void setDelayFrameCount(int delay);
 
 	//親オブジェクトを中心にした球面座標上を動くかどうか
 	bool spherePos;
