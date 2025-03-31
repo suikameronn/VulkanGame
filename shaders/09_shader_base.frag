@@ -160,8 +160,11 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 }  
 
 //IBLのライトの効果を計算
-vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 reflection,vec3 baseColor,float roughness,float metallic)
+vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 baseColor,float roughness,float metallic)
 {
+	normal.y *= -1.0;
+	vec3 reflection = normalize(reflect(-view,normal));//鏡面反射の向きを求める
+
 	vec3 F = fresnelSchlickRoughness(max(dot(normal,view),0.0),f0,roughness);
 
 	vec3 irradiance = srgbToLinear(texture(diffuseMap,normal)).rgb;
@@ -259,7 +262,7 @@ void main() {
 	vec3 v = normalize(camPos - inPos);//頂点からカメラへのベクトル
 	vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
-	for(int i = 0;i < 0;i++)
+	for(int i = 0;i < pointLight.lightCount;i++)
 	{
 		vec3 l = normalize(pointLight.pos[i].xyz - inPos);//頂点からライトへのベクトル
 		float dis = length(pointLight.pos[i].xyz - inPos);
@@ -307,8 +310,8 @@ void main() {
 		vec3 color = NdotL * (directionalLight.color[i].rgb) * (diffuseReflect + specularReflect);
 		outColor += vec4(color,0.0f);
 	}
-	
-	outColor += getIBL(f0,n,v,reflection,baseColor.rgb,roughness,metallic);
+
+	outColor += getIBL(f0,n,v,baseColor.rgb,roughness,metallic);
 
 	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
 	outColor *= shadow;

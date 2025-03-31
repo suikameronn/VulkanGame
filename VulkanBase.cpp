@@ -1214,7 +1214,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.cullMode = VK_CULL_MODE_NONE;
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
         VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -1226,12 +1226,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
-        colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-        colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-        colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
         VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -4936,8 +4930,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createIBLSpecularBRDF()
     {
         //事前計算用のシェーダを設定
-        iblSpecularBRDF.vertShaderPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\shaders\\calcBRDF.vert.spv";
-        iblSpecularBRDF.fragShaderPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\shaders\\calcSpecularBRDF.frag.spv";
+        iblSpecularBRDF.vertShaderPath = "shaders\\calcBRDF.vert.spv";
+        iblSpecularBRDF.fragShaderPath = "shaders\\calcSpecularBRDF.frag.spv";
 
         //テクスチャのサイズの設定
         iblSpecularBRDF.setRenderSize(IBL_MAP_SIZE);
@@ -4946,13 +4940,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblSpecularBRDF.passData.setFrameCount(1);
 
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath, iblSpecularBRDF.passData, VK_FORMAT_R8G8B8A8_UNORM);
+        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath, iblSpecularBRDF.passData, VK_FORMAT_R16G16B16A16_SFLOAT);
 
         //一つの視点のみから立方体の面をレンダリングして、2DのLUTを作成する
         createLUT(iblSpecularBRDF, cubemapData.mappedBuffers[0]);
 
         //レンダリングした画像をシェーダで読み取るためのテクスチャに変換する
-        transitionImageLayout(iblSpecularBRDF.passData.imageAttachment[0].image, VK_FORMAT_R8G8B8A8_UNORM
+        transitionImageLayout(iblSpecularBRDF.passData.imageAttachment[0].image, VK_FORMAT_R16G16B16A16_SFLOAT
             , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 1);
 
         //立方体の一つの面のみのレンダリング結果をLUTとして利用
