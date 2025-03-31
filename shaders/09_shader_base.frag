@@ -177,7 +177,7 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 reflection,vec3 baseColor,float r
 	{
 		ao = texture(aoMap,shaderMaterial.baseColorTextureIndex == 0 ? inUV0 : inUV1).r;
 	}
-	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse) + specular) * ao;
+	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse * 0.5) + specular) * ao;
 
 	return vec4(ambient,0.0f);
 }
@@ -259,7 +259,7 @@ void main() {
 	vec3 v = normalize(camPos - inPos);//頂点からカメラへのベクトル
 	vec3 reflection = normalize(reflect(-v,n));//鏡面反射の向きを求める
 
-	for(int i = 0;i < pointLight.lightCount;i++)
+	for(int i = 0;i < 0;i++)
 	{
 		vec3 l = normalize(pointLight.pos[i].xyz - inPos);//頂点からライトへのベクトル
 		float dis = length(pointLight.pos[i].xyz - inPos);

@@ -875,9 +875,8 @@ private:
     //IBL用のテクスチャを作成
     void createIBL();
     //IBL作成用のオフスクリーンレンダリングの準備をする
-    void prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData);
+    void prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData,VkFormat format);
     void prepareIBL(IBLSpecularReflection& iblSPeuclar);
-    void prepareIBL(IBLSpecularBRDF& iblSpeuclar);
     //IBLのdiffuseテクスチャを作成
     void createIBLDiffuse();
     //IBLのspecularテクスチャを作成

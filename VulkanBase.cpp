@@ -1225,9 +1225,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_TRUE;
-        colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        colorBlendAttachment.blendEnable = VK_FALSE;
+        colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
         colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
         colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -4060,21 +4060,21 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             , cubemapData.passData.layout, cubemapData.passData.pipelineLayout, cubemapData.passData.pipeline, cubemapData.passData.renderPass);
     }
 
-    void VulkanBase::prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData)
+    void VulkanBase::prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData,VkFormat format)
     {
         //レンダリングの結果の出力用のバッファの作成
         for (auto& attachment : passData.imageAttachment)
         {
-            createImage(passData.width, passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+            createImage(passData.width, passData.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
-            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = VK_FORMAT_R8G8B8A8_UNORM;
+        attachmentDescription.format = format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4384,166 +4384,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //ここで指定されるシェーダはiblのテクスチャ作成用
         createCalcIBLMapPipeline(iblSpecular.vertShaderPath, iblSpecular.fragShaderPath, iblSpecular.prePassLayout,iblSpecular.pipelineLayout
             , static_cast<uint32_t>(iblSpecular.pipeline.size()), iblSpecular.pipeline.data(), static_cast<uint32_t>(iblSpecular.renderPass.size()), iblSpecular.renderPass.data());
-    }
-
-    //specularのIBLの作成のため、レンダーパスを複数作成
-    void VulkanBase::prepareIBL(IBLSpecularBRDF& iblSpecular)
-    {
-        //IBLのSpecularのBRDFの畳み込みでは、オフスクリーンレンダリングでは一度しか行わないので、
-        //多くの配列のインデックスの一つ目の要素しか使わない
-        const int index = 0;
-
-        //レンダリングの結果の出力用のバッファの作成
-        createImage(iblSpecular.passData.width, iblSpecular.passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, iblSpecular.passData.imageAttachment[index].image, iblSpecular.passData.imageAttachment[index].memory);
-        iblSpecular.passData.imageAttachment[index].view =
-            createImageView(iblSpecular.passData.imageAttachment[index].image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
-
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            VK_FILTER_LINEAR, VK_FILTER_LINEAR, iblSpecular.passData.sampler);
-
-        VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = VK_FORMAT_R8G8B8A8_UNORM;
-        attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-        attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
-        attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
-        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// アタッチメントの初期レイアウトは気にしない
-        attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;// レンダーパス終了時に、アタッチメントはシェーダー読み取り用に遷移される
-
-        VkAttachmentReference colorReference = {};
-        colorReference.attachment = 0;
-        colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass = {};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorReference;
-
-        std::array<VkSubpassDependency, 2> dependencies;
-
-        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;//最初に
-        dependencies[0].dstSubpass = 0;
-        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dstAccessMask = 0;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        dependencies[1].srcSubpass = 0;//次
-        dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        VkRenderPassCreateInfo renderPassCreateInfo{};
-        renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassCreateInfo.attachmentCount = 1;
-        renderPassCreateInfo.pAttachments = &attachmentDescription;
-        renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpass;
-        renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-        renderPassCreateInfo.pDependencies = dependencies.data();
-
-        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &iblSpecular.passData.renderPass) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create renderpass");
-        }
-
-        //複数のレンダーパスに対して、フレームバッファの作成
-        //一つの行列に対して、複数の解像度のパスが続く
-        VkFramebufferCreateInfo fbufCreateInfo{};
-        fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        fbufCreateInfo.renderPass = iblSpecular.passData.renderPass;
-        fbufCreateInfo.attachmentCount = 1;
-        fbufCreateInfo.pAttachments = &iblSpecular.passData.imageAttachment[index].view;
-        fbufCreateInfo.width = iblSpecular.passData.width;
-        fbufCreateInfo.height = iblSpecular.passData.height;
-
-        fbufCreateInfo.layers = 1;
-
-        if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &iblSpecular.passData.frameBuffer[index]))
-        {
-            throw std::runtime_error("failed create frame buffer");
-        }
-
-        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
-        layoutBindings[0].binding = 0;
-        layoutBindings[0].descriptorCount = 1;
-        layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        layoutBindings[0].pImmutableSamplers = nullptr;
-        layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        layoutBindings[1].binding = 1;
-        layoutBindings[1].descriptorCount = 1;
-        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        layoutBindings[1].pImmutableSamplers = nullptr;
-        layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
-        layoutInfo.pBindings = layoutBindings.data();
-
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &iblSpecular.passData.layout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
-
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-        allocInfo.pSetLayouts = &iblSpecular.passData.layout;
-
-        if (vkAllocateDescriptorSets(device, &allocInfo, &iblSpecular.passData.descriptorSets[index]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
-
-        if (descriptorSetCount > 100)
-        {
-            throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
-        }
-        descriptorSetCount++;
-
-        //キューブマッピングで使う行列のバッファを流用する
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = cubemapData.mappedBuffers[i].uniformBuffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(MatricesUBO);
-
-        //6つのレイヤーを持つ画像を参照するようにする
-        VkDescriptorImageInfo info{};
-        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        info.imageView = cubemapData.multiTexture->view;
-        info.sampler = cubemapData.multiTexture->sampler;
-
-        std::vector<VkWriteDescriptorSet> descriptorWrites(2);
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = iblSpecular.passData.descriptorSets[index];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = iblSpecular.passData.descriptorSets[index];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &info;
-
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
-        //ここで指定されるシェーダはiblのテクスチャ作成用
-        createCalcIBLMapPipeline(iblSpecular.vertShaderPath, iblSpecular.fragShaderPath, iblSpecular.passData.layout, iblSpecular.passData.pipelineLayout
-            , 1, &iblSpecular.passData.pipeline, 1, &iblSpecular.passData.renderPass);
     }
 
     //6枚のテクスチャを作成して、キューブマップを作成
@@ -5048,7 +4888,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblDiffuse.setMipmapLevel(calcMipMapLevel(iblDiffuse.size, iblDiffuse.size));
 
         //diffuse用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData);
+        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData,VK_FORMAT_R8G8B8A8_UNORM);
 
         //SamperCubeを作成する
         createSamplerCube2D(iblDiffuse.passData, cubemapData.mappedBuffers);
@@ -5096,8 +4936,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createIBLSpecularBRDF()
     {
         //事前計算用のシェーダを設定
-        iblSpecularBRDF.vertShaderPath = "shaders/calcIBL.vert.spv";
-        iblSpecularBRDF.fragShaderPath = "shaders/calcSpecularBRDF.frag.spv";
+        iblSpecularBRDF.vertShaderPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\shaders\\calcBRDF.vert.spv";
+        iblSpecularBRDF.fragShaderPath = "C:\\Users\\sukai\\Documents\\VulkanGame\\shaders\\calcSpecularBRDF.frag.spv";
 
         //テクスチャのサイズの設定
         iblSpecularBRDF.setRenderSize(IBL_MAP_SIZE);
@@ -5106,7 +4946,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblSpecularBRDF.passData.setFrameCount(1);
 
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath, iblSpecularBRDF.passData);
+        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath, iblSpecularBRDF.passData, VK_FORMAT_R8G8B8A8_UNORM);
 
         //一つの視点のみから立方体の面をレンダリングして、2DのLUTを作成する
         createLUT(iblSpecularBRDF, cubemapData.mappedBuffers[0]);
