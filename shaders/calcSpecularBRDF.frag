@@ -1,6 +1,7 @@
 #version 450
 
-layout (location = 0) in vec2 inUV;
+layout (location = 0) in vec3 inPos;
+layout (location = 1) in vec2 inUV;
 
 layout (location = 0) out vec4 outColor;
 
@@ -110,6 +111,6 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
 
 void main()
 {
-    vec2 integrateBRDF = IntegrateBRDF(inUV.x, inUV.y);
-    outColor = vec4(1.0);
+    vec2 integrateBRDF = IntegrateBRDF(inUV.x,inUV.y);
+    outColor = vec4(integrateBRDF,0.0,1.0);
 }
