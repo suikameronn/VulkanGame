@@ -515,6 +515,7 @@ class VulkanBase
 {
 private:
 
+    //コライダーの表示非表示
     const bool coliderDraw = false;
 
     //キューブマップ用の立方体のモデル
