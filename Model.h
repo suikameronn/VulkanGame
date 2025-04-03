@@ -6,14 +6,21 @@
 #include"EnumList.h"
 #include"GltfModel.h"
 #include"Colider.h"
+#include"RTree.h"
 
 class Scene;
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object
+class Model:public Object, std::enable_shared_from_this<Model>
 {
 protected:
 
+	//R-tree用のAABB
+	glm::vec3 min, max;
+
+	//現在所属しているRTreeのノード
+	RNode* rNode;
+	
 	//レイキャスト時使用
 	Scene* scene;
 
@@ -70,6 +77,23 @@ public:
 	float gravity;//重力の強さ
 	void setZeroVelocity();//速度のリセット
 	void cancelGravity();//重力の打ち消し
+
+	//RTree用のAABBを設定する
+	void getMinMax(glm::vec3& min, glm::vec3& max)
+	{
+		min = this->min;
+		max = this->max;
+	}
+
+	glm::vec3 getMin()
+	{
+		return min;
+	}
+
+	glm::vec3 getMax()
+	{
+		return max;
+	}
 
 	//スケール
 	glm::vec3 scale;

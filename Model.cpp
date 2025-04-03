@@ -127,6 +127,11 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 {
 	gltfModel = model;
 
+	min = gltfModel->initPoseMin;
+	max = gltfModel->initPoseMax;
+
+	//RTree::GetInstance()->insert(shared_from_this(),min,max);
+
 	animationNames.resize(model->animations.size());
 	int i = 0;
 	for (auto itr = model->animations.begin(); itr != model->animations.end(); itr++)
@@ -208,6 +213,13 @@ void Model::setBaseColor(glm::vec4 baseColor)
 void Model::updateTransformMatrix()//座標変換行列を計算する
 {
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
+
+	//AABBの更新
+	min = transformMatrix * glm::vec4(min, 1.0f);
+	max = transformMatrix * glm::vec4(max, 1.0f);
+
+	//のちにこのノードのAABBの更新処理をする
+	//rNode->updateAABB();
 
 	if (colider)
 	{

@@ -515,6 +515,8 @@ class VulkanBase
 {
 private:
 
+    const bool coliderDraw = false;
+
     //キューブマップ用の立方体のモデル
     const std::string cubemapPath = "cubemap.glb";
 

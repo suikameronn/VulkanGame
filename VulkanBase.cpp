@@ -2966,7 +2966,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             drawMesh((model)->getRootNode(),model,commandBuffer);
 
-            if ((model)->hasColider())
+            if ((model)->hasColider() && coliderDraw)
             {
                 std::shared_ptr<Colider> colider = (model)->getColider();
 
