@@ -11,15 +11,20 @@
 class Scene;
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object, std::enable_shared_from_this<Model>
+class Model:public Object, public std::enable_shared_from_this<Model>
 {
 protected:
 
+	//R-tree用の初期のAABB
+	glm::vec3 initMin, initMax;
 	//R-tree用のAABB
 	glm::vec3 min, max;
 
 	//現在所属しているRTreeのノード
 	RNode* rNode;
+
+	//R-tree用のMBRについて最大値と最小値
+	glm::vec3 mbrMin, mbrMax;
 	
 	//レイキャスト時使用
 	Scene* scene;
@@ -66,6 +71,9 @@ protected:
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
 	std::vector<std::weak_ptr<Model>> groundingObjects;
 
+	//コライダー用のAABBからMBRを計算
+	void calcMBR();
+
 public:
 
 	Model();
@@ -79,21 +87,24 @@ public:
 	void cancelGravity();//重力の打ち消し
 
 	//RTree用のAABBを設定する
-	void getMinMax(glm::vec3& min, glm::vec3& max)
+	void getMbrMinMax(glm::vec3& min, glm::vec3& max)
 	{
-		min = this->min;
-		max = this->max;
+		min = this->mbrMin;
+		max = this->mbrMax;
 	}
 
-	glm::vec3 getMin()
+	glm::vec3 getMbrMin()
 	{
 		return min;
 	}
 
-	glm::vec3 getMax()
+	glm::vec3 getMbrMax()
 	{
 		return max;
 	}
+
+	//現在所属しているノードを設定する
+	void setRNode(RNode* node) { rNode = node; }
 
 	//スケール
 	glm::vec3 scale;

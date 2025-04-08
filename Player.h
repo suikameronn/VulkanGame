@@ -2,7 +2,7 @@
 #include"Camera.h"
 
 //プレイヤーキャラクターのクラス
-class Player : public Model
+class Player : public Model,std::enable_shared_from_this<Player>
 {
 	//カメラのy軸方向の回転角度
 	//プレイヤーキャラクターをカメラの正面方向に向かせるためのもの

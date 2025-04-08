@@ -4581,8 +4581,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
-        SpecularPushConstant constant;
-
         Storage* storage = Storage::GetInstance();
 
         //一つの面のみレンダリングする
@@ -5043,7 +5041,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 //あらかじめレンダリングしておいた各面のspecularのテクスチャの素材を
                 //ここで、6つのレイヤーを持ち、複数のミップマップをもつ画像データにひとまとめにする
 
-                for (int j = 0; j < multiLayerTexture->mipLevel; j++)
+                for (uint32_t j = 0; j < multiLayerTexture->mipLevel; j++)
                 {
                     VkImageCopy region{};
                     region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

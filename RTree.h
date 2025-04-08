@@ -8,6 +8,8 @@
 #include<glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <cstdlib>
+
 class Model;
 
 #define RNodeMAX 3
@@ -22,14 +24,17 @@ private:
 	//親ノード
 	RNode* parent;
 
+	//子ノードの数
+	uint32_t childNodeCount;
+
 	//子ノード
-	std::vector<RNode*> children;
+	std::array<RNode*,RNodeMAX> children;
 
 	//ノード内のオブジェクトの数
 	uint32_t objCount;
 
 	//ノード内のオブジェクト
-	std::array<std::weak_ptr<Model>, RNodeMAX> nodeObject;
+	std::array<Model*, RNodeMAX> nodeObject;
 
 	//ノードの範囲
 	glm::vec3 min;
@@ -43,14 +48,63 @@ public:
 
 		isUpdate = true;
 		objCount = 0;
+		childNodeCount = 0;
 
 		min = newMin;
 		max = newMax;
+
+		std::srand(static_cast<unsigned int>(std::time(nullptr)));
 	}
+
+	RNode(RNode* parent, std::vector<Model*>& objects)
+	{
+		this->parent = parent;
+
+		isUpdate = true;
+		objCount = static_cast<uint32_t>(objects.size());
+
+		childNodeCount = 0;
+
+		//ノードにオブジェクトをコピー
+		std::copy(objects.begin(),objects.end(),nodeObject.begin());
+
+		std::srand(static_cast<unsigned int>(std::time(nullptr)));
+	}
+
+	RNode(RNode* parent, std::vector<RNode*>& children)
+	{
+		this->parent = parent;
+
+		isUpdate = true;
+		objCount = 0;
+		childNodeCount = static_cast<uint32_t>(children.size());
+
+		//ノードにオブジェクトをコピー
+		std::copy(children.begin(), children.end(), this->children.begin());
+
+		//分割した片方のノードに分配された親ノードをこれに更新
+		for (uint32_t i = 0; i < childNodeCount; i++)
+		{
+			children[i]->parent = this;
+		}
+
+		std::srand(static_cast<unsigned int>(std::time(nullptr)));
+	}
+
+	~RNode();
 	
 	void addChildNode(RNode* child)
 	{
-		children.push_back(child);
+		if (childNodeCount == RNodeMAX)
+		{
+			//このノードを分割して、できたもう一つのノードを親の子に加える
+			split(child, child->getMbrMin(), child->getMbrMax());
+		}
+		else
+		{
+			children[childNodeCount] = child;
+			childNodeCount++;
+		}
 	}
 
 	void setBoxRange(glm::vec3 min, glm::vec3 max)
@@ -59,12 +113,12 @@ public:
 		this->max = max;
 	}
 
-	glm::vec3 getMin()
+	glm::vec3 getMbrMin()
 	{
 		return min;
 	}
 
-	glm::vec3 getMax()
+	glm::vec3 getMbrMax()
 	{
 		return max;
 	}
@@ -89,20 +143,9 @@ public:
 		return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
 	}
 
-	bool isContainAABB(glm::vec3 newMin, glm::vec3 newMax)
-	{
-		bool isContain = true;
-
-		for (int i = 0; i < 3; i++)
-		{
-			if (min[i] > newMin[i] || max[i] < newMax[i])
-			{
-				isContain = false;
-			}
-		}
-
-		return isContain;
-	}
+	//与えられた範囲がノードの持つ範囲に一部でも重なっていたらtrueを返す
+	bool isOverlap(glm::vec3 newMin, glm::vec3 newMax);
+	bool isOverlap(glm::vec3 newMin, glm::vec3 newMax, Model* model);
 
 	void expandAABB(glm::vec3 newMin, glm::vec3 newMax)
 	{
@@ -113,19 +156,80 @@ public:
 		}
 	}
 
+	//オブジェクトの配列をオブジェクトのポインタが先頭に詰められるように整頓する
+	void sortNodeObject()
+	{
+		for (int i = 0; i < RNodeMAX - 1; i++)
+		{
+			if (nodeObject[i] == nullptr)
+			{
+				Model* tmp = nodeObject[i];
+				nodeObject[i] = nodeObject[i + 1];
+				nodeObject[i + 1] = tmp;
+			}
+		}
+	}
+
+	//オブジェクトの配列をオブジェクトのポインタが先頭に詰められるように整頓する
+	void sortChildNode()
+	{
+		for (int i = 0; i < RNodeMAX - 1; i++)
+		{
+			if (children[i] == nullptr)
+			{
+				RNode* tmp = children[i];
+				children[i] = children[i + 1];
+				children[i + 1] = tmp;
+			}
+		}
+	}
+
+	//ノードのデータをリセットしてルートノードにする
+	void resetToRootNode();
+
 	//このノードのAABBを更新
 	void updateAABB();
 
 	//このノードのAABBを更新(中間ノード)
 	void updateAABB(int index);
 
+	//オブジェクトからノードの参照を更新
+	void updateRefNode();
+
 	void genAABB(glm::vec3& newMin, glm::vec3& newMax);
 
 	//現在のノードを分割して、作成したもう一方のノードを返す
-	RNode* split(std::weak_ptr<Model> model, glm::vec3 min, glm::vec3 max);
+	void split(Model* model, glm::vec3 min, glm::vec3 max);
+	void split(RNode* node, glm::vec3 min, glm::vec3 max);
 
 	//オブジェクトをRTreeに追加する
-	void insert(std::weak_ptr<Model> model, glm::vec3 min, glm::vec3 max);
+	void insert(Model* model, glm::vec3 min, glm::vec3 max);
+	
+	//分割した際のそれぞれのノードに収めるエントリのインデックスを決める
+	std::array<std::vector<int>, 2> linearCostSplit(std::array<Model*, RNodeMAX + 1>& objects,
+		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
+
+	std::array<std::vector<int>, 2> linearCostSplit(std::array<RNode*, RNodeMAX + 1>& nodes,
+		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
+
+	//距離が最大のペアのノードを返す
+	std::array<int, 2> calcFarthestNodePair(std::array<Model*, RNodeMAX + 1>& objects,
+		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
+
+	std::array<int, 2> calcFarthestNodePair(std::array<RNode*, RNodeMAX + 1>& nodes,
+		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
+
+	//オブジェクトを移動する際によばれ、このノードのAABBを更新させるフラッグを立てる
+	void requestUpdate() { isUpdate = true; }
+
+	//オブジェクトを消去する
+	void deleteObject(Model* model);
+
+	//ノードを削除する
+	void deleteNode(RNode* childNode);
+
+	//与えられた範囲のすべて、あるいは一部を内包するノードのオブジェクトを配列に入れる
+	void searchInRange(std::vector<Model*>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
 };
 
 class RTree
@@ -137,19 +241,16 @@ private:
 
 public:
 
-	static RTree* GetInstance()
-	{
-		if (!instance)
-		{
-			instance = new RTree();
-		}
-
-		return instance;
-	}
-
 	RTree();
+	~RTree();
 
 	RNode* getRoot() { return root; }
 
-	void insert(std::weak_ptr<Model> model, glm::vec3 min, glm::vec3 max);
+	void insert(Model* model, glm::vec3 min, glm::vec3 max);
+
+	//オブジェクトが移動した場合、そのオブジェクトを一度消去し、再び木に登録する
+	void reflectMove(Model* model, RNode* currentNode);
+
+	//RTreeのノードから探索対象のオブジェクトの配列を用意する
+	void broadPhaseCollisionDetection(std::vector<Model*>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
 };

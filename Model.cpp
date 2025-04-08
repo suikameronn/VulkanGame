@@ -215,11 +215,11 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
 
 	//AABBの更新
-	min = transformMatrix * glm::vec4(min, 1.0f);
-	max = transformMatrix * glm::vec4(max, 1.0f);
+	min = transformMatrix * glm::vec4(initMin, 1.0f);
+	max = transformMatrix * glm::vec4(initMax, 1.0f);
 
-	//のちにこのノードのAABBの更新処理をする
-	//rNode->updateAABB();
+	//MBRの更新
+	calcMBR();
 
 	if (colider)
 	{
@@ -233,7 +233,28 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 		}
 	}
 
+	//シーン全体のR-treeにこのオブジェクトを追加
+
+	/////shared_from_thisでなぜかエラーがでる
+	scene->addModelToRTree(this);
+
 	uniformBufferChange = false;
+}
+
+//コライダー用のAABBからMBRを計算
+void Model::calcMBR()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		mbrMin[i] = std::min(min[i], mbrMin[i]);
+		mbrMin[i] = std::min(max[i], mbrMin[i]);
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		mbrMax[i] = std::max(min[i], mbrMax[i]);
+		mbrMax[i] = std::max(max[i], mbrMax[i]);
+	}
 }
 
 //コライダーの設定
@@ -383,8 +404,6 @@ void Model::receiveTransformFromLua()//スクリプトで変化した座標などを取得
 		rotate.y = y;
 		rotate.z = z;
 
-		//std::cout << rotate.z << std::endl;
-
 		lua_getglobal(coroutine, "Scale");
 		lua_pushstring(coroutine, "x");
 		lua_gettable(coroutine, -2);
@@ -479,6 +498,15 @@ void Model::initFrameSetting()//初回フレームの処理
 	{
 		colider->initFrameSettings();//コライダーの初期設定
 	}
+
+	//AABBにスケールを適用する
+	initMin = glm::scale(scale) * glm::vec4(initMin,1.0f);
+	initMax = glm::scale(scale) * glm::vec4(initMax,1.0f);
+
+	min = initMin;
+	max = initMax;
+
+	calcMBR();
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う

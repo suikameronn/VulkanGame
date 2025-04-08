@@ -9,6 +9,8 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 	camera = std::make_shared<Camera>();
 	Storage::GetInstance()->setCamera(camera);
 
+	rtree = std::make_unique<RTree>();
+
 	initLuaScript(luaScriptPath);//luaからステージのデータを読み取り
 
 	initFrameSetting();//luaから読み取ったオブジェクトの初期化処理
@@ -309,4 +311,10 @@ std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float len
 	}
 
 	return nullptr;
+}
+
+//シーン全体のR木にオブジェクトを追加する
+void Scene::addModelToRTree(Model* model)
+{
+	rtree->insert(model, model->getMbrMin(), model->getMbrMax());
 }

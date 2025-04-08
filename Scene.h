@@ -36,6 +36,8 @@ private:
 
 	static Scene* instance;
 
+	std::unique_ptr<RTree> rtree;
+
 	//キューブマッピング用の画像
 	std::shared_ptr<ImageData> hdriMap;
 
@@ -118,6 +120,9 @@ public:
 
 	//HDRIマップの設定
 	void setHDRIMap(std::string imagePath);
+
+	//シーン全体のオブジェクトについてのRTreeにオブジェクトを追加する
+	void addModelToRTree(Model* model);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/
@@ -173,9 +178,11 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
 		Model* model = new Model();
-		scene->sceneModels.push_back(std::shared_ptr<Model>(model));
 
 		lua_pushlightuserdata(lua, model);
+
+		std::shared_ptr<Model> sharedModel = std::shared_ptr<Model>(model);
+		scene->sceneModels.push_back(sharedModel);
 
 		return 1;
 	}

@@ -93,7 +93,7 @@ struct Rotate
 };
 
 //すべてのオブジェクトの継承元のクラス、座標の設定、luaスクリプトの設定などを担う
-class Object
+class Object : public std::enable_shared_from_this<Object>
 {
 protected:
 
