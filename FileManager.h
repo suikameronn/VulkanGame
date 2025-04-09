@@ -2,8 +2,12 @@
 #include<iostream>
 #include <windows.h>
 #include<map>
-#include "resource1.h"
 #include<ostream>
+#include<thread>
+
+#include<time.h>
+
+#include "resource1.h"
 
 #include"EnumList.h"
 #include"Storage.h"

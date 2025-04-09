@@ -69,7 +69,7 @@ protected:
 	std::vector<std::string> animationNames;
 
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
-	std::vector<std::weak_ptr<Model>> groundingObjects;
+	std::vector<Model*> groundingObjects;
 
 	//コライダー用のAABBからMBRを計算
 	void calcMBR();
@@ -162,7 +162,7 @@ public:
 	void initFrameSetting() override;//初期フレームのみの処理
 
 	bool isGround(glm::vec3& normal);//オブジェクトが床に接しているかどうか
-	void addGroundingObject(std::weak_ptr<Model> object);//床に接していたらそれを追加
+	void addGroundingObject(Model* object);//床に接していたらそれを追加
 	void clearGroundingObject();
 };
 

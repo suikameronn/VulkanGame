@@ -25,13 +25,13 @@ private:
 	RNode* parent;
 
 	//子ノードの数
-	uint32_t childNodeCount;
+	int childNodeCount;
 
 	//子ノード
 	std::array<RNode*,RNodeMAX> children;
 
 	//ノード内のオブジェクトの数
-	uint32_t objCount;
+	int objCount;
 
 	//ノード内のオブジェクト
 	std::array<Model*, RNodeMAX> nodeObject;
@@ -61,29 +61,35 @@ public:
 		this->parent = parent;
 
 		isUpdate = true;
-		objCount = static_cast<uint32_t>(objects.size());
+		objCount = static_cast<int>(objects.size());
 
 		childNodeCount = 0;
 
 		//ノードにオブジェクトをコピー
 		std::copy(objects.begin(),objects.end(),nodeObject.begin());
 
+		//オブジェクトに所属するノードを設定する
+		for (int i = 0; i < objCount; i++)
+		{
+			nodeObject[i]->setRNode(this);
+		}
+
 		std::srand(static_cast<unsigned int>(std::time(nullptr)));
 	}
 
-	RNode(RNode* parent, std::vector<RNode*>& children)
+	RNode(RNode* parent, std::vector<RNode*>& srcChildren)
 	{
 		this->parent = parent;
 
 		isUpdate = true;
 		objCount = 0;
-		childNodeCount = static_cast<uint32_t>(children.size());
+		childNodeCount = static_cast<int>(srcChildren.size());
 
 		//ノードにオブジェクトをコピー
-		std::copy(children.begin(), children.end(), this->children.begin());
+		std::copy(srcChildren.begin(), srcChildren.end(), this->children.begin());
 
 		//分割した片方のノードに分配された親ノードをこれに更新
-		for (uint32_t i = 0; i < childNodeCount; i++)
+		for (int i = 0; i < childNodeCount; i++)
 		{
 			children[i]->parent = this;
 		}
@@ -123,24 +129,38 @@ public:
 		return max;
 	}
 
-	RNode* getChild(uint32_t i)
+	RNode* getChild(int i)
 	{
 		return children[i];
 	}
 
-	uint32_t getChildrenSize()
+	int getChildrenSize()
 	{
-		return static_cast<uint32_t>(children.size());
+		return childNodeCount;
 	}
 
 	float calcVolume()
 	{
-		return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
+		float volume = (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
+
+		if (volume < 0.0f)
+		{
+			volume = 0.0f;
+		}
+
+		return volume;
 	}
 
 	float calcVolume(glm::vec3 min, glm::vec3 max)
 	{
-		return (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
+		float volume = (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
+
+		if (volume < 0.0f)
+		{
+			volume = 0.0f;
+		}
+
+		return volume;
 	}
 
 	//与えられた範囲がノードの持つ範囲に一部でも重なっていたらtrueを返す

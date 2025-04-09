@@ -1,3 +1,5 @@
+#include"Scene.h"
+
 #include "Player.h"
 
 Player::Player()
@@ -115,6 +117,9 @@ void Player::initFrameSetting()
 	{
 		colider->initFrameSettings();
 	}
+
+	//Rツリーにオブジェクトを追加
+	scene->addModelToRTree(this);
 }
 
 //キー入力の取得

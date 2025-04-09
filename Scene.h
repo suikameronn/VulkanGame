@@ -123,6 +123,9 @@ public:
 
 	//シーン全体のオブジェクトについてのRTreeにオブジェクトを追加する
 	void addModelToRTree(Model* model);
+
+	//Rツリー内のオブジェクトの位置を更新する
+	void updateObjectPos(Model* model, RNode* node);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/

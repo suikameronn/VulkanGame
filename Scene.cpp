@@ -151,6 +151,8 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	resetStatus();//シーン全体のオブジェクトのリセット処理を行う
 
+	/*
+
 	for (int i = 0; i < sceneModels.size() - 1; i++)//モデル同士の当たり判定を行う
 	{
 		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
@@ -189,6 +191,50 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 		}
 	}
 
+	*/
+
+	for (int i = 0; i < sceneModels.size(); i++)//モデル同士の当たり判定を行う
+	{
+		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
+		{
+			continue;
+		}
+
+		//R木を使って、当たり判定を行うオブジェクトを絞る
+		std::vector<Model*> collisionDetectTarget;
+		rtree->broadPhaseCollisionDetection(collisionDetectTarget, sceneModels[i]->getMbrMin(), sceneModels[i]->getMbrMax());
+
+		for (int j = 0; j < collisionDetectTarget.size(); j++)
+		{
+			if (collisionDetectTarget[j]->hasColider())
+			{
+				if (sceneModels[i]->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
+				{
+					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
+					{
+						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
+							//つまり、床のようなオブジェクトの上に載っている状況の場合
+						{
+							collisionDetectTarget[j]->isGrounding = true;
+							sceneModels[i]->addGroundingObject(collisionDetectTarget[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+						}
+					}
+
+					if (collisionDetectTarget[j]->isMovable)//上と同様
+					{
+						collisionDetectTarget[j]->setPosition(collisionDetectTarget[j]->getPosition() - collisionVector);
+						if (groundCollision(-collisionVector))
+						{
+							sceneModels[i]->isGrounding = true;
+							collisionDetectTarget[j]->addGroundingObject(sceneModels[i].get());
+						}
+					}
+				}
+			}
+		}
+	}
+
 	//Playerクラスとモデルクラスの当たり判定
 	//他、上のModelクラス同士の処理と同様
 	for (int i = 0; i < sceneModels.size(); i++)
@@ -210,7 +256,7 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 				if (groundCollision(collisionVector))
 				{
 					player->isGrounding = true;
-					sceneModels[i]->addGroundingObject(player);
+					sceneModels[i]->addGroundingObject(player.get());
 				}
 
 				player->setPosition(player->getPosition() - collisionVector);
@@ -317,4 +363,10 @@ std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float len
 void Scene::addModelToRTree(Model* model)
 {
 	rtree->insert(model, model->getMbrMin(), model->getMbrMax());
+}
+
+//ツリー内のオブジェクトの位置を更新する
+void Scene::updateObjectPos(Model* model, RNode* node)
+{
+	rtree->reflectMove(model, node);
 }

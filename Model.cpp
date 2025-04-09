@@ -233,12 +233,10 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 		}
 	}
 
-	//シーン全体のR-treeにこのオブジェクトを追加
-
-	/////shared_from_thisでなぜかエラーがでる
-	scene->addModelToRTree(this);
-
 	uniformBufferChange = false;
+
+	//Rツリー上のオブジェクトの位置を更新する
+	scene->updateObjectPos(this, rNode);
 }
 
 //コライダー用のAABBからMBRを計算
@@ -292,7 +290,7 @@ void Model::sendPosToChildren()
 
 	for (auto itr = groundingObjects.begin(); itr != groundingObjects.end(); itr++)
 	{
-		(*itr).lock()->setParentPos(lastPos, position);
+		(*itr)->setParentPos(lastPos, position);
 	}
 
 	if (!cameraObj.expired())
@@ -500,13 +498,18 @@ void Model::initFrameSetting()//初回フレームの処理
 	}
 
 	//AABBにスケールを適用する
-	initMin = glm::scale(scale) * glm::vec4(initMin,1.0f);
-	initMax = glm::scale(scale) * glm::vec4(initMax,1.0f);
+	min = glm::scale(scale) * glm::vec4(min,1.0f);
+	max = glm::scale(scale) * glm::vec4(max,1.0f);
 
-	min = initMin;
-	max = initMax;
+	initMin = min;
+	initMax = max;
 
 	calcMBR();
+
+	//シーン全体のR-treeにこのオブジェクトを追加
+
+	/////shared_from_thisでなぜかエラーがでる
+	scene->addModelToRTree(this);
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う
@@ -541,7 +544,7 @@ bool Model::isGround(glm::vec3& normal)
 
 //当たり判定の結果、真上にいたオブジェクトを自分の移動に追従させるため、配列に追加する
 //ただし、この配列は毎フレーム初期化される
-void Model::addGroundingObject(std::weak_ptr<Model> object)
+void Model::addGroundingObject(Model* object)
 {
 	groundingObjects.push_back(object);
 }
