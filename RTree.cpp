@@ -2,6 +2,65 @@
 
 #include"RTree.h"
 
+RNode::RNode(RNode* parent, glm::vec3 newMin, glm::vec3 newMax)
+{
+	this->parent = parent;
+
+	isUpdate = true;
+	objCount = 0;
+	childNodeCount = 0;
+
+	min = newMin;
+	max = newMax;
+
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+}
+
+RNode::RNode(RNode* parent, std::vector<Model*>& objects)
+{
+	this->parent = parent;
+
+	isUpdate = true;
+	objCount = static_cast<int>(objects.size());
+
+	childNodeCount = 0;
+
+	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
+
+	//ノードにオブジェクトをコピー
+	std::copy(objects.begin(), objects.end(), nodeObject.begin());
+
+	//オブジェクトに所属するノードを設定する
+	for (int i = 0; i < objCount; i++)
+	{
+		nodeObject[i]->setRNode(this);
+	}
+
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+}
+
+RNode::RNode(RNode* parent, std::vector<RNode*>& srcChildren)
+{
+	this->parent = parent;
+
+	isUpdate = true;
+	objCount = 0;
+	childNodeCount = static_cast<int>(srcChildren.size());
+
+	std::fill(this->children.begin(), this->children.end(), nullptr);
+
+	//ノードにオブジェクトをコピー
+	std::copy(srcChildren.begin(), srcChildren.end(), this->children.begin());
+
+	//分割した片方のノードに分配された親ノードをこれに更新
+	for (int i = 0; i < childNodeCount; i++)
+	{
+		children[i]->parent = this;
+	}
+
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+}
+
 RNode::~RNode()
 {
 	for (int i = 0; i < childNodeCount; i++)
@@ -393,6 +452,9 @@ void RNode::split(RNode* node, glm::vec3 min, glm::vec3 max)
 	//もう一方のノードに登録するオブジェクトを記録するための配列
 	std::vector<RNode*> anotherNodeChildren(pairNodeObjectIndex[1].size());
 
+	//自分の子ノードを初期化する
+	std::fill(children.begin(), children.end(), nullptr);
+
 	//インデックスからそれぞれのノードにオブジェクトを登録する
 	for (int i = 0; i < pairNodeObjectIndex[0].size(); i++)
 	{
@@ -430,7 +492,7 @@ void RNode::split(RNode* node, glm::vec3 min, glm::vec3 max)
 		std::vector<RNode*> tmp(pairNodeObjectIndex[0].size());
 		for (int i = 0; i < static_cast<int>(pairNodeObjectIndex[0].size()); i++)
 		{
-			tmp[i] = nodes[i];
+			tmp[i] = children[i];
 		}
 		RNode* node1 = new RNode(this, tmp);
 
@@ -596,18 +658,33 @@ void RNode::deleteNode(RNode* childNode)
 		if (children[i] == childNode)
 		{
 			children[i] = nullptr;
+
+			//この部分を通らないときがある
+			std::cout << "AAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+
 			break;
 		}
 	}
+
+	std::cout << "B" << std::endl;
 
 	//nullptrが前のほうに来ないように整頓
 	sortChildNode();
 
 	childNodeCount--;
 
-	if (childNodeCount < 0)
+	int a = 0;
+	for (int i = 0; i < 3; i++)
 	{
-		std::cout << "A" << std::endl;
+		if (children[i] != nullptr)
+		{
+			a++;
+		}
+	}
+
+	if (a != childNodeCount)
+	{
+		std::cout << a << std::endl;
 	}
 }
 

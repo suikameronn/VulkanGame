@@ -1072,7 +1072,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_TRUE;
         multisampling.minSampleShading = 0.2f;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_8_BIT;
+        multisampling.rasterizationSamples = msaaSamples;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;

@@ -42,60 +42,9 @@ private:
 
 public:
 
-	RNode(RNode* parent,glm::vec3 newMin,glm::vec3 newMax)
-	{
-		this->parent = parent;
-
-		isUpdate = true;
-		objCount = 0;
-		childNodeCount = 0;
-
-		min = newMin;
-		max = newMax;
-
-		std::srand(static_cast<unsigned int>(std::time(nullptr)));
-	}
-
-	RNode(RNode* parent, std::vector<Model*>& objects)
-	{
-		this->parent = parent;
-
-		isUpdate = true;
-		objCount = static_cast<int>(objects.size());
-
-		childNodeCount = 0;
-
-		//ノードにオブジェクトをコピー
-		std::copy(objects.begin(),objects.end(),nodeObject.begin());
-
-		//オブジェクトに所属するノードを設定する
-		for (int i = 0; i < objCount; i++)
-		{
-			nodeObject[i]->setRNode(this);
-		}
-
-		std::srand(static_cast<unsigned int>(std::time(nullptr)));
-	}
-
-	RNode(RNode* parent, std::vector<RNode*>& srcChildren)
-	{
-		this->parent = parent;
-
-		isUpdate = true;
-		objCount = 0;
-		childNodeCount = static_cast<int>(srcChildren.size());
-
-		//ノードにオブジェクトをコピー
-		std::copy(srcChildren.begin(), srcChildren.end(), this->children.begin());
-
-		//分割した片方のノードに分配された親ノードをこれに更新
-		for (int i = 0; i < childNodeCount; i++)
-		{
-			children[i]->parent = this;
-		}
-
-		std::srand(static_cast<unsigned int>(std::time(nullptr)));
-	}
+	RNode(RNode* parent, glm::vec3 newMin, glm::vec3 newMax);
+	RNode(RNode* parent, std::vector<RNode*>& srcChildren);
+	RNode(RNode* parent, std::vector<Model*>& objects);
 
 	~RNode();
 	
@@ -110,6 +59,20 @@ public:
 		{
 			children[childNodeCount] = child;
 			childNodeCount++;
+
+			int a = 0;
+			for (int i = 0; i < 3; i++)
+			{
+				if (children[i] != nullptr)
+				{
+					a++;
+				}
+			}
+
+			if (a != childNodeCount)
+			{
+				std::cout << a << std::endl;
+			}
 		}
 	}
 
