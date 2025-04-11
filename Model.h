@@ -21,7 +21,7 @@ protected:
 	glm::vec3 min, max;
 
 	//現在所属しているRTreeのノード
-	RNode* rNode;
+	RNode<Model>* rNode;
 
 	//R-tree用のMBRについて最大値と最小値
 	glm::vec3 mbrMin, mbrMax;
@@ -104,7 +104,7 @@ public:
 	}
 
 	//現在所属しているノードを設定する
-	void setRNode(RNode* node) { rNode = node; }
+	void setRNode(RNode<Model>* node) { rNode = node; }
 
 	//スケール
 	glm::vec3 scale;
@@ -178,7 +178,7 @@ namespace glueModelFunction//Modelクラス用のglue関数
 		switch (obj->getObjNum())
 		{
 		case 1:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			model->scale.x = static_cast<float>(lua_tonumber(lua, -4));
 			model->scale.y = static_cast<float>(lua_tonumber(lua, -3));
 			model->scale.z = static_cast<float>(lua_tonumber(lua, -2));

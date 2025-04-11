@@ -36,7 +36,7 @@ private:
 
 	static Scene* instance;
 
-	std::unique_ptr<RTree> rtree;
+	std::unique_ptr<RTree<Model>> rtree;
 
 	//キューブマッピング用の画像
 	std::shared_ptr<ImageData> hdriMap;
@@ -125,7 +125,7 @@ public:
 	void addModelToRTree(Model* model);
 
 	//Rツリー内のオブジェクトの位置を更新する
-	void updateObjectPos(Model* model, RNode* node);
+	void updateObjectPos(Model* model, RNode<Model>* node);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/

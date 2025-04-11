@@ -9,7 +9,7 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 	camera = std::make_shared<Camera>();
 	Storage::GetInstance()->setCamera(camera);
 
-	rtree = std::make_unique<RTree>();
+	rtree = std::make_unique<RTree<Model>>();
 
 	initLuaScript(luaScriptPath);//luaからステージのデータを読み取り
 
@@ -399,7 +399,7 @@ void Scene::addModelToRTree(Model* model)
 }
 
 //ツリー内のオブジェクトの位置を更新する
-void Scene::updateObjectPos(Model* model, RNode* node)
+void Scene::updateObjectPos(Model* model, RNode<Model>* node)
 {
 	rtree->reflectMove(model, node);
 }
