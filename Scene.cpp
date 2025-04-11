@@ -206,7 +206,8 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 		for (int j = 0; j < collisionDetectTarget.size(); j++)
 		{
-			if (collisionDetectTarget[j]->hasColider())
+			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
+			if (collisionDetectTarget[j]->hasColider() && sceneModels[i].get() == collisionDetectTarget[j])
 			{
 				if (sceneModels[i]->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
 				{
@@ -237,6 +238,7 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	//Playerクラスとモデルクラスの当たり判定
 	//他、上のModelクラス同士の処理と同様
+	/*
 	for (int i = 0; i < sceneModels.size(); i++)
 	{
 		if (!sceneModels[i]->hasColider())
@@ -260,6 +262,37 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 				}
 
 				player->setPosition(player->getPosition() - collisionVector);
+			}
+		}
+	}
+	*/
+
+	{//プレイヤーキャラクターについての当たり判定を行う
+		std::vector<Model*> collisionDetectTarget;
+		rtree->broadPhaseCollisionDetection(collisionDetectTarget, player->getMbrMin(), player->getMbrMax());
+
+		for (int i = 0; i < collisionDetectTarget.size(); i++)
+		{
+			if (collisionDetectTarget[i]->getColider())
+			{
+				if (player->getColider()->Intersect(collisionDetectTarget[i]->getColider(), collisionVector))
+				{
+					if (collisionDetectTarget[i]->isMovable)
+					{
+						collisionDetectTarget[i]->setPosition(collisionDetectTarget[i]->getPosition() + collisionVector);
+					}
+
+					if (player->isMovable)
+					{
+						if (groundCollision(collisionVector))
+						{
+							player->isGrounding = true;
+							collisionDetectTarget[i]->addGroundingObject(player.get());
+						}
+
+						player->setPosition(player->getPosition() - collisionVector);
+					}
+				}
 			}
 		}
 	}

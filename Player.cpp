@@ -77,8 +77,6 @@ glm::vec3 Player::inputMove()
 	glm::vec3 groundNormal;
 	if (isGround(groundNormal))
 	{
-
-
 		physicBase->cancelGravity();
 
 		if (controller->getKey(GLFW_KEY_SPACE))
@@ -117,6 +115,15 @@ void Player::initFrameSetting()
 	{
 		colider->initFrameSettings();
 	}
+
+	//AABBにスケールを適用する
+	min = glm::scale(scale) * glm::vec4(min, 1.0f);
+	max = glm::scale(scale) * glm::vec4(max, 1.0f);
+
+	initMin = min;
+	initMax = max;
+
+	calcMBR();
 
 	//Rツリーにオブジェクトを追加
 	scene->addModelToRTree(this);

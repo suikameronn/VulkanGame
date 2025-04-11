@@ -59,20 +59,6 @@ public:
 		{
 			children[childNodeCount] = child;
 			childNodeCount++;
-
-			int a = 0;
-			for (int i = 0; i < 3; i++)
-			{
-				if (children[i] != nullptr)
-				{
-					a++;
-				}
-			}
-
-			if (a != childNodeCount)
-			{
-				std::cout << a << std::endl;
-			}
 		}
 	}
 
@@ -213,6 +199,53 @@ public:
 
 	//与えられた範囲のすべて、あるいは一部を内包するノードのオブジェクトを配列に入れる
 	void searchInRange(std::vector<Model*>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
+
+	void debug()
+	{
+		//std::cout << "\nChildNodeCount " << childNodeCount << std::endl;
+		
+		int a = 0;
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i] != nullptr)
+			{
+				a++;
+			}
+		}
+
+		//std::cout << "Actually ChildNodeCount " << a << std::endl;
+
+		if (a != childNodeCount)
+		{
+			std::cout << "Error " << std::endl;
+		}
+
+		//std::cout << "ObjCount " << objCount << std::endl;
+
+		a = 0;
+		for (int i = 0; i < nodeObject.size(); i++)
+		{
+			if (nodeObject[i] != nullptr)
+			{
+				a++;
+			}
+		}
+
+		//std::cout << "Actually ObjCount " << a << std::endl;
+
+		if (a != objCount)
+		{
+			std::cout << "Error" << std::endl;
+		}
+
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i] != nullptr)
+			{
+				children[i]->debug();
+			}
+		}
+	}
 };
 
 class RTree

@@ -30,12 +30,6 @@ RNode::RNode(RNode* parent, std::vector<Model*>& objects)
 	//ノードにオブジェクトをコピー
 	std::copy(objects.begin(), objects.end(), nodeObject.begin());
 
-	//オブジェクトに所属するノードを設定する
-	for (int i = 0; i < objCount; i++)
-	{
-		nodeObject[i]->setRNode(this);
-	}
-
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 }
 
@@ -65,7 +59,7 @@ RNode::~RNode()
 {
 	for (int i = 0; i < childNodeCount; i++)
 	{
-		if (children[i] == nullptr)
+		if (children[i] != nullptr)
 		{
 			delete children[i];
 		}
@@ -211,7 +205,7 @@ std::array<std::vector<int>, 2> RNode::linearCostSplit(std::array<Model*, RNodeM
 
 	//それぞれのノードにオブジェクトを登録するときのインデックス
 	//既に両方のノードには最も離れたオブジェクトが一つずつ入っている
-	for (int i = 0; i < objects.size(); i++)
+	for (int i = 0; i < RNodeMAX + 1; i++)
 	{
 		//最大の距離を持つペアは除く
 		if (i == pairNodeIndex[0] || i == pairNodeIndex[1])
@@ -250,7 +244,7 @@ std::array<std::vector<int>, 2> RNode::linearCostSplit(std::array<RNode*, RNodeM
 
 	//それぞれのノードにオブジェクトを登録するときのインデックス
 	//既に両方のノードには最も離れたオブジェクトが一つずつ入っている
-	for (int i = 0; i < RNodeMAX; i++)
+	for (int i = 0; i < RNodeMAX + 1; i++)
 	{
 		//最大の距離を持つペアは除く
 		if (i == pairNodeIndex[0] || i == pairNodeIndex[1])
@@ -287,9 +281,6 @@ void RNode::split(Model* model, glm::vec3 min, glm::vec3 max)
 		objects[i] = nodeObject[i];
 	}
 	objects[RNodeMAX] = model;
-
-	//いったんこのノードに登録されたオブジェクトを初期化する
-	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
 
 	//配列に各オブジェクトの各軸の最大値と最小値を記録する
 	//各軸の数だけ、オブジェクトの数だけ最大値と最小値とそのオブジェクトのインデックスのペアを持つ
@@ -342,6 +333,9 @@ void RNode::split(Model* model, glm::vec3 min, glm::vec3 max)
 	//もう一方のノードに登録するオブジェクトを記録するための配列
 	std::vector<Model*> anotherObjects(pairNodeObjectIndex[1].size());
 
+	//このノードのオブジェクトを初期化する
+	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
+
 	//インデックスからそれぞれのノードにオブジェクトを登録する
 	for (int i = 0; i < pairNodeObjectIndex[0].size(); i++)
 	{
@@ -355,12 +349,6 @@ void RNode::split(Model* model, glm::vec3 min, glm::vec3 max)
 	//このノードのオブジェクトの数を設定する
 	objCount = static_cast<int>(pairNodeObjectIndex[0].size());
 
-	//オブジェクトに所属するノードを設定する
-	for (int i = 0; i < objCount; i++)
-	{
-		nodeObject[i]->setRNode(this);
-	}
-
 	//もう一方のノードを作成し、オブジェクトを登録する
 	RNode* anotherNode = new RNode(parent, anotherObjects);
 
@@ -368,6 +356,7 @@ void RNode::split(Model* model, glm::vec3 min, glm::vec3 max)
 	updateAABB();
 	anotherNode->updateAABB();
 
+	//オブジェクトに所属するノードを通知する
 	updateRefNode();
 	anotherNode->updateRefNode();
 
@@ -449,16 +438,14 @@ void RNode::split(RNode* node, glm::vec3 min, glm::vec3 max)
 	//LinearCostアルゴリズムでそれぞれのノードに収めるエントリのインデックスを決める
 	std::array<std::vector<int>, 2> pairNodeObjectIndex = linearCostSplit(nodes, allNodeMax, allNodeMin, minIndex, maxIndex);
 
-	//もう一方のノードに登録するオブジェクトを記録するための配列
+	//ノードに登録するオブジェクトを記録するための配列
+	std::vector<RNode*> nodeChildren(pairNodeObjectIndex[0].size());
 	std::vector<RNode*> anotherNodeChildren(pairNodeObjectIndex[1].size());
-
-	//自分の子ノードを初期化する
-	std::fill(children.begin(), children.end(), nullptr);
 
 	//インデックスからそれぞれのノードにオブジェクトを登録する
 	for (int i = 0; i < pairNodeObjectIndex[0].size(); i++)
 	{
-		children[i] = nodes[pairNodeObjectIndex[0][i]];
+		nodeChildren[i] = nodes[pairNodeObjectIndex[0][i]];
 	}
 	for (int i = 0; i < pairNodeObjectIndex[1].size(); i++)
 	{
@@ -471,6 +458,14 @@ void RNode::split(RNode* node, glm::vec3 min, glm::vec3 max)
 
 		//このノードの子ノードの数を更新する
 		childNodeCount = static_cast<int>(pairNodeObjectIndex[0].size());
+
+		std::copy(nodeChildren.begin(), nodeChildren.end(), children.begin());
+		
+		//子ノードの親を設定しなおす
+		for (int i = 0; i < childNodeCount; i++)
+		{
+			children[i]->parent = this;
+		}
 
 		//もう一方のノードを作成し、子ノードを登録する
 		//子ノードの親はコンストラクタ上で設定する
@@ -488,13 +483,7 @@ void RNode::split(RNode* node, glm::vec3 min, glm::vec3 max)
 	 //その片方にこのノードのオブジェクトなどを引き継ぎ、
 	 //このノードはデータをリセットして、ルートノードとして使う
 
-		//このノードのデータを新たなノードに引き継ぐ
-		std::vector<RNode*> tmp(pairNodeObjectIndex[0].size());
-		for (int i = 0; i < static_cast<int>(pairNodeObjectIndex[0].size()); i++)
-		{
-			tmp[i] = children[i];
-		}
-		RNode* node1 = new RNode(this, tmp);
+		RNode* node1 = new RNode(this, nodeChildren);
 
 		//もう一方のノードを作成し、オブジェクトを登録する
 		RNode* node2 = new RNode(this, anotherNodeChildren);
@@ -625,7 +614,6 @@ void RNode::deleteObject(Model* model)
 		if (nodeObject[i] == model)
 		{
 			nodeObject[i] = nullptr;
-			break;
 		}
 	}
 
@@ -659,32 +647,20 @@ void RNode::deleteNode(RNode* childNode)
 		{
 			children[i] = nullptr;
 
-			//この部分を通らないときがある
-			std::cout << "AAAAAAAAAAAAAAAAAAAAAA" << std::endl;
-
 			break;
 		}
 	}
-
-	std::cout << "B" << std::endl;
 
 	//nullptrが前のほうに来ないように整頓
 	sortChildNode();
 
 	childNodeCount--;
 
-	int a = 0;
-	for (int i = 0; i < 3; i++)
+	if (childNodeCount == 0)
 	{
-		if (children[i] != nullptr)
-		{
-			a++;
-		}
-	}
+		parent->deleteNode(this);
 
-	if (a != childNodeCount)
-	{
-		std::cout << a << std::endl;
+		delete this;
 	}
 }
 
@@ -698,6 +674,8 @@ bool RNode::isOverlap(glm::vec3 newMin, glm::vec3 newMax)
 		if (min[i] > newMax[i] || max[i] < newMin[i])
 		{
 			isOverlap = false;
+
+			return isOverlap;
 		}
 	}
 
@@ -749,7 +727,7 @@ RTree::RTree()
 {
 	root = new RNode(nullptr, glm::vec3(-FLT_MAX), glm::vec3(FLT_MAX));
 
-	root->addChildNode(new RNode(root, glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX)));
+	root->addChildNode(new RNode(root, glm::vec3(-FLT_MAX), glm::vec3(FLT_MAX)));
 
 	root->getChild(0)->updateAABB();
 }
