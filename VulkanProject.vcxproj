@@ -163,7 +163,6 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="RTree.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
