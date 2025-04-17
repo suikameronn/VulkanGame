@@ -7,6 +7,7 @@
 #include"Controller.h"
 #include"Scene.h"
 #include"FileManager.h"
+#include"UI.h"
 
 extern GLFWwindow* window;
 
@@ -33,7 +34,13 @@ private:
 
 	GameManager() {};
 
+	void setLoadUI();
+
 public:
+
+	const int window_width = 800;
+	const int window_height = 600;
+	const glm::mat4 uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
 
 	static GameManager* GetInstance()
 	{
@@ -51,10 +58,10 @@ public:
 	//各クラスの終了処理も行う
 	void FinishInstance()
 	{
-		FileManager::GetInstance()->FinishFileManger();
-		VulkanBase::GetInstance()->FinishVulkanBase();
-		Storage::GetInstance()->FinishStorage();
-		Controller::GetInstance()->FinishController();
+		FileManager::FinishFileManger();
+		VulkanBase::FinishVulkanBase();
+		Storage::FinishStorage();
+		Controller::FinishController();
 
 		if (gameManager)
 		{
@@ -73,7 +80,7 @@ public:
 	//ゲームのフレームレートの設定やステージの読み込みを行う
 	void initGame();
 	//luaからステージの様子を読み込む
-	void createScene();
+	bool createScene();
 	//メインループ
 	void mainGameLoop();
 	//ステージから出る
@@ -82,4 +89,7 @@ public:
 	void FinishGame();
 	//読み取ったデータはそのままにゲームリスタートさせる
 	void RestartGame();
+
+	//ロードUIを表示
+	void drawLoading(bool& loadFinish);
 };

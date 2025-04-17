@@ -86,9 +86,12 @@ public:
 		return controller;
 	}
 
-	void FinishController()
+	static void FinishController()
 	{
-		delete controller;
+		if (controller)
+		{
+			delete controller;
+		}
 		controller = nullptr;
 	}
 

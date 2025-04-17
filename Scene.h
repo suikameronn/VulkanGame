@@ -18,6 +18,7 @@
 #include"Camera.h"
 #include"EnumList.h"
 #include"Light.h"
+#include"UI.h"
 
 #include<chrono>
 #include <thread>
@@ -53,6 +54,8 @@ private:
 	void setModels();
 	//ステージ上のライトにVulkanの変数を設定する
 	void setLights();
+	//UIのVulkanの変数を設定する
+	void setUI();
 
 	float collisionDepth;//衝突時のめり込んだ距離
 	glm::vec3 collisionVector;//衝突時のめり込んだ方向
@@ -111,6 +114,8 @@ public:
 	std::vector<std::shared_ptr<PointLight>> scenePointLights;
 	//ステージ上の平行光源の配列
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;
+	//ステージ上のUI
+	std::vector<std::shared_ptr<UI>> sceneUI;
 
 	//ステージ上のオブジェクトなどの更新処理
 	int UpdateScene();

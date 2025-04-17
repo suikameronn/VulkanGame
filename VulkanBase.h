@@ -132,6 +132,13 @@ struct AnimationUBO
     alignas(16) int boneCount;
 };
 
+//UI用の2D行列
+struct MatricesUBO2D
+{
+    glm::mat4 transformMatrix;
+    glm::mat4 projection;
+};
+
 //gltfモデルのローカル空間へ移動するための行列
 struct PushConstantObj
 {
@@ -511,6 +518,28 @@ struct SpecularPushConstant
     float roughness;
 };
 
+struct UIRender
+{
+    std::string vertPath;
+    std::string fragPath;
+
+    VkDescriptorSetLayout layout;
+    VkPipelineLayout pLayout;
+    VkPipeline pipeline;
+
+    //ロード中用のコマンドバッファ
+    std::array<VkCommandBuffer,2> loadCommandBuffers;
+
+    void destroy(VkDevice& device,VkCommandPool& commandPool)
+    {
+        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipelineLayout(device, pLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
+        vkFreeCommandBuffers(device, commandPool, 1, loadCommandBuffers.data());
+    }
+};
+
 class VulkanBase
 {
 private:
@@ -572,6 +601,11 @@ private:
     //gpuに求めるスワップチェーン用のキュー
     VkQueue presentQueue;
 
+    //マルチスレッド時用の描画用キュー
+    VkQueue multiThreadGraphicQueue;
+    //マルチスレッド時用のスワップチェーン用のキュー
+    VkQueue multiThreadPresentQueue;
+
     //スワップチェーン
     VkSwapchainKHR swapChain;
     //スワップチェーン用の画像の配列
@@ -589,6 +623,8 @@ private:
     VkRenderPass renderPass;
     //コマンドバッファー作成用
     VkCommandPool commandPool;
+    //マルチスレッド用コマンドプール
+    VkCommandPool multiThreadCommandPool;
     //通常でのレンダリングで使用するピクセルのサンプリングの設定
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_8_BIT;
 
@@ -609,6 +645,8 @@ private:
 
     //通常のレンダリングとコライダーのレンダリングで使用するデータを持つ
     ModelDescriptor modelDescriptor;
+    //UIレンダリング用のデータ
+    UIRender uiRender;
 
     //コマンドバッファーの配列 スワップチェーンが持つ画像の数だけバッファーを持つ
     std::vector<VkCommandBuffer> commandBuffers;
@@ -619,6 +657,8 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     //cpuにgpuからレンダリングの終了を知らせる
     std::vector<VkFence> inFlightFences;
+    //マルチスレッド用
+    std::vector<VkFence> multiThreadFences;
     //現在のフレームで使用するコマンドバッファなどの番号
     uint32_t currentFrame = 0;
 
@@ -710,14 +750,14 @@ private:
     void copyImageToMultiLayerImage(VkImage* srcImages, uint32_t imageCount, uint32_t width, uint32_t height, VkImage& dstImage);
 
     //画像からテクスチャ画像の作成
-    void createTextureImage(TextureData& textureData, std::shared_ptr<ImageData> image);//ImageDataからVkImageを作成
+    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image);//ImageDataからVkImageを作成
     void createTextureImage();//空のテクスチャを作成
     void createTextureImage(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのマテリアルにテクスチャ用データを作成
     //ミップマップ画像の作成
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels,uint32_t layerCount);
 
     //テクスチャのビューの作成
-    void createTextureImageView(TextureData& textureData);//デフォルトのテクスチャのビューを作成
+    void createTextureImageView(TextureData* textureData);//デフォルトのテクスチャのビューを作成
     void createTextureImageView();//空のテクスチャのビューを作成
     void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのテクスチャのビューを作成
     
@@ -739,11 +779,15 @@ private:
     
     //頂点バッファーの作成
     void createVertexBuffer(GltfNode* node, std::shared_ptr<Model> model);
+    //UI用
+    void createVertexBuffer(std::shared_ptr<UI> ui);
     //コライダー用
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     
     //インデックスバッファーの作成
     void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
+    //UI用
+    void createIndexBuffer(std::shared_ptr<UI> ui);
     //コライダー用
     void createIndexBuffer(std::shared_ptr<Colider> colider);
 
@@ -752,6 +796,7 @@ private:
     void createUniformBuffer(std::shared_ptr<Model> model);
     void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
+    void createUniformBuffer(std::shared_ptr<UI> ui);
     //ShaderMaterial用
     void createUniformBuffer(std::shared_ptr<Material> material);
     //ライト用
@@ -806,6 +851,8 @@ private:
     //gltfモデル用
     void updateUniformBuffers(std::shared_ptr<Model> model);
     void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
+    //UI用
+    void updateUniformBuffer(std::shared_ptr<UI> ui);
     //コライダー用
     void updateUniformBuffer(std::shared_ptr<Colider> colider);
     //ポイントライト用
@@ -861,6 +908,8 @@ private:
     void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     //シャドウマップ用ンデータを用意する、引数としてシーン上のライトの数だけオフスクリーンレンダリングを行う
     void prepareShadowMapping(int lightCount);
+    //UI描画用のパイプラインなどを作成する
+    void prepareUIRendering();
     //キューブマップ用のテクスチャを作成するためのデータを用意
     void prepareCubemapTextures();
     //キューブマップ用の複数のレイヤーを持つテクスチャデータを作成する
@@ -898,6 +947,10 @@ private:
     void createIBLDescriptor(TextureData* samplerCube,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
     void createIBLDescriptor(OffScreenPass& passData,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
 
+    //UIの描画
+    void drawUI(bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex);
+    void drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, VkCommandBuffer& commandBuffer, uint32_t imageIndex);
+
 public:
 
     static VulkanBase* GetInstance()
@@ -923,9 +976,12 @@ public:
         }
     }
 
-    void FinishVulkanBase()
+    static void FinishVulkanBase()
     {
-        delete vulkanBase;
+        if (vulkanBase)
+        {
+            delete vulkanBase;
+        }
         vulkanBase = nullptr;
     }
 
@@ -964,6 +1020,20 @@ public:
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
     void updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider);
+
+    //uiのテクスチャを作成する
+    void createUITexture(TextureData* texture, std::shared_ptr<ImageData> image);
+    //uiの頂点バッファなどを用意する
+    void setUI(std::shared_ptr<UI> ui);
+    //ロード画面の描画
+    void drawLoading();
+    //ロード画面の終了
+    void stopLoading();
+
+    //UIのテクスチャ変更を反映する
+    void changeUITexture(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
+    //uniform bufferのバッファの作成
+    void uiCreateUniformBuffer(MappedBuffer& mappedBuffer);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

@@ -6,6 +6,7 @@
 #include"Light.h"
 #include"Camera.h"
 #include"Model.h"
+#include"UI.h"
 
 enum IMAGE
 {
@@ -30,6 +31,9 @@ private:
 	std::shared_ptr<Model> cubemap;
 	//キューブマッピング用HDRI画像
 	std::shared_ptr<ImageData> cubemapImage;
+	
+	//ロード画面用のUI
+	std::shared_ptr<UI> loadUI;
 
 	//画面上に現れるオブジェクトを格納する
 	std::vector<std::shared_ptr<Model>> sceneModelStorage;
@@ -37,6 +41,8 @@ private:
 	std::vector<std::shared_ptr<PointLight>> scenePointLightStorage;
 	//シーン内の平行光源を格納する
 	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLightStorage;
+	//UIを記録する
+	std::vector<std::shared_ptr<UI>> uiStorage;
 
 	//ポイントライト用のDescriptorSet 色と座標を持つuniform buffer
 	VkDescriptorSet pointLightDescSet;
@@ -68,6 +74,11 @@ public:
 
 		return storage;
 	}
+
+	//ロードUIの設定
+	void setLoadUI(std::shared_ptr<UI> ui) { loadUI = ui; }
+	//ロードUIを返す
+	std::shared_ptr<UI>getLoadUI() { return loadUI; }
 	
 	//キューブマッピング用のHDRI画像を設定する
 	void setCubemapTexture(std::shared_ptr<ImageData> image);
@@ -83,6 +94,8 @@ public:
 	std::vector<std::shared_ptr<DirectionalLight>>& getDirectionalLights() { return sceneDirectionalLightStorage; }
 	//ポイントライトと平行光源の数を取得する
 	int getLightCount() { return static_cast<int>(scenePointLightStorage.size() + sceneDirectionalLightStorage.size()); }
+	//UIの配列を返す
+	std::vector<std::shared_ptr<UI>>& getUI() {return uiStorage; }
 
 	//ポイントライトと平行光源のdescriptorSetを返す。ライトは配列としてまとめてgpuに渡すため、descriptorSetは種類ごとに一つ
 	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
@@ -105,6 +118,8 @@ public:
 	//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
 	void addLight(std::shared_ptr<PointLight> light);
 	void addLight(std::shared_ptr<DirectionalLight> light);
+	//UIの追加
+	void addUI(std::shared_ptr<UI> ui);
 
 	void prepareDescriptorSets();//通常のレンダリングで必要なdescriptorSetの作成
 	void prepareDescriptorData();//ライトのバッファの用意
@@ -134,8 +149,11 @@ public:
 	bool containImageData(std::string path);
 
 	//デストラクタ
-	void FinishStorage()
+	static void FinishStorage()
 	{
-		delete storage;
+		if (storage)
+		{
+			delete storage;
+		}
 	}
 };

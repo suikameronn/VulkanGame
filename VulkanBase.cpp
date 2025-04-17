@@ -35,11 +35,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createColorResources();
         createDepthResources();
         createFramebuffers();
-        //createUniformBuffers();
         createCommandBuffers();
         createSyncObjects();
         createDescriptorPool();
         createEmptyImage();
+
+        prepareUIRendering();//ui描画の用意
     }
 
     //スワップチェーンの破棄
@@ -74,6 +75,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         shadowMapData.destroy(device);
         modelDescriptor.destroy(device);
         cubemapData.destroy(device);
+        uiRender.destroy(device,multiThreadCommandPool);
 
         //IBLのデータの破棄
         iblDiffuse.destroy(device);
@@ -94,6 +96,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             model->cleanupVulkan();
         }
 
+        //UIのバッファの破棄
+        storage->getLoadUI()->cleanupVulkan();
+        for (auto ui : storage->getUI())
+        {
+            ui->cleanupVulkan();
+        }
+
         storage->getPointLightsBuffer().destroy(device);//ポイントライトのバッファの後処理
         storage->getDirectionalLightsBuffer().destroy(device);//ディレクショナルライトのバッファの後処理
 
@@ -105,9 +114,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(device, inFlightFences[i], nullptr);
+            vkDestroyFence(device, multiThreadFences[i], nullptr);
         }
 
         vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyCommandPool(device, multiThreadCommandPool, nullptr);
 
         //この時点でgpu側に作った変数を破棄して置かなければならない
         //deviceの変数を使って作る変数も破棄
@@ -257,13 +268,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
-        float queuePriority = 1.0f;
+        std::array<float, 2> queuePrioritys = { 1.0f,0.0f };
         for (uint32_t queueFamily : uniqueQueueFamilies) {
             VkDeviceQueueCreateInfo queueCreateInfo{};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 1;
-            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfo.queueCount = 2;//マルチスレッド用のキューも確保する
+            queueCreateInfo.pQueuePriorities = queuePrioritys.data();
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
@@ -296,6 +307,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+
+        vkGetDeviceQueue(device, indices.graphicsFamily.value(), 1, &multiThreadGraphicQueue);//インデックスを二つ目に設定
+        vkGetDeviceQueue(device, indices.presentFamily.value(), 1, &multiThreadPresentQueue);
     }
 
     //スワップチェーンの作成
@@ -1189,7 +1203,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, texCoord0);
+        attributeDescriptions[1].offset = offsetof(Vertex, texCoord1);
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1350,6 +1364,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             throw std::runtime_error("failed to create graphics command pool!");
         }
+
+        //マルチスレッド用も作成する
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, &multiThreadCommandPool) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create graphics command pool!");
+        }
     }
 
     //通常のレンダリングで使用するカラーアタッチメントの作成
@@ -1453,7 +1473,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //画像からテクスチャ画像の作成 
-    void VulkanBase::createTextureImage(TextureData& textureData,std::shared_ptr<ImageData> image)
+    void VulkanBase::createTextureImage(TextureData* textureData,std::shared_ptr<ImageData> image)
     {
         VkDeviceSize bufferSize = image->getWidth() * image->getHeight() * image->getTexChannels();
 
@@ -1466,14 +1486,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, image->getPixelsData(), bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        textureData.mipLevel = calcMipMapLevel(image->getWidth(),image->getHeight());
-        createImage(image->getWidth(), image->getHeight(), textureData.mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData.image, textureData.memory);
+        textureData->mipLevel = calcMipMapLevel(image->getWidth(),image->getHeight());
+        createImage(image->getWidth(), image->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
 
-        transitionImageLayout(textureData.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData.mipLevel,1);
-        copyBufferToImage(stagingBuffer, textureData.image, static_cast<uint32_t>(image->getWidth()), static_cast<uint32_t>(image->getHeight()),1);
+        transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
+        copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(image->getWidth()), static_cast<uint32_t>(image->getHeight()),1);
 
-        generateMipmaps(textureData.image, VK_FORMAT_R8G8B8A8_UNORM, image->getWidth(), image->getHeight(), textureData.mipLevel,1);
+        generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, image->getWidth(), image->getHeight(), textureData->mipLevel,1);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1641,9 +1661,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //テクスチャのビューの作成
-    void VulkanBase::createTextureImageView(TextureData& textureData)
+    void VulkanBase::createTextureImageView(TextureData* textureData)
     {
-        textureData.view = createImageView(textureData.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, textureData.mipLevel,1);
+        textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
     }
 
     //ダミーテクスチャ用
@@ -1919,6 +1939,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
+        //カラーアタッチメント用のレイアウトを表示用のレイアウトにする
+        else if(oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        {
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = 0;
+
+            sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+            //パイプラインの処理のすべてが終了したとき
+            destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        //表示用のレイアウトをカラーアタッチメント用のレイアウトにする
+        else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            barrier.srcAccessMask = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            barrier.dstAccessMask = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
         else {
             throw std::invalid_argument("unsupported layout transition!");
         }
@@ -1959,6 +1999,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         endSingleTimeCommands(commandBuffer);
     }
 
+    //uiのテクスチャを作成する
+    void VulkanBase::createUITexture(TextureData* texture, std::shared_ptr<ImageData> image)
+    {
+        //gpu上に画像データを展開
+        createTextureImage(texture, image);
+
+        //このテクスチャのビューを作成
+        createTextureImageView(texture);
+
+        //サンプラーの作成
+        createTextureSampler(texture);
+    }
+
     //Modelクラス用の頂点バッファーを作成する
     void VulkanBase::createVertexBuffer(GltfNode* node,std::shared_ptr<Model> model)
     {
@@ -1990,6 +2043,30 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createVertexBuffer(node->children[i], model);
         }
+    }
+
+    //UIクラス用の頂点バッファーを作成する
+    void VulkanBase::createVertexBuffer(std::shared_ptr<UI> ui)
+    {
+        VkDeviceSize bufferSize = sizeof(Vertex2D) * ui->vertexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, ui->getVertices(), (size_t)bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            ui->getPointBuffer().vertBuffer, ui->getPointBuffer().vertHandler);
+
+        //vertexBuffer配列にコピーしていく(vector型)
+        copyBuffer(stagingBuffer, ui->getPointBuffer().vertBuffer, bufferSize);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     //コライダー用の頂点バッファーを作成
@@ -2045,6 +2122,29 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createIndexBuffer(node->children[i],model);
         }
+    }
+
+    //UI用のインデックスバッファーの作成
+    void VulkanBase::createIndexBuffer(std::shared_ptr<UI> ui) 
+    {
+        VkDeviceSize bufferSize = sizeof(uint32_t) * ui->indexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, ui->getIndices(), (size_t)bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            ui->getPointBuffer().indeBuffer,ui->getPointBuffer().indeHandler);
+
+        copyBuffer(stagingBuffer, ui->getPointBuffer().indeBuffer, bufferSize);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     //コライダー用のインデックスバッファーを作成
@@ -2111,6 +2211,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             createUniformBuffer(node->children[i], model);
         }
+    }
+
+    //UI用
+    void VulkanBase::createUniformBuffer(std::shared_ptr<UI> ui)
+    {
+        VkDeviceSize bufferSize = sizeof(MatricesUBO2D);
+
+        MappedBuffer* mappedBuffer = &ui->getMappedBuffer();
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+
+        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
     }
 
     //コライダー用のMVP行列のバッファーを作成
@@ -2298,6 +2410,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
         }
+    }
+
+    void VulkanBase::updateUniformBuffer(std::shared_ptr<UI> ui)
+    {
+        MatricesUBO2D ubo;
+        ubo.transformMatrix = ui->getTransfromMatrix();
+        ubo.projection = ui->getProjectMatrix();
+
+        memcpy(ui->getMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
     }
 
     //キューブマップ描画用の行列の更新
@@ -2733,6 +2854,224 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    //UIのレンダリング
+    void VulkanBase::drawUI(bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex)
+    {
+        if (beginRenderPass)
+        {
+            vkResetCommandBuffer(commandBuffers[currentFrame], 0);
+
+            VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent = swapChainExtent;
+
+            VkClearValue clearValue{};
+            clearValue.depthStencil = { 1.0f,0 };
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &clearValue;
+
+            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        Storage* storage = Storage::GetInstance();
+
+        for (int i = 0; i < storage->getUI().size(); i++)
+        {
+            std::shared_ptr<UI> ui = storage->getUI()[i];
+
+            VkDeviceSize offsets[] = { 0 };
+
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffer, ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
+
+            vkCmdDrawIndexed(commandBuffer, ui->indexCount, 1, 0, 0, 0);
+        }
+
+        if (beginRenderPass)
+        {
+            vkCmdEndRenderPass(commandBuffer);
+
+            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+                throw std::runtime_error("failed to record command buffer!");
+            }
+        }
+    }
+
+    //指定されたUIのみレンダリング ロード画面の描画を想定
+    void VulkanBase::drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex)
+    {
+        if (beginRenderPass)
+        {
+            VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent = swapChainExtent;
+
+            std::vector<VkClearValue> clearValues(2);
+            clearValues[0].color = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+            clearValues[1].depthStencil = { 1.0f,0 };
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassInfo.pClearValues = clearValues.data();
+
+            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, ui->indexCount, 1, 0, 0, 0);
+
+        if (beginRenderPass)
+        {
+            vkCmdEndRenderPass(commandBuffer);
+
+            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+                throw std::runtime_error("failed to record command buffer!");
+            }
+        }
+    }
+
+    //ロードUIの描画
+    void VulkanBase::drawLoading()
+    {
+        std::shared_ptr<UI> loadUI = Storage::GetInstance()->getLoadUI();
+
+        vkWaitForFences(device, 1, &multiThreadFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapChain();
+            return;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
+
+        vkResetFences(device, 1, &multiThreadFences[currentFrame]);
+
+        vkResetCommandBuffer(uiRender.loadCommandBuffers[currentFrame], 0);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(uiRender.loadCommandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
+
+        //一応ロードUIの行列を更新する
+        updateUniformBuffer(loadUI);
+
+        //ここでロードUIの描画
+        drawUI(loadUI, true, uiRender.loadCommandBuffers[currentFrame], imageIndex);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitDstStageMask = waitStages.data();
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &uiRender.loadCommandBuffers[currentFrame];
+
+        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+        if (vkQueueSubmit(multiThreadGraphicQueue, 1, &submitInfo, multiThreadFences[currentFrame]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to submit draw command buffer!");
+        }
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores.data();
+
+        std::vector<VkSwapchainKHR> swapChains = { swapChain };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains.data();
+
+        presentInfo.pImageIndices = &imageIndex;
+
+        result = vkQueuePresentKHR(multiThreadPresentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            framebufferResized = false;
+            recreateSwapChain();
+        }
+        else if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
+    //ロード画面の描画の終了
+    void VulkanBase::stopLoading()
+    {
+        //すべてのフェンスから実行完了の信号を受け取る
+        vkWaitForFences(device, static_cast<uint32_t>(multiThreadFences.size()), multiThreadFences.data()
+            , VK_TRUE, UINT64_MAX);
+        //すべてのフェンスをリセット
+        vkResetFences(device, static_cast<uint32_t>(multiThreadFences.size()), multiThreadFences.data());
+
+        //キュー上の処理がすべて終わるまで待つ
+        vkQueueWaitIdle(multiThreadGraphicQueue);
+        vkQueueWaitIdle(multiThreadPresentQueue);
+    }
+
     //キューブマップのレンダリング
     void VulkanBase::drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer)
     {
@@ -2960,6 +3299,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        //UIの描画
+        drawUI(false,commandBuffer,imageIndex);
+
         Storage* storage = Storage::GetInstance();
         
         for (auto model:storage->getModels())
@@ -3012,6 +3354,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+        multiThreadFences.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -3023,7 +3366,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+                vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS ||
+                vkCreateFence(device,&fenceInfo,nullptr,&multiThreadFences[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
         }
@@ -3052,6 +3396,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (auto model:storage->getModels())
         {
             updateUniformBuffers(model);//3Dモデルの座標変換行列などを更新
+        }
+        for (auto ui : storage->getUI())
+        {
+            updateUniformBuffer(ui);//UIについての座標変換行列やテクスチャを更新
         }
 
         updateUniformBuffer(storage->getPointLights(), storage->getPointLightsBuffer());//ポイントライトの座標、色の更新
@@ -3833,6 +4181,201 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorData_ShadowMap(shadowMapData.descriptorSets,shadowMapData.passData,shadowMapData.layout);//デプスバッファをテクスチャとして利用するためのdescriptorSet
     }
 
+    //UI描画用のパイプラインなどを用意
+    void VulkanBase::prepareUIRendering()
+    {
+        uiRender.vertPath = "shaders/ui.vert.spv";
+        uiRender.fragPath = "shaders/ui.frag.spv";
+
+        //VkDescriptorSetLayoutの作成
+        {
+            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
+            layoutBindings[0].binding = 0;
+            layoutBindings[0].descriptorCount = 1;
+            layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            layoutBindings[0].pImmutableSamplers = nullptr;
+            layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            layoutBindings[1].binding = 1;
+            layoutBindings[1].descriptorCount = 1;
+            layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            layoutBindings[1].pImmutableSamplers = nullptr;
+            layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+            layoutInfo.pBindings = layoutBindings.data();
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &uiRender.layout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+        }
+
+        //パイプラインレイアウトの作成
+        {
+            auto vertShaderCode = readFile(uiRender.vertPath);
+            auto fragShaderCode = readFile(uiRender.fragPath);
+
+            VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+            VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+            VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+            vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            vertShaderStageInfo.module = vertShaderModule;
+            vertShaderStageInfo.pName = "main";
+
+            VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+            fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            fragShaderStageInfo.module = fragShaderModule;
+            fragShaderStageInfo.pName = "main";
+
+            VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+            VkVertexInputBindingDescription bindingDescription{};
+            bindingDescription.binding = 0;
+            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+            std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+            bindingDescription.stride = sizeof(Vertex2D);
+
+            attributeDescriptions.resize(2);
+            attributeDescriptions[0].binding = 0;
+            attributeDescriptions[0].location = 0;
+            attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[0].offset = offsetof(Vertex2D, pos);
+
+            attributeDescriptions[1].binding = 0;
+            attributeDescriptions[1].location = 1;
+            attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[1].offset = offsetof(Vertex2D, uv);
+
+            vertexInputInfo.vertexBindingDescriptionCount = 1;
+            vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+            vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+            vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+            VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+            inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+            VkPipelineViewportStateCreateInfo viewportState{};
+            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            viewportState.viewportCount = 1;
+            viewportState.scissorCount = 1;
+
+            VkPipelineRasterizationStateCreateInfo rasterizer{};
+            rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            rasterizer.depthClampEnable = VK_FALSE;
+            rasterizer.rasterizerDiscardEnable = VK_FALSE;
+            rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+            rasterizer.lineWidth = 1.0f;
+            rasterizer.cullMode = VK_CULL_MODE_NONE;//カリングを無効
+            rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+            rasterizer.depthBiasEnable = VK_FALSE;
+
+            VkPipelineMultisampleStateCreateInfo multisampling{};
+            multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            multisampling.sampleShadingEnable = VK_TRUE;
+            multisampling.minSampleShading = 0.2f;
+            multisampling.rasterizationSamples = msaaSamples;
+
+            VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+            colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+            VkPipelineColorBlendStateCreateInfo colorBlending{};
+            colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            colorBlending.logicOpEnable = VK_FALSE;
+            colorBlending.logicOp = VK_LOGIC_OP_COPY;
+            colorBlending.attachmentCount = 1;
+            colorBlending.pAttachments = &colorBlendAttachment;
+            colorBlending.blendConstants[0] = 0.0f;
+            colorBlending.blendConstants[1] = 0.0f;
+            colorBlending.blendConstants[2] = 0.0f;
+            colorBlending.blendConstants[3] = 0.0f;
+
+            VkPipelineDepthStencilStateCreateInfo depthStencil{};
+            depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            depthStencil.depthTestEnable = VK_TRUE;
+            depthStencil.depthWriteEnable = VK_TRUE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            depthStencil.depthBoundsTestEnable = VK_FALSE;
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.front = {};
+            depthStencil.back = {};
+
+            std::vector<VkDynamicState> dynamicStates = {
+                VK_DYNAMIC_STATE_VIEWPORT,
+                VK_DYNAMIC_STATE_SCISSOR
+            };
+            VkPipelineDynamicStateCreateInfo dynamicState{};
+            dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+            dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+            dynamicState.pDynamicStates = dynamicStates.data();
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = 1;
+            pipelineLayoutInfo.pSetLayouts = &uiRender.layout;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &uiRender.pLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create pipeline layout!");
+            }
+
+            VkGraphicsPipelineCreateInfo pipelineInfo{};
+            pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipelineInfo.stageCount = 2;
+            pipelineInfo.pStages = shaderStages;
+            pipelineInfo.pVertexInputState = &vertexInputInfo;
+            pipelineInfo.pInputAssemblyState = &inputAssembly;
+            pipelineInfo.pViewportState = &viewportState;
+            pipelineInfo.pRasterizationState = &rasterizer;
+            pipelineInfo.pMultisampleState = &multisampling;
+            pipelineInfo.pColorBlendState = &colorBlending;
+            pipelineInfo.pDynamicState = &dynamicState;
+            pipelineInfo.layout = uiRender.pLayout;
+            pipelineInfo.renderPass = renderPass;
+            pipelineInfo.subpass = 0;
+            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+            pipelineInfo.pDepthStencilState = &depthStencil;
+
+            if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &uiRender.pipeline) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create graphics pipeline!");
+            }
+
+            //パイプラインの作成
+
+            vkDestroyShaderModule(device, fragShaderModule, nullptr);
+            vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        }
+
+        //ロードUIの表示用のコマンドバッファ
+        {
+            VkCommandBufferAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocInfo.commandPool = multiThreadCommandPool;
+            allocInfo.commandBufferCount = static_cast<uint32_t>(uiRender.loadCommandBuffers.size());
+
+            vkAllocateCommandBuffers(device, &allocInfo, uiRender.loadCommandBuffers.data());
+        }
+    }
+
     //各種ライトのバッファなどの作成
     void VulkanBase::setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights)
     {
@@ -3880,8 +4423,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         //hdriTextureのデータを作る
         {
-            createTextureImage(*cubemapData.srcHdriTexture, Storage::GetInstance()->getCubemapImage());
-            createTextureImageView(*cubemapData.srcHdriTexture);
+            createTextureImage(cubemapData.srcHdriTexture, Storage::GetInstance()->getCubemapImage());
+            createTextureImageView(cubemapData.srcHdriTexture);
             createTextureSampler(cubemapData.srcHdriTexture);
         }
 
@@ -5196,6 +5739,83 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
         }
+    }
+
+    //UIの頂点バッファなどを用意する
+    void VulkanBase::setUI(std::shared_ptr<UI> ui)
+    {
+        //頂点バッファの作成
+        createVertexBuffer(ui);
+        //インデックスバッファの作成
+        createIndexBuffer(ui);
+
+        //VkDescriptorSetのバッファを確保
+        {
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = descriptorPool;
+            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+            allocInfo.pSetLayouts = &uiRender.layout;
+
+            if (vkAllocateDescriptorSets(device, &allocInfo, &ui->getDescriptorSet()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            if (descriptorSetCount > 100)
+            {
+                throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
+            }
+            descriptorSetCount++;
+        }
+
+        //バッファーを結び付ける
+        changeUITexture(ui->getUITexture(), ui->getMappedBuffer(), ui->getDescriptorSet());
+    }
+
+    //UIのuniform bufferの作成
+    void VulkanBase::uiCreateUniformBuffer(MappedBuffer& mappedBuffer)
+    {
+        VkDeviceSize bufferSize = sizeof(MatricesUBO2D);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer.uniformBuffer, mappedBuffer.uniformBufferMemory);
+
+        vkMapMemory(device, mappedBuffer.uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer.uniformBufferMapped);
+    }
+
+    //UIのテクスチャの変更を反映
+    void VulkanBase::changeUITexture(TextureData* textureData, MappedBuffer& mappedBuffer, VkDescriptorSet& descriptorSet)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = mappedBuffer.uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(MatricesUBO2D);
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = textureData->view;
+        imageInfo.sampler = textureData->sampler;
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.resize(2);
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSet;
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     //レンダリングの開始

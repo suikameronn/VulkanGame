@@ -4,7 +4,6 @@
 #include<map>
 #include<ostream>
 #include<thread>
-
 #include<time.h>
 
 #include "resource1.h"
@@ -66,6 +65,9 @@ private:
 	//–„‚ß‚Ü‚ê‚½gltfƒ‚ƒfƒ‹‚ğæ“¾‚·‚é
 	void loadgltfModel(int id, void** ptr, int& size);
 
+	//gif‰æ‘œ‚ğ“Ç‚İ‚Ş
+	void loadGif(std::string gifFilName);
+
 public:
 	static FileManager* GetInstance()
 	{
@@ -77,9 +79,12 @@ public:
 		return fileManager;
 	}
 
-	void FinishFileManger()
+	static void FinishFileManger()
 	{
-		delete fileManager;
+		if (fileManager)
+		{
+			delete fileManager;
+		}
 	}
 
 	~FileManager()

@@ -52,6 +52,13 @@ void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
 	sceneDirectionalLightStorage.push_back(dl);
 }
 
+//UIの追加
+void Storage::addUI(std::shared_ptr<UI> ui)
+{
+	VulkanBase::GetInstance()->setUI(ui);
+	uiStorage.push_back(ui);
+}
+
 //通常のレンダリングで必要なdescriptorSetの作成
 void Storage::prepareDescriptorSets()
 {
@@ -68,7 +75,8 @@ void Storage::prepareLightsForVulkan()
 void Storage::prepareDescriptorData()
 {
 	//DescriptorSetLayoutを用意する
-	VulkanBase::GetInstance()->prepareDescriptorData(static_cast<int>(sceneDirectionalLightStorage.size()) + scenePointLightStorage.size());
+	int lightCount = static_cast<int>(sceneDirectionalLightStorage.size()) + static_cast<int>(scenePointLightStorage.size());
+	VulkanBase::GetInstance()->prepareDescriptorData(lightCount);
 
 	for (auto gltfModel : gltfModelStorage)
 	{

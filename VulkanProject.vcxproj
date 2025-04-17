@@ -115,7 +115,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;EasyGifReader</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -163,9 +163,9 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="RTree.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Storage.cpp" />
+    <ClCompile Include="UI.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,6 +187,7 @@
     <ClInclude Include="RTree.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
+    <ClInclude Include="UI.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>
   <ItemGroup>

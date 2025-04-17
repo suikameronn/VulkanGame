@@ -42,6 +42,7 @@ void Scene::initFrameSetting()
 	Storage::GetInstance()->prepareDescriptorData();//descriptorSetの用意
 
 	setModels();//モデルの他のクラスのデータを用意
+	setUI();//UI関連のデータの準備
 }
 
 //luaスクリプトの読み取り、実行
@@ -151,48 +152,6 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	resetStatus();//シーン全体のオブジェクトのリセット処理を行う
 
-	/*
-
-	for (int i = 0; i < sceneModels.size() - 1; i++)//モデル同士の当たり判定を行う
-	{
-		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
-		{
-			continue;
-		}
-
-		for (int j = i + 1; j < sceneModels.size(); j++)
-		{
-			if (sceneModels[j]->hasColider())
-			{
-				if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
-				{
-					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
-					{
-						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
-						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
-															 //つまり、床のようなオブジェクトの上に載っている状況の場合
-						{
-							sceneModels[j]->isGrounding = true;
-							sceneModels[i]->addGroundingObject(sceneModels[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
-						}
-					}
-
-					if (sceneModels[j]->isMovable)//上と同様
-					{
-						sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
-						if (groundCollision(-collisionVector))
-						{
-							sceneModels[i]->isGrounding = true;
-							sceneModels[j]->addGroundingObject(sceneModels[i]);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	*/
-
 	for (int i = 0; i < sceneModels.size(); i++)//モデル同士の当たり判定を行う
 	{
 		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
@@ -235,37 +194,6 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 			}
 		}
 	}
-
-	//Playerクラスとモデルクラスの当たり判定
-	//他、上のModelクラス同士の処理と同様
-	/*
-	for (int i = 0; i < sceneModels.size(); i++)
-	{
-		if (!sceneModels[i]->hasColider())
-		{
-			continue;
-		}
-
-		if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionVector))
-		{
-			if (sceneModels[i]->isMovable)
-			{
-				sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);
-			}
-
-			if (player->isMovable)
-			{
-				if (groundCollision(collisionVector))
-				{
-					player->isGrounding = true;
-					sceneModels[i]->addGroundingObject(player.get());
-				}
-
-				player->setPosition(player->getPosition() - collisionVector);
-			}
-		}
-	}
-	*/
 
 	{//プレイヤーキャラクターについての当たり判定を行う
 		std::vector<Model*> collisionDetectTarget;
@@ -354,6 +282,18 @@ void Scene::setLights()
 	{
 		dl->updateTransformMatrix();
 		storage->addLight(dl);//バッファーの確保
+	}
+}
+
+//ステージのUIのVulkanの変数を設定する
+void Scene::setUI()
+{
+	Storage* storage = Storage::GetInstance();
+
+	for (int i = 0; i < sceneUI.size(); i++)
+	{
+		sceneUI[i]->updateTransformMatrix();//座標変換行列の更新
+		Storage::GetInstance()->addUI(sceneUI[i]);//gpu上に頂点バッファなどを用意する
 	}
 }
 

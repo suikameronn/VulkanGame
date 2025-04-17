@@ -11,7 +11,7 @@
 class Scene;
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object, public std::enable_shared_from_this<Model>
+class Model:public Object
 {
 protected:
 
