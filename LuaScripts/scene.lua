@@ -1,7 +1,7 @@
 --Modelオブジェクトの作成
 local model = glueCreateModel()
 --Modelオブジェクトにgltfモデルをセット
-glueSetGltfModel(model,"models/concrete.glb")
+glueSetGltfModel(model,"models/mountain_terrain.glb")
 --初期座標の設定
 glueSetPos(model,0.0,0.0,0.0)
 --スケールの設定
