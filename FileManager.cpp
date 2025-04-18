@@ -707,7 +707,7 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         {
             float* pixels = new float[width * height * 3];//RGBÇ≈å≈íËÇ»ÇΩÇﬂïùxçÇÇ≥x3
 
-            for (int y = 0; y < height; y++)
+            for (int y = height - 1; y > 0; y--)
             {
                 BYTE* byteLine = FreeImage_GetScanLine(bitmap, y);
 

@@ -663,6 +663,7 @@ private:
     std::vector<VkFence> multiThreadFences;
     //現在のフレームで使用するコマンドバッファなどの番号
     uint32_t currentFrame = 0;
+    uint32_t loadingCurrentFrame = 0;
 
     //descriptorSetはこれから作成する
     VkDescriptorPool descriptorPool;
@@ -775,7 +776,7 @@ private:
         , VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     
     //テクスチャのレイアウトの変更
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
+    void transitionImageLayout(VkImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
     //バッファーからテクスチャの画像の作成
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height,uint32_t layerCount);
     

@@ -119,7 +119,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4005</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,19 +136,20 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;FreeImage</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DisableSpecificWarnings>4005</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib;FreeImage</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;FreeImage.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -1867,7 +1867,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //テクスチャのレイアウトを変更する
-    void VulkanBase::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,uint32_t mipLevels,uint32_t layerCount) {
+    void VulkanBase::transitionImageLayout(VkImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,uint32_t mipLevels,uint32_t layerCount) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
@@ -2984,10 +2984,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         std::shared_ptr<UI> loadUI = Storage::GetInstance()->getLoadUI();
 
-        vkWaitForFences(device, 1, &multiThreadFences[currentFrame], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(device, 1, &multiThreadFences[loadingCurrentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[loadingCurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateSwapChain();
@@ -2997,14 +2997,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        vkResetFences(device, 1, &multiThreadFences[currentFrame]);
+        vkResetFences(device, 1, &multiThreadFences[loadingCurrentFrame]);
 
-        vkResetCommandBuffer(uiRender.loadCommandBuffers[currentFrame], 0);
+        vkResetCommandBuffer(uiRender.loadCommandBuffers[loadingCurrentFrame], 0);
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        if (vkBeginCommandBuffer(uiRender.loadCommandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
+        if (vkBeginCommandBuffer(uiRender.loadCommandBuffers[loadingCurrentFrame], &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
@@ -3012,25 +3012,25 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         updateUniformBuffer(loadUI);
 
         //ここでロードUIの描画
-        drawUI(loadUI, true, uiRender.loadCommandBuffers[currentFrame], imageIndex);
+        drawUI(loadUI, true, uiRender.loadCommandBuffers[loadingCurrentFrame], imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[loadingCurrentFrame] };
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &uiRender.loadCommandBuffers[currentFrame];
+        submitInfo.pCommandBuffers = &uiRender.loadCommandBuffers[loadingCurrentFrame];
 
-        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[loadingCurrentFrame] };
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-        if (vkQueueSubmit(multiThreadGraphicQueue, 1, &submitInfo, multiThreadFences[currentFrame]) != VK_SUCCESS) {
+        if (vkQueueSubmit(multiThreadGraphicQueue, 1, &submitInfo, multiThreadFences[loadingCurrentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
@@ -3056,7 +3056,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to present swap chain image!");
         }
 
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        loadingCurrentFrame = (loadingCurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     //ロード画面の描画の終了
@@ -4770,7 +4770,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < iblSpecular.imageAttachment.size(); i++)
         {
             createImage(iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], 1, VK_SAMPLE_COUNT_1_BIT, cubemapData.texFormat,
-                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, iblSpecular.imageAttachment[i].image, iblSpecular.imageAttachment[i].memory);
             iblSpecular.imageAttachment[i].view =
                 createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, cubemapData.texFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
@@ -5434,7 +5434,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblDiffuse.setRenderSize(IBL_MAP_SIZE);
 
         //ミップマップレベルの計算
-        iblDiffuse.setMipmapLevel(calcMipMapLevel(iblDiffuse.size, iblDiffuse.size));
+        iblDiffuse.setMipmapLevel(1);
 
         //diffuse用テクスチャの6回のオフスクリーンレンダリングの準備を行う
         prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData, cubemapData.texFormat);

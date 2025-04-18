@@ -13,14 +13,16 @@ void GameManager::initGame()//初期化設定
     setLoadUI();//ロードUIの設定
 
     bool load = false;
-    std::thread loadThread(&GameManager::drawLoading, this,std::ref(load));
+    //std::thread loadThread(&GameManager::drawLoading, this,std::ref(load));
 
     load = createScene();//ステージの読み込み
 
+    /*
     if (loadThread.joinable())
     {
         loadThread.join();
     }
+    */
 
     mainGameLoop();//ゲームループ
 }
