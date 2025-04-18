@@ -672,36 +672,15 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
     {
         return storage->getImageData(registerImageName);
     }
-    ImageData* imageData = nullptr;
 
-    //gif‰æ‘œ‚©‚Ç‚¤‚©‚ðŠm”F‚·‚é
-    if (registerImageName.find(".gif") == -1)
-    {
-        int width;
-        int height;
-        int texChannels;
-        unsigned char* pixels;
+    int width;
+    int height;
+    int texChannels;
+    unsigned char* pixels;
 
-        pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels, 0);
+    pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels,0);
 
-        imageData = new ImageData(width, height, texChannels, pixels);
-    }
-    else
-    {
-        int width;
-        int height;
-        int texChannels;
-        int frameCount;
-        int* pixels;
-
-        FILE* f;
-        stbi__context s;
-        f = stbi__fopen(filePath.c_str(), "rb");
-        stbi__start_file(&s, f);
-        //stbi_load_gif_from_memory(&s, &pixels, &width, &height, &texChannels, &frameCount, 0);
-
-        std::cout << "AAA" << std::endl;
-    }
+    ImageData* imageData = new ImageData(width, height, texChannels, pixels);
 
     storage->addImageData(registerImageName,imageData);
 
