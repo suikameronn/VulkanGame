@@ -480,6 +480,8 @@ struct CubemapData
     //実際のパイプライン
     VkPipeline pipeline;
 
+    VkFormat texFormat;
+
     CubemapData()
     {
         //キューブマップの元となるHDRI画像のテクスチャデータ
@@ -750,16 +752,16 @@ private:
     void copyImageToMultiLayerImage(VkImage* srcImages, uint32_t imageCount, uint32_t width, uint32_t height, VkImage& dstImage);
 
     //画像からテクスチャ画像の作成
-    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image);//ImageDataからVkImageを作成
-    void createTextureImage();//空のテクスチャを作成
-    void createTextureImage(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのマテリアルにテクスチャ用データを作成
+    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image,VkFormat format);//ImageDataからVkImageを作成
+    void createTextureImage(VkFormat format);//空のテクスチャを作成
+    void createTextureImage(std::shared_ptr<GltfModel> gltfModel,VkFormat format);//gltfモデルのマテリアルにテクスチャ用データを作成
     //ミップマップ画像の作成
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels,uint32_t layerCount);
 
     //テクスチャのビューの作成
-    void createTextureImageView(TextureData* textureData);//デフォルトのテクスチャのビューを作成
-    void createTextureImageView();//空のテクスチャのビューを作成
-    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのテクスチャのビューを作成
+    void createTextureImageView(TextureData* textureData,VkFormat format);//デフォルトのテクスチャのビューを作成
+    void createTextureImageView(VkFormat format);//空のテクスチャのビューを作成
+    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel, VkFormat format);//gltfモデルのテクスチャのビューを作成
     
     //テクスチャのサンプラーの作成
     void createTextureSampler(TextureData* textureData);//デフォルトのテクスチャのサンプラーの作成
@@ -913,7 +915,7 @@ private:
     //キューブマップ用のテクスチャを作成するためのデータを用意
     void prepareCubemapTextures();
     //キューブマップ用の複数のレイヤーを持つテクスチャデータを作成する
-    void createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount, uint32_t width, uint32_t height, uint32_t mipLevel);
+    void createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount, uint32_t width, uint32_t height, uint32_t mipLevel,VkFormat format);
     //6枚のテクスチャを作成して、キューブマップを作成
     void createSamplerCube2D(OffScreenPass& passData, std::vector<MappedBuffer>& mappedBuffers);
     void createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers);

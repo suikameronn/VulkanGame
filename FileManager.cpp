@@ -8,6 +8,7 @@ FileManager* FileManager::fileManager = nullptr;
 
 FileManager::FileManager()
 {
+    FreeImage_Initialise(TRUE);
 }
 
 //埋め込められたgltfモデルを取得する
@@ -373,7 +374,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
         mesh->vertices.push_back(vert);
     }
 
-    int indexCount;
+    int indexCount = 0;
     if (glPrimitive.indices > -1)
     {
         const tinygltf::Accessor& accessor = glModel.accessors[glPrimitive.indices > -1 ? glPrimitive.indices : 0];
@@ -674,36 +675,66 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
     }
     ImageData* imageData = nullptr;
 
-    //gif画像かどうかを確認する
-    if (registerImageName.find(".gif") == -1)
+    FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filePath.c_str(), 0);
+    FIBITMAP* bitmap = FreeImage_Load(fif, filePath.c_str(), 0);
+    FREE_IMAGE_COLOR_TYPE colorType = FreeImage_GetColorType(bitmap);
+
+    if (fif != FIF_GIF)
     {
-        int width;
-        int height;
-        int texChannels;
-        unsigned char* pixels;
+        int width, height, bpp;
+        width = FreeImage_GetWidth(bitmap);//幅
+        height = FreeImage_GetHeight(bitmap);//高さ
+        bpp = FreeImage_GetBPP(bitmap);//1ピクセルごとのビット深度
+        bpp = (bpp + 7) / 8;//ビットをバイトに変換 8で割り切れない場合に対処
 
-        pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels, 0);
+        if (bpp == 3 || bpp == 4)//普通の画像
+        {
+            unsigned char* pixels = new unsigned char[width * height * bpp];
 
-        imageData = new ImageData(width, height, texChannels, pixels);
+            for (int y = height - 1; y > 0; y--)
+            {
+                unsigned char* line = FreeImage_GetScanLine(bitmap, y);
+                memcpy(pixels + y * width * bpp, line, width * bpp);
+            }
+
+            ImageData* imageData = new ImageData(width, height, bpp, pixels);
+
+            storage->addImageData(registerImageName, imageData);
+
+            delete[] pixels;
+        }
+        else if (bpp == 12)//hdri用
+        {
+            float* pixels = new float[width * height * 3];//RGBで固定なため幅x高さx3
+
+            for (int y = 0; y < height; y++)
+            {
+                BYTE* byteLine = FreeImage_GetScanLine(bitmap, y);
+
+                for (int x = 0; x < width; x++)
+                {
+                    float r, g, b;
+                    memcpy(&r, byteLine + x * bpp + 0, sizeof(float));
+                    memcpy(&g, byteLine + x * bpp + 4, sizeof(float));
+                    memcpy(&b, byteLine + x * bpp + 8, sizeof(float));
+
+                    pixels[(width * y + x) * 3 + 0] = r;
+                    pixels[(width * y + x) * 3 + 1] = g;
+                    pixels[(width * y + x) * 3 + 2] = b;
+                }
+            }
+
+            ImageData* imageData = new ImageData(width, height, bpp, pixels);
+
+            storage->addImageData(registerImageName, imageData);
+
+            delete[] pixels;
+        }
+        else
+        {
+            throw std::runtime_error("not support image format");
+        }
     }
-    else
-    {
-        int width;
-        int height;
-        int texChannels;
-        int frameCount;
-        int* pixels;
-
-        FILE* f;
-        stbi__context s;
-        f = stbi__fopen(filePath.c_str(), "rb");
-        stbi__start_file(&s, f);
-        //stbi_load_gif_from_memory(&s, &pixels, &width, &height, &texChannels, &frameCount, 0);
-
-        std::cout << "AAA" << std::endl;
-    }
-
-    storage->addImageData(registerImageName,imageData);
 
     return storage->getImageData(registerImageName);
 }

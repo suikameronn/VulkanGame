@@ -27,12 +27,18 @@ private:
 	//ピクセルの色の一次元配列
 	std::vector<unsigned char> pixels;
 
+	//HDRI画像のフラッグ
+	bool hdri;
+	//HDRI画像用の配列
+	std::vector<float> hdriPixels;
+
 public:
 
 	//チャンネル数は4に固定
 	ImageData(int width, int height,
 		int channels,unsigned char* srcPixels)
 	{
+		this->hdri = false;//これはHDRI画像ではない
 		this->width = width;
 		this->height = height;
 		this->texChannels = 4;
@@ -48,11 +54,35 @@ public:
 		{
 			for (int i = 0; i < width * height; i++)
 			{
-				pixels[i * 4] = srcPixels[i * 3];
+				pixels[i * 4] = srcPixels[i * 3 + 2];
 				pixels[i * 4 + 1] = srcPixels[i * 3 + 1];
-				pixels[i * 4 + 2] = srcPixels[i * 3 + 2];
+				pixels[i * 4 + 2] = srcPixels[i * 3 + 0];
 			}
 		}
+	}
+
+	//チャンネル数は12に固定 透明度は無視
+	ImageData(int width, int height,
+		int channels, float* srcPixels)
+	{
+		this->hdri = true;//これはHDRI画像ではない
+		this->width = width;
+		this->height = height;
+		this->texChannels = 4;
+		this->hdriPixels.resize(width * height * 4);
+		std::fill(this->hdriPixels.begin(), this->hdriPixels.end(), 255.0f);
+		
+		for (int i = 0; i < width * height; i++)
+		{
+			hdriPixels[i * 4] = srcPixels[i * 3];
+			hdriPixels[i * 4 + 1] = srcPixels[i * 3 + 1];
+			hdriPixels[i * 4 + 2] = srcPixels[i * 3 + 2];
+		}
+	}
+
+	bool isHDRI()
+	{
+		return hdri;
 	}
 
 	int getWidth()
@@ -70,8 +100,23 @@ public:
 		return this->texChannels;
 	}
 
-	unsigned char* getPixelsData()
+	size_t getPixelPerSize()
 	{
+		if (hdri)
+		{
+			return sizeof(float);
+		}
+
+		return sizeof(unsigned char);
+	}
+
+	void* getPixelsData()
+	{
+		if(hdri)
+		{
+			return hdriPixels.data();
+		}
+
 		return pixels.data();
 	}
 };

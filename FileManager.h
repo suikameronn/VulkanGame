@@ -15,6 +15,9 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
+#define FREEIMAGE_COLORORDER_RGB
+#include"FreeImage.h"
+
 #include"font.h"
 
 enum IMAGE;

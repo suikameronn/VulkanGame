@@ -50,7 +50,7 @@ void GameManager::drawLoading(bool& loadFinish)
     start = std::chrono::system_clock::now();//フレーム開始時間
     while (!loadFinish)
     {
-        vulkan->drawLoading();
+        //vulkan->drawLoading();
 
         end = std::chrono::system_clock::now();//フレーム終了時間
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間計測
