@@ -151,8 +151,11 @@ void UI::updateTransformMatrix()
 {
 	transformMatrix = glm::mat4(1.0f);
 
+	//‰æ‘œ‚ğ’†S‚É‰ñ“]‚³‚¹‚é
 	transformMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.0f))
-		* rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+		* rotate.getRotateMatrix()
+		* glm::translate(glm::mat4(1.0f), glm::vec3(-uiWidth / 2.0f, -uiHeight / 2.0f, 0.0f))
+		* glm::scale(glm::mat4(1.0f), glm::vec3(scale));
 
 	isUpdateTransformMatrix = false;
 }

@@ -41,6 +41,9 @@ extern GLFWwindow* window;
 //IBL用のテクスチャのサイズ
 #define IBL_MAP_SIZE 512
 
+//VkDescriptorSetの確保できる数
+#define MAX_VKDESCRIPTORSET 1000
+
 enum Extension
 {
     OBJ,
@@ -401,6 +404,9 @@ struct IBLSpecularReflection
 //イメージベースドライティング用構造体
 struct IBLDiffuse
 {
+    //画像フォーマット
+    VkFormat format;
+
     //画像サイズ
     uint32_t size;
 
@@ -595,6 +601,9 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     //gpuへのアクセス用
     VkDevice device;
+
+    //デバイスの制約
+    VkPhysicalDeviceLimits deviceLimits;
 
     //gpuに求める描画用キュー
     VkQueue graphicsQueue;

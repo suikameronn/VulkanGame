@@ -51,7 +51,7 @@ GltfNode* GltfModel::nodeFromIndex(int index)
 //アニメーションの各ノードの更新処理
 void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex)
 {
-	if (parent->mesh && parent->skin)
+	if (parent->meshArray.size() != 0 && parent->skin)
 	{
 		//このノードの所属するジョイントのアニメーション行列を計算
 		parent->update(jointMatrices[parent->globalHasSkinNodeIndex],updatedIndex);
@@ -112,30 +112,6 @@ void GltfModel::updateAnimation(double animationTime,Animation& animation, std::
 	if (updated) {
 		size_t updatedIndex = 0;
 		updateAllNodes(root,jointMatrices,updatedIndex);
-	}
-}
-
-//AABBの計算
-void GltfModel::calculateBoundingBox(GltfNode* node,GltfNode* parent)
-{
-	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX));
-
-	if (node->mesh) {
-		if (node->mesh->bb.valid) {
-			node->aabb = node->mesh->bb.getAABB(node->getMatrix());
-			if (node->children.size() == 0) {
-				node->bvh.min = node->aabb.min;
-				node->bvh.max = node->aabb.max;
-				node->bvh.valid = true;
-			}
-		}
-	}
-
-	parentBvh.min = glm::min(parentBvh.min, node->bvh.min);
-	parentBvh.max = glm::min(parentBvh.max, node->bvh.max);
-
-	for (auto& child : node->children) {
-		calculateBoundingBox(child, node);
 	}
 }
 

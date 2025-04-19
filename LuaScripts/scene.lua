@@ -3,15 +3,15 @@ local model = glueCreateModel()
 --Modelオブジェクトにgltfモデルをセット
 glueSetGltfModel(model,"models/mountain_terrain.glb")
 --初期座標の設定
-glueSetPos(model,0.0,0.0,0.0)
+glueSetPos(model,0.0,500.0,0.0)
 --スケールの設定
-glueSetScale(model,142.0,5.0,140.0)
+glueSetScale(model,10.0,10.0,10.0)
 --回転の設定
 glueSetRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
 --第二引数として、衝突解消時、このModelも動かすかどうかを決める
 --このModelは床のため動かさない、よってfalse
-glueSetAABBColider(model,false)
+--glueSetAABBColider(model,false)
 
 local model2 = glueCreateModel()
 glueSetGltfModel(model2,"models/leather.glb")

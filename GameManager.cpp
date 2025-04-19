@@ -46,11 +46,21 @@ void GameManager::setLoadUI()
 void GameManager::drawLoading(bool& loadFinish)
 {
     VulkanBase* vulkan = VulkanBase::GetInstance();
+    Storage* storage = Storage::GetInstance();
 
     start = std::chrono::system_clock::now();//フレーム開始時間
+
+    Rotate2D rot2D;
+    rot2D.z = 0.0f;
+
     while (!loadFinish)
     {
+        storage->getLoadUI()->setRotate(rot2D);
+        storage->getLoadUI()->updateTransformMatrix();
+
         vulkan->drawLoading();
+
+        rot2D.z++;
 
         end = std::chrono::system_clock::now();//フレーム終了時間
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間計測

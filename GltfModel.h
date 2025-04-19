@@ -142,7 +142,6 @@ struct Mesh
 	std::vector<Vertex> vertices;//頂点配列
 	std::vector<uint32_t> indices;//インデックス配列
 	std::vector<Primitive> primitives;
-	DescriptorInfo descriptorInfo;
 
 	BoundingBox aabb;
 	BoundingBox bb;
@@ -161,7 +160,7 @@ struct GltfNode
 	std::vector<GltfNode*> children;
 	glm::mat4 matrix;//ローカル空間へ変換用行列
 	std::string name;
-	Mesh* mesh;
+	std::vector<Mesh*> meshArray;
 	Skin* skin;
 	int skinIndex = -1;
 	int globalHasSkinNodeIndex = 0;
@@ -169,20 +168,23 @@ struct GltfNode
 	glm::vec3 scale{ 1.0f };
 	glm::quat rotation{};
 
+	DescriptorInfo descriptorInfo;
+
 	BoundingBox bvh;
 	BoundingBox aabb;
 	
 	GltfNode()
 	{
+		matrix = glm::mat4(1.0f);
 		parent = nullptr;
 		index = 0;
-		mesh = nullptr;
+		std::fill(meshArray.begin(),meshArray.end(),nullptr);
 		skin = nullptr;
 	}
 
 	~GltfNode()
 	{
-		if (mesh)
+		for (auto mesh : meshArray)
 		{
 			delete mesh;
 		}

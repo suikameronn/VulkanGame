@@ -1473,7 +1473,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //画像からテクスチャ画像の作成 
-    void VulkanBase::createTextureImage(TextureData* textureData,std::shared_ptr<ImageData> image)
+    void VulkanBase::createTextureImage(TextureData* textureData,std::shared_ptr<ImageData> image,VkFormat format)
     {
         VkDeviceSize bufferSize = image->getWidth() * image->getHeight() * image->getTexChannels();
 
@@ -1487,13 +1487,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkUnmapMemory(device, stagingBufferMemory);
 
         textureData->mipLevel = calcMipMapLevel(image->getWidth(),image->getHeight());
-        createImage(image->getWidth(), image->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+        createImage(image->getWidth(), image->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
 
-        transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
+        transitionImageLayout(textureData->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
         copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(image->getWidth()), static_cast<uint32_t>(image->getHeight()),1);
 
-        generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, image->getWidth(), image->getHeight(), textureData->mipLevel,1);
+        generateMipmaps(textureData->image, format, image->getWidth(), image->getHeight(), textureData->mipLevel,1);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1534,7 +1534,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //gltfモデルのマテリアルのテクスチャの作成
-    void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel)
+    void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel,VKFormat format)
     {
         if (gltfModel->textureDatas.size() == 0)
         {
@@ -1558,13 +1558,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkUnmapMemory(device, stagingBufferMemory);
 
             textureData->mipLevel = calcMipMapLevel(imageData->getWidth(), imageData->getHeight());
-            createImage(imageData->getWidth(), imageData->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            createImage(imageData->getWidth(), imageData->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                 , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
 
-            transitionImageLayout(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
+            transitionImageLayout(textureData->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
             copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(imageData->getWidth()), static_cast<uint32_t>(imageData->getHeight()),1);
 
-            generateMipmaps(textureData->image, VK_FORMAT_R8G8B8A8_UNORM, imageData->getWidth(), imageData->getHeight(), textureData->mipLevel,1);
+            generateMipmaps(textureData->image, format, imageData->getWidth(), imageData->getHeight(), textureData->mipLevel,1);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1661,9 +1661,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //テクスチャのビューの作成
-    void VulkanBase::createTextureImageView(TextureData* textureData)
+    void VulkanBase::createTextureImageView(TextureData* textureData,VkFormat format)
     {
-        textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
+        textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
     }
 
     //ダミーテクスチャ用
@@ -1684,7 +1684,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < gltfModel->textureDatas.size(); i++)
         {
             TextureData* textureData = gltfModel->textureDatas[i];
-            textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
+            textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
         }
     }
 
@@ -2015,9 +2015,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //Modelクラス用の頂点バッファーを作成する
     void VulkanBase::createVertexBuffer(GltfNode* node,std::shared_ptr<Model> model)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
             VkDeviceSize bufferSize = sizeof(Vertex) * mesh->vertices.size();
 
             VkBuffer stagingBuffer;
@@ -2095,9 +2094,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //Modelクラス用のインデックスバッファーを作成する
     void VulkanBase::createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model)
     {
-        if(node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
             VkDeviceSize bufferSize = sizeof(uint32_t) * mesh->indices.size();
 
             VkBuffer stagingBuffer;
@@ -2194,10 +2192,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルのノードの数だけアニメーション行列のバッファーを作成する
     void VulkanBase::createUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
             VkDeviceSize bufferSize = sizeof(AnimationUBO);
 
             MappedBuffer* mappedBuffer = &model->getAnimationMappedBufferData()[mesh->meshIndex];
@@ -2314,10 +2310,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //Modelクラスのアニメーション行列の更新をする
     void VulkanBase::updateUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
             std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
 
             std::array<glm::mat4, 128> array;
@@ -2468,7 +2462,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(100);
+        poolInfo.maxSets = static_cast<uint32_t>(MAX_VKDESCRIPTORSET);
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
@@ -2479,13 +2473,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデル用
     void VulkanBase::allocateDescriptorSet(VkDescriptorSetLayout& layout,GltfNode * node, std::shared_ptr<Model> model)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
-                DescriptorInfo* info = &mesh->descriptorInfo;
-
                 VkDescriptorSetAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 allocInfo.descriptorPool = descriptorPool;
@@ -2499,7 +2490,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     throw std::runtime_error("failed to allocate descriptor sets!");
                 }
 
-                if (descriptorSetCount > 100)
+                if (descriptorSetCount > MAX_VKDESCRIPTORSET)
                 {
                     throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
                 }
@@ -2556,7 +2547,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
 
-        if (descriptorSetCount > 100)
+        if (descriptorSetCount > MAX_VKDESCRIPTORSET)
         {
             throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
         }
@@ -2579,9 +2570,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルの作成
     void VulkanBase::createDescriptorSet(GltfNode* node,std::shared_ptr<Model> model)
     {
-        if(node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -2724,9 +2714,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //キューブマップ用
     void VulkanBase::createDescriptorSet_CubeMap(GltfNode* node, std::shared_ptr<Model> model)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -3077,28 +3066,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        if (node->mesh)
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, node->descriptorInfo.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->descriptorInfo.pipeline);
-
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float)swapChainExtent.width;
-            viewport.height = (float)swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = { 0, 0 };
-            scissor.extent = swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-            VkDeviceSize offsets[] = { 0 };
-
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
 
             vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -3112,7 +3099,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 };
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+                    node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
                 vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
             }
@@ -3129,30 +3116,28 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        if(node->mesh)
+        PushConstantObj constant = { node->getMatrix() };
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, node->descriptorInfo.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
-            PushConstantObj constant = { node->getMatrix() };
-
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->descriptorInfo.pipeline);
-
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float)swapChainExtent.width;
-            viewport.height = (float)swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = { 0, 0 };
-            scissor.extent = swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-            VkDeviceSize offsets[] = { 0 };
-
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
 
             vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -3174,9 +3159,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 };
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    mesh->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+                    node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-                vkCmdPushConstants(commandBuffer, mesh->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
+                vkCmdPushConstants(commandBuffer, node->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
                 vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
             }
@@ -3193,10 +3178,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
             PushConstantObj constant = { node->getMatrix() };
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.pipeline);
@@ -3657,15 +3640,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルの各ノードにパイプラインとそのレイアウトを設定する
     void VulkanBase::createDescriptorInfo(VkPipelineLayout& pLayout, VkPipeline& pipeline, GltfNode* node, std::shared_ptr<Model> model)
     {
-        if(node->mesh)
-        {
-            Mesh* mesh = node->mesh;
-            for (int i = 0;i < mesh->primitives.size();i++)
-            {
-                mesh->descriptorInfo.pLayout = pLayout;
-                mesh->descriptorInfo.pipeline = pipeline;
-            }
-        }
+        node->descriptorInfo.pLayout = pLayout;
+        node->descriptorInfo.pipeline = pipeline;
 
         for (int i = 0; i < node->children.size(); i++)
         {
@@ -3744,7 +3720,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
 
-        if (descriptorSetCount > 100)
+        if (descriptorSetCount > MAX_VKDESCRIPTORSET)
         {
             throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
         }
@@ -3899,7 +3875,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
 
-        if (descriptorSetCount > 100)
+        if (descriptorSetCount > MAX_VKDESCRIPTORSET)
         {
             throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
         }
@@ -3959,7 +3935,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -4152,7 +4128,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -4440,16 +4416,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //レンダリングの結果の出力用のバッファの作成
         for (auto& attachment : cubemapData.passData.imageAttachment)
         {
-            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
-            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, cubemapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = VK_FORMAT_R8G8B8A8_UNORM;
+        attachmentDescription.format = format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4557,7 +4533,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -4714,7 +4690,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -4762,17 +4738,17 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //レンダリングの結果の出力用のバッファの作成
         for (int i = 0; i < iblSpecular.imageAttachment.size(); i++)
         {
-            createImage(iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+            createImage(iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], 1, VK_SAMPLE_COUNT_1_BIT, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, iblSpecular.imageAttachment[i].image, iblSpecular.imageAttachment[i].memory);
             iblSpecular.imageAttachment[i].view =
-                createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+                createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, iblSpecular.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = VK_FORMAT_R8G8B8A8_UNORM;
+        attachmentDescription.format = format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4880,7 +4856,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -5184,10 +5160,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         ,uint32_t width,uint32_t height, VkCommandBuffer& commandBuffer, int index,std::vector<VkDescriptorSet>& descriptorSets
         ,VkPipelineLayout& pipelineLayout,VkPipeline& pipeline)
     {
-        if (node->mesh)
+        for(auto mesh : node->meshArray)
         {
-            Mesh* mesh = node->mesh;
-
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
             VkViewport viewport{};
@@ -5235,7 +5209,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = mipLevel;
         imageInfo.arrayLayers = layerCount;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.format = format;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -5289,7 +5263,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     for (int i = 0; i < CUBEMAP_FACE_COUNT; i++)
                     {
                         transitionImageLayout(cubemapData.passData.imageAttachment[i].image,
-                            VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                            format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
                     }
                 }
 
@@ -5299,7 +5273,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     createMultiLayerTexture(cubemapData.multiTexture, CUBEMAP_FACE_COUNT, cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel);
 
                     //画像のすべてのレイヤーを移動させる
-                    transitionImageLayout(cubemapData.multiTexture->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    transitionImageLayout(cubemapData.multiTexture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
                     std::vector<VkImage> srcImages(CUBEMAP_FACE_COUNT);
                     for (uint32_t i = 0;i < cubemapData.passData.imageAttachment.size();i++)
@@ -5309,12 +5283,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     copyImageToMultiLayerImage(srcImages.data(), static_cast<uint32_t>(srcImages.size())
                         , cubemapData.passData.width, cubemapData.passData.height, cubemapData.multiTexture->image);
 
-                    generateMipmaps(cubemapData.multiTexture->image, VK_FORMAT_R8G8B8A8_UNORM, cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    generateMipmaps(cubemapData.multiTexture->image, format, cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
                 }
             }
 
             //ビューをテクスチャキューブに設定
-            cubemapData.multiTexture->view = createImageView(cubemapData.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT
+            cubemapData.multiTexture->view = createImageView(cubemapData.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, format, VK_IMAGE_ASPECT_COLOR_BIT
                 , cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
             createTextureSampler(cubemapData.multiTexture);
@@ -5360,7 +5334,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -5423,7 +5397,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblDiffuse.setMipmapLevel(calcMipMapLevel(iblDiffuse.size, iblDiffuse.size));
 
         //diffuse用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData,VK_FORMAT_R8G8B8A8_UNORM);
+        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData, format);
 
         //SamperCubeを作成する
         createSamplerCube2D(iblDiffuse.passData, cubemapData.mappedBuffers);
@@ -5506,11 +5480,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < imageAttachment.size(); i++)
         {
             transitionImageLayout(imageAttachment[i].image,
-                VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
         }
 
         //SamplerCubeの画像のすべてのレイヤーを移動させる
-        transitionImageLayout(multiLayerTexture->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        transitionImageLayout(multiLayerTexture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             , multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
 
@@ -5545,11 +5519,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         //ミップマップの作成
-        generateMipmaps(multiLayerTexture->image, VK_FORMAT_R8G8B8A8_UNORM,
+        generateMipmaps(multiLayerTexture->image, format,
             texSize, texSize, multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
         //ビューをテクスチャキューブに設定
-        multiLayerTexture->view = createImageView(multiLayerTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT
+        multiLayerTexture->view = createImageView(multiLayerTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, format, VK_IMAGE_ASPECT_COLOR_BIT
             , multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
         createTextureSampler(multiLayerTexture);
@@ -5566,11 +5540,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < imageAttachment.size(); i++)
         {
             transitionImageLayout(imageAttachment[i].image,
-                VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
         }
 
         //SamplerCubeの画像のすべてのレイヤーを移動させる
-        transitionImageLayout(multiLayerTexture->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        transitionImageLayout(multiLayerTexture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             , multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
 
@@ -5608,11 +5582,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         //ミップマップの作成
-        generateMipmaps(multiLayerTexture->image, VK_FORMAT_R8G8B8A8_UNORM,
+        generateMipmaps(multiLayerTexture->image, format,
             texSize, texSize, multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
         //ビューをテクスチャキューブに設定
-        multiLayerTexture->view = createImageView(multiLayerTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT
+        multiLayerTexture->view = createImageView(multiLayerTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, format, VK_IMAGE_ASPECT_COLOR_BIT
             , multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
         createTextureSampler(multiLayerTexture);
@@ -5653,7 +5627,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -5712,7 +5686,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
@@ -5762,7 +5736,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
-            if (descriptorSetCount > 100)
+            if (descriptorSetCount > MAX_VKDESCRIPTORSET)
             {
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }

@@ -46,7 +46,7 @@ private:
 	//gltfモデルのノードを再帰的に読み込む
 	void loadNode(GltfNode* parent,GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
 	//gltfモデルのメッシュを読み込む
-	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model);
+	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model,int meshIndex);
 	//AABBのためにgltfモデルの頂点のxyzの各軸の最小値と最大値を求める
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
 	//gltfモデルのプリミティブ単位で読み込む

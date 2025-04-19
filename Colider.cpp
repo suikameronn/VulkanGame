@@ -82,29 +82,30 @@ void Colider::setVertices(GltfNode* node,int& loadedVertexCount,int& loadedIndex
 		setVertices(node->children[i], loadedVertexCount, loadedIndexCount);
 	}
 
-	if (node->mesh)
+	for(auto mesh :node->meshArray)
 	{
-		Mesh* mesh = node->mesh;
-
-		glm::mat4 nodeMat = node->getMatrix();
-
-		for (int i = 0; i < mesh->vertices.size(); i++)
+		if (mesh)
 		{
-			originalVertexPos[i + loadedVertexCount] = mesh->vertices[i].pos;
+			glm::mat4 nodeMat = node->getMatrix();
 
-			convexVertexData[i + loadedVertexCount].skinIndex = node->globalHasSkinNodeIndex;
-			convexVertexData[i + loadedVertexCount].boneID = mesh->vertices[i].boneID1;
-			convexVertexData[i + loadedVertexCount].weight = mesh->vertices[i].weight1;
-			convexVertexData[i + loadedVertexCount].nodeMatrix = nodeMat;
+			for (int i = 0; i < mesh->vertices.size(); i++)
+			{
+				originalVertexPos[i + loadedVertexCount] = mesh->vertices[i].pos;
+
+				convexVertexData[i + loadedVertexCount].skinIndex = node->globalHasSkinNodeIndex;
+				convexVertexData[i + loadedVertexCount].boneID = mesh->vertices[i].boneID1;
+				convexVertexData[i + loadedVertexCount].weight = mesh->vertices[i].weight1;
+				convexVertexData[i + loadedVertexCount].nodeMatrix = nodeMat;
+			}
+
+			for (int i = 0; i < mesh->indices.size(); i++)
+			{
+				coliderIndices[i + loadedIndexCount] = mesh->indices[i] + loadedVertexCount;
+			}
+
+			loadedVertexCount += static_cast<int>(mesh->vertices.size());
+			loadedIndexCount += static_cast<int>(mesh->indices.size());
 		}
-
-		for (int i = 0; i < mesh->indices.size(); i++)
-		{
-			coliderIndices[i + loadedIndexCount] = mesh->indices[i] + loadedVertexCount;
-		}
-
-		loadedVertexCount += static_cast<int>(mesh->vertices.size());
-		loadedIndexCount += static_cast<int>(mesh->indices.size());
 	}
 }
 

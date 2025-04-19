@@ -106,7 +106,7 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
 }
 
 //埋め込まれたgltfモデルを取得する
-GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
+GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
 {
     float scale = 1.0f;
     GltfNode* root = new GltfNode();
@@ -124,37 +124,24 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene,const tinyglt
         loadNode(nullptr, model->getRootNode(), model, gltfNode, scene.nodes[i], gltfModel, scale);
     }
 
-    std::thread loadTextureThread(&FileManager::loadTextures,this, model, gltfModel);//テクスチャの読み取り
+    loadTextures(model, gltfModel);//テクスチャの読み取り
 
-    std::thread loadMaterialThread(&FileManager::loadMaterial,this, model, gltfModel);//マテリアルデータの読み取り
+    loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
     model->vertexNum = vertexNum;
     model->indexNum = indexNum;
 
-    std::thread loadAnimationThread([&](tinygltf::Model gltfModel)
-        {
-            if (gltfModel.animations.size() > 0)
-            {
-                loadAnimations(model, scene, gltfModel);//アニメーションの取得
-            }
-        }, gltfModel
-    );
-
-    std::thread loadSkinThread([&](tinygltf::Model gltfModel, GltfModel* model)
-        {
-            loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
-            for (size_t i = 0; i < model->skins.size(); i++)
-            {
-                setSkin(model->getRootNode(), model);//スキンの設定
-            }
-        }, gltfModel, model
-    );
-
-    loadTextureThread.join();
-    loadMaterialThread.join();
-
-    loadAnimationThread.join();
-    loadSkinThread.join();
+    if (gltfModel.animations.size() > 0)
+    {
+        loadAnimations(model, scene, gltfModel);//アニメーションの取得
+    }
+    
+    loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
+    
+    for (size_t i = 0; i < model->skins.size(); i++)
+    {
+        setSkin(model->getRootNode(), model);//スキンの設定
+    }
 
     return model;
 }
@@ -189,7 +176,10 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
 
     if (gltfNode.mesh > -1)
     {
-        processMesh(gltfNode, gltfModel, current, model);//メッシュの読み取り
+        for (int i = 0; i <= gltfNode.mesh; i++)
+        {
+            processMesh(gltfNode, gltfModel, current, model,i);//メッシュの読み取り
+        }
     }
 
     if (gltfNode.children.size() > 0)
@@ -207,9 +197,9 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
 }
 
 //メッシュの読み取り
-void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model)
+void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model,int meshIndex)
 {
-    const tinygltf::Mesh gltfMesh = gltfModel.meshes[gltfNode.mesh];
+    const tinygltf::Mesh gltfMesh = gltfModel.meshes[meshIndex];
     int indexStart = 0;
     int vertexNum = 0;;
 
@@ -226,7 +216,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
 
     model->primitiveCount += static_cast<uint32_t>(gltfMesh.primitives.size());
 
-    currentNode->mesh = mesh;
+    currentNode->meshArray.push_back(mesh);
 }
 
 //aabb用の頂点座標の最小と最大を計算

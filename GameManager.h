@@ -3,6 +3,10 @@
 #include<chrono>
 #include <thread>
 
+#include "lua/include/lua.hpp"
+#include "lua/include/lualib.h"
+#include "lua/include/lauxlib.h"
+
 #include"VulkanBase.h"
 #include"Controller.h"
 #include"Scene.h"
