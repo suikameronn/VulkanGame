@@ -663,14 +663,32 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         return storage->getImageData(registerImageName);
     }
 
-    int width;
-    int height;
-    int texChannels;
-    unsigned char* pixels;
+    ImageData* imageData = nullptr;
 
-    pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels,0);
+    if (stbi_is_hdr(filePath.c_str()))
+    {
+        //HDR‰æ‘œ‚¾‚Á‚½ê‡
+        int width;
+        int height;
+        int texChannels;
+        float* pixels;
 
-    ImageData* imageData = new ImageData(width, height, texChannels, pixels);
+        pixels = stbi_loadf(filePath.c_str(), &width, &height, &texChannels, 0);
+
+        imageData = new ImageData(width, height, texChannels, pixels);
+    }
+    else
+    {
+        //HDRˆÈŠO‚Ìê‡
+        int width;
+        int height;
+        int texChannels;
+        unsigned char* pixels;
+
+        pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels, 0);
+
+        imageData = new ImageData(width, height, texChannels, pixels);
+    }
 
     storage->addImageData(registerImageName,imageData);
 

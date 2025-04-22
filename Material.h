@@ -26,6 +26,8 @@ private:
 	int texChannels;
 	//ピクセルの色の一次元配列
 	std::vector<unsigned char> pixels;
+	//HDRI画像用のピクセル配列
+	std::vector<float> hdriPixels;
 
 public:
 
@@ -55,6 +57,32 @@ public:
 		}
 	}
 
+	//チャンネル数は4に固定
+	ImageData(int width, int height,
+		int channels, float* srcPixels)
+	{
+		this->width = width;
+		this->height = height;
+		this->texChannels = 4;
+		this->hdriPixels.resize(width * height * 4);
+		std::fill(this->hdriPixels.begin(), this->hdriPixels.end(), 255.0f);
+
+		if (channels == 4)//画像に透明度のチャンネルがある場合は、そのまま
+		{
+			this->hdriPixels.assign(srcPixels, srcPixels + ((width * height * channels) - 1));
+		}
+		else if (channels == 3)//画像に透明度のチャンネルが無い場合は、すべてのピクセルの透明度を255として
+			//強引にチャンネルを4つに gpuでのテクスチャ作成の都合上
+		{
+			for (int i = 0; i < width * height; i++)
+			{
+				hdriPixels[i * 4] = srcPixels[i * 3];
+				hdriPixels[i * 4 + 1] = srcPixels[i * 3 + 1];
+				hdriPixels[i * 4 + 2] = srcPixels[i * 3 + 2];
+			}
+		}
+	}
+
 	int getWidth()
 	{
 		return this->width;
@@ -70,9 +98,28 @@ public:
 		return this->texChannels;
 	}
 
-	unsigned char* getPixelsData()
+	size_t getPixelPerByte()
 	{
-		return pixels.data();
+		if (hdriPixels.size() == 0)
+		{
+			return sizeof(unsigned char);
+		}
+		else
+		{
+			return sizeof(float);
+		}
+	}
+
+	void* getPixelsData()
+	{
+		if (hdriPixels.size() == 0)
+		{
+			return pixels.data();
+		}
+		else
+		{
+			return hdriPixels.data();
+		}
 	}
 };
 

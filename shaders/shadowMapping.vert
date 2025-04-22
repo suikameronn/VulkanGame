@@ -12,6 +12,7 @@ layout (set = 0,binding = 0) uniform UBO
 } ubo;
 
 layout(set = 1,binding = 0) uniform UniformBufferObject {
+    vec3 scale;
     mat4 model;
     mat4 view;
     mat4 proj;

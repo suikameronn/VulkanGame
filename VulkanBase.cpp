@@ -164,7 +164,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.apiVersion = VK_API_VERSION_1_1;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -1475,7 +1475,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //画像からテクスチャ画像の作成 
     void VulkanBase::createTextureImage(TextureData* textureData,std::shared_ptr<ImageData> image,VkFormat format)
     {
-        VkDeviceSize bufferSize = image->getWidth() * image->getHeight() * image->getTexChannels();
+        VkDeviceSize bufferSize = image->getWidth() * image->getHeight() * image->getTexChannels() * image->getPixelPerByte();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1534,7 +1534,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //gltfモデルのマテリアルのテクスチャの作成
-    void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel,VKFormat format)
+    void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel,VkFormat format)
     {
         if (gltfModel->textureDatas.size() == 0)
         {
@@ -1546,7 +1546,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             std::shared_ptr<ImageData> imageData = gltfModel->imageDatas[i];
             TextureData* textureData = gltfModel->textureDatas[i];
 
-            VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * imageData->getTexChannels();
+            VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * imageData->getTexChannels() * imageData->getPixelPerByte();
 
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
@@ -1674,7 +1674,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //gltfモデルのテクスチャ用のビューの作成
-    void VulkanBase::createTextureImageView(std::shared_ptr<GltfModel> gltfModel) 
+    void VulkanBase::createTextureImageView(std::shared_ptr<GltfModel> gltfModel,VkFormat format) 
     {
         if (gltfModel->textureDatas.size() == 0)
         {
@@ -1903,6 +1903,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
+        //レイアウトをレンダリングの出力先にする
+        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
         //出力されたテクスチャをシェーダ上で利用できるようにする
         else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) 
         {
@@ -1954,7 +1963,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         {
             barrier.srcAccessMask = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier.dstAccessMask = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
             sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -2003,10 +2012,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createUITexture(TextureData* texture, std::shared_ptr<ImageData> image)
     {
         //gpu上に画像データを展開
-        createTextureImage(texture, image);
+        createTextureImage(texture, image,VK_FORMAT_R8G8B8A8_UNORM);
 
         //このテクスチャのビューを作成
-        createTextureImageView(texture);
+        createTextureImageView(texture, VK_FORMAT_R8G8B8A8_UNORM);
 
         //サンプラーの作成
         createTextureSampler(texture);
@@ -2168,7 +2177,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //ユニフォームバッファの作成
-    void VulkanBase::createUniformBuffer(int count,MappedBuffer* mappedBuffer,unsigned long long size)
+    void VulkanBase::createUniformBuffer(int count,MappedBuffer* mappedBuffer,size_t size)
     {
         VkDeviceSize bufferSize = size * count;
 
@@ -2366,8 +2375,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         std::shared_ptr<Camera> camera = storage->accessCamera();
 
-        MatricesUBO ubo;
+        MatricesUBO ubo{};
 
+        ubo.scale = model->scale;
         ubo.model = model->getTransformMatrix();
         ubo.view = camera->viewMat;
         ubo.proj = camera->perspectiveMat;
@@ -2395,7 +2405,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             std::shared_ptr<Camera> camera = storage->accessCamera();
             std::shared_ptr<Colider> colider = model->getColider();
 
-            MatricesUBO ubo;
+            MatricesUBO ubo{};
 
             ubo.model = model->getTransformMatrix();
             ubo.view = camera->viewMat;
@@ -2408,7 +2418,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     void VulkanBase::updateUniformBuffer(std::shared_ptr<UI> ui)
     {
-        MatricesUBO2D ubo;
+        MatricesUBO2D ubo{};
         ubo.transformMatrix = ui->getTransfromMatrix();
         ubo.projection = ui->getProjectMatrix();
 
@@ -2421,7 +2431,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         std::shared_ptr<Camera> camera = storage->accessCamera();
 
-        MatricesUBO ubo;
+        MatricesUBO ubo{};
 
         ubo.view = camera->cubemapViewMat;
         ubo.proj = camera->perspectiveMat;
@@ -2798,8 +2808,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(graphicsQueue);
+        auto a = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+        if (a != VK_SUCCESS)
+        {
+            throw std::runtime_error("queue submit error");
+        }
+
+        auto b = vkQueueWaitIdle(graphicsQueue);
+        if (b != VK_SUCCESS)
+        {
+            throw std::runtime_error("wait idle failed");
+        }
 
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
@@ -3005,18 +3025,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitSemaphores = &imageAvailableSemaphores[currentFrame];
         submitInfo.pWaitDstStageMask = waitStages.data();
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &uiRender.loadCommandBuffers[currentFrame];
 
-        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores.data();
+        submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
 
         if (vkQueueSubmit(multiThreadGraphicQueue, 1, &submitInfo, multiThreadFences[currentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
@@ -3026,7 +3044,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores.data();
+        presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
 
         std::vector<VkSwapchainKHR> swapChains = { swapChain };
         presentInfo.swapchainCount = 1;
@@ -3985,8 +4003,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
     {
         /*テクスチャ関連の設定を持たせる*/
-        createTextureImage(gltfModel);
-        createTextureImageView(gltfModel);
+        createTextureImage(gltfModel, VK_FORMAT_R8G8B8A8_UNORM);
+        createTextureImageView(gltfModel, VK_FORMAT_R8G8B8A8_UNORM);
         createTextureSampler(gltfModel);
 
         for (std::shared_ptr<Material> material : gltfModel->materials)
@@ -4399,8 +4417,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         //hdriTextureのデータを作る
         {
-            createTextureImage(cubemapData.srcHdriTexture, Storage::GetInstance()->getCubemapImage());
-            createTextureImageView(cubemapData.srcHdriTexture);
+            createTextureImage(cubemapData.srcHdriTexture, Storage::GetInstance()->getCubemapImage(),cubemapData.format);
+            createTextureImageView(cubemapData.srcHdriTexture, cubemapData.format);
             createTextureSampler(cubemapData.srcHdriTexture);
         }
 
@@ -4416,16 +4434,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //レンダリングの結果の出力用のバッファの作成
         for (auto& attachment : cubemapData.passData.imageAttachment)
         {
-            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, format,
+            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, cubemapData.format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
-            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, cubemapData.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, cubemapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = format;
+        attachmentDescription.format = cubemapData.format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4573,15 +4591,17 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             , cubemapData.passData.layout, cubemapData.passData.pipelineLayout, cubemapData.passData.pipeline, cubemapData.passData.renderPass);
     }
 
-    void VulkanBase::prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData,VkFormat format)
+    void VulkanBase::prepareIBL(std::string vertShaderPath, std::string fragShaderPath
+        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers)
     {
         //レンダリングの結果の出力用のバッファの作成
         for (auto& attachment : passData.imageAttachment)
         {
-            createImage(passData.width, passData.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
+            createImage(passData.width, passData.height, mipmapLevel, VK_SAMPLE_COUNT_1_BIT, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
-            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+
+            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, mipmapLevel, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, passData.sampler);
@@ -4655,6 +4675,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             }
         }
 
+        for (int i = 0; i < static_cast<int>(mappedBuffers.size()); i++)
+        {
+            createUniformBuffer(1, &mappedBuffers[i], sizeof(MatricesUBO));
+        }
+
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
         layoutBindings[0].binding = 0;
         layoutBindings[0].descriptorCount = 1;
@@ -4698,7 +4723,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             //キューブマッピングで使う行列のバッファを流用する
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cubemapData.mappedBuffers[i].uniformBuffer;
+            bufferInfo.buffer = mappedBuffers[i].uniformBuffer;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(MatricesUBO);
 
@@ -4738,17 +4763,17 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //レンダリングの結果の出力用のバッファの作成
         for (int i = 0; i < iblSpecular.imageAttachment.size(); i++)
         {
-            createImage(iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], 1, VK_SAMPLE_COUNT_1_BIT, format,
+            createImage(iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], iblSpecular.mipmapLevelSize[i % iblSpecular.mipmapLevel], 1, VK_SAMPLE_COUNT_1_BIT, iblSpecular.format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, iblSpecular.imageAttachment[i].image, iblSpecular.imageAttachment[i].memory);
             iblSpecular.imageAttachment[i].view =
-                createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+                createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, iblSpecular.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, iblSpecular.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = format;
+        attachmentDescription.format = iblSpecular.format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4819,6 +4844,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             {
                 throw std::runtime_error("failed create frame buffer");
             }
+        }
+
+        for (int i = 0; i < iblSpecular.mappedBuffers.size(); i++)
+        {
+            createUniformBuffer(1, &iblSpecular.mappedBuffers[i], sizeof(MatricesUBO));
         }
 
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
@@ -4902,6 +4932,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //6枚のテクスチャを作成して、キューブマップを作成
     void VulkanBase::createSamplerCube2D(OffScreenPass& passData,std::vector<MappedBuffer>& mappedBuffers)
     {
+        auto c = vkResetFences(device, 1, &inFlightFences[0]);
+        if (c != VK_SUCCESS)
+        {
+            throw std::runtime_error("aa");
+        }
+
+        auto e = vkResetCommandBuffer(commandBuffers[0], 0);
+        if (e != VK_SUCCESS)
+        {
+            throw std::runtime_error("AA");
+        }
+
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -4912,34 +4954,33 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
         for (int i = 0; i < CUBEMAP_FACE_COUNT; i++)
         {
-            {//カメラを立方体の内側から、6つの面を映し出すように、ビュー行列を更新していく
+            //カメラを立方体の内側から、6つの面を映し出すように、ビュー行列を更新していく
 
-                MatricesUBO ubo;
-                ubo.proj = glm::perspective(glm::radians(90.0f),1.0f, 0.1f, 100.0f);
-                switch (i)
-                {
-                case CUBEMAP_FACE_FRONT:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    break;
-                case CUBEMAP_FACE_BACK:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    break;
-                case CUBEMAP_FACE_RIGHT:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    break;
-                case CUBEMAP_FACE_LEFT:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    break;
-                case CUBEMAP_FACE_TOP:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                    break;
-                case CUBEMAP_FACE_BOTTOM:
-                    ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-                    break;
-                }
-
-                memcpy(mappedBuffers[i].uniformBufferMapped, &ubo, sizeof(MatricesUBO));
+            MatricesUBO ubo{};
+            ubo.proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+            switch (i)
+            {
+            case CUBEMAP_FACE_FRONT:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                break;
+            case CUBEMAP_FACE_BACK:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                break;
+            case CUBEMAP_FACE_RIGHT:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                break;
+            case CUBEMAP_FACE_LEFT:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                break;
+            case CUBEMAP_FACE_TOP:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                break;
+            case CUBEMAP_FACE_BOTTOM:
+                ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+                break;
             }
+
+            memcpy(mappedBuffers[i].uniformBufferMapped, &ubo, sizeof(MatricesUBO));
 
             VkRenderPassBeginInfo renderPassInfo{};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -4958,7 +4999,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
                 , passData.width, passData.width, commandBuffers[0], i, passData.descriptorSets
-                ,passData.pipelineLayout,passData.pipeline);
+                , passData.pipelineLayout, passData.pipeline);
 
             vkCmdEndRenderPass(commandBuffers[0]);
         }
@@ -4967,26 +5008,29 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to record command buffer!");
         }
 
-        vkResetFences(device, 1, &inFlightFences[0]);
-
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submitInfo.waitSemaphoreCount = 0;
         submitInfo.pWaitSemaphores = nullptr;
-        submitInfo.pWaitDstStageMask = nullptr;
+        submitInfo.pWaitDstStageMask = waitStages.data();
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[0];
         submitInfo.signalSemaphoreCount = 0;
         submitInfo.pSignalSemaphores = nullptr;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[0]) != VK_SUCCESS) {
+        auto b = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[0]);
+        if (b != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
-        vkWaitForFences(device, 1, &inFlightFences[0], VK_TRUE, UINT64_MAX);
+        auto a = vkWaitForFences(device, 1, &inFlightFences[0], VK_TRUE, UINT64_MAX);
+        if (a != VK_SUCCESS)
+        {
+            throw std::runtime_error("wait failed");
+        };
     }
 
     //specular用のSamplerCubeを作る関数
@@ -5007,7 +5051,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             {//カメラを立方体の内側から、6つの面を映し出すように、ビュー行列を更新していく
 
-                MatricesUBO ubo;
+                MatricesUBO ubo{};
                 ubo.proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
                 switch (i)
                 {
@@ -5076,7 +5120,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submitInfo.waitSemaphoreCount = 0;
         submitInfo.pWaitSemaphores = nullptr;
-        submitInfo.pWaitDstStageMask = nullptr;
+        submitInfo.pWaitDstStageMask = waitStages.data();
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[0];
@@ -5103,7 +5147,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         Storage* storage = Storage::GetInstance();
 
         //一つの面のみレンダリングする
-        MatricesUBO ubo;
+        MatricesUBO ubo{};
         ubo.proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
         ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(MatricesUBO));
@@ -5199,7 +5243,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    void VulkanBase::createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount,uint32_t width,uint32_t height,uint32_t mipLevel)
+    void VulkanBase::createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount
+        ,uint32_t width,uint32_t height,uint32_t mipLevel,VkFormat format)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -5221,7 +5266,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to create image!");
         }
 
-        VkMemoryRequirements memRequirements;
+        VkMemoryRequirements memRequirements{};
         vkGetImageMemoryRequirements(device, dstTextureData->image, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo{};
@@ -5239,6 +5284,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //キューブマップの作成
     void VulkanBase::setCubeMapModel(std::shared_ptr<Model> cubemap)
     {
+        cubemapData.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
         prepareCubemapTextures();//キューブマッピングの用意
 
         /*頂点、インデックスバッファーを持たせる*/
@@ -5263,17 +5310,19 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     for (int i = 0; i < CUBEMAP_FACE_COUNT; i++)
                     {
                         transitionImageLayout(cubemapData.passData.imageAttachment[i].image,
-                            format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                            cubemapData.format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
                     }
                 }
 
                 cubemapData.multiTexture->mipLevel = calcMipMapLevel(cubemapImageSize, cubemapImageSize);
 
                 {//6つのレイヤーを持つテクスチャデータを作成
-                    createMultiLayerTexture(cubemapData.multiTexture, CUBEMAP_FACE_COUNT, cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel);
+                    createMultiLayerTexture(cubemapData.multiTexture, CUBEMAP_FACE_COUNT
+                        , cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel,cubemapData.format);
 
                     //画像のすべてのレイヤーを移動させる
-                    transitionImageLayout(cubemapData.multiTexture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    transitionImageLayout(cubemapData.multiTexture->image, cubemapData.format
+                        , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
                     std::vector<VkImage> srcImages(CUBEMAP_FACE_COUNT);
                     for (uint32_t i = 0;i < cubemapData.passData.imageAttachment.size();i++)
@@ -5283,12 +5332,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                     copyImageToMultiLayerImage(srcImages.data(), static_cast<uint32_t>(srcImages.size())
                         , cubemapData.passData.width, cubemapData.passData.height, cubemapData.multiTexture->image);
 
-                    generateMipmaps(cubemapData.multiTexture->image, format, cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    generateMipmaps(cubemapData.multiTexture->image, cubemapData.format
+                        , cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
                 }
             }
 
             //ビューをテクスチャキューブに設定
-            cubemapData.multiTexture->view = createImageView(cubemapData.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, format, VK_IMAGE_ASPECT_COLOR_BIT
+            cubemapData.multiTexture->view = createImageView(cubemapData.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, cubemapData.format, VK_IMAGE_ASPECT_COLOR_BIT
                 , cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
             createTextureSampler(cubemapData.multiTexture);
@@ -5376,8 +5426,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createIBL()
     {
         //diffuse
+        iblDiffuse.format = cubemapData.format;
         createIBLDiffuse();
         //specular
+        iblSpecularReflection.format = cubemapData.format;
         createIBLSpecular();
     }
 
@@ -5389,21 +5441,22 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblDiffuse.fragShaderPath = "shaders/calcDiffuse.frag.spv";
 
         //オフスクリーンレンダリング用のフレーム数を作成する
-        iblDiffuse.passData.setFrameCount(CUBEMAP_FACE_COUNT);
+        iblDiffuse.setFrameCount(CUBEMAP_FACE_COUNT);
         //テクスチャのサイズ設定
         iblDiffuse.setRenderSize(IBL_MAP_SIZE);
 
         //ミップマップレベルの計算
-        iblDiffuse.setMipmapLevel(calcMipMapLevel(iblDiffuse.size, iblDiffuse.size));
+        iblDiffuse.setMipmapLevel(1);
 
         //diffuse用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath, iblDiffuse.passData, format);
+        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath
+            , iblDiffuse.passData, iblDiffuse.format,iblDiffuse.mipmapLevel,iblDiffuse.mappedBuffers);
 
         //SamperCubeを作成する
-        createSamplerCube2D(iblDiffuse.passData, cubemapData.mappedBuffers);
+        createSamplerCube2D(iblDiffuse.passData, iblDiffuse.mappedBuffers);
 
         //6つの視点の画像をまとめて、SamplerCubeを作成する
-        createCubeMapTextureFromImages(iblDiffuse.size, iblDiffuse.multiLayerTexture, iblDiffuse.passData.imageAttachment);
+        createCubeMapTextureFromImages(iblDiffuse.size, iblDiffuse.mipmapLevel, iblDiffuse.multiLayerTexture, iblDiffuse.passData.imageAttachment, iblDiffuse.format);
 
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
         createIBLDescriptor(iblDiffuse.multiLayerTexture, iblDiffuse.mainPassLayout, iblDiffuse.descriptorSet);
@@ -5427,15 +5480,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //テクスチャのサイズの設定
         iblSpecularReflection.setRenderSize(IBL_MAP_SIZE);
 
+        //オフスクリーンレンダリングのフレーム数を設定する
+        iblSpecularReflection.setFrameCount(CUBEMAP_FACE_COUNT);
+
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
         prepareIBL(iblSpecularReflection);
 
         //6つの視点からの立方体の内側をレンダリングして、6つの視点それぞれの画像をミップマップの数だけ作成
-        createSamplerCube2D(iblSpecularReflection, cubemapData.mappedBuffers);
+        createSamplerCube2D(iblSpecularReflection, iblSpecularReflection.mappedBuffers);
 
         //6つの視点の画像をまとめて、SamplerCubeを作成する
         createCubeMapTextureFromImages(iblSpecularReflection.size, iblSpecularReflection.multiLayerTexture
-            , iblSpecularReflection.imageAttachment, iblSpecularReflection.mipmapLevelSize);
+            , iblSpecularReflection.imageAttachment, iblSpecularReflection.mipmapLevelSize,iblSpecularReflection.format);
 
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
         createIBLDescriptor(iblSpecularReflection.multiLayerTexture, iblSpecularReflection.mainPassLayout, iblSpecularReflection.descriptorSet);
@@ -5452,13 +5508,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         iblSpecularBRDF.setRenderSize(IBL_MAP_SIZE);
 
         //IBLのspeuclarのBRDFでは、立方体の一面のみレンダリングすればいい
-        iblSpecularBRDF.passData.setFrameCount(1);
+        iblSpecularBRDF.setFrameCount(1);
 
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath, iblSpecularBRDF.passData, VK_FORMAT_R16G16B16A16_SFLOAT);
+        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath
+            , iblSpecularBRDF.passData, VK_FORMAT_R16G16B16A16_SFLOAT,1,iblSpecularBRDF.mappedBuffers);
 
         //一つの視点のみから立方体の面をレンダリングして、2DのLUTを作成する
-        createLUT(iblSpecularBRDF, cubemapData.mappedBuffers[0]);
+        createLUT(iblSpecularBRDF, iblSpecularBRDF.mappedBuffers[0]);
 
         //レンダリングした画像をシェーダで読み取るためのテクスチャに変換する
         transitionImageLayout(iblSpecularBRDF.passData.imageAttachment[0].image, VK_FORMAT_R16G16B16A16_SFLOAT
@@ -5470,23 +5527,22 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //6つの画像を一つの画像にまとめて、SamplerCubeを作る
-    void VulkanBase::createCubeMapTextureFromImages(uint32_t texSize, TextureData* multiLayerTexture
-        , std::vector<FrameBufferAttachment>& imageAttachment)
+    void VulkanBase::createCubeMapTextureFromImages(uint32_t texSize,uint32_t srcTextureMipmapLevel, TextureData* multiLayerTexture
+        , std::vector<FrameBufferAttachment>& imageAttachment,VkFormat format)
     {
         //6つのレイヤーをもつ画像を作る
-        createMultiLayerTexture(multiLayerTexture, CUBEMAP_FACE_COUNT, texSize, texSize, multiLayerTexture->mipLevel);
+        createMultiLayerTexture(multiLayerTexture, CUBEMAP_FACE_COUNT, texSize, texSize, multiLayerTexture->mipLevel,format);
 
         //レンダリングした6枚の画像を転送用のレイアウトに変更する
         for (int i = 0; i < imageAttachment.size(); i++)
         {
             transitionImageLayout(imageAttachment[i].image,
-                format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcTextureMipmapLevel, 1);
         }
 
         //SamplerCubeの画像のすべてのレイヤーを移動させる
         transitionImageLayout(multiLayerTexture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             , multiLayerTexture->mipLevel, CUBEMAP_FACE_COUNT);
-
 
         //今まで作成した解像度の違う画像を、同一の視点の画像のミップマップとして格納する
         //同じ視点のレンダリング画像を集めて、それをミップマップとしてまとめている
@@ -5531,10 +5587,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
     //6つの画像を一つの画像にまとめて、SamplerCubeを作る
     void VulkanBase::createCubeMapTextureFromImages(uint32_t texSize, TextureData* multiLayerTexture
-        , std::vector<FrameBufferAttachment>& imageAttachment, std::vector<uint32_t>& mipmapLevelSize)
+        , std::vector<FrameBufferAttachment>& imageAttachment, std::vector<uint32_t>& mipmapLevelSize,VkFormat format)
     {
         //6つのレイヤーをもつ画像を作る
-        createMultiLayerTexture(multiLayerTexture, CUBEMAP_FACE_COUNT, texSize, texSize, multiLayerTexture->mipLevel);
+        createMultiLayerTexture(multiLayerTexture, CUBEMAP_FACE_COUNT, texSize, texSize, multiLayerTexture->mipLevel,format);
 
         //レンダリングした6枚の画像を転送用のレイアウトに変更する
         for (int i = 0; i < imageAttachment.size(); i++)

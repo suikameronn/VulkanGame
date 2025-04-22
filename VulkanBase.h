@@ -39,7 +39,8 @@ extern GLFWwindow* window;
 #define CUBEMAP_FACE_BACK 5
 
 //IBL用のテクスチャのサイズ
-#define IBL_MAP_SIZE 512
+//サイズを512以上にするとクラッシュする
+#define IBL_MAP_SIZE 256
 
 //VkDescriptorSetの確保できる数
 #define MAX_VKDESCRIPTORSET 1000
@@ -119,6 +120,7 @@ struct ShadowMapUBO
 
 //通常のレンダリング用のuniform buffer
 struct MatricesUBO {
+    glm::vec3 scale;//uv座標調整用
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
@@ -289,6 +291,17 @@ struct IBLSpecularBRDF
     //specularとspecular用のコンピュートシェーダへのパス
     std::string vertShaderPath, fragShaderPath;
 
+    //バッファの配列
+    std::vector<MappedBuffer> mappedBuffers;
+
+    //オフスクリーンレンダリングのフレーム数を設定する
+    void setFrameCount(int frameCount)
+    {
+        mappedBuffers.resize(frameCount);
+
+        passData.setFrameCount(frameCount);
+    }
+
     //レンダリングの出力先のサイズを設定
     void setRenderSize(uint32_t s)
     {
@@ -304,12 +317,21 @@ struct IBLSpecularBRDF
         passData.destroy(device);
 
         vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
+
+
+        for (auto mappedBuffer : mappedBuffers)
+        {
+            mappedBuffer.destroy(device);
+        }
     }
 };
 
 //IBLのspecularの鏡面反射部分用の構造体
 struct IBLSpecularReflection
 {
+    //画像フォーマット
+    VkFormat format;
+
     //画像のサイズ
     uint32_t size;
 
@@ -339,9 +361,18 @@ struct IBLSpecularReflection
 
     VkDescriptorSet descriptorSet;
 
+    //バッファの配列
+    std::vector<MappedBuffer> mappedBuffers;
+
     IBLSpecularReflection()
     {
         multiLayerTexture = new TextureData();
+    }
+
+    //オフスクリーンレンダリングのフレーム数を設定する
+    void setFrameCount(int frameCount)
+    {
+        mappedBuffers.resize(frameCount);
     }
 
     void setRenderSize(uint32_t size)
@@ -398,6 +429,12 @@ struct IBLSpecularReflection
         {
             vkDestroyRenderPass(device, pass, nullptr);
         }
+
+
+        for (auto mappedBuffer : mappedBuffers)
+        {
+            mappedBuffer.destroy(device);
+        }
     }
 };
 
@@ -428,9 +465,20 @@ struct IBLDiffuse
     //diffuseとspecular用のコンピュートシェーダへのパス
     std::string vertShaderPath,fragShaderPath;
 
+    //バッファの配列
+    std::vector<MappedBuffer> mappedBuffers;
+
     IBLDiffuse()
     {
         multiLayerTexture = new TextureData();
+    }
+
+    //オフスクリーンレンダリングのフレーム数を設定する
+    void setFrameCount(int frameCount)
+    {
+        mappedBuffers.resize(frameCount);
+
+        passData.setFrameCount(frameCount);
     }
 
     void setMipmapLevel(uint32_t level)
@@ -456,12 +504,20 @@ struct IBLDiffuse
         passData.destroy(device);
 
         vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
+
+        for (auto mappedBuffer : mappedBuffers)
+        {
+            mappedBuffer.destroy(device);
+        }
     }
 };
 
 //キューブマップ作成用の構造体
 struct CubemapData
 {
+    //画像フォーマット
+    VkFormat format;
+
     //キューブマップ作成時のビュー行列
     glm::mat4 view;
     //キューブマップ作成時のビュー行列 視野角を度数法で90度に設定
@@ -683,11 +739,6 @@ private:
 
     ShadowMapData shadowMapData;//シャドウマップ用のデータ
 
-    //void setUpComputingShader();
-
-    //通常のレンダリングで使う、descriptorSetLayoutを用意する
-    void prepareModelDescLayouts();
-
     //ゲーム終了時にデータのgpu上のデータをすべて破棄する
     void cleanup();
     //スワップチェーンの破棄
@@ -759,16 +810,16 @@ private:
     void copyImageToMultiLayerImage(VkImage* srcImages, uint32_t imageCount, uint32_t width, uint32_t height, VkImage& dstImage);
 
     //画像からテクスチャ画像の作成
-    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image);//ImageDataからVkImageを作成
+    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image, VkFormat format);//ImageDataからVkImageを作成
     void createTextureImage();//空のテクスチャを作成
-    void createTextureImage(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのマテリアルにテクスチャ用データを作成
+    void createTextureImage(std::shared_ptr<GltfModel> gltfModel, VkFormat format);//gltfモデルのマテリアルにテクスチャ用データを作成
     //ミップマップ画像の作成
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels,uint32_t layerCount);
 
     //テクスチャのビューの作成
-    void createTextureImageView(TextureData* textureData);//デフォルトのテクスチャのビューを作成
+    void createTextureImageView(TextureData* textureData, VkFormat format);//デフォルトのテクスチャのビューを作成
     void createTextureImageView();//空のテクスチャのビューを作成
-    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel);//gltfモデルのテクスチャのビューを作成
+    void createTextureImageView(std::shared_ptr<GltfModel> gltfModel,VkFormat format);//gltfモデルのテクスチャのビューを作成
     
     //テクスチャのサンプラーの作成
     void createTextureSampler(TextureData* textureData);//デフォルトのテクスチャのサンプラーの作成
@@ -922,7 +973,7 @@ private:
     //キューブマップ用のテクスチャを作成するためのデータを用意
     void prepareCubemapTextures();
     //キューブマップ用の複数のレイヤーを持つテクスチャデータを作成する
-    void createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount, uint32_t width, uint32_t height, uint32_t mipLevel);
+    void createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount, uint32_t width, uint32_t height, uint32_t mipLevel, VkFormat format);
     //6枚のテクスチャを作成して、キューブマップを作成
     void createSamplerCube2D(OffScreenPass& passData, std::vector<MappedBuffer>& mappedBuffers);
     void createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers);
@@ -936,7 +987,8 @@ private:
     //IBL用のテクスチャを作成
     void createIBL();
     //IBL作成用のオフスクリーンレンダリングの準備をする
-    void prepareIBL(std::string vertShaderPath, std::string fragShaderPath,OffScreenPass& passData,VkFormat format);
+    void prepareIBL(std::string vertShaderPath, std::string fragShaderPath
+        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers);
     void prepareIBL(IBLSpecularReflection& iblSPeuclar);
     //IBLのdiffuseテクスチャを作成
     void createIBLDiffuse();
@@ -947,10 +999,10 @@ private:
     //IBLのspecularのBRDFのテクスチャを作成
     void createIBLSpecularBRDF();
     //6つの画像を一つの画像にまとめて、SamplerCubeを作る
+    void createCubeMapTextureFromImages(uint32_t texSize, uint32_t srcTextureMipmapLevel, TextureData* multiLayerTexture
+        , std::vector<FrameBufferAttachment>& imageAttachment, VkFormat format);
     void createCubeMapTextureFromImages(uint32_t texSize, TextureData* multiLayerTexture
-        , std::vector<FrameBufferAttachment>& imageAttachment);
-    void createCubeMapTextureFromImages(uint32_t texSize, TextureData* multiLayerTexture
-        , std::vector<FrameBufferAttachment>& imageAttachment, std::vector<uint32_t>& mipmapLevelSize);
+        , std::vector<FrameBufferAttachment>& imageAttachment, std::vector<uint32_t>& mipmapLevelSize, VkFormat format);
 
     //IBL用のDescriptorSetの用意
     void createIBLDescriptor(TextureData* samplerCube,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);

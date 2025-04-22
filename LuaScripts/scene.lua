@@ -1,18 +1,20 @@
 --Modelオブジェクトの作成
 local model = glueCreateModel()
 --Modelオブジェクトにgltfモデルをセット
-glueSetGltfModel(model,"models/mountain_terrain.glb")
+glueSetGltfModel(model,"models/concrete.glb")
 --初期座標の設定
-glueSetPos(model,0.0,500.0,0.0)
+glueSetPos(model,0.0,0.0,0.0)
 --スケールの設定
-glueSetScale(model,10.0,10.0,10.0)
+glueSetScale(model,100.0,10.0,100.0)
 --回転の設定
 glueSetRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
 --第二引数として、衝突解消時、このModelも動かすかどうかを決める
 --このModelは床のため動かさない、よってfalse
---glueSetAABBColider(model,false)
+glueSetAABBColider(model,false)
 
+
+--[[
 local model2 = glueCreateModel()
 glueSetGltfModel(model2,"models/leather.glb")
 glueSetPos(model2,-250.0,0.0,0.0)
@@ -71,6 +73,8 @@ glueSetScale(spineFloor3,50.0,10.0,50.0)
 glueSetAABBColider(spineFloor3,false)
 glueSetLuaPath(spineFloor3,"LuaScripts/rotate_floor.lua")
 glueSetDelayStartLua(spineFloor3,480)
+
+--]]
 
 --プレイヤーの作成
 local player = glueCreatePlayer()

@@ -2,7 +2,7 @@
 
 PhysicBase::PhysicBase()
 {
-	gravity = glm::vec3(0.0, -0.0f, 0.0f);
+	gravity = glm::vec3(0.0, -0.3f, 0.0f);
 
 	velocity = glm::vec3(0.0f);
 }

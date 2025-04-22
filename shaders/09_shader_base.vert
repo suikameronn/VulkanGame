@@ -1,6 +1,7 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
+    vec3 scale;
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -74,8 +75,8 @@ void main() {
 
     outWorldPos = locPos.xyz / locPos.w;
 
-    outUV0 = inTexCoord1;
-    outUV1 = inTexCoord2;
+    outUV0 = inTexCoord1 * matricesUBO.scale.xy;
+    outUV1 = inTexCoord2 * matricesUBO.scale.xy;
 
     camPos = vec3(matricesUBO.camPos);
 

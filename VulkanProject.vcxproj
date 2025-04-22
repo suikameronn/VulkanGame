@@ -115,16 +115,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;EasyGifReader</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DisableSpecificWarnings>4005</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
