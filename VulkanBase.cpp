@@ -4048,7 +4048,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
             attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1,1);
         }
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, shadowMapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};

@@ -98,6 +98,7 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "glueSetStartPoint", glueSceneFunction::glueSetStartPoint);//初期座標の設定
 	lua_register(lua, "glueSetLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
 	lua_register(lua, "glueSetHDRIMap", glueSceneFunction::glueSetHDRIMap);//HDRI画像の設定
+	lua_register(lua, "glueSetUVScale", glueSceneFunction::glueSetUVScale);//uvを調整するようにして、テクスチャの引き延ばしを防ぐ
 }
 
 //初期座標の設定

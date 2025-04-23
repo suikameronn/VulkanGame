@@ -75,8 +75,8 @@ void main() {
 
     outWorldPos = locPos.xyz / locPos.w;
 
-    outUV0 = inTexCoord1 / matricesUBO.scale.xy;
-    outUV1 = inTexCoord2 / matricesUBO.scale.xy;
+    outUV0 = inTexCoord1 * matricesUBO.scale.xy;
+    outUV1 = inTexCoord2 * matricesUBO.scale.xy;
 
     camPos = vec3(matricesUBO.camPos);
 

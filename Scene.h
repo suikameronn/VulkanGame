@@ -576,4 +576,21 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 
 		return 0;
 	}
+
+	//uvを調整するようにして、テクスチャの引き延ばしを防ぐ
+	static int glueSetUVScale(lua_State* lua)
+	{
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
+
+		switch (obj->getObjNum())
+		{
+		case 1:
+		case 2:
+			Model * model = dynamic_cast<Model*>(obj);
+			model->setUVScale();
+			break;
+		}
+
+		return 0;
+	}
 };

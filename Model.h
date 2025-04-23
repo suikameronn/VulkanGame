@@ -33,7 +33,7 @@ protected:
 	std::unique_ptr<PhysicBase> physicBase;
 
 	//uvにスケールを加え、テクスチャの引き延ばしを防ぐ
-	bool setUVScale;
+	bool uvScale;
 
 	//gltfモデルへの参照
 	std::shared_ptr<GltfModel> gltfModel;
@@ -119,8 +119,8 @@ public:
 
 	void sendPosToChildren();//子オブジェクトに親の移動を反映
 
-	void setUvScale(bool uv) { setUVScale = uv; }//uvにスケールを加え、テクスチャの引き延ばしを防ぐよう設定する
-	bool applyScaleUV() { return setUVScale; }
+	void setUVScale() { uvScale = true; }//uvにスケールを加え、テクスチャの引き延ばしを防ぐよう設定する
+	bool applyScaleUV() { return uvScale; }
 
 	void setgltfModel(std::shared_ptr<GltfModel> model);//3DCGモデルを登録
 	GltfNode* getRootNode() { return gltfModel->getRootNode(); }

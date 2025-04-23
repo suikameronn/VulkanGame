@@ -214,6 +214,17 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
         processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);//プリミティブの読み取り
     }
 
+    glm::vec3 tMin = glm::vec3(FLT_MAX);
+    glm::vec3 tMax = glm::vec3(-FLT_MAX);
+    for (int i = 0; i < mesh->vertices.size(); i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            std::min(tMin[j], mesh->vertices[i].pos[j]);
+            std::min(tMax[j], mesh->vertices[i].pos[j]);
+        }
+    }
+
     model->primitiveCount += static_cast<uint32_t>(gltfMesh.primitives.size());
 
     currentNode->meshArray.push_back(mesh);

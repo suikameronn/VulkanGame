@@ -12,6 +12,7 @@ glueSetRotate(model,0.0,0.0,0.0)
 --第二引数として、衝突解消時、このModelも動かすかどうかを決める
 --このModelは床のため動かさない、よってfalse
 glueSetAABBColider(model,false)
+glueSetUVScale(model)
 
 
 --[[

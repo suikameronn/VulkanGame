@@ -5,6 +5,8 @@
 
 Model::Model()//3Dモデルを持つクラス
 {
+	uvScale = false;
+
 	scene = Scene::GetInstance();
 
 	objNum = ObjNum::MODEL;
@@ -42,6 +44,8 @@ Model::Model()//3Dモデルを持つクラス
 
 Model::Model(std::string luaScriptPath)
 {
+	uvScale = false;
+
 	tags.push_back(Tag::GROUND);
 	uniformBufferChange = true;
 

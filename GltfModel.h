@@ -143,14 +143,8 @@ struct Mesh
 	std::vector<uint32_t> indices;//インデックス配列
 	std::vector<Primitive> primitives;
 
-	BoundingBox aabb;
-	BoundingBox bb;
-
-	void setBoundingBox(glm::vec3 min, glm::vec3 max) {
-		bb.min = min;
-		bb.max = max;
-		bb.valid = true;
-	}
+	glm::vec3 min;
+	glm::vec3 max;
 };
 
 struct GltfNode
