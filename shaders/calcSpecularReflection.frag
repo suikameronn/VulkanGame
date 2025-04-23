@@ -53,6 +53,11 @@ vec3 ImportanceSampleGGX(vec2 Xi,vec3 normal,float roughness)
     return normalize(sampleVec);
 }
 
+vec4 linearToSrgb(vec4 srgbIn)//リニアからsRGBに変換
+{
+	return vec4(pow(srgbIn.xyz,vec3(1.0/2.2)),srgbIn.w);
+}
+
 void main() 
 {
     vec3 normal = normalize(inPos);
@@ -80,5 +85,6 @@ void main()
     }
 
     outColor = outColor / totalWeight;
+
     outColor.a = 1.0;
 }

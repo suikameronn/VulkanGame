@@ -32,6 +32,9 @@ protected:
 	//物理挙動用
 	std::unique_ptr<PhysicBase> physicBase;
 
+	//uvにスケールを加え、テクスチャの引き延ばしを防ぐ
+	bool setUVScale;
+
 	//gltfモデルへの参照
 	std::shared_ptr<GltfModel> gltfModel;
 
@@ -116,6 +119,9 @@ public:
 
 	void sendPosToChildren();//子オブジェクトに親の移動を反映
 
+	void setUvScale(bool uv) { setUVScale = uv; }//uvにスケールを加え、テクスチャの引き延ばしを防ぐよう設定する
+	bool applyScaleUV() { return setUVScale; }
+
 	void setgltfModel(std::shared_ptr<GltfModel> model);//3DCGモデルを登録
 	GltfNode* getRootNode() { return gltfModel->getRootNode(); }
 	std::shared_ptr<GltfModel> getGltfModel() { return gltfModel; }
@@ -138,7 +144,6 @@ public:
 	bool hasColider();
 	void setColider(bool isConvex);//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
-
 	
 	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal);
 

@@ -130,8 +130,6 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfƒ‚ƒfƒ‹‚ðÝ’è‚·‚é
 	min = gltfModel->initPoseMin;
 	max = gltfModel->initPoseMax;
 
-	//RTree::GetInstance()->insert(shared_from_this(),min,max);
-
 	animationNames.resize(model->animations.size());
 	int i = 0;
 	for (auto itr = model->animations.begin(); itr != model->animations.end(); itr++)

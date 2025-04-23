@@ -22,7 +22,7 @@
 #include <functional>
 #include<fstream>
 
-#define GLFW_INCLUDE_VULKAN
+#include<vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
 #include"Storage.h"

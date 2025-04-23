@@ -167,11 +167,11 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 baseColor,float roughness,float m
 
 	vec3 F = fresnelSchlickRoughness(max(dot(normal,view),0.0),f0,roughness);
 
-	vec3 irradiance = srgbToLinear(texture(diffuseMap,normal)).rgb;
+	vec3 irradiance = texture(diffuseMap,normal).rgb;
 	vec3 diffuse = irradiance * baseColor;
 
 	const float MAX_REFLECTION_LOD = 4.0;
-	vec3 prefilteredColor = srgbToLinear(textureLod(specularReflectionMap,reflection,roughness * MAX_REFLECTION_LOD)).rgb;
+	vec3 prefilteredColor = textureLod(specularReflectionMap,reflection,roughness * MAX_REFLECTION_LOD).rgb;
 	vec2 brdf = texture(specularBRDFMap,vec2(max(dot(normal,view), 0.0),roughness)).rg;
 	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 

@@ -16,11 +16,11 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
     //_CrtSetBreakAlloc(28744);
 
-    GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
-
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(gameManager->window_width, gameManager->window_height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+
+    GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
 
     gameManager->initGame();//ゲームループの開始
 
@@ -34,7 +34,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(gameManager->window_width, gameManager->window_height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);//ウィンドウの作成
 
     gameManager->initGame();//ゲームループの開始
 

@@ -164,7 +164,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_1;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -2377,7 +2377,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         MatricesUBO ubo{};
 
-        ubo.scale = model->scale;
+        if (model->applyScaleUV())
+        {
+            //モデルのスケールに合わせてuv座標を調整する
+            ubo.scale = model->scale;
+        }
+        else
+        {
+            ubo.scale = glm::vec3(1.0f);
+        }
         ubo.model = model->getTransformMatrix();
         ubo.view = camera->viewMat;
         ubo.proj = camera->perspectiveMat;
@@ -4040,7 +4048,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
             attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1,1);
         }
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, shadowMapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
@@ -4439,7 +4447,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
             attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, cubemapData.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, cubemapData.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
@@ -4603,7 +4611,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, mipmapLevel, 1);
         }
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
@@ -4769,7 +4777,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             iblSpecular.imageAttachment[i].view =
                 createImageView(iblSpecular.imageAttachment[i].image, VK_IMAGE_VIEW_TYPE_2D, iblSpecular.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
-        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
             VK_FILTER_LINEAR, VK_FILTER_LINEAR, iblSpecular.sampler);
 
         VkAttachmentDescription attachmentDescription{};

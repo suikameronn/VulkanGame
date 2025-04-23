@@ -13,6 +13,9 @@
 #include"FileManager.h"
 #include"UI.h"
 
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 720
+
 extern GLFWwindow* window;
 
 //fps§Œä‚È‚Ç‚ÌƒQ[ƒ€‘S‘Ì‚Ì§Œä‚ğ’S“–‚·‚é
@@ -42,8 +45,8 @@ private:
 
 public:
 
-	const int window_width = 800;
-	const int window_height = 600;
+	const int window_width = WINDOW_WIDTH;
+	const int window_height = WINDOW_HEIGHT;
 	const glm::mat4 uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
 
 	static GameManager* GetInstance()
