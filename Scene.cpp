@@ -27,6 +27,15 @@ Scene::~Scene()
 //初回フレームのみ実行 ステージ上のすべてのオブジェクトの初回フレーム時の設定を行う
 void Scene::initFrameSetting()
 {
+	Storage* storage = Storage::GetInstance();
+
+	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
+	FileManager::GetInstance()->addLoadModelList("models/cubemap.glb", cubemap.get());
+	storage->setCubeMapModel(cubemap);
+
+	//ModelクラスにgltfModelクラスを設定する
+	FileManager::GetInstance()->setGltfModel();
+
 	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの初期化処理
 	{
 		sceneModels[i]->initFrameSetting();//オブジェクトの初期化処理
@@ -86,7 +95,6 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "glueSetBaseColor", glueSceneFunction::glueSetBaseColor);//Diffuseカラーの設定
 	lua_register(lua, "glueBindCamera", glueSceneFunction::glueBindCamera);//カメラが追従するオブジェクトを設定する
 	lua_register(lua, "glueSetAABBColider", glueSceneFunction::glueSetAABBColider);//モデルにAABBコライダーを付ける
-	lua_register(lua, "glueSetConvexColider", glueSceneFunction::glueSetConvexColider);//モデルに凸包のコライダーを付ける
 	lua_register(lua, "glueSetColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
 	lua_register(lua, "glueSetDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
 	lua_register(lua, "glueSetGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
@@ -268,10 +276,6 @@ void Scene::setModels()
 void Scene::setLights()
 {
 	Storage* storage = Storage::GetInstance();
-
-	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
-	cubemap->setgltfModel(FileManager::GetInstance()->loadModel("models/cubemap.glb"));
-	storage->setCubeMapModel(cubemap);
 
 	for (std::shared_ptr<PointLight> pl : scenePointLights)
 	{

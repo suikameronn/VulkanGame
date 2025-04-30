@@ -13,14 +13,12 @@ void GameManager::initGame()//初期化設定
     setLoadUI();//ロードUIの設定
 
     bool load = false;
-    std::thread loadThread(&GameManager::drawLoading, this,std::ref(load));
+    drawLoading(load);
 
     load = createScene();//ステージの読み込み
 
-    if (loadThread.joinable())
-    {
-        loadThread.join();
-    }
+    //ロード画面描画の終了を待つ
+    ThreadPool::GetInstance()->stopMainThreadSingle();
 
     mainGameLoop();//ゲームループ
 }
@@ -45,34 +43,58 @@ void GameManager::setLoadUI()
 //ロードUIの表示
 void GameManager::drawLoading(bool& loadFinish)
 {
-    VulkanBase* vulkan = VulkanBase::GetInstance();
-    Storage* storage = Storage::GetInstance();
+    //別スレッドに渡す、引数用の変数
+    inputTypes settings(2);
+    settings[0] = &loadFinish;
+    settings[1] = frameDuration;
 
-    start = std::chrono::system_clock::now();//フレーム開始時間
-
-    Rotate2D rot2D;
-    rot2D.z = 0.0f;
-
-    while (!loadFinish)
-    {
-        storage->getLoadUI()->setRotate(rot2D);
-        storage->getLoadUI()->updateTransformMatrix();
-
-        vulkan->drawLoading();
-
-        rot2D.z++;
-
-        end = std::chrono::system_clock::now();//フレーム終了時間
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間計測
-        if (elapsed < frameDuration)
+    //ロード画面の描画(別スレッドで実行)
+    std::function<void(inputTypes&)> function = [](std::vector<std::any>& loadSettings)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//処理を停止する
-        }
-        start = std::chrono::system_clock::now();
-    }
+            //配列から設定を取得する
+            bool* loadFinish = nullptr;
+            float frameDuration = 0.0f;
+            ThreadPool* pool = ThreadPool::GetInstance();
+            pool->safeAnyCast(loadFinish, 0, loadSettings);
+            pool->safeAnyCast(frameDuration, 1, loadSettings);
 
-    //ロード画面レンダリングの後始末をする
-    vulkan->stopLoading();
+            VulkanBase* vulkan = VulkanBase::GetInstance();
+            Storage* storage = Storage::GetInstance();
+
+            auto start = std::chrono::system_clock::now();//フレーム開始時間
+
+            Rotate2D rot2D;
+            rot2D.z = 0.0f;
+
+            while (!*loadFinish)
+            {
+                //UIの回転行列を計算
+                storage->getLoadUI()->setRotate(rot2D);
+                storage->getLoadUI()->updateTransformMatrix();
+
+                //UIの描画
+                vulkan->drawLoading();
+
+                //UIの回転
+                rot2D.z++;
+
+                //fps調整
+                auto end = std::chrono::system_clock::now();//フレーム終了時間
+                float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());//フレーム間時間計測
+                if (elapsed < frameDuration)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//処理を停止する
+                }
+                start = std::chrono::system_clock::now();
+            }
+
+            //ロード画面レンダリングの後始末をする
+            vulkan->stopLoading();
+        };
+
+    //別スレッドで実行開始
+    std::pair<inputTypes, std::function<void(inputTypes&)>> pair = { settings,function };
+    ThreadPool::GetInstance()->runSingle(pair);
 }
 
 bool GameManager::createScene()//luaからステージの様子を読み込む

@@ -38,6 +38,9 @@ protected:
 	//gltfモデルへの参照
 	std::shared_ptr<GltfModel> gltfModel;
 
+	//コライダーを持つかどうか
+	bool hasColiderFlag;
+
 	//mvp行列用のバッファー
 	MappedBuffer modelViewMappedBuffer;
 	//gltfモデルの頂点関連用のバッファ
@@ -142,7 +145,7 @@ public:
 	bool isMovable;
 	//コライダーを持っているかどうか
 	bool hasColider();
-	void setColider(bool isConvex);//コライダーの設定
+	void setColider();//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
 	
 	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal);

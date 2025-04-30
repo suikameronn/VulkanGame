@@ -188,6 +188,7 @@
     <ClInclude Include="RTree.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="VulkanBase.h" />
   </ItemGroup>

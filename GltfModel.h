@@ -165,7 +165,6 @@ struct GltfNode
 	DescriptorInfo descriptorInfo;
 
 	BoundingBox bvh;
-	BoundingBox aabb;
 	
 	GltfNode()
 	{

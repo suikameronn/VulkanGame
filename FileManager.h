@@ -10,6 +10,7 @@
 
 #include"EnumList.h"
 #include"Storage.h"
+#include"ThreadPool.h"
 
 #include<limits>
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -25,6 +26,10 @@ class FileManager
 private:
 	static FileManager* fileManager;
 
+	//スクリプトから指定された3Dモデルのファイルのリストと
+	//それを持たせるModelクラス
+	std::vector<std::pair<std::string, Model*>> loadModelList;
+
 	FileManager();
 
 	//埋め込められたgltfモデルを取得する
@@ -35,8 +40,6 @@ private:
 	glm::vec3 maxPos;
 	int vertexNum;
 	int indexNum;
-
-	//std::vector<GLTFOBJECT> loadAnimationFiles;
 
 	//与えられた文字列からファイルの名前のみを取得する
 	std::string splitFileName(std::string filePath);
@@ -65,8 +68,8 @@ private:
 	//埋め込まれたgltfモデルを取得する
 	void loadgltfModel(int id, void** ptr, int& size);
 
-	//gif画像を読み込む
-	void loadGif(std::string gifFilName);
+	//luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
+	std::shared_ptr<GltfModel> loadModel(std::string modelPath);
 
 public:
 	static FileManager* GetInstance()
@@ -93,8 +96,12 @@ public:
 		fileManager = nullptr;
 	}
 
-	//luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
-	std::shared_ptr<GltfModel> loadModel(std::string modelPath);
+	//あとで読み取るgltfファイルとそれを持たせるModelクラスをリストに加える
+	void addLoadModelList(std::string filePath, Model* model);
+
+	//Modelクラスにgltfクラスを送る
+	void setGltfModel();
+
 	//luaスクリプトからSceneクラスを介して呼び出される。新しい画像が求められたときのみ、解析処理をする
 	std::shared_ptr<ImageData> loadImage(std::string filePath);	
 };

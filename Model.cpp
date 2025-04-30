@@ -134,6 +134,11 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 	min = gltfModel->initPoseMin;
 	max = gltfModel->initPoseMax;
 
+	if (hasColiderFlag)
+	{
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel));
+	}
+
 	animationNames.resize(model->animations.size());
 	int i = 0;
 	for (auto itr = model->animations.begin(); itr != model->animations.end(); itr++)
@@ -258,28 +263,14 @@ void Model::calcMBR()
 }
 
 //コライダーの設定
-void Model::setColider(bool isConvex)
+void Model::setColider()
 {
-	if (isConvex)
-	{
-		colider = std::shared_ptr<Colider>(new Colider(gltfModel));
-	}
-	else
-	{
-		colider = std::shared_ptr<Colider>(new Colider(gltfModel->initPoseMin, gltfModel->initPoseMax));
-	}
+	hasColiderFlag = true;
 }
 
 bool Model::hasColider()
 {
-	if (colider)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return hasColiderFlag;
 }
 
 //カメラと子オブジェクト以外にも、自分の真上に載っているオブジェクトも追従させる

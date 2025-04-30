@@ -2329,7 +2329,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             AnimationUBO ubo;
 
             ubo.matrix = node->matrix;
-            if (node->skin && node->globalHasSkinNodeIndex > -1)
+            if (node->skin != nullptr && node->globalHasSkinNodeIndex > -1)
             {
                 ubo.boneMatrix = model->getJointMatrices(node->globalHasSkinNodeIndex);
             }

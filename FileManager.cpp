@@ -52,6 +52,45 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
     }
 }
 
+//Modelクラスに付与するgltfファイルとModelクラスのリストを作る
+void FileManager::addLoadModelList(std::string filePath, Model* model)
+{
+    loadModelList.push_back(std::pair<std::string,Model*>(filePath, model));
+}
+
+//ModelクラスにgltfModelクラスを設定する
+void FileManager::setGltfModel()
+{
+    /*
+    ThreadPool* pool = ThreadPool::GetInstance();
+
+    for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
+    {
+        inputTypes input(1);
+        input[0] = i;
+
+        std::function<void(inputTypes&)> loadModelFunc = [this](inputTypes& input)
+            {
+                ThreadPool* pool = ThreadPool::GetInstance();
+
+                int index;
+                pool->safeAnyCast(index, 0, input);
+
+                loadModelList[index].second->setgltfModel(loadModel(loadModelList[index].first));
+            };
+
+        pool->run({ input,loadModelFunc });
+    }
+
+    pool->waitUntilIdle();
+    */
+
+    for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
+    {
+        loadModelList[i].second->setgltfModel(loadModel(loadModelList[i].first));
+    }
+}
+
 //luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
 std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデルを返す
 {
@@ -70,6 +109,11 @@ std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデ
     std::string warning;
     bool binary = false;
     binary = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, modelPath);
+    if (!binary)
+    {
+        throw std::runtime_error("faile load file");
+    }
+
     const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//デフォルトシーンがあればそれを、なければ最初のシーン
 
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
@@ -220,10 +264,13 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     {
         for (int j = 0; j < 3; j++)
         {
-            std::min(tMin[j], mesh->vertices[i].pos[j]);
-            std::min(tMax[j], mesh->vertices[i].pos[j]);
+            tMin[j] = std::min(tMin[j], mesh->vertices[i].pos[j]);
+            tMax[j] = std::min(tMax[j], mesh->vertices[i].pos[j]);
         }
     }
+
+    mesh->min = tMin;
+    mesh->max = tMax;
 
     model->primitiveCount += static_cast<uint32_t>(gltfMesh.primitives.size());
 

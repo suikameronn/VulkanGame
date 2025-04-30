@@ -54,14 +54,6 @@ public:
 	}
 };
 
-struct ColiderData
-{
-	uint32_t skinIndex;
-	glm::mat4 nodeMatrix;
-	glm::ivec4 boneID;
-	glm::vec4 weight;
-};
-
 //当たり判定用のクラス
 class Colider
 {
@@ -79,9 +71,6 @@ private:
 	std::vector<glm::vec3> coliderVertices;
 	//座標変換を加える前のコライダーの頂点の座標
 	std::vector<glm::vec3> originalVertexPos;
-
-	//凸形状用のコライダー
-	std::vector<ColiderData> convexVertexData;
 
 	//コライダー描画用のインデックス
 	std::vector<uint32_t> coliderIndices;
@@ -130,13 +119,8 @@ private:
 	void setVertices(GltfNode* node, int& loadedVertexCount, int& loadedIndexCount);
 
 public:
-	//引数からAABBを計算する
-	Colider(glm::vec3 min,glm::vec3 max);
-	//引数から凸法からコライダーを作成
-	Colider(std::shared_ptr<GltfModel> model);
 
-	//凸法の形状かどうか
-	bool isConvex;
+	Colider(std::shared_ptr<GltfModel> model);
 
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings();
@@ -146,12 +130,6 @@ public:
 	glm::mat4 getScaleMat();
 	//Modelクラスの移動などをコライダーにも反映
 	void reflectMovement(glm::mat4& transform);
-	void reflectMovement(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
-
-	/*
-	int getSatIndicesSize() { return static_cast<int>(satIndices.size()); }
-	uint32_t* getSatIndicesPointer() { return satIndices.data(); }
-	*/
 
 	//サポート写像を求める(SAT用)
 	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
@@ -183,4 +161,22 @@ public:
 	int getColiderIndicesSize();
 	//コライダー用のgpu上のバッファの破棄
 	void cleanupVulkan();
+};
+
+//メッシュ単位でのコライダー
+class MeshColiderNode :public Colider
+{
+private:
+	
+	int skinIndex;
+	int meshIndex;
+
+
+	//座標変換前のAABB
+	glm::vec3 srcMin, srcMax;
+
+public:
+
+	void reflectMovement(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+
 };
