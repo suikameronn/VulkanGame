@@ -14,77 +14,14 @@ glueSetRotate(model,0.0,0.0,0.0)
 glueSetAABBColider(model,false)
 glueSetUVScale(model)
 
-
---[[
-local model2 = glueCreateModel()
-glueSetGltfModel(model2,"models/leather.glb")
-glueSetPos(model2,-250.0,0.0,0.0)
-glueSetScale(model2,50.0,10.0,50.0)
-glueSetAABBColider(model2,false)
---Modelの行動パターン用のluaスクリプトの設定
-glueSetLuaPath(model2,"LuaScripts/wall1.lua")
-
-local bridge1 = glueCreateModel()
-glueSetGltfModel(bridge1,"models/leather.glb")
-glueSetPos(bridge1,-700.0,0.0,0.0)
-glueSetRotate(bridge1,0.0,0.0,0.0)
-glueSetScale(bridge1,280.0,10.0,50.0)
-glueSetAABBColider(bridge1,false)
-
-local model3 = glueCreateModel()
-glueSetGltfModel(model3,"models/leather.glb")
-glueSetPos(model3,-600.0,60.0,-15.0)
-glueSetScale(model3,50.0,50.0,50.0)
-glueSetAABBColider(model3,false)
-glueSetLuaPath(model3,"LuaScripts/wall2.lua")
-
-local model4 = glueCreateModel()
-glueSetGltfModel(model4,"models/leather.glb")
-glueSetPos(model4,-700.0,60.0,-5.0)
-glueSetScale(model4,50.0,50.0,50.0)
-glueSetAABBColider(model4,false)
-glueSetLuaPath(model4,"LuaScripts/wall2.lua")
-
-local model5 = glueCreateModel()
-glueSetGltfModel(model5,"models/leather.glb")
-glueSetPos(model5,-800.0,60.0,5.0)
-glueSetScale(model5,50.0,50.0,50.0)
-glueSetAABBColider(model5,false)
-glueSetLuaPath(model5,"LuaScripts/wall2.lua")
-
-local spineFloor1 = glueCreateModel()
-glueSetGltfModel(spineFloor1,"models/wood.glb")
-glueSetPos(spineFloor1,-1050.0,0.0,20.0)
-glueSetScale(spineFloor1,50.0,10.0,50.0)
-glueSetAABBColider(spineFloor1,false)
-glueSetLuaPath(spineFloor1,"LuaScripts/rotate_floor.lua")
-
-local spineFloor2 = glueCreateModel()
-glueSetGltfModel(spineFloor2,"models/wood.glb")
-glueSetPos(spineFloor2,-1225.0,0.0,20.0)
-glueSetScale(spineFloor2,50.0,10.0,50.0)
-glueSetAABBColider(spineFloor2,false)
-glueSetLuaPath(spineFloor2,"LuaScripts/rotate_floor.lua")
-glueSetDelayStartLua(spineFloor2,240)
-
-local spineFloor3 = glueCreateModel()
-glueSetGltfModel(spineFloor3,"models/wood.glb")
-glueSetPos(spineFloor3,-1375.0,0.0,20.0)
-glueSetScale(spineFloor3,50.0,10.0,50.0)
-glueSetAABBColider(spineFloor3,false)
-glueSetLuaPath(spineFloor3,"LuaScripts/rotate_floor.lua")
-glueSetDelayStartLua(spineFloor3,480)
-
---]]
-
 --プレイヤーの作成
 local player = glueCreatePlayer()
-glueSetGltfModel(player,"models/PlayerModel.glb")
-glueSetScale(player,10.0,10.0,10.0)
+glueSetGltfModel(player,"models/robot.glb")
+glueSetScale(player,30.0,30.0,30.0)
 glueSetAABBColider(player,true)
 glueSetColiderScale(player,1.0,1.0,0.3)
 --アイドル時に再生するアニメーションを指定
-glueSetDefaultAnimationName(player,"Idle")
+glueSetDefaultAnimationName(player,"Idle_gunMiddle")
 --このオブジェクトをカメラに追従させる
 glueBindCamera(player)
 glueSetLuaPath(player,"LuaScripts/player.lua")

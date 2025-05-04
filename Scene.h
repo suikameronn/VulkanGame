@@ -74,6 +74,11 @@ private:
 	//オブジェクトの接地判定などをリセット
 	void resetStatus();
 
+	//R木を使った当たり判定
+	void rtreeIntersect();
+	//シンプルな当たり判定
+	void intersect();
+
 	Scene();
 	~Scene();
 
@@ -334,9 +339,14 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		{
 		case 1:
 			Model * model = dynamic_cast<Model*>(obj);
-			model->scale.x = static_cast<float>(lua_tonumber(lua, -3));
-			model->scale.y = static_cast<float>(lua_tonumber(lua, -2));
-			model->scale.z = static_cast<float>(lua_tonumber(lua, -1));
+
+			glm::vec3 scale;
+			for (int i = 0; i < 3; i++)
+			{
+				scale[i] = static_cast<float>(lua_tonumber(lua, -3 + i));
+			}
+
+			model->scale = scale;
 			break;
 		}
 

@@ -72,3 +72,13 @@ bool Controller::getKey(int key)
 {
 	return glfwGetKey(window,key);
 }
+
+void Controller::getMousePos(double& x, double& y)
+{
+	glfwGetCursorPos(window, &x, &y);
+}
+
+bool Controller::getMouseButton(int mouseButton)
+{
+	return glfwGetMouseButton(window, mouseButton);
+}

@@ -103,6 +103,8 @@ public:
 	virtual void keyFun(int key, int scancode, int action, int mods);
 
 	bool getKey(int key);
+	void getMousePos(double& x, double& y);
+	bool getMouseButton(int mouseButton);
 
 protected:
 

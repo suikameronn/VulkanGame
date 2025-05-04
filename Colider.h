@@ -72,8 +72,10 @@ private:
 	//座標変換を加える前のコライダーの頂点の座標
 	std::vector<glm::vec3> originalVertexPos;
 
-	//コライダー描画用のインデックス
+	//コライダー当たり判定用用のインデックス
 	std::vector<uint32_t> coliderIndices;
+	//描画用のインデックス
+	std::vector<uint32_t> drawColiderIndices;
 	//SAT利用時のインデックス
 	std::vector<uint32_t> satIndices;
 
@@ -123,7 +125,7 @@ public:
 	Colider(std::shared_ptr<GltfModel> model);
 
 	//Modelクラスの初期座標から座標変換を適用する
-	void initFrameSettings();
+	void initFrameSettings(glm::vec3 initScale);
 	//コライダーのスケールを設定
 	glm::vec3 scale;
 	//コライダーのスケール行列を取得
@@ -159,24 +161,10 @@ public:
 	int* getColiderIndices();
 	//コライダーの頂点のインデックスのサイズを取得
 	int getColiderIndicesSize();
+	//描画用のインデックスのサイズを取得
+	int getDrawColiderIndicesSize() { return static_cast<int>(drawColiderIndices.size()); }
+	//描画用のインデックスを取得
+	uint32_t* getDrawColiderIndices() { return drawColiderIndices.data(); }
 	//コライダー用のgpu上のバッファの破棄
 	void cleanupVulkan();
-};
-
-//メッシュ単位でのコライダー
-class MeshColiderNode :public Colider
-{
-private:
-	
-	int skinIndex;
-	int meshIndex;
-
-
-	//座標変換前のAABB
-	glm::vec3 srcMin, srcMax;
-
-public:
-
-	void reflectMovement(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
-
 };

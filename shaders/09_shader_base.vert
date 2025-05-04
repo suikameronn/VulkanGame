@@ -12,6 +12,7 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(binding = 1) uniform animationUniformBufferObject
 {
+    mat4 nodeMatrix;
     mat4 matrix;
     mat4[128] boneMatrix;
     int boneCount;
@@ -24,11 +25,6 @@ layout(location = 3) in vec2 inTexCoord2;
 layout(location = 4) in vec3 inNormal;
 layout(location = 5) in ivec4 boneID1;
 layout(location = 6) in vec4 weight1;
-
-layout( push_constant ) uniform push_constant
-{
-    mat4 modelMatrix;
-} PushConstants;
 
 layout (location = 0) out vec3 outWorldPos;
 layout (location = 1) out vec3 outNormal;
@@ -56,8 +52,8 @@ void main() {
         weight1.z * animationUBO.boneMatrix[boneID1.z] +
         weight1.w * animationUBO.boneMatrix[boneID1.w];
 
-        locPos = matricesUBO.model * PushConstants.modelMatrix * skinMat * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix * skinMat))) * inNormal);
+        locPos = matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * animationUBO.nodeMatrix * skinMat))) * inNormal);
 
         outShadowCoords = matricesUBO.lightMVP[0] * locPos;
         outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
@@ -65,8 +61,8 @@ void main() {
     }
     else
     {
-        locPos = matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * PushConstants.modelMatrix))) * inNormal);
+        locPos = matricesUBO.model * animationUBO.nodeMatrix * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * animationUBO.nodeMatrix))) * inNormal);
 
         outShadowCoords = matricesUBO.lightMVP[0] * locPos;
         outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;

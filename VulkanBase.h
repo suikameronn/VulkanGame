@@ -23,7 +23,9 @@
 #include<fstream>
 
 #include<vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
+
+#include "GLFW/glfw3.h"
+#include "GLFW/glfw3native.h"
 
 #include"Storage.h"
 
@@ -132,6 +134,7 @@ struct MatricesUBO {
 //通常のレンダリングのアニメーション用の行列
 struct AnimationUBO
 {
+    alignas(16) glm::mat4 nodeMatrix;
     alignas(16) glm::mat4 matrix;
     alignas(16) std::array<glm::mat4, 128> boneMatrix;
     alignas(16) int boneCount;
@@ -142,12 +145,6 @@ struct MatricesUBO2D
 {
     glm::mat4 transformMatrix;
     glm::mat4 projection;
-};
-
-//gltfモデルのローカル空間へ移動するための行列
-struct PushConstantObj
-{
-    glm::mat4 modelMatrix;
 };
 
 //gltfモデルがテクスチャを持たなかったとき用のダミーテクスチャ用データ
@@ -607,7 +604,7 @@ class VulkanBase
 private:
 
     //コライダーの表示非表示
-    const bool coliderDraw = false;
+    const bool coliderDraw = true;
 
     //キューブマップ用の立方体のモデル
     const std::string cubemapPath = "cubemap.glb";

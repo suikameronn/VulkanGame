@@ -1,3 +1,5 @@
+#include"GameManager.h"
+
 #include"Scene.h"
 
 Scene* Scene::instance = nullptr;
@@ -6,7 +8,9 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 {
 	startPoint = glm::vec3(0.0f);
 
-	camera = std::make_shared<Camera>();
+	GameManager* manager = GameManager::GetInstance();
+
+	camera = std::shared_ptr<Camera>(new Camera(manager->getWindowWidth(), manager->getWindowHeight()));
 	Storage::GetInstance()->setCamera(camera);
 
 	rtree = std::make_unique<RTree<Model>>();
@@ -42,6 +46,11 @@ void Scene::initFrameSetting()
 	}
 	player->initFrameSetting();//プレイヤークラスのみ別枠
 	player->setPosition(startPoint);//プレイヤーを初期位置に
+
+	for (int i = 0; i < sceneUI.size(); i++)
+	{
+		sceneUI[i]->initFrameSettings();
+	}
 
 	Storage::GetInstance()->prepareDescriptorSets();
 
@@ -145,6 +154,7 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 	int exit = GAME_CONTINUE;
 
 	camera->Update();//カメラの更新処理
+	camera->updateTransformMatrix();
 
 	player->Update();//プレイヤーの更新処理
 	player->updateTransformMatrix();//プレイヤーの座標変換行列の更新
@@ -161,78 +171,9 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	resetStatus();//シーン全体のオブジェクトのリセット処理を行う
 
-	for (int i = 0; i < sceneModels.size(); i++)//モデル同士の当たり判定を行う
-	{
-		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
-		{
-			continue;
-		}
-
-		//R木を使って、当たり判定を行うオブジェクトを絞る
-		std::vector<Model*> collisionDetectTarget;
-		rtree->broadPhaseCollisionDetection(collisionDetectTarget, sceneModels[i]->getMbrMin(), sceneModels[i]->getMbrMax());
-
-		for (int j = 0; j < collisionDetectTarget.size(); j++)
-		{
-			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
-			if (collisionDetectTarget[j]->hasColider() && sceneModels[i].get() == collisionDetectTarget[j])
-			{
-				if (sceneModels[i]->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
-				{
-					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
-					{
-						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
-						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
-							//つまり、床のようなオブジェクトの上に載っている状況の場合
-						{
-							collisionDetectTarget[j]->isGrounding = true;
-							sceneModels[i]->addGroundingObject(collisionDetectTarget[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
-						}
-					}
-
-					if (collisionDetectTarget[j]->isMovable)//上と同様
-					{
-						collisionDetectTarget[j]->setPosition(collisionDetectTarget[j]->getPosition() - collisionVector);
-						if (groundCollision(-collisionVector))
-						{
-							sceneModels[i]->isGrounding = true;
-							collisionDetectTarget[j]->addGroundingObject(sceneModels[i].get());
-						}
-					}
-				}
-			}
-		}
-	}
-
-	{//プレイヤーキャラクターについての当たり判定を行う
-		std::vector<Model*> collisionDetectTarget;
-		rtree->broadPhaseCollisionDetection(collisionDetectTarget, player->getMbrMin(), player->getMbrMax());
-
-		for (int i = 0; i < collisionDetectTarget.size(); i++)
-		{
-			if (collisionDetectTarget[i]->getColider())
-			{
-				if (player->getColider()->Intersect(collisionDetectTarget[i]->getColider(), collisionVector))
-				{
-					if (collisionDetectTarget[i]->isMovable)
-					{
-						collisionDetectTarget[i]->setPosition(collisionDetectTarget[i]->getPosition() + collisionVector);
-					}
-
-					if (player->isMovable)
-					{
-						if (groundCollision(collisionVector))
-						{
-							player->isGrounding = true;
-							collisionDetectTarget[i]->addGroundingObject(player.get());
-						}
-
-						player->setPosition(player->getPosition() - collisionVector);
-					}
-				}
-			}
-		}
-	}
+	//当たり判定
+	rtreeIntersect();
+	//intersect();
 
 	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
 	for (int i = 0; i < sceneModels.size(); i++)
@@ -347,4 +288,150 @@ void Scene::addModelToRTree(Model* model)
 void Scene::updateObjectPos(Model* model, RNode<Model>* node)
 {
 	rtree->reflectMove(model, node);
+}
+
+void Scene::rtreeIntersect()
+{
+	for (int i = 0; i < sceneModels.size(); i++)//モデル同士の当たり判定を行う
+	{
+		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
+		{
+			continue;
+		}
+
+		//R木を使って、当たり判定を行うオブジェクトを絞る
+		std::vector<Model*> collisionDetectTarget;
+		rtree->broadPhaseCollisionDetection(collisionDetectTarget, sceneModels[i]->getMbrMin(), sceneModels[i]->getMbrMax());
+
+		for (int j = 0; j < collisionDetectTarget.size(); j++)
+		{
+			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
+			if (collisionDetectTarget[j]->hasColider() && sceneModels[i].get() == collisionDetectTarget[j])
+			{
+				if (sceneModels[i]->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
+				{
+					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
+					{
+						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
+							//つまり、床のようなオブジェクトの上に載っている状況の場合
+						{
+							collisionDetectTarget[j]->isGrounding = true;
+							sceneModels[i]->addGroundingObject(collisionDetectTarget[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+						}
+					}
+
+					if (collisionDetectTarget[j]->isMovable)//上と同様
+					{
+						collisionDetectTarget[j]->setPosition(collisionDetectTarget[j]->getPosition() - collisionVector);
+						if (groundCollision(-collisionVector))
+						{
+							sceneModels[i]->isGrounding = true;
+							collisionDetectTarget[j]->addGroundingObject(sceneModels[i].get());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	{//プレイヤーキャラクターについての当たり判定を行う
+		std::vector<Model*> collisionDetectTarget;
+		rtree->broadPhaseCollisionDetection(collisionDetectTarget, player->getMbrMin(), player->getMbrMax());
+
+		for (int i = 0; i < collisionDetectTarget.size(); i++)
+		{
+			if (collisionDetectTarget[i]->getColider())
+			{
+				if (player->getColider()->Intersect(collisionDetectTarget[i]->getColider(), collisionVector))
+				{
+					if (collisionDetectTarget[i]->isMovable)
+					{
+						collisionDetectTarget[i]->setPosition(collisionDetectTarget[i]->getPosition() + collisionVector);
+					}
+
+					if (player->isMovable)
+					{
+						if (groundCollision(collisionVector))
+						{
+							player->isGrounding = true;
+							collisionDetectTarget[i]->addGroundingObject(player.get());
+						}
+
+						player->setPosition(player->getPosition() - collisionVector);
+					}
+				}
+			}
+		}
+	}
+}
+
+void Scene::intersect()
+{
+	for (int i = 0; i < sceneModels.size() - 1; i++)//モデル同士の当たり判定を行う
+	{
+		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
+		{
+			continue;
+		}
+
+		for (int j = i + 1; j < sceneModels.size(); j++)
+		{
+			if (!sceneModels[j]->hasColider())
+			{
+				continue;
+			}
+
+			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
+			if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
+			{
+				if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
+				{
+					sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+					if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
+						//つまり、床のようなオブジェクトの上に載っている状況の場合
+					{
+						sceneModels[j]->isGrounding = true;
+						sceneModels[i]->addGroundingObject(sceneModels[j].get());//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+					}
+				}
+
+				if (sceneModels[j]->isMovable)//上と同様
+				{
+					sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
+					if (groundCollision(-collisionVector))
+					{
+						sceneModels[i]->isGrounding = true;
+						sceneModels[j]->addGroundingObject(sceneModels[i].get());
+					}
+				}
+			}
+		}
+	}
+
+	//プレイヤーキャラクターについての当たり判定を行う
+	for (int i = 0; i < sceneModels.size(); i++)
+	{
+		if (sceneModels[i]->getColider())
+		{
+			if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionVector))
+			{
+				if (sceneModels[i]->isMovable)
+				{
+					sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);
+				}
+
+				if (player->isMovable)
+				{
+					if (groundCollision(collisionVector))
+					{
+						player->isGrounding = true;
+						sceneModels[i]->addGroundingObject(player.get());
+					}
+
+					player->setPosition(player->getPosition() - collisionVector);
+				}
+			}
+		}
+	}
 }

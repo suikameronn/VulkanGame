@@ -120,6 +120,7 @@ public:
 
 	//表示非表示の設定 引数によって設定
 	void setVisible(bool visible);
+	bool getVisible() { return isVisible; }
 
 	//頂点配列の取得
 	Vertex2D* getVertices();
@@ -150,6 +151,9 @@ public:
 
 	//座標変換行列の更新
 	void updateTransformMatrix();
+
+	//初期フレームの時に実行する
+	void initFrameSettings();
 
 	//座標変換行列を返す
 	glm::mat4 getTransfromMatrix() { return transformMatrix; }

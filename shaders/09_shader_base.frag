@@ -61,6 +61,11 @@ const float minimumRoughness = 0.04;
 
 const float PI = 3.141592653589793;
 
+layout( push_constant ) uniform push_constant
+{
+    float alphaness;
+} PushConstants;
+
 vec4 srgbToLinear(vec4 srgbIn)//sRGBからリニアに変換
 {
 	return vec4(pow(srgbIn.xyz,vec3(2.2)),srgbIn.w);
@@ -320,5 +325,10 @@ void main() {
 	if(shaderMaterial.alphaMask == 1)
 	{
 		outColor.a = baseColor.a;
+	}
+
+	if(PushConstants.alphaness >= 0.0)
+	{
+		outColor.a = PushConstants.alphaness;
 	}
 }

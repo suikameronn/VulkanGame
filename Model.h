@@ -10,6 +10,19 @@
 
 class Scene;
 
+struct FragmentParam
+{
+	//透明度を上書き
+	float alphaness;
+
+	FragmentParam()
+	{
+		//あり得ない値にして
+		//この値を使うか使わないかのフラグにする
+		alphaness = -1.0f;
+	}
+};
+
 //3Dモデルを持つオブジェクトを担うクラス
 class Model:public Object
 {
@@ -25,6 +38,9 @@ protected:
 
 	//R-tree用のMBRについて最大値と最小値
 	glm::vec3 mbrMin, mbrMax;
+
+	//3Dモデルの初期スケール
+	glm::vec3 initScale;
 	
 	//レイキャスト時使用
 	Scene* scene;
@@ -80,6 +96,9 @@ protected:
 	//コライダー用のAABBからMBRを計算
 	void calcMBR();
 
+	//フラグメントシェーダに渡すパラメータ
+	FragmentParam fragParam;
+
 public:
 
 	Model();
@@ -101,13 +120,20 @@ public:
 
 	glm::vec3 getMbrMin()
 	{
-		return min;
+		return mbrMin;
 	}
 
 	glm::vec3 getMbrMax()
 	{
-		return max;
+		return mbrMax;
 	}
+
+	FragmentParam& getFragmentParam() { return fragParam; }
+
+	//初期スケールを設定
+	void setInitScale(glm::vec3 s) { initScale = s; }
+
+	glm::vec3 getScale() { return initScale * scale; }
 
 	//現在所属しているノードを設定する
 	void setRNode(RNode<Model>* node) { rNode = node; }
@@ -121,6 +147,7 @@ public:
 	void setDefaultAnimationName(std::string name);//デフォルトのアニメーションを設定
 
 	void sendPosToChildren();//子オブジェクトに親の移動を反映
+	void sendPosToCamera(glm::vec3 targetPos);//カメラに指定した位置を追従させる
 
 	void setUVScale() { uvScale = true; }//uvにスケールを加え、テクスチャの引き延ばしを防ぐよう設定する
 	bool applyScaleUV() { return uvScale; }

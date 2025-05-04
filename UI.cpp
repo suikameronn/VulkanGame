@@ -6,10 +6,10 @@
 UI::UI(std::shared_ptr<ImageData> image)
 {
 	GameManager* manager = GameManager::GetInstance();
-	widthOffset = manager->window_width;
-	heightOffset = manager->window_height;
+	widthOffset = manager->getWindowWidth();
+	heightOffset = manager->getWindowHeight();
 
-	projMatrix = manager->uiProjection;
+	projMatrix = manager->getUIProjection();
 
 	isUpdateTransformMatrix = true;
 
@@ -158,6 +158,12 @@ void UI::updateTransformMatrix()
 		* glm::scale(glm::mat4(1.0f), glm::vec3(scale));
 
 	isUpdateTransformMatrix = false;
+}
+
+//‰ŠúƒtƒŒ[ƒ€‚Ì‚ÉÀs‚·‚é
+void UI::initFrameSettings()
+{
+	updateTransformMatrix();
 }
 
 void UI::cleanupVulkan()

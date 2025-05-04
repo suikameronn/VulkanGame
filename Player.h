@@ -1,10 +1,12 @@
 #pragma once
 
+#include"UI.h"
 #include "Model.h"
 #include"Camera.h"
+#include"FileManager.h"
 
 //プレイヤーキャラクターのクラス
-class Player : public Model,std::enable_shared_from_this<Player>
+class Player : public Model
 {
 	//カメラのy軸方向の回転角度
 	//プレイヤーキャラクターをカメラの正面方向に向かせるためのもの
@@ -19,6 +21,17 @@ class Player : public Model,std::enable_shared_from_this<Player>
 
 	//キー入力からプレイヤーを移動させる
 	glm::vec3 inputMove();
+
+	//照準のUIについて
+	std::shared_ptr<ImageData> targetImage;
+	std::shared_ptr<UI> targetUI;
+
+	//狙いを定めた時のカメラ位置
+	glm::vec3 aimingCameraOffsetSrc;
+	glm::vec3 aimingCameraOffset;
+
+	bool aiming;
+	void aim();
 
 public:
 
@@ -39,8 +52,13 @@ public:
 	//リスタート地点へプレイヤーをワープさせる
 	void restart(glm::vec3 startPoint);
 
+	//ターゲットUIの画像とサイズを設定
+	void setTargetUIImageAndScale(std::string filePath,float scale);
+	//狙いを定めた時のカメラの位置の設定
+	void setAimingCameraPos(glm::vec3 pos) { aimingCameraOffsetSrc = pos; }
 
 	void Update() override;
+	void updateTransformMatrix() override;//座標変換行列の更新
 };
 
 /*以下の静的関数はluaから呼び出される*/
@@ -74,6 +92,47 @@ static int glueSetJumpHeight(lua_State* lua)
 	}
 
 	player->setMaxJumpHeight(height);
+
+	return 0;
+}
+
+//照準UIについて設定
+static int glueSetTargetUI(lua_State* lua)
+{
+	std::string filePath = static_cast<std::string>(lua_tostring(lua, -2));
+	float scale = static_cast<float>(lua_tonumber(lua, -1));
+
+	lua_getglobal(lua, "Data");
+	Player* player = static_cast<Player*>(lua_touserdata(lua, -1));
+
+	if (!player)
+	{
+		return 0;
+	}
+
+	player->setTargetUIImageAndScale(filePath, scale);
+
+	return 0;
+}
+
+//狙いを定めた時のカメラの位置の設定
+static int glueSetAimingCameraPos(lua_State* lua)
+{
+	glm::vec3 pos;
+	for (int i = 0; i < 3; i++)
+	{
+		pos[i] = static_cast<float>(lua_tonumber(lua, -3 + i));
+	}
+
+	lua_getglobal(lua, "Data");
+	Player* player = static_cast<Player*>(lua_touserdata(lua, -1));
+
+	if (!player)
+	{
+		return 0;
+	}
+
+	player->setAimingCameraPos(pos);
 
 	return 0;
 }

@@ -1,10 +1,18 @@
 #include"Camera.h"
 
-Camera::Camera()
+Camera::Camera(int width,int height)
 {
+	windowWidth = width;
+	windowHeight = height;
+
+	theta = 0.5;
+	phi = 0.5;
+
 	position = { 0,0.0f,5.0f };
 	distance = 100.0f;
 	offsetPos = glm::vec3(0.0f,20.0f,0.0f);
+
+	parentPos = glm::vec3(0.0f);
 
 	forward = glm::vec3{ 0,0,1};
 	right = glm::vec3{ 1,0,0};
@@ -12,6 +20,9 @@ Camera::Camera()
 
 	theta = 0.0f;
 	phi = 0.0f;
+
+	lastCursorX = 0.0;
+	lastCursorY = 0.0;
 
 	viewAngle = 45.0f;
 	aspect = 900.0f / 600.0f;
@@ -23,6 +34,8 @@ Camera::Camera()
 	zFar = 1000.0f;
 
 	perspectiveMat = glm::perspective(viewAngle, aspect, zNear,zFar);
+
+	sphereMove = true;
 }
 
 //座標の設定
@@ -73,26 +86,20 @@ void Camera::customUpdate()
 {
 	auto controller = Controller::GetInstance();
 
-	//矢印キーから移動する角度を設定 単位は度数法
-	if (controller->getKey(GLFW_KEY_LEFT) != GLFW_RELEASE)
-	{
-		theta -= viewPointSpeed;
-	}
+	double mx, my;
+	controller->getMousePos(mx, my);
 
-	if (controller->getKey(GLFW_KEY_RIGHT) != GLFW_RELEASE)
-	{
-		theta += viewPointSpeed;
-	}
+	mx /= windowWidth;
+	my /= windowHeight;
 
-	if (controller->getKey(GLFW_KEY_UP) != GLFW_RELEASE)
-	{
-		phi += viewPointSpeed;
-	}
+	mx -= 0.5;
+	my -= 0.5;
 
-	if (controller->getKey(GLFW_KEY_DOWN) != GLFW_RELEASE)
-	{
-		phi -= viewPointSpeed;
-	}
+	theta += static_cast<float>((mx - lastCursorX) * mouseScale);
+	phi += static_cast<float>((my - lastCursorY) * mouseScale);
+
+	lastCursorX = mx;
+	lastCursorY = my;
 
 	//回転角度の制限
 	if (phi >= 90.0f)
@@ -104,16 +111,17 @@ void Camera::customUpdate()
 		phi = -89.0f;
 	}
 
-	//球面座標上の座標取得
-	setSpherePos(glm::radians(theta), glm::radians(-phi));
-	//ビュー行列の計算
-	calcViewMat();
+	if (sphereMove)
+	{
+		//球面座標上の座標取得
+		setSpherePos(glm::radians(theta), glm::radians(-phi));
+	}
 }
 
 //追従するオブジェクトの位置を設定
 void Camera::setParentPos(glm::vec3 position)
 {
-	parentPos = position;
+	parentPos += position;
 }
 
 //球面座標の設定 引数は矢印キーから
@@ -133,14 +141,16 @@ void Camera::setSpherePos(float theta, float phi)
 //ビュー行列の計算、キューブマッピング用の行列も同時に計算
 void Camera::calcViewMat()
 {
-	//追従するオブジェクトの座標の中心あたりを設定
-	glm::vec3 pos = glm::vec3(parentPos.x, parentPos.y + 20.0f, parentPos.z);
-
-	viewMat = glm::lookAt(this->position, pos, up);
+	viewMat = glm::lookAt(this->position, parentPos, up);
 
 	//キューブマップの立方体の回転をカメラの動きと合わせるため
 	//x,y成分の回転のみ反転させる
-	cubemapViewMat = glm::lookAt(this->position * glm::vec3(-1.0f,1.0f,1.0f), pos * glm::vec3(-1.0f, 1.0f, 1.0f), -up);
+	cubemapViewMat = glm::lookAt(this->position * glm::vec3(-1.0f,1.0f,1.0f), parentPos * glm::vec3(-1.0f, 1.0f, 1.0f), -up);
+}
+
+void Camera::updateTransformMatrix()
+{
+	calcViewMat();
 }
 
 //追従するターゲットの座標を取得
@@ -160,4 +170,10 @@ void Camera::getzNearFar(float& near, float& far)
 {
 	near = zNear;
 	far = zFar;
+}
+
+//カメラの位置をリセットする
+void Camera::posReset()
+{
+	setSpherePos(glm::radians(0.5f), glm::radians(-0.5f));
 }

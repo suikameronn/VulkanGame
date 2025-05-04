@@ -16,9 +16,6 @@
 
 #include"ThreadPool.h"
 
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 720
-
 extern GLFWwindow* window;
 
 //fps制御などのゲーム全体の制御を担当する
@@ -27,6 +24,9 @@ class GameManager
 private:
 
 	static GameManager* gameManager;
+
+	int window_width, window_height;
+	glm::mat4 uiProjection;
 
 	//最大フレームレート
 	const int fps = 60;
@@ -47,10 +47,6 @@ private:
 	void setLoadUI();
 
 public:
-
-	const int window_width = WINDOW_WIDTH;
-	const int window_height = WINDOW_HEIGHT;
-	const glm::mat4 uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
 
 	static GameManager* GetInstance()
 	{
@@ -102,4 +98,8 @@ public:
 
 	//ロードUIを表示
 	void drawLoading(bool& loadFinish);
+
+	int getWindowWidth() { return window_width; }
+	int getWindowHeight() { return window_height; }
+	glm::mat4 getUIProjection() { return uiProjection; }
 };

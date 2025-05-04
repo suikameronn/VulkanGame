@@ -619,8 +619,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizer.depthClampEnable = VK_FALSE;
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
@@ -675,8 +675,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkPushConstantRange pushConstant;
         pushConstant.offset = 0;
-        pushConstant.size = sizeof(PushConstantObj);
-        pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstant.size = sizeof(FragmentParam);
+        pushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         std::vector<VkDescriptorSetLayout> layouts(8);
         layouts[0] = layout;//MVP行列とアニメーション行列
@@ -813,11 +813,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        VkPushConstantRange pushConstant;
-        pushConstant.offset = 0;
-        pushConstant.size = sizeof(PushConstantObj);
-        pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
         std::vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
             VK_DYNAMIC_STATE_SCISSOR,
@@ -848,8 +843,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
         pipelineLayoutInfo.pSetLayouts = layouts.data();
-        pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -2157,7 +2150,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //コライダー用のインデックスバッファーを作成
     void VulkanBase::createIndexBuffer(std::shared_ptr<Colider> colider)
     {
-        VkDeviceSize bufferSize = sizeof(*colider->getColiderIndices()) * colider->getColiderIndicesSize();
+        VkDeviceSize bufferSize = sizeof(*colider->getDrawColiderIndices()) * colider->getDrawColiderIndicesSize();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -2165,7 +2158,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, colider->getColiderIndices(), (size_t)bufferSize);
+        memcpy(data, colider->getDrawColiderIndices(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colider->getPointBufferData()->indeBuffer, colider->getPointBufferData()->indeHandler);
@@ -2234,10 +2227,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createUniformBuffer(std::shared_ptr<Colider> colider)
     {
         VkDeviceSize bufferSize = sizeof(MatricesUBO);
-        if (colider->isConvex)
-        {
-            bufferSize += sizeof(AnimationUBO);
-        }
 
         MappedBuffer* mappedBuffer = colider->getMappedBufferData();
 
@@ -2328,6 +2317,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             AnimationUBO ubo;
 
+            ubo.nodeMatrix = node->getMatrix();
             ubo.matrix = node->matrix;
             if (node->skin != nullptr && node->globalHasSkinNodeIndex > -1)
             {
@@ -2386,6 +2376,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         {
             ubo.scale = glm::vec3(1.0f);
         }
+
         ubo.model = model->getTransformMatrix();
         ubo.view = camera->viewMat;
         ubo.proj = camera->perspectiveMat;
@@ -2914,6 +2905,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         for (int i = 0; i < storage->getUI().size(); i++)
         {
             std::shared_ptr<UI> ui = storage->getUI()[i];
+            if (!ui->getVisible())
+            {
+                continue;
+            }
 
             VkDeviceSize offsets[] = { 0 };
 
@@ -3142,7 +3137,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         Storage* storage = Storage::GetInstance();
 
-        PushConstantObj constant = { node->getMatrix() };
+        FragmentParam param = model->getFragmentParam();
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, node->descriptorInfo.pipeline);
 
@@ -3187,7 +3182,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-                vkCmdPushConstants(commandBuffer, node->descriptorInfo.pLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
+                vkCmdPushConstants(commandBuffer, node->descriptorInfo.pLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FragmentParam), &param);
 
                 vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
             }
@@ -3206,8 +3201,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for(auto mesh : node->meshArray)
         {
-            PushConstantObj constant = { node->getMatrix() };
-
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.pipeline);
 
             VkViewport viewport{};
@@ -3239,8 +3232,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pass.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-
-                vkCmdPushConstants(commandBuffer, pass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantObj), &constant);
 
                 vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
             }
@@ -3308,9 +3299,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        //UIの描画
-        drawUI(false,commandBuffer,imageIndex);
-
         Storage* storage = Storage::GetInstance();
         
         for (auto model:storage->getModels())
@@ -3319,7 +3307,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             if ((model)->hasColider() && coliderDraw)
             {
-                std::shared_ptr<Colider> colider = (model)->getColider();
+                std::shared_ptr<Colider> colider = model->getColider();
 
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelDescriptor.coliderPipeline);
 
@@ -3346,11 +3334,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     modelDescriptor.coliderPipelineLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
 
-                vkCmdDrawIndexed(commandBuffer, colider->getColiderIndicesSize(), 1, 0, 0, 0);
+                vkCmdDrawIndexed(commandBuffer, colider->getDrawColiderIndicesSize(), 1, 0, 0, 0);
             }
         }
 
         drawCubeMap(storage->getCubeMap()->getRootNode(), storage->getCubeMap(), commandBuffer);//キューブマッピングの描画
+
+        //UIの描画
+        drawUI(false, commandBuffer, imageIndex);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -3620,6 +3611,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
         }
 
         return extensions;

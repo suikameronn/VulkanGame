@@ -46,6 +46,52 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel)
 		5,6,2
 	};
 
+	drawColiderIndices =
+	{
+		// 下面
+		0, 1,
+		1, 3,
+		3, 0,
+		1, 2,
+		2, 3,
+		3, 1,
+		// 上面
+		4, 7,
+		7, 5,
+		5, 4,
+		7, 6,
+		6, 5,
+		5, 7,
+		// 前面
+		0, 4,
+		4, 1,
+		1, 0,
+		4, 5,
+		5, 1,
+		1, 4,
+		// 背面
+		3, 2,
+		2, 7,
+		7, 3,
+		2, 6,
+		6, 7,
+		7, 2,
+		// 左面
+		0, 3,
+		3, 4,
+		4, 0,
+		3, 7,
+		7, 4,
+		4, 3,
+		// 右面
+		1, 5,
+		5, 2,
+		2, 1,
+		5, 6,
+		6, 2,
+		2, 5
+	};
+
 	satIndices.resize(3 * 6);
 	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
@@ -54,9 +100,9 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel)
 }
 
 //Modelクラスの初期座標から座標変換を適用する
-void Colider::initFrameSettings()
+void Colider::initFrameSettings(glm::vec3 initScale)
 {
-	scaleMat = glm::scale(scale);
+	scaleMat = glm::scale(initScale);
 
 	for (int i = 0; i < originalVertexPos.size(); i++)
 	{
@@ -633,29 +679,4 @@ glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFin
 	float dot = glm::dot(point, lineVector);
 
 	return lineStart + dot * lineVector;
-}
-
-//Modelクラスの移動などをコライダーにも反映
-void MeshColiderNode::reflectMovement(glm::mat4& transform, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
-{
-	glm::mat4 skinMat;
-
-	/*
-	for (int i = 0; i < coliderVertices.size(); i++)
-	{
-		skinMat = glm::mat4(0.0f);
-		for (int j = 0; j < 4; j++)
-		{
-			skinMat += jointMatrices[convexVertexData[i].skinIndex][convexVertexData[i].boneID[j]] * convexVertexData[i].weight[j];
-		}
-		if (skinMat == glm::mat4(0.0f) || convexVertexData[i].skinIndex == -1)
-		{
-			skinMat = glm::mat4(1.0f);
-		}
-
-		coliderVertices[i] = transform * convexVertexData[i].nodeMatrix * skinMat * glm::vec4(originalVertexPos[i], 1.0f);
-		transformedMin = transform * glm::vec4(min, 1.0f);
-		transformedMax = transform * glm::vec4(max, 1.0f);
-	}
-	*/
 }

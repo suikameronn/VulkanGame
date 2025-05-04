@@ -20,7 +20,8 @@ Model::Model()//3Dモデルを持つクラス
 	rotate.x = rotate.getRadian(0.0f);
 	rotate.y = rotate.getRadian(0.0f);
 	rotate.z = rotate.getRadian(0.0f);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f) * 100.0f;
+	scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	initScale = glm::vec3(1.0f);
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
@@ -40,6 +41,9 @@ Model::Model()//3Dモデルを持つクラス
 	gravity = 0.0f;
 
 	defaultAnimationName = "Idle";
+
+	mbrMin = glm::vec3(FLT_MAX);
+	mbrMax = glm::vec3(-FLT_MAX);
 }
 
 Model::Model(std::string luaScriptPath)
@@ -53,6 +57,7 @@ Model::Model(std::string luaScriptPath)
 	posOffSet = 0.0f;
 
 	scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	initScale = glm::vec3(1.0f);
 
 	forward = glm::vec3{ 0,0,1 };
 	right = glm::vec3{ 1,0,0 };
@@ -75,6 +80,9 @@ Model::Model(std::string luaScriptPath)
 
 	defaultAnimationName = "none";
 	currentPlayAnimationName = "none";
+
+	mbrMin = glm::vec3(FLT_MAX);
+	mbrMax = glm::vec3(-FLT_MAX);
 }
 
 void Model::registerGlueFunctions()//glue関数を設定する
@@ -164,6 +172,12 @@ void Model::switchPlayAnimation()
 void Model::switchPlayAnimation(std::string nextAnimation)
 {
 	nextPlayAnimationName = nextAnimation;
+
+#define _DEBUG
+	if (gltfModel->animations.find(nextAnimation) == gltfModel->animations.end())
+	{
+		std::cerr << "not exist animation " << nextPlayAnimationName << std::endl;
+	}
 }
 
 void Model::playAnimation()//アニメーション用の行列を計算する
@@ -208,6 +222,7 @@ void Model::setPosition(glm::vec3 pos)
 	position = pos;
 
 	sendPosToChildren();//子オブジェクトに移動を伝える
+	sendPosToCamera(position - lastPos);
 
 	uniformBufferChange = true;
 }
@@ -219,7 +234,8 @@ void Model::setBaseColor(glm::vec4 baseColor)
 
 void Model::updateTransformMatrix()//座標変換行列を計算する
 {
-	transformMatrix = glm::translate(glm::mat4(1.0), position) * rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),scale);
+	transformMatrix = glm::translate(glm::mat4(1.0), position)
+		* rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f),initScale * scale);
 
 	//AABBの更新
 	min = transformMatrix * glm::vec4(initMin, 1.0f);
@@ -230,25 +246,24 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	if (colider)
 	{
-		if (colider->isConvex)
-		{
-			colider->reflectMovement(transformMatrix, jointMatrices);//コライダーにオブジェクトのトランスフォームの変更を反映させる
-		}
-		else
-		{
-			colider->reflectMovement(transformMatrix);
-		}
+		colider->reflectMovement(transformMatrix);
 	}
 
 	uniformBufferChange = false;
 
-	//Rツリー上のオブジェクトの位置を更新する
-	scene->updateObjectPos(this, rNode);
+	if (rNode)
+	{
+		//Rツリー上のオブジェクトの位置を更新する
+		scene->updateObjectPos(this, rNode);
+	}
 }
 
 //コライダー用のAABBからMBRを計算
 void Model::calcMBR()
 {
+	mbrMin = glm::vec3(FLT_MAX);
+	mbrMax = glm::vec3(-FLT_MAX);
+
 	for (int i = 0; i < 3; i++)
 	{
 		mbrMin[i] = std::min(min[i], mbrMin[i]);
@@ -285,10 +300,14 @@ void Model::sendPosToChildren()
 	{
 		(*itr)->setParentPos(lastPos, position);
 	}
+}
 
+//カメラに座標を追従させる
+void Model::sendPosToCamera(glm::vec3 targetPos)
+{
 	if (!cameraObj.expired())
 	{
-		cameraObj.lock()->setParentPos(position);
+		cameraObj.lock()->setParentPos(targetPos);
 	}
 }
 
@@ -487,17 +506,16 @@ void Model::initFrameSetting()//初回フレームの処理
 
 	if (colider)
 	{
-		colider->initFrameSettings();//コライダーの初期設定
+		colider->initFrameSettings(glm::vec3(1.0f));//コライダーの初期設定
 	}
 
-	//AABBにスケールを適用する
-	min = glm::scale(scale) * glm::vec4(min,1.0f);
-	max = glm::scale(scale) * glm::vec4(max,1.0f);
+	//min = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(min, 1.0f);
+	//max = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(max, 1.0f);
 
 	initMin = min;
 	initMax = max;
 
-	calcMBR();
+	updateTransformMatrix();
 
 	//シーン全体のR-treeにこのオブジェクトを追加
 

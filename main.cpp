@@ -18,7 +18,32 @@ int main()
 
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+
+    // プライマリモニタを取得
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    if (!primaryMonitor) {
+        std::cerr << "プライマリモニタを取得できませんでした。" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    // プライマリモニタのビデオモードを取得
+    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+    if (!mode) {
+        std::cerr << "プライマリモニタのビデオモードを取得できませんでした。" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    // ウィンドウヒントを設定 (ボーダレス)
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+    window = glfwCreateWindow(mode->width, mode->height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+
+    // ウィンドウ位置を左上隅に設定
+    glfwSetWindowPos(window, 0, 0);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
 
@@ -29,12 +54,36 @@ int main()
 #else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-
-    GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
-
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+
+    // プライマリモニタを取得
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    if (!primaryMonitor) {
+        std::cerr << "プライマリモニタを取得できませんでした。" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    // プライマリモニタのビデオモードを取得
+    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+    if (!mode) {
+        std::cerr << "プライマリモニタのビデオモードを取得できませんでした。" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    // ウィンドウヒントを設定 (ボーダレス)
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+    window = glfwCreateWindow(mode->width, mode->height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+
+    // ウィンドウ位置を左上隅に設定
+    glfwSetWindowPos(window, 0, 0);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
 
     gameManager->initGame();//ゲームループの開始
 

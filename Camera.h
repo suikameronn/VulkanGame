@@ -12,6 +12,16 @@
 class Camera
 {
 private:
+
+	//ウィンドウのサイズ
+	int windowWidth, windowHeight;
+
+	//一つ前のフレームのマウス座標
+	double lastCursorX, lastCursorY;
+
+	//マウス移動の感度の調整
+	double mouseScale = 15.0;
+
 	//座標
 	glm::vec3 position;
 	//追従するオブジェクトの座標
@@ -38,6 +48,10 @@ private:
 	//ビュー行列の計算、キューブマッピング用の行列も同時に計算
 	void calcViewMat();
 public:
+
+	//カメラの球面座標の移動のフラッグ
+	bool sphereMove;
+
 	//カメラの正面、右、上方向のベクトル
 	glm::vec3 forward, right, up;
 
@@ -48,7 +62,7 @@ public:
 	//投資投影行列
 	glm::mat4 perspectiveMat;
 
-	Camera();
+	Camera(int width,int height);
 
 	//座標の設定
 	void setPosition(glm::vec3 pos);
@@ -81,4 +95,9 @@ public:
 	void Update();
 	//矢印キーからの入力を処理
 	void customUpdate();
+
+	void updateTransformMatrix();
+
+	//カメラの位置をセットする
+	void posReset();
 };

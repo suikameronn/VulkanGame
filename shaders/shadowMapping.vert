@@ -22,6 +22,7 @@ layout(set = 1,binding = 0) uniform UniformBufferObject {
 
 layout(set = 1,binding = 1) uniform animationUniformBufferObject
 {
+    mat4 nodeMatrix;
     mat4 matrix;
     mat4[128] boneMatrix;
     int boneCount;
@@ -42,11 +43,11 @@ void main()
         weight1.z * animationUBO.boneMatrix[boneID1.z] +
         weight1.w * animationUBO.boneMatrix[boneID1.w];
 
-        gl_Position = ubo.proj * ubo.view * matricesUBO.model * PushConstants.modelMatrix * skinMat * vec4(inPosition,1.0);
+        gl_Position = ubo.proj * ubo.view * matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(inPosition,1.0);
     }
     else
     {
-        gl_Position = ubo.proj * ubo.view * matricesUBO.model * PushConstants.modelMatrix * vec4(inPosition,1.0);
+        gl_Position = ubo.proj * ubo.view * matricesUBO.model * animationUBO.nodeMatrix * vec4(inPosition,1.0);
     }
     
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;

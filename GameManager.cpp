@@ -8,6 +8,10 @@ void GameManager::initGame()//初期化設定
 
     frameDuration = (1.0f / (fps + 1)) * 1000.0f;//設定されたフレームレートから、1フレームでの最低の処理時間を設定
 
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
+
     vulkan->initVulkan();//Vulkanのデータの一部をあらかじめ用意しておく
 
     setLoadUI();//ロードUIの設定
@@ -30,7 +34,7 @@ void GameManager::setLoadUI()
 
     std::shared_ptr<UI> ui = std::shared_ptr<UI>(new UI(FileManager::GetInstance()->loadImage("textures/loadUI.png")));
 
-    ui->setScale(50.0f);
+    ui->setScale(100.0f);
     ui->setPosition(glm::vec2(window_width - ui->getTexWidth(), window_height - ui->getTexHeight()));
 
     ui->updateTransformMatrix();
