@@ -19,6 +19,7 @@
 #include"EnumList.h"
 #include"Light.h"
 #include"UI.h"
+#include"Cubemap.h"
 
 #include<chrono>
 #include <thread>
@@ -30,17 +31,99 @@ enum
 	GAME_RESTART
 };
 
+//ポイントライトの構造体 複数のライトを持つ
+struct PointLightUBO
+{
+	alignas(16)int lightCount;
+	alignas(16) std::array<glm::vec4, 50> pos;
+	alignas(16) std::array<glm::vec4, 50> color;
+};
+
+//平行光源の構造体 複数のライトを持つ
+struct DirectionalLightUBO
+{
+	alignas(16) int lightCount;
+	alignas(16) std::array<glm::vec4, 50> dir;
+	alignas(16) std::array<glm::vec4, 50> color;
+};
+
+//シャドウマップ作成用のuniform buffer
+struct ShadowMapUBO
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+};
+
+struct DirectionalLightBuffer
+{
+	DirectionalLightUBO ubo;
+	MappedBuffer mappedBuffer;
+};
+
+struct PointLightBuffer
+{
+	PointLightUBO ubo;
+	MappedBuffer mappedBuffer;
+};
+
+//シャドウマップ作成用の構造体
+struct ShadowMapData
+{
+	//平衡投影の行列
+	glm::mat4 proj;
+
+	//シャドウマップの解像度の倍率を設定
+	int shadowMapScale;
+	//オフスクリーンレンダリング用の構造体
+	OffScreenPass passData;
+	//シャドウマップ作成用の行列の配列
+	std::vector<ShadowMapUBO> matUBOs;
+	//行列用のバッファの配列
+	std::vector<MappedBuffer> mappedBuffers;
+
+	//シャドウマップを通常のレンダリングで使用するためのレイアウト
+	VkDescriptorSetLayout layout;
+	//シャドウマップを通常のレンダリングで使用するためのデータ
+	std::vector<VkDescriptorSet> descriptorSets;
+
+	//シーン上のライトの数だけ作成
+	void setFrameCount(int frameCount)
+	{
+		matUBOs.resize(frameCount);
+		mappedBuffers.resize(frameCount);
+		passData.setFrameCount(frameCount);
+	}
+
+	void destroy(VkDevice& device)
+	{
+		passData.destroy(device);
+
+		vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
+		for (auto& buffer : mappedBuffers)
+		{
+			buffer.destroy(device);
+		}
+	}
+};
+
+
 //luaから読み取ったステージの情報などが格納される
 class Scene
 {
 private:
 
+	//シーン全体のポイントライト用のバッファ
+	PointLightBuffer pointLightBuffer;
+	//シーン全体のディレクショナルライト用のバッファ
+	DirectionalLightBuffer dirLightBuffer;
+	//シャドウマップ用バッファ
+	ShadowMapData shadowMapData;
+
 	static Scene* instance;
 
 	std::unique_ptr<RTree<Model>> rtree;
-
-	//キューブマッピング用の画像
-	std::shared_ptr<ImageData> hdriMap;
 
 	//上方向のベクトル
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -50,12 +133,9 @@ private:
 
 	//初回フレームのみ実行 ステージ上のすべてのオブジェクトの初回フレーム時の設定を行う
 	void initFrameSetting();
-	//ステージ上のオブジェクトにVulkanの変数を設定する
-	void setModels();
-	//ステージ上のライトにVulkanの変数を設定する
-	void setLights();
-	//UIのVulkanの変数を設定する
-	void setUI();
+
+	//フレーム終了時に実行
+	void frameEnd();
 
 	float collisionDepth;//衝突時のめり込んだ距離
 	glm::vec3 collisionVector;//衝突時のめり込んだ方向
@@ -79,8 +159,24 @@ private:
 	//シンプルな当たり判定
 	void intersect();
 
+	//ライトのユニフォームバッファの更新
+	void updateLightUniformBuffer();
+	//ディレクショナルライトの更新
+	void updateDirLightUniformBuffer();
+	//ポイントライトの更新
+	void updatePointLightUniformBuffer();
+	//シャドウマップの更新
+	void updateShadowMapUniformBuffer();
+
 	Scene();
 	~Scene();
+
+	//レンダリング
+	void render();
+
+	//gpu上のバッファを破棄する
+	//シーン管轄のインスタンスのバッファのみ破棄する
+	void cleanupVulkan();
 
 public:
 
@@ -112,7 +208,7 @@ public:
 	//プレイヤー
 	std::shared_ptr<Player> player;
 	//キューブマッピング用の立方体オブジェクト
-	std::shared_ptr<Model> cubemap;
+	std::shared_ptr<Cubemap> cubemap;
 	//ステージ上のオブジェクトの配列
 	std::vector<std::shared_ptr<Model>> sceneModels;
 	//ステージ上のポイントライトの配列

@@ -28,21 +28,9 @@
 #include "GLFW/glfw3native.h"
 
 #include"Storage.h"
+#include"Cubemap.h"
 
 extern GLFWwindow* window;
-
-#define MAX_TEXTURE_COUNT 5//gltfモデルが持つ最大のテクスチャ数
-#define CUBEMAP_FACE_COUNT 6//キューブマッピング用の面の数
-#define CUBEMAP_FACE_RIGHT 0
-#define CUBEMAP_FACE_LEFT 1
-#define CUBEMAP_FACE_TOP 2
-#define CUBEMAP_FACE_BOTTOM 3
-#define CUBEMAP_FACE_FRONT 4
-#define CUBEMAP_FACE_BACK 5
-
-//IBL用のテクスチャのサイズ
-//サイズを512以上にするとクラッシュする
-#define IBL_MAP_SIZE 256
 
 //VkDescriptorSetの確保できる数
 #define MAX_VKDESCRIPTORSET 1000
@@ -96,57 +84,6 @@ struct ModelDescriptor
     }
 };
 
-//ポイントライトの構造体 複数のライトを持つ
-struct PointLightUBO
-{
-    alignas(16)int lightCount;
-    alignas(16) std::array<glm::vec4,50> pos;
-    alignas(16) std::array<glm::vec4,50> color;
-};
-
-//平行光源の構造体 複数のライトを持つ
-struct DirectionalLightUBO
-{
-    alignas(16) int lightCount;
-    alignas(16) std::array<glm::vec4, 50> dir;
-    alignas(16) std::array<glm::vec4, 50> color;
-};
-
-//シャドウマップ作成用のuniform buffer
-struct ShadowMapUBO
-{
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
-
-//通常のレンダリング用のuniform buffer
-struct MatricesUBO {
-    glm::vec3 scale;//uv座標調整用
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec4 worldCameraPos;
-    alignas(16) int lightCount;
-    alignas(16) std::array<glm::mat4,20> lightMVP;//ライトの行列
-};
-
-//通常のレンダリングのアニメーション用の行列
-struct AnimationUBO
-{
-    alignas(16) glm::mat4 nodeMatrix;
-    alignas(16) glm::mat4 matrix;
-    alignas(16) std::array<glm::mat4, 128> boneMatrix;
-    alignas(16) int boneCount;
-};
-
-//UI用の2D行列
-struct MatricesUBO2D
-{
-    glm::mat4 transformMatrix;
-    glm::mat4 projection;
-};
-
 //gltfモデルがテクスチャを持たなかったとき用のダミーテクスチャ用データ
 struct ImageDescriptor
 {
@@ -171,405 +108,6 @@ struct ShaderBuffer
     VkDescriptorBufferInfo descriptor;
     int32_t count = 0;
     void* mapped = nullptr;
-};
-
-//フレームバッファとしてのgpu上の画像用のバッファーの構造体
-//その画像へのビューも持つ
-struct FrameBufferAttachment {
-    VkImage image;
-    VkDeviceMemory memory;
-    VkImageView view;
-
-    void destory(VkDevice& device)
-    {
-        vkDestroyImageView(device, view, nullptr);
-        vkDestroyImage(device, image, nullptr);
-        vkFreeMemory(device, memory, nullptr);
-    }
-};
-
-//シャドウマッピングやキューブマッピング用のオフスクリーンレンダリング用の構造体
-struct OffScreenPass {
-    int32_t width, height;//レンダリングの出力サイズ
-    std::vector<VkFramebuffer> frameBuffer;//レンダリングの出力先のバッファー
-    std::vector<FrameBufferAttachment> imageAttachment;//レンダリングの出力先を示すもの
-    VkRenderPass renderPass;//利用するレンダーパス
-    VkSampler sampler;//レンダリング結果へのサンプラー
-    VkDescriptorSetLayout layout;//レンダリング用のレイアウト
-    VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
-    std::vector<VkDescriptorSet> descriptorSets;
-
-    void setFrameCount(int count)//オフスクリーンレンダリングを行うフレーム数の設定
-    {
-        frameBuffer.resize(count);
-        imageAttachment.resize(count);
-        descriptorSets.resize(count);
-    }
-
-    void destroy(VkDevice& device)
-    {
-        vkDestroyPipeline(device, pipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
-
-        for (auto& framebuffer : frameBuffer)
-        {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
-        }
-
-        for (auto& attachment : imageAttachment)
-        {
-            attachment.destory(device);
-        }
-
-        vkDestroySampler(device, sampler, nullptr);
-
-        vkDestroyRenderPass(device, renderPass, nullptr);
-    }
-};
-
-//シャドウマップ作成用の構造体
-struct ShadowMapData
-{
-    //平衡投影の行列
-    glm::mat4 proj;
-
-    //シャドウマップの解像度の倍率を設定
-    int shadowMapScale;
-    //オフスクリーンレンダリング用の構造体
-    OffScreenPass passData;
-    //シャドウマップ作成用の行列の配列
-    std::vector<ShadowMapUBO> matUBOs;
-    //行列用のバッファの配列
-    std::vector<MappedBuffer> mappedBuffers;
-
-    //シャドウマップを通常のレンダリングで使用するためのレイアウト
-    VkDescriptorSetLayout layout;
-    //シャドウマップを通常のレンダリングで使用するためのデータ
-    std::vector<VkDescriptorSet> descriptorSets;
-
-    //シーン上のライトの数だけ作成
-    void setFrameCount(int frameCount)
-    {
-        matUBOs.resize(frameCount);
-        mappedBuffers.resize(frameCount);
-        passData.setFrameCount(frameCount);
-    }
-
-    void destroy(VkDevice& device)
-    {
-        passData.destroy(device);
-
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
-
-        for (auto& buffer : mappedBuffers)
-        {
-            buffer.destroy(device);
-        }
-    }
-};
-
-//IBLのspecularのBRDFについての構造体
-struct IBLSpecularBRDF
-{
-    //画像サイズ
-    uint32_t size;
-
-    //オフスクリーンレンダリング用のデータ
-    OffScreenPass passData;
-
-    //通常のレンダリングでspecularのマップを利用するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;
-
-    //specularとspecular用のdescriptorSet
-    VkDescriptorSet descriptorSet;
-
-    //specularとspecular用のコンピュートシェーダへのパス
-    std::string vertShaderPath, fragShaderPath;
-
-    //バッファの配列
-    std::vector<MappedBuffer> mappedBuffers;
-
-    //オフスクリーンレンダリングのフレーム数を設定する
-    void setFrameCount(int frameCount)
-    {
-        mappedBuffers.resize(frameCount);
-
-        passData.setFrameCount(frameCount);
-    }
-
-    //レンダリングの出力先のサイズを設定
-    void setRenderSize(uint32_t s)
-    {
-        size = s;
-
-        //specularテクスチャのサイズ
-        passData.width = s;
-        passData.height = s;
-    }
-
-    void destroy(VkDevice& device)
-    {
-        passData.destroy(device);
-
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
-
-
-        for (auto mappedBuffer : mappedBuffers)
-        {
-            mappedBuffer.destroy(device);
-        }
-    }
-};
-
-//IBLのspecularの鏡面反射部分用の構造体
-struct IBLSpecularReflection
-{
-    //画像フォーマット
-    VkFormat format;
-
-    //画像のサイズ
-    uint32_t size;
-
-    //シェーダへのパス
-    std::string vertShaderPath, fragShaderPath;
-
-    //specular用の6つのレイヤーのテクスチャーデータ
-    TextureData* multiLayerTexture;
-
-    //specular用のミップマップレベルの配列
-    uint32_t mipmapLevel;
-    std::vector<uint32_t> mipmapLevelSize;
-
-    //IBLのspecular用のレンダーパス
-    std::vector<VkRenderPass> renderPass;
-
-    std::vector<VkFramebuffer> frameBuffer;//レンダリングの出力先のバッファー
-    std::vector<FrameBufferAttachment> imageAttachment;//レンダリングの出力先を示すもの
-
-    VkSampler sampler;//レンダリング結果へのサンプラー
-
-    VkDescriptorSetLayout prePassLayout;//テクスチャからSpecular用のマップを作成するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;//通常のレンダリング用のレイアウト
-    VkPipelineLayout pipelineLayout;
-    std::vector<VkPipeline> pipeline;
-    std::vector<VkDescriptorSet> descriptorSets;
-
-    VkDescriptorSet descriptorSet;
-
-    //バッファの配列
-    std::vector<MappedBuffer> mappedBuffers;
-
-    IBLSpecularReflection()
-    {
-        multiLayerTexture = new TextureData();
-    }
-
-    //オフスクリーンレンダリングのフレーム数を設定する
-    void setFrameCount(int frameCount)
-    {
-        mappedBuffers.resize(frameCount);
-    }
-
-    void setRenderSize(uint32_t size)
-    {
-        this->size = size;
-
-        //specularのミップマップレベル数
-        mipmapLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(size, size))) + 1);
-        multiLayerTexture->mipLevel = mipmapLevel;
-
-        //各ミップマップレベルの画像のサイズを計算する
-        mipmapLevelSize.resize(mipmapLevel);
-        mipmapLevelSize[0] = size;
-        for (int i = 1; i < mipmapLevelSize.size(); i++)
-        {
-            mipmapLevelSize[i] = static_cast<uint32_t>(std::max(1.0, std::floor(size / std::pow(2.0, i))));
-        }
-
-        frameBuffer.resize(mipmapLevel * CUBEMAP_FACE_COUNT);
-        imageAttachment.resize(mipmapLevel * CUBEMAP_FACE_COUNT);
-        
-        renderPass.resize(mipmapLevel);
-        pipeline.resize(mipmapLevel);
-
-        descriptorSets.resize(CUBEMAP_FACE_COUNT);
-    }
-
-    void destroy(VkDevice& device)
-    {
-        multiLayerTexture->destroy(device);
-
-        for (auto& p : pipeline)
-        {
-            vkDestroyPipeline(device, p, nullptr);
-        }
-
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, prePassLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
-
-        for (auto& framebuffer : frameBuffer)
-        {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
-        }
-
-        for (auto& attachment : imageAttachment)
-        {
-            attachment.destory(device);
-        }
-
-        vkDestroySampler(device, sampler, nullptr);
-
-        for (auto& pass : renderPass)
-        {
-            vkDestroyRenderPass(device, pass, nullptr);
-        }
-
-
-        for (auto mappedBuffer : mappedBuffers)
-        {
-            mappedBuffer.destroy(device);
-        }
-    }
-};
-
-//イメージベースドライティング用構造体
-struct IBLDiffuse
-{
-    //画像フォーマット
-    VkFormat format;
-
-    //画像サイズ
-    uint32_t size;
-
-    //ミップマップレベル
-    uint32_t mipmapLevel;
-
-    //オフスクリーンレンダリング用のデータ
-    OffScreenPass passData;
-
-    //diffuseについてのテクスチャ
-    TextureData* multiLayerTexture;
-
-    //通常のレンダリングでDiffuseのマップを利用するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;
-
-    //diffuseとspecular用のdescriptorSet
-    VkDescriptorSet descriptorSet;
-
-    //diffuseとspecular用のコンピュートシェーダへのパス
-    std::string vertShaderPath,fragShaderPath;
-
-    //バッファの配列
-    std::vector<MappedBuffer> mappedBuffers;
-
-    IBLDiffuse()
-    {
-        multiLayerTexture = new TextureData();
-    }
-
-    //オフスクリーンレンダリングのフレーム数を設定する
-    void setFrameCount(int frameCount)
-    {
-        mappedBuffers.resize(frameCount);
-
-        passData.setFrameCount(frameCount);
-    }
-
-    void setMipmapLevel(uint32_t level)
-    {
-        mipmapLevel = level;
-        multiLayerTexture->mipLevel = level;
-    }
-
-    //レンダリングの出力先のサイズを設定
-    void setRenderSize(uint32_t s)
-    {
-        size = s;
-
-        //diffuseテクスチャのサイズ
-        passData.width = s;
-        passData.height = s;
-    }
-
-    void destroy(VkDevice& device)
-    {
-        multiLayerTexture->destroy(device);
-
-        passData.destroy(device);
-
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
-
-        for (auto mappedBuffer : mappedBuffers)
-        {
-            mappedBuffer.destroy(device);
-        }
-    }
-};
-
-//キューブマップ作成用の構造体
-struct CubemapData
-{
-    //画像フォーマット
-    VkFormat format;
-
-    //キューブマップ作成時のビュー行列
-    glm::mat4 view;
-    //キューブマップ作成時のビュー行列 視野角を度数法で90度に設定
-    glm::mat4 proj;
-
-    //オフスクリーンレンダリング用のデータ
-    OffScreenPass passData;
-    //行列の配列
-    std::vector<MatricesUBO> matUBOs;
-    //バッファの配列
-    std::vector<MappedBuffer> mappedBuffers;
-
-    TextureData* srcHdriTexture;//キューブマッピングの元のテクスチャ
-    TextureData* multiTexture;//キューブマッピング用のテクスチャデータ
-
-    //通常のレンダリングで利用するためのレイアウト
-    VkDescriptorSetLayout layout;
-    VkDescriptorSet descriptorSet;
-
-    //キューブマップ作成用のパイプラインレイアウト
-    VkPipelineLayout pipelineLayout;
-    //実際のパイプライン
-    VkPipeline pipeline;
-
-    CubemapData()
-    {
-        //キューブマップの元となるHDRI画像のテクスチャデータ
-        srcHdriTexture = new TextureData();
-        //キューブマップとなる6枚の画像を一つのテクスチャデータにまとめたもの
-        multiTexture = new TextureData();
-    }
-
-    //キューブマップの面の数だけ作成
-    void setFrameCount(int frameCount)
-    {
-        matUBOs.resize(frameCount);
-        mappedBuffers.resize(frameCount);
-        passData.setFrameCount(frameCount);
-    }
-
-    void destroy(VkDevice& device)
-    {
-        srcHdriTexture->destroy(device);
-        multiTexture->destroy(device);
-        passData.destroy(device);
-
-        vkDestroyPipeline(device, pipeline,nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
-
-        for (auto& buffer : mappedBuffers)
-        {
-            buffer.destroy(device);
-        }
-    }
 };
 
 struct SpecularPushConstant
@@ -728,13 +266,6 @@ private:
     VkDescriptorPool descriptorPool;
 
     ImageDescriptor emptyImage;//ダミーのテクスチャ用データ
-
-    CubemapData cubemapData;//キューブマッピング用のデータ
-    IBLDiffuse iblDiffuse;//IBLのdiffuseについての構造体
-    IBLSpecularReflection iblSpecularReflection;//IBLのspecularの鏡面反射についての構造体
-    IBLSpecularBRDF iblSpecularBRDF;//IBLのspecularのBRDFについての構造体
-
-    ShadowMapData shadowMapData;//シャドウマップ用のデータ
 
     //ゲーム終了時にデータのgpu上のデータをすべて破棄する
     void cleanup();
@@ -901,34 +432,6 @@ private:
     
     //同期用変数の用意
     void createSyncObjects();
-    //シャドウマップの用意
-    void setupShadowMapDepth(VkCommandBuffer& commandBuffer);
-
-    //レンダリング時にシェーダに渡す行列の更新
-    //gltfモデル用
-    void updateUniformBuffers(std::shared_ptr<Model> model);
-    void updateUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
-    //UI用
-    void updateUniformBuffer(std::shared_ptr<UI> ui);
-    //コライダー用
-    void updateUniformBuffer(std::shared_ptr<Colider> colider);
-    //ポイントライト用
-    void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, MappedBuffer& mappedBuffer);
-    //平行光源用
-    void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& directionalLights, MappedBuffer& mappedBuffer);
-    //シャドウマップ作成用
-    void updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights);
-    //キューブマップ作成用
-    void updateUniformBuffers_Cubemap(std::shared_ptr<Model> cubemap);
-
-    //通常のレンダリングを開始する
-    void drawFrame();
-    //キューブマップのレンダリング
-    void drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
-    //gltfモデルの描画
-    void drawMesh(GltfNode* node,std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer);
-    //シャドウマップの作成
-    void calcDepth(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, OffScreenPass& pass);
 
     //シェーダの作成
     VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -959,12 +462,18 @@ private:
     //ダミーテクスチャ用のデータを作成
     void createEmptyImage();
 
+    //通常のレンダリングで必要なdescriptorSetのレイアウトをあらかじめ作成する
+    void createDescriptorSetLayout();
+
+    //パイプラインをあらかじめ作成
+    void createPipelines();
+
     //ポイントライトのgpu上のバッファーなどを作成
     void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
     //平行光源のgpu上のバッファーなどを作成
     void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
-    //シャドウマップ用ンデータを用意する、引数としてシーン上のライトの数だけオフスクリーンレンダリングを行う
-    void prepareShadowMapping(int lightCount);
+    //シャドウマップの作成
+    void calcDepth(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, OffScreenPass& pass);
     //UI描画用のパイプラインなどを作成する
     void prepareUIRendering();
     //キューブマップ用のテクスチャを作成するためのデータを用意
@@ -1004,10 +513,6 @@ private:
     //IBL用のDescriptorSetの用意
     void createIBLDescriptor(TextureData* samplerCube,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
     void createIBLDescriptor(OffScreenPass& passData,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
-
-    //UIの描画
-    void drawUI(bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex);
-    void drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, VkCommandBuffer& commandBuffer, uint32_t imageIndex);
 
 public:
 
@@ -1053,19 +558,19 @@ public:
     //vulkanの初期化処理
     void initVulkan();
 
-    //レンダリングの開始
-    void render();
-
     VkDevice getDevice()
     {
         return device;
     }
 
-    //通常のレンダリングで必要なdescriptorSetのレイアウトをあらかじめ作成する
-    void prepareDescriptorSets();
+    //gpuの処理が終わるまで待機する
+    void gpuWaitIdle()
+    {
+        vkDeviceWaitIdle(device);
+    }
 
-    //各種バッファーなどのデータの作成 lua実行後に行う
-    void prepareDescriptorData(int lightCount);
+    //シャドウマップ用ンデータを用意する、引数としてシーン上のライトの数だけオフスクリーンレンダリングを行う
+    void prepareShadowMapping(int lightCount);
 
     //gltfモデルの持つマテリアル用のデータの作成
     void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
@@ -1076,8 +581,6 @@ public:
     //各種ライトのバッファなどの作成
     void setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights);
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
-
-    void updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider);
 
     //uiのテクスチャを作成する
     void createUITexture(TextureData* texture, std::shared_ptr<ImageData> image);
@@ -1092,6 +595,17 @@ public:
     void changeUITexture(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
     //uniform bufferのバッファの作成
     void uiCreateUniformBuffer(MappedBuffer& mappedBuffer);
+
+    uint32_t renderBegin() { return currentFrame; }
+
+    //キューブマップのレンダリング
+    void drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, uint32_t commandIndex);
+    //gltfモデルの描画
+    void drawMesh(GltfNode* node, std::shared_ptr<Model> model, uint32_t commandIndex);
+    //シャドウマップの用意
+    void setupShadowMapDepth(std::shared_ptr<Model> model,uint32_t commandIndex);
+    //UIの描画
+    void drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, uint32_t imageIndex);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

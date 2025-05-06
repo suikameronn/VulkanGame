@@ -583,3 +583,90 @@ void Model::cancelGravity()
 		physicBase->cancelGravity();
 	}
 }
+
+//ユニフォームバッファの更新
+void Model::updateUniformBuffer(GltfNode* node)
+{
+	for (auto mesh : node->meshArray)
+	{
+		std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
+
+		std::array<glm::mat4, 128> array;
+		std::fill(array.begin(), array.end(), glm::mat4(1.0f));
+
+		AnimationUBO ubo;
+
+		ubo.nodeMatrix = node->getMatrix();
+		ubo.matrix = node->matrix;
+		if (node->skin != nullptr && node->globalHasSkinNodeIndex > -1)
+		{
+			ubo.boneMatrix = getJointMatrices(node->globalHasSkinNodeIndex);
+		}
+		else
+		{
+			ubo.boneMatrix = array;
+		}
+
+		ubo.boneCount = node->getJointCount();
+
+		memcpy(animationMappedBuffers[mesh->meshIndex].uniformBufferMapped, &ubo, sizeof(ubo));
+
+	}
+
+	for (int i = 0; i < node->children.size(); i++)
+	{
+		updateUniformBuffer(node->children[i]);
+	}
+}
+
+//ユニフォームバッファの更新
+void Model::updateUniformBuffer()
+{
+	Storage* storage = Storage::GetInstance();
+
+	MatricesUBO ubo{};
+
+	if (applyScaleUV())
+	{
+		//モデルのスケールに合わせてuv座標を調整する
+		ubo.scale = scale * initScale;
+	}
+	else
+	{
+		ubo.scale = glm::vec3(1.0f);
+	}
+
+	std::shared_ptr<Camera> camera = storage->accessCamera();
+
+	ubo.model = transformMatrix;
+	ubo.view = camera->viewMat;
+	ubo.proj = camera->perspectiveMat;
+	ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0f);
+
+	memcpy(modelViewMappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
+
+	updateUniformBuffer(gltfModel->getRootNode());
+
+	if (hasColider())
+	{
+		MatricesUBO ubo{};
+
+		ubo.model = transformMatrix;
+		ubo.view = camera->viewMat;
+		ubo.proj = camera->perspectiveMat;
+		ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0);
+
+		memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
+	}
+}
+
+//フレーム終了時に実行される
+void Model::frameEnd()
+{
+	if (uniformBufferChange)
+	{
+		updateTransformMatrix();
+	}
+
+	updateUniformBuffer();
+}

@@ -45,6 +45,13 @@ struct Rotate2D
 	}
 };
 
+//UI用の2D行列
+struct MatricesUBO2D
+{
+	glm::mat4 transformMatrix;
+	glm::mat4 projection;
+};
+
 class UI
 {
 protected:
@@ -100,6 +107,8 @@ protected:
 	//uiのテクスチャ
 	TextureData* uiTexture;
 
+	void updateUniformBuffer();
+
 public:
 
 	UI(std::shared_ptr<ImageData> image);
@@ -154,6 +163,9 @@ public:
 
 	//初期フレームの時に実行する
 	void initFrameSettings();
+
+	//フレーム終了時に実行する
+	void frameEnd();
 
 	//座標変換行列を返す
 	glm::mat4 getTransfromMatrix() { return transformMatrix; }

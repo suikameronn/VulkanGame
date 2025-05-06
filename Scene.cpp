@@ -15,6 +15,8 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 
 	rtree = std::make_unique<RTree<Model>>();
 
+	cubemap = std::make_unique<Cubemap>();
+
 	initLuaScript(luaScriptPath);//luaからステージのデータを読み取り
 
 	initFrameSetting();//luaから読み取ったオブジェクトの初期化処理
@@ -26,6 +28,7 @@ Scene::Scene()
 
 Scene::~Scene()
 {
+	cleanupVulkan();
 }
 
 //初回フレームのみ実行 ステージ上のすべてのオブジェクトの初回フレーム時の設定を行う
@@ -33,9 +36,7 @@ void Scene::initFrameSetting()
 {
 	Storage* storage = Storage::GetInstance();
 
-	std::shared_ptr<Model> cubemap = std::shared_ptr<Model>(new Model());//キューブマップ用の立方体の準備
 	FileManager::GetInstance()->addLoadModelList("models/cubemap.glb", cubemap.get());
-	storage->setCubeMapModel(cubemap);
 
 	//ModelクラスにgltfModelクラスを設定する
 	FileManager::GetInstance()->setGltfModel();
@@ -51,16 +52,6 @@ void Scene::initFrameSetting()
 	{
 		sceneUI[i]->initFrameSettings();
 	}
-
-	Storage::GetInstance()->prepareDescriptorSets();
-
-	setLights();//ライトの他のクラスのデータを用意
-
-	Storage::GetInstance()->prepareLightsForVulkan();//LightにVulkanでの変数などを持たせる
-	Storage::GetInstance()->prepareDescriptorData();//descriptorSetの用意
-
-	setModels();//モデルの他のクラスのデータを用意
-	setUI();//UI関連のデータの準備
 }
 
 //luaスクリプトの読み取り、実行
@@ -133,8 +124,7 @@ void Scene::setLimitY(float y)
 //HDRIマップの設定
 void Scene::setHDRIMap(std::string imagePath)
 {
-	hdriMap = FileManager::GetInstance()->loadImage(imagePath);
-	Storage::GetInstance()->setCubemapTexture(hdriMap);
+	cubemap->setHDRIMap(FileManager::GetInstance()->loadImage(imagePath));
 }
 
 //オブジェクトの接地判定などをリセット
@@ -175,72 +165,23 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 	rtreeIntersect();
 	//intersect();
 
-	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
-	for (int i = 0; i < sceneModels.size(); i++)
-	{
-		if (sceneModels[i]->uniformBufferChange)//衝突解消によってモデルが移動したら、再度行列の更新
-		{
-			sceneModels[i]->updateTransformMatrix();
-		}
-	}
-	player->updateTransformMatrix();
-
 	//もしプレイヤーがステージの下限を超えたら、リスタートさせる
 	if (player->getPosition().y < limitY)
 	{
 		player->restart(startPoint);
 	}
 
+	//フレーム終了時に、バッファの更新などをする
+	frameEnd();
+
 	if (Controller::GetInstance()->getKey(GLFW_KEY_ESCAPE))
 	{
 		exit = GAME_FINISH;
 	}
 
+	render();
+
 	return exit;//ウィンドウを閉じようとした場合は、falsを送り、ゲームの終了処理をさせる 
-}
-
-//ステージ上のオブジェクトにVulkanの変数を設定する
-void Scene::setModels()
-{
-	//描画するモデルのポインタを積んでいく
-	for (int i = 0;i < sceneModels.size();i++)
-	{
-		sceneModels[i]->updateTransformMatrix();//座標変換行列の更新
-		Storage::GetInstance()->addModel(sceneModels[i]);//gpu上に頂点用などのバッファーを確保する
-	}
-
-	player->updateTransformMatrix();//座標変換行列の更新
-	Storage::GetInstance()->addModel(player);//プレイヤーの扱う3Dモデルにおいても同様バッファーを確保する
-}
-
-//ステージ上のライトにVulkanの変数を設定する
-void Scene::setLights()
-{
-	Storage* storage = Storage::GetInstance();
-
-	for (std::shared_ptr<PointLight> pl : scenePointLights)
-	{
-		pl->updateTransformMatrix();
-		storage->addLight(pl);//バッファーの確保
-	}
-
-	for (std::shared_ptr<DirectionalLight> dl : sceneDirectionalLights)
-	{
-		dl->updateTransformMatrix();
-		storage->addLight(dl);//バッファーの確保
-	}
-}
-
-//ステージのUIのVulkanの変数を設定する
-void Scene::setUI()
-{
-	Storage* storage = Storage::GetInstance();
-
-	for (int i = 0; i < sceneUI.size(); i++)
-	{
-		sceneUI[i]->updateTransformMatrix();//座標変換行列の更新
-		Storage::GetInstance()->addUI(sceneUI[i]);//gpu上に頂点バッファなどを用意する
-	}
 }
 
 //コライダーが床に接地しているかの判定 trueの場合はその床の移動を追従する
@@ -434,4 +375,151 @@ void Scene::intersect()
 			}
 		}
 	}
+}
+
+//フレーム終了時に実行
+void Scene::frameEnd()
+{
+	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
+	//ユニフォームバッファの更新
+	for (auto model : sceneModels)
+	{
+		model->frameEnd();
+	}
+	player->frameEnd();
+	cubemap->frameEnd();
+
+	for (auto ui : sceneUI)
+	{
+		ui->frameEnd();
+	}
+
+	//ライトのユニフォームバッファの更新は別枠で行う
+	updateLightUniformBuffer();
+}
+
+//ライトとシャドウマップのユニフォームバッファの更新
+void Scene::updateLightUniformBuffer()
+{
+	//ディレクショナルライトの更新
+	updateDirLightUniformBuffer();
+	//ポイントライトの更新
+	updatePointLightUniformBuffer();
+	//シャドウマップの更新
+	updateShadowMapUniformBuffer();
+}
+
+//ディレクショナルライトの更新
+void Scene::updateDirLightUniformBuffer()
+{
+	if (sceneDirectionalLights.size() == 0)
+	{
+		return;
+	}
+
+	DirectionalLightUBO ubo{};
+
+	int loopLimit = static_cast<int>(ubo.dir.size());
+	if (loopLimit > static_cast<int>(sceneDirectionalLights.size()))
+	{
+		loopLimit = static_cast<int>(sceneDirectionalLights.size());
+	}
+
+	ubo.lightCount = loopLimit;
+
+	for (int i = 0; i < loopLimit; i++)
+	{
+		ubo.dir[i] = glm::vec4(sceneDirectionalLights[i]->direction, 0.0f);
+		ubo.color[i] = glm::vec4(sceneDirectionalLights[i]->color, 0.0f);
+	}
+
+	memcpy(dirLightBuffer.mappedBuffer.uniformBufferMapped, &ubo, sizeof(DirectionalLightUBO));
+}
+
+//ポイントライトの更新
+void Scene::updatePointLightUniformBuffer()
+{
+	if (scenePointLights.size() == 0)
+	{
+		return;
+	}
+
+	PointLightUBO ubo{};
+
+	int loopLimit = static_cast<int>(ubo.color.size());
+	if (loopLimit > static_cast<int>(scenePointLights.size()))
+	{
+		loopLimit = static_cast<int>(scenePointLights.size());
+	}
+
+	ubo.lightCount = loopLimit;
+
+	for (int i = 0; i < loopLimit; i++)
+	{
+		ubo.pos[i] = glm::vec4(scenePointLights[i]->getPosition(), 1.0f);
+		ubo.color[i] = glm::vec4(scenePointLights[i]->color, 1.0f);
+	}
+
+	memcpy(pointLightBuffer.mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
+}
+
+//シャドウマップのユニフォームバッファの更新
+void Scene::updateShadowMapUniformBuffer()
+{
+	Storage* storage = Storage::GetInstance();
+
+	std::shared_ptr<Camera> camera = storage->accessCamera();
+
+	for (int i = 0; i < sceneDirectionalLights.size(); i++)
+	{
+		shadowMapData.matUBOs[i].view = glm::lookAt(sceneDirectionalLights[i]->getPosition()
+			, sceneDirectionalLights[i]->getPosition() + sceneDirectionalLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		shadowMapData.matUBOs[i].proj = shadowMapData.proj;
+
+		memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(ShadowMapUBO));
+	}
+}
+
+//gpu上のバッファを破棄する
+//シーン管轄のインスタンスのバッファのみ破棄する
+void Scene::cleanupVulkan()
+{
+	Storage* storage = Storage::GetInstance();
+
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+	VkDevice device = vulkan->getDevice();
+
+	//いったん処理が終わるまで待機する
+	vulkan->gpuWaitIdle();
+
+	shadowMapData.destroy(device);
+
+	//モデル
+	for (auto model : sceneModels)
+	{
+		model->cleanupVulkan();
+	}
+	player->cleanupVulkan();
+
+	//UI
+	for (auto ui : sceneUI)
+	{
+		ui->cleanupVulkan();
+	}
+
+	//ライト
+	pointLightBuffer.mappedBuffer.destroy(device);
+	dirLightBuffer.mappedBuffer.destroy(device);
+}
+
+void Scene::render()
+{
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+
+	//レンダリングの開始
+	uint32_t commandIndex = vulkan->renderBegin();
+
+	//まずはシャドウマップの作成
+
 }

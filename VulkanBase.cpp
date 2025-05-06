@@ -40,7 +40,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorPool();
         createEmptyImage();
 
+        createDescriptorSetLayout();//VkDescriptorSetLayoutの用意
         prepareUIRendering();//ui描画の用意
+        createPipelines();//パイプラインをあらかじめ作成
     }
 
     //スワップチェーンの破棄
@@ -72,15 +74,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         cleanupSwapChain();
 
         emptyImage.destroy(device);
-        shadowMapData.destroy(device);
         modelDescriptor.destroy(device);
-        cubemapData.destroy(device);
         uiRender.destroy(device,multiThreadCommandPool);
-
-        //IBLのデータの破棄
-        iblDiffuse.destroy(device);
-        iblSpecularReflection.destroy(device);
-        iblSpecularBRDF.destroy(device);
 
         Storage* storage = Storage::GetInstance();
 
@@ -89,22 +84,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             gltfModel.second->cleanUpVulkan(device);
         }
 
-        storage->getCubeMap()->cleanupVulkan();//キューブマップ用のバッファーなどの削除
-
-        for (auto model:storage->getModels())//Modelクラスのバッファーなどの削除
-        {
-            model->cleanupVulkan();
-        }
-
-        //UIのバッファの破棄
         storage->getLoadUI()->cleanupVulkan();
-        for (auto ui : storage->getUI())
-        {
-            ui->cleanupVulkan();
-        }
-
-        storage->getPointLightsBuffer().destroy(device);//ポイントライトのバッファの後処理
-        storage->getDirectionalLightsBuffer().destroy(device);//ディレクショナルライトのバッファの後処理
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -2259,205 +2239,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    //ポイントライトの行列の更新
-    void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights,MappedBuffer& mappedBuffer)
-    {
-        if (pointLights.size() == 0)
-        {
-            return;
-        }
-
-        PointLightUBO ubo{};
-
-        int loopLimit = static_cast<int>(std::min(pointLights.size(), ubo.pos.size()));
-
-        ubo.lightCount = loopLimit;
-
-        for (int i = 0; i < loopLimit; i++)
-        {
-            ubo.pos[i] = glm::vec4(pointLights[i]->getPosition(),1.0f);
-            ubo.color[i] = glm::vec4(pointLights[i]->color,1.0f);
-        }
-
-        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
-    }
-
-    //平行光源の行列の更新
-    void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& directionalLights, MappedBuffer& mappedBuffer)
-    {
-        if (directionalLights.size() == 0)
-        {
-            return;
-        }
-
-        DirectionalLightUBO ubo{};
-        
-        int loopLimit = static_cast<int>(std::min(directionalLights.size(), ubo.dir.size()));
-
-        ubo.lightCount = loopLimit;
-        
-        for (int i = 0; i < loopLimit; i++)
-        {
-            ubo.dir[i] = glm::vec4(directionalLights[i]->direction ,0.0f);
-            ubo.color[i] = glm::vec4(directionalLights[i]->color,0.0f);
-        }
-
-        memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(DirectionalLightUBO));
-    }
-
-    //Modelクラスのアニメーション行列の更新をする
-    void VulkanBase::updateUniformBuffer(GltfNode* node, std::shared_ptr<Model> model)
-    {
-        for(auto mesh : node->meshArray)
-        {
-            std::shared_ptr<Camera> camera = Storage::GetInstance()->accessCamera();
-
-            std::array<glm::mat4, 128> array;
-            std::fill(array.begin(), array.end(), glm::mat4(1.0f));
-
-            AnimationUBO ubo;
-
-            ubo.nodeMatrix = node->getMatrix();
-            ubo.matrix = node->matrix;
-            if (node->skin != nullptr && node->globalHasSkinNodeIndex > -1)
-            {
-                ubo.boneMatrix = model->getJointMatrices(node->globalHasSkinNodeIndex);
-            }
-            else
-            {
-                ubo.boneMatrix = array;
-            }
-
-            ubo.boneCount = node->getJointCount();
-
-            memcpy(model->getAnimationMappedBufferData()[mesh->meshIndex].uniformBufferMapped, &ubo, sizeof(ubo));
-
-        }
-
-        for (int i = 0; i < node->children.size(); i++)
-        {
-            updateUniformBuffer(node->children[i], model);
-        }
-    }
-
-    //シャドウマップ作成用の行列の更新
-    void VulkanBase::updateUniformBuffer(std::vector<std::shared_ptr<PointLight>>& pointLights, std::vector<std::shared_ptr<DirectionalLight>>& directionalLights)
-    {
-        Storage* storage = Storage::GetInstance();
-
-        std::shared_ptr<Camera> camera = storage->accessCamera();
-
-        glm::vec3 min, max;
-        storage->calcSceneBoundingBox(min, max);
-
-        for (int i = 0; i < directionalLights.size(); i++)
-        {
-            shadowMapData.matUBOs[i].view = glm::lookAt(directionalLights[i]->getPosition(), directionalLights[i]->getPosition() + directionalLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
-            shadowMapData.matUBOs[i].proj = shadowMapData.proj;
-
-            memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(ShadowMapUBO));
-        }
-    }
-
-    //ModelクラスのMVP行列の更新
-    void VulkanBase::updateUniformBuffers(std::shared_ptr<Model> model)
-    {
-        Storage* storage = Storage::GetInstance();
-        std::shared_ptr<Camera> camera = storage->accessCamera();
-
-        MatricesUBO ubo{};
-
-        if (model->applyScaleUV())
-        {
-            //モデルのスケールに合わせてuv座標を調整する
-            ubo.scale = model->scale;
-        }
-        else
-        {
-            ubo.scale = glm::vec3(1.0f);
-        }
-
-        ubo.model = model->getTransformMatrix();
-        ubo.view = camera->viewMat;
-        ubo.proj = camera->perspectiveMat;
-        ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0f);
-
-        ubo.lightCount = storage->getLightCount();
-
-        std::vector<std::shared_ptr<DirectionalLight>> dLights = storage->getDirectionalLights();
-        std::vector<std::shared_ptr<PointLight>> pLights = storage->getPointLights();
-        for (int i = 0; i < dLights.size(); i++)
-        {
-            float zFar, zNear;
-            camera->getzNearFar(zNear, zFar);
-
-            ubo.lightMVP[i] = shadowMapData.proj
-                * glm::lookAt(dLights[i]->getPosition(), dLights[i]->getPosition() + dLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
-        }
-
-        memcpy(model->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
-
-        updateUniformBuffer(model->getRootNode(), model);
-
-        if (model->hasColider())
-        {
-            std::shared_ptr<Camera> camera = storage->accessCamera();
-            std::shared_ptr<Colider> colider = model->getColider();
-
-            MatricesUBO ubo{};
-
-            ubo.model = model->getTransformMatrix();
-            ubo.view = camera->viewMat;
-            ubo.proj = camera->perspectiveMat;
-            ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0);
-
-            memcpy(colider->getMappedBufferData()->uniformBufferMapped, &ubo, sizeof(ubo));
-        }
-    }
-
-    void VulkanBase::updateUniformBuffer(std::shared_ptr<UI> ui)
-    {
-        MatricesUBO2D ubo{};
-        ubo.transformMatrix = ui->getTransfromMatrix();
-        ubo.projection = ui->getProjectMatrix();
-
-        memcpy(ui->getMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
-    }
-
-    //キューブマップ描画用の行列の更新
-    void VulkanBase::updateUniformBuffers_Cubemap(std::shared_ptr<Model> cubemap)
-    {
-        Storage* storage = Storage::GetInstance();
-        std::shared_ptr<Camera> camera = storage->accessCamera();
-
-        MatricesUBO ubo{};
-
-        ubo.view = camera->cubemapViewMat;
-        ubo.proj = camera->perspectiveMat;
-
-        memcpy(cubemap->getModelViewMappedBuffer().uniformBufferMapped, &ubo, sizeof(ubo));
-    }
-
-    void VulkanBase::updateColiderVertices_OnlyDebug(std::shared_ptr<Colider> colider)
-    {
-        VkDeviceSize bufferSize = sizeof(*colider->getColiderOriginalVertices()) * colider->getColiderVerticesSize();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, colider->getColiderOriginalVertices(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-
-        //vertexBuffer配列にコピーしていく(vector型)
-        copyBuffer(stagingBuffer, colider->getPointBufferData()->vertBuffer, bufferSize);
-
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
-
     //descriptorPoolの作成 descriptorSetはここから作成
     void VulkanBase::createDescriptorPool()
     {
@@ -3019,9 +2800,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
-        //一応ロードUIの行列を更新する
-        updateUniformBuffer(loadUI);
-
         //ここでロードUIの描画
         drawUI(loadUI, true, uiRender.loadCommandBuffers[currentFrame], imageIndex);
 
@@ -3083,7 +2861,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //キューブマップのレンダリング
-    void VulkanBase::drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer)
+    void VulkanBase::drawCubeMap(GltfNode* node, std::shared_ptr<Cubemap> cubemap, VkCommandBuffer& commandBuffer)
     {
         Storage* storage = Storage::GetInstance();
 
@@ -3107,16 +2885,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for(auto mesh : node->meshArray)
         {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cubemap->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, cubemap->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0; i < mesh->primitives.size(); i++)
             {
                 std::vector<VkDescriptorSet> descriptorSets =
                 {
-                    model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
-                    cubemapData.descriptorSet
+                    cubemap->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
+                    cubemap->getCubemapData().descriptorSet
                 };
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -3128,7 +2906,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < node->children.size(); i++)
         {
-            drawCubeMap(node->children[i], model, commandBuffer);
+            drawCubeMap(node->children[i], cubemap, commandBuffer);
         }
     }
 
@@ -3392,21 +3170,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         Storage* storage = Storage::GetInstance();
-
-        for (auto model:storage->getModels())
-        {
-            updateUniformBuffers(model);//3Dモデルの座標変換行列などを更新
-        }
-        for (auto ui : storage->getUI())
-        {
-            updateUniformBuffer(ui);//UIについての座標変換行列やテクスチャを更新
-        }
-
-        updateUniformBuffer(storage->getPointLights(), storage->getPointLightsBuffer());//ポイントライトの座標、色の更新
-        updateUniformBuffer(storage->getDirectionalLights(), storage->getDirectionalLightsBuffer());//ディレクショナルライトの向き、色の更新
-        updateUniformBuffer(storage->getPointLights(), storage->getDirectionalLights());//シャドウマップ用の更新
-
-        updateUniformBuffers_Cubemap(storage->getCubeMap());
 
         vkResetCommandBuffer(commandBuffers[currentFrame], 0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -3764,7 +3527,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
 
-    void VulkanBase::prepareDescriptorSets()//通常のレンダリングで必要なDescriptorSetのレイアウトを作成
+    void VulkanBase::createDescriptorSetLayout()//通常のレンダリングで必要なDescriptorSetのレイアウトを作成
     {
         //まずVkDescriptorSetLayoutをあらかじめ作っておく
         {
@@ -3878,6 +3641,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to create descriptor set layout!");
             }
         }
+    }
+
+    void VulkanBase::createPipelines()
+    {
+        /*グラフィックスパイプラインを作る*/
+        createGraphicsPipeline("shaders/vert.spv", "shaders/frag.spv",
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.texturePipelineLayout, modelDescriptor.texturePipeline);//普通の3Dモデル表示用
+
+        createGraphicsPipeline("shaders/line.vert.spv", "shaders/line.frag.spv",
+            VK_PRIMITIVE_TOPOLOGY_LINE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout, modelDescriptor.coliderPipeline);//コライダー表示用
     }
 
     //ライトのdescriptorSet関係のデータを作成
@@ -4376,19 +4149,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         setPointLights(pointLights);
         setDirectionalLights(dirLights);
-    }
-
-    //各種バッファーなどのデータの作成 lua実行後に行う
-    void VulkanBase::prepareDescriptorData(int lightCount)
-    {
-        prepareShadowMapping(lightCount);//シャドウマップの用意
-
-        /*グラフィックスパイプラインを作る*/
-        createGraphicsPipeline("shaders/vert.spv", "shaders/frag.spv",
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, modelDescriptor.layout, modelDescriptor.texturePipelineLayout, modelDescriptor.texturePipeline);//普通の3Dモデル表示用
-
-        createGraphicsPipeline("shaders/line.vert.spv", "shaders/line.frag.spv",
-            VK_PRIMITIVE_TOPOLOGY_LINE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout, modelDescriptor.coliderPipeline);//コライダー表示用
     }
 
     //Modelクラスの持つバッファーの作成
@@ -5847,13 +5607,4 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         descriptorWrites[1].pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
-    //レンダリングの開始
-    void VulkanBase::render()
-    {
-        descriptorSetCount = 0;
-
-        /*描画*/
-        drawFrame();
     }

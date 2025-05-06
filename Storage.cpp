@@ -33,58 +33,6 @@ void Storage::setCamera(std::shared_ptr<Camera> c)
 	camera = c;
 }
 
-//Sceneクラスでluaで設定されたオブジェクトはこのクラスに格納し、このクラスからVulkanBaseでそのオブジェクトのレンダリングを行う
-void Storage::addModel(std::shared_ptr<Model> model)
-{
-	VulkanBase::GetInstance()->setModelData(model);
-	sceneModelStorage.push_back(std::shared_ptr<Model>(model));
-}
-
-//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
-void Storage::addLight(std::shared_ptr<PointLight> pl)
-{
-	scenePointLightStorage.push_back(pl);
-}
-
-//Modelクラス同様、ライトもこのクラスに格納し、レンダリング時にVulkanBaseから利用される
-void Storage::addLight(std::shared_ptr<DirectionalLight> dl)
-{
-	sceneDirectionalLightStorage.push_back(dl);
-}
-
-//UIの追加
-void Storage::addUI(std::shared_ptr<UI> ui)
-{
-	VulkanBase::GetInstance()->setUI(ui);
-	uiStorage.push_back(ui);
-}
-
-//通常のレンダリングで必要なdescriptorSetの作成
-void Storage::prepareDescriptorSets()
-{
-	VulkanBase::GetInstance()->prepareDescriptorSets();
-}
-
-void Storage::prepareLightsForVulkan()
-{
-	VulkanBase::GetInstance()->setLightData(scenePointLightStorage, sceneDirectionalLightStorage);//ライト用のバッファの用意
-	VulkanBase::GetInstance()->setCubeMapModel(cubemap);//キューブマップ用のバッファの用意
-}
-
-//descriptorSetの用意
-void Storage::prepareDescriptorData()
-{
-	//DescriptorSetLayoutを用意する
-	int lightCount = static_cast<int>(sceneDirectionalLightStorage.size()) + static_cast<int>(scenePointLightStorage.size());
-	VulkanBase::GetInstance()->prepareDescriptorData(lightCount);
-
-	for (auto gltfModel : gltfModelStorage)
-	{
-		//gltfMdodelクラスのテクスチャなどを用意する
-		VulkanBase::GetInstance()->setGltfModelData(gltfModel.second);
-	}
-}
-
 //カメラへの参照を返す
 std::shared_ptr<Camera> Storage::accessCamera()
 {
@@ -149,55 +97,4 @@ MappedBuffer& Storage::getPointLightsBuffer()
 MappedBuffer& Storage::getDirectionalLightsBuffer()
 {
 	return directionalLightsBuffer;
-}
-
-//コライダー用のAABBを計算する
-void Storage::calcSceneBoundingBox(glm::vec3& boundingMin, glm::vec3& boundingMax)
-{
-	boundingMin = glm::vec3(FLT_MAX);
-	boundingMax = glm::vec3(-FLT_MAX);
-
-	for (auto model : storage->getModels())
-	{
-		glm::vec3 minimum = (model->scale * model->getGltfModel()->initPoseMin) + model->getPosition();
-		glm::vec3 max = (model->scale * model->getGltfModel()->initPoseMax) + model->getPosition();
-
-		if (boundingMin.x > minimum.x)
-		{
-			boundingMin.x = minimum.x;
-		}
-		if (boundingMin.y > minimum.y)
-		{
-			boundingMin.y = minimum.y;
-		}
-		if (boundingMin.z > minimum.z)
-		{
-			boundingMin.z = minimum.z;
-		}
-
-		if (boundingMax.x < max.x)
-		{
-			boundingMax.x = max.x;
-		}
-		if (boundingMax.y < max.y)
-		{
-			boundingMax.y = max.y;
-		}
-		if (boundingMax.z < max.z)
-		{
-			boundingMax.z = max.z;
-		}
-	}
-}
-
-//キューブマッピング用のHDRI画像を設定する
-void Storage::setCubemapTexture(std::shared_ptr<ImageData> image)
-{
-	cubemapImage = image;
-}
-
-//HDRI画像を返す、キューブマップ作成時のVulkanBaseから呼び出される
-std::shared_ptr<ImageData> Storage::getCubemapImage()
-{
-	return cubemapImage;
 }

@@ -183,3 +183,19 @@ void UI::cleanupVulkan()
 
 	uiTexture->destroy(device);
 }
+
+//ユニフォームバッファの更新
+void UI::updateUniformBuffer()
+{
+	MatricesUBO2D ubo{};
+	ubo.transformMatrix = transformMatrix;
+	ubo.projection = projMatrix;
+
+	memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
+}
+
+//フレーム終了時に実行
+void UI::frameEnd()
+{
+	updateUniformBuffer();
+}

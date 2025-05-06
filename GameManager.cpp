@@ -70,17 +70,21 @@ void GameManager::drawLoading(bool& loadFinish)
             Rotate2D rot2D;
             rot2D.z = 0.0f;
 
+            std::shared_ptr<UI> loadUI = storage->getLoadUI();
+
             while (!*loadFinish)
             {
                 //UIの回転行列を計算
-                storage->getLoadUI()->setRotate(rot2D);
-                storage->getLoadUI()->updateTransformMatrix();
+                loadUI->setRotate(rot2D);
+                loadUI->updateTransformMatrix();
 
                 //UIの描画
                 vulkan->drawLoading();
 
                 //UIの回転
                 rot2D.z++;
+
+                loadUI->frameEnd();
 
                 //fps調整
                 auto end = std::chrono::system_clock::now();//フレーム終了時間
@@ -117,8 +121,6 @@ void GameManager::mainGameLoop()//メインゲームループ
     {
 
         exit = scene->UpdateScene();//ゲームを終了する場合、trueが返る
-
-        VulkanBase::GetInstance()->render();//オブジェクトのレンダリング
 
         if (exit == GAME_FINISH || exit == GAME_RESTART || glfwWindowShouldClose(window))//メインゲームループの終了処理
         {

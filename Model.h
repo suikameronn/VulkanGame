@@ -10,6 +10,63 @@
 
 class Scene;
 
+//フレームバッファとしてのgpu上の画像用のバッファーの構造体
+//その画像へのビューも持つ
+struct FrameBufferAttachment {
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView view;
+
+	void destory(VkDevice& device)
+	{
+		vkDestroyImageView(device, view, nullptr);
+		vkDestroyImage(device, image, nullptr);
+		vkFreeMemory(device, memory, nullptr);
+	}
+};
+
+
+//シャドウマッピングやキューブマッピング用のオフスクリーンレンダリング用の構造体
+struct OffScreenPass {
+	int32_t width, height;//レンダリングの出力サイズ
+	std::vector<VkFramebuffer> frameBuffer;//レンダリングの出力先のバッファー
+	std::vector<FrameBufferAttachment> imageAttachment;//レンダリングの出力先を示すもの
+	VkRenderPass renderPass;//利用するレンダーパス
+	VkSampler sampler;//レンダリング結果へのサンプラー
+	VkDescriptorSetLayout layout;//レンダリング用のレイアウト
+	VkPipelineLayout pipelineLayout;
+	VkPipeline pipeline;
+	std::vector<VkDescriptorSet> descriptorSets;
+
+	void setFrameCount(int count)//オフスクリーンレンダリングを行うフレーム数の設定
+	{
+		frameBuffer.resize(count);
+		imageAttachment.resize(count);
+		descriptorSets.resize(count);
+	}
+
+	void destroy(VkDevice& device)
+	{
+		vkDestroyPipeline(device, pipeline, nullptr);
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(device, layout, nullptr);
+
+		for (auto& framebuffer : frameBuffer)
+		{
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+		}
+
+		for (auto& attachment : imageAttachment)
+		{
+			attachment.destory(device);
+		}
+
+		vkDestroySampler(device, sampler, nullptr);
+
+		vkDestroyRenderPass(device, renderPass, nullptr);
+	}
+};
+
 struct FragmentParam
 {
 	//透明度を上書き
@@ -21,6 +78,26 @@ struct FragmentParam
 		//この値を使うか使わないかのフラグにする
 		alphaness = -1.0f;
 	}
+};
+
+//通常のレンダリング用のuniform buffer
+struct MatricesUBO {
+	glm::vec3 scale;//uv座標調整用
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec4 worldCameraPos;
+	alignas(16) int lightCount;
+	alignas(16) std::array<glm::mat4, 20> lightMVP;//ライトの行列
+};
+
+//通常のレンダリングのアニメーション用の行列
+struct AnimationUBO
+{
+	alignas(16) glm::mat4 nodeMatrix;
+	alignas(16) glm::mat4 matrix;
+	alignas(16) std::array<glm::mat4, 128> boneMatrix;
+	alignas(16) int boneCount;
 };
 
 //3Dモデルを持つオブジェクトを担うクラス
@@ -98,6 +175,9 @@ protected:
 
 	//フラグメントシェーダに渡すパラメータ
 	FragmentParam fragParam;
+
+	virtual void updateUniformBuffer(GltfNode* node);
+	virtual void updateUniformBuffer();
 
 public:
 
@@ -179,7 +259,7 @@ public:
 
 	void updateTransformMatrix() override;//座標変換行列の更新
 
-	void cleanupVulkan();//Vulkanの変数の破棄
+	virtual void cleanupVulkan();//Vulkanの変数の破棄
 
 	void setPosition(glm::vec3 pos) override;//位置の設定
 
@@ -199,6 +279,8 @@ public:
 	bool isGround(glm::vec3& normal);//オブジェクトが床に接しているかどうか
 	void addGroundingObject(Model* object);//床に接していたらそれを追加
 	void clearGroundingObject();
+
+	void frameEnd() override;
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/
