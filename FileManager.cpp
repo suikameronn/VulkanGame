@@ -2,6 +2,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
 
+#include"VulkanBase.h"
+
 #include"FileManager.h"
 
 FileManager* FileManager::fileManager = nullptr;
@@ -61,33 +63,54 @@ void FileManager::addLoadModelList(std::string filePath, Model* model)
 //ModelクラスにgltfModelクラスを設定する
 void FileManager::setGltfModel()
 {
+    VulkanBase* vulkan = VulkanBase::GetInstance();
+
     /*
+
     ThreadPool* pool = ThreadPool::GetInstance();
 
+    std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
     for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
     {
-        inputTypes input(1);
+        inputTypes input(2);
         input[0] = i;
+        input[1] = gltfModels[i];
 
         std::function<void(inputTypes&)> loadModelFunc = [this](inputTypes& input)
             {
                 ThreadPool* pool = ThreadPool::GetInstance();
 
                 int index;
+                std::shared_ptr<GltfModel> gltfModel;
                 pool->safeAnyCast(index, 0, input);
+                pool->safeAnyCast(gltfModel, 1, input);
 
-                loadModelList[index].second->setgltfModel(loadModel(loadModelList[index].first));
+                gltfModel = loadModel(loadModelList[index].first);
             };
 
         pool->run({ input,loadModelFunc });
     }
 
     pool->waitUntilIdle();
+
+    for (int i = 0; i < loadModelList.size(); i++)
+    {
+        vulkan->setGltfModelData(gltfModels[i]);
+        loadModelList[i].second->setgltfModel(gltfModels[i]);
+    }
+
     */
 
+    std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
     for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
     {
-        loadModelList[i].second->setgltfModel(loadModel(loadModelList[i].first));
+        gltfModels[i] = loadModel(loadModelList[i].first);
+        vulkan->setGltfModelData(gltfModels[i]);
+    }
+
+    for (int i = 0; i < loadModelList.size(); i++)
+    {
+        loadModelList[i].second->setgltfModel(gltfModels[i]);
     }
 }
 

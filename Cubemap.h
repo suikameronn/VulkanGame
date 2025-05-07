@@ -26,9 +26,6 @@ struct IBLSpecularBRDF
     //オフスクリーンレンダリング用のデータ
     OffScreenPass passData;
 
-    //通常のレンダリングでspecularのマップを利用するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;
-
     //specularとspecular用のdescriptorSet
     VkDescriptorSet descriptorSet;
 
@@ -59,9 +56,6 @@ struct IBLSpecularBRDF
     void destroy(VkDevice& device)
     {
         passData.destroy(device);
-
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
-
 
         for (auto mappedBuffer : mappedBuffers)
         {
@@ -98,7 +92,6 @@ struct IBLSpecularReflection
     VkSampler sampler;//レンダリング結果へのサンプラー
 
     VkDescriptorSetLayout prePassLayout;//テクスチャからSpecular用のマップを作成するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;//通常のレンダリング用のレイアウト
     VkPipelineLayout pipelineLayout;
     std::vector<VkPipeline> pipeline;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -155,7 +148,6 @@ struct IBLSpecularReflection
 
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, prePassLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
 
         for (auto& framebuffer : frameBuffer)
         {
@@ -257,7 +249,7 @@ struct IBLDiffuse
 };
 
 //キューブマップ作成用の構造体
-struct CubemapData
+struct BackGroundColor
 {
     //画像フォーマット
     VkFormat format;
@@ -277,8 +269,6 @@ struct CubemapData
     TextureData* srcHdriTexture;//キューブマッピングの元のテクスチャ
     TextureData* multiTexture;//キューブマッピング用のテクスチャデータ
 
-    //通常のレンダリングで利用するためのレイアウト
-    VkDescriptorSetLayout layout;
     VkDescriptorSet descriptorSet;
 
     //キューブマップ作成用のパイプラインレイアウト
@@ -286,7 +276,7 @@ struct CubemapData
     //実際のパイプライン
     VkPipeline pipeline;
 
-    CubemapData()
+    BackGroundColor()
     {
         //キューブマップの元となるHDRI画像のテクスチャデータ
         srcHdriTexture = new TextureData();
@@ -310,7 +300,6 @@ struct CubemapData
 
         vkDestroyPipeline(device, pipeline, nullptr);
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
 
         for (auto& buffer : mappedBuffers)
         {
@@ -323,7 +312,7 @@ class Cubemap : public Model
 {
 private:
 
-    CubemapData cubemapData;//キューブマッピング用のデータ
+    BackGroundColor backGroundColor;//キューブマッピング用のデータ
     IBLDiffuse iblDiffuse;//IBLのdiffuseについての構造体
     IBLSpecularReflection iblSpecularReflection;//IBLのspecularの鏡面反射についての構造体
     IBLSpecularBRDF iblSpecularBRDF;//IBLのspecularのBRDFについての構造体
@@ -347,9 +336,9 @@ public:
     }
 
     //背景色用のデータを返す
-    CubemapData& getCubemapData()
+    BackGroundColor& getBackGroundColor()
     {
-        return cubemapData;
+        return backGroundColor;
     }
 
     //Diffuseのデータを返す

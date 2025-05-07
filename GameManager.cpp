@@ -79,7 +79,7 @@ void GameManager::drawLoading(bool& loadFinish)
                 loadUI->updateTransformMatrix();
 
                 //UI‚Ì•`‰æ
-                vulkan->drawLoading();
+                //vulkan->drawLoading();
 
                 //UI‚Ì‰ñ“]
                 rot2D.z++;

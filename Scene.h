@@ -59,12 +59,14 @@ struct DirectionalLightBuffer
 {
 	DirectionalLightUBO ubo;
 	MappedBuffer mappedBuffer;
+	VkDescriptorSet descriptorSet;
 };
 
 struct PointLightBuffer
 {
 	PointLightUBO ubo;
 	MappedBuffer mappedBuffer;
+	VkDescriptorSet descriptorSet;
 };
 
 //シャドウマップ作成用の構造体
@@ -82,8 +84,6 @@ struct ShadowMapData
 	//行列用のバッファの配列
 	std::vector<MappedBuffer> mappedBuffers;
 
-	//シャドウマップを通常のレンダリングで使用するためのレイアウト
-	VkDescriptorSetLayout layout;
 	//シャドウマップを通常のレンダリングで使用するためのデータ
 	std::vector<VkDescriptorSet> descriptorSets;
 
@@ -98,8 +98,6 @@ struct ShadowMapData
 	void destroy(VkDevice& device)
 	{
 		passData.destroy(device);
-
-		vkDestroyDescriptorSetLayout(device, layout, nullptr);
 
 		for (auto& buffer : mappedBuffers)
 		{

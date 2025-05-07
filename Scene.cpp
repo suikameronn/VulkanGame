@@ -41,17 +41,32 @@ void Scene::initFrameSetting()
 	//ModelクラスにgltfModelクラスを設定する
 	FileManager::GetInstance()->setGltfModel();
 
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+
 	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの初期化処理
 	{
+		vulkan->setModelData(sceneModels[i]);
 		sceneModels[i]->initFrameSetting();//オブジェクトの初期化処理
 	}
+
+	vulkan->setModelData(player);
 	player->initFrameSetting();//プレイヤークラスのみ別枠
 	player->setPosition(startPoint);//プレイヤーを初期位置に
 
+	vulkan->createCubemap(cubemap);
+
 	for (int i = 0; i < sceneUI.size(); i++)
 	{
+		vulkan->setUI(sceneUI[i]);
 		sceneUI[i]->initFrameSettings();
 	}
+
+	//シャドウマッピングの用意
+	vulkan->prepareShadowMapping(static_cast<int>(sceneDirectionalLights.size()), shadowMapData);
+
+	//ライトのバッファの用意
+	vulkan->createPointLightBuffer(pointLightBuffer);
+	vulkan->createDirectionalLightBuffer(dirLightBuffer);
 }
 
 //luaスクリプトの読み取り、実行
@@ -446,11 +461,7 @@ void Scene::updatePointLightUniformBuffer()
 
 	PointLightUBO ubo{};
 
-	int loopLimit = static_cast<int>(ubo.color.size());
-	if (loopLimit > static_cast<int>(scenePointLights.size()))
-	{
-		loopLimit = static_cast<int>(scenePointLights.size());
-	}
+	int loopLimit = static_cast<int>(std::min(ubo.color.size(), scenePointLights.size()));
 
 	ubo.lightCount = loopLimit;
 
@@ -518,8 +529,42 @@ void Scene::render()
 	VulkanBase* vulkan = VulkanBase::GetInstance();
 
 	//レンダリングの開始
-	uint32_t commandIndex = vulkan->renderBegin();
+	vulkan->renderBegin();
 
 	//まずはシャドウマップの作成
+	vulkan->shadowMapBegin(shadowMapData);
 
+	for (auto model : sceneModels)
+	{
+		vulkan->renderShadowMap(model, shadowMapData);
+	}
+	vulkan->renderShadowMap(player, shadowMapData);
+
+	//シャドウマップの作製終了
+	vulkan->shadowMapEnd();
+
+	//3DモデルとUIのレンダリング開始
+	vulkan->sceneRenderBegin();
+
+	//UI
+	for (auto ui : sceneUI)
+	{
+		vulkan->renderUI(ui);
+	}
+
+	//3Dモデル
+	for (auto model : sceneModels)
+	{
+		vulkan->renderModel(model, cubemap
+			, shadowMapData, pointLightBuffer, dirLightBuffer);
+	}
+	vulkan->renderModel(player, cubemap, shadowMapData, pointLightBuffer, dirLightBuffer);
+
+	//キューブマップ
+	vulkan->renderCubemap(cubemap);
+
+	//3DモデルとUIのレンダリング終了
+	vulkan->sceneRenderEnd();
+
+	vulkan->renderEnd();
 }

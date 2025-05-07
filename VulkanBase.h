@@ -29,6 +29,7 @@
 
 #include"Storage.h"
 #include"Cubemap.h"
+#include"Scene.h"
 
 extern GLFWwindow* window;
 
@@ -248,6 +249,11 @@ private:
     //UIレンダリング用のデータ
     UIRender uiRender;
 
+    //シャドウマップのVkDescriptorSetLayout
+    VkDescriptorSetLayout shadowmapLayout;
+    //IBLのVkDescriptorSetLayout
+    VkDescriptorSetLayout iblLayout;
+
     //コマンドバッファーの配列 スワップチェーンが持つ画像の数だけバッファーを持つ
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -261,6 +267,8 @@ private:
     std::vector<VkFence> multiThreadFences;
     //現在のフレームで使用するコマンドバッファなどの番号
     uint32_t currentFrame = 0;
+    //現在使用可能なスワップチェーンの画像バッファ
+    uint32_t availableSwapChaneImageNumber;
 
     //descriptorSetはこれから作成する
     VkDescriptorPool descriptorPool;
@@ -379,16 +387,9 @@ private:
     //コライダー用
     void createIndexBuffer(std::shared_ptr<Colider> colider);
 
-    //各種データに応じたuniform buffer用のバッファーの作成
-    void createUniformBuffers(std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Model> model);
-    void createUniformBuffer(GltfNode* node,std::shared_ptr<Model> model);
+    void createUniformBuffer(GltfNode* node, std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<Colider> colider);
-    void createUniformBuffer(std::shared_ptr<UI> ui);
-    //ShaderMaterial用
-    void createUniformBuffer(std::shared_ptr<Material> material);
-    //ライト用
-    void createUniformBuffer(int lightCount,MappedBuffer* mappedBuffer,unsigned long long size);
 
     //ShaderMaterialの初期設定とバッファーの用意
     void createShaderMaterialUBO(std::shared_ptr<Material> material);
@@ -468,42 +469,38 @@ private:
     //パイプラインをあらかじめ作成
     void createPipelines();
 
-    //ポイントライトのgpu上のバッファーなどを作成
-    void setPointLights(std::vector<std::shared_ptr<PointLight>> lights);
-    //平行光源のgpu上のバッファーなどを作成
-    void setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights);
     //シャドウマップの作成
     void calcDepth(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer, OffScreenPass& pass);
     //UI描画用のパイプラインなどを作成する
     void prepareUIRendering();
     //キューブマップ用のテクスチャを作成するためのデータを用意
-    void prepareCubemapTextures();
+    void prepareCubemapTextures(std::shared_ptr<Cubemap> cubemap);
     //キューブマップ用の複数のレイヤーを持つテクスチャデータを作成する
     void createMultiLayerTexture(TextureData* dstTextureData, uint32_t layerCount, uint32_t width, uint32_t height, uint32_t mipLevel, VkFormat format);
     //6枚のテクスチャを作成して、キューブマップを作成
-    void createSamplerCube2D(OffScreenPass& passData, std::vector<MappedBuffer>& mappedBuffers);
-    void createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers);
+    void createSamplerCube2D(OffScreenPass& passData, std::vector<MappedBuffer>& mappedBuffers, std::shared_ptr<Cubemap> cubemap);
+    void createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers, std::shared_ptr<Cubemap> cubemap);
     //LUTの作成
-    void createLUT(IBLSpecularBRDF& iblSpecular, MappedBuffer& mappedBuffer);
+    void createLUT(IBLSpecularBRDF& iblSpecular, MappedBuffer& mappedBuffer, std::shared_ptr<Cubemap> cubemap);
     //キューブマップを背景としてレンダリング
     void drawSamplerCube(GltfNode* node, std::shared_ptr<Model> model
         , uint32_t width, uint32_t height, VkCommandBuffer& commandBuffer, int index, std::vector<VkDescriptorSet>& descriptorSets
         , VkPipelineLayout& pipelineLayout,VkPipeline& pipeline);
 
     //IBL用のテクスチャを作成
-    void createIBL();
+    void createIBL(IBLDiffuse& diffuse, IBLSpecularReflection& reflection, IBLSpecularBRDF& brdf, std::shared_ptr<Cubemap> cubemap);
     //IBL作成用のオフスクリーンレンダリングの準備をする
     void prepareIBL(std::string vertShaderPath, std::string fragShaderPath
-        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers);
-    void prepareIBL(IBLSpecularReflection& iblSPeuclar);
+        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers,std::shared_ptr<Cubemap> cubemap);
+    void prepareIBL(IBLSpecularReflection& iblSPeuclar, std::shared_ptr<Cubemap> cubemap);
     //IBLのdiffuseテクスチャを作成
-    void createIBLDiffuse();
+    void createIBLDiffuse(IBLDiffuse& diffuse, std::shared_ptr<Cubemap> cubemap);
     //IBLのspecularテクスチャを作成
-    void createIBLSpecular();
+    void createIBLSpecular(IBLSpecularReflection& reflection, IBLSpecularBRDF& brdf, std::shared_ptr<Cubemap> cubemap);
     //IBLのspecularの鏡面反射のテクスチャを作成
-    void createIBLSpecularReflection();
+    void createIBLSpecularReflection(IBLSpecularReflection& reflection, std::shared_ptr<Cubemap> cubemap);
     //IBLのspecularのBRDFのテクスチャを作成
-    void createIBLSpecularBRDF();
+    void createIBLSpecularBRDF(IBLSpecularBRDF& brdf, std::shared_ptr<Cubemap> cubemap);
     //6つの画像を一つの画像にまとめて、SamplerCubeを作る
     void createCubeMapTextureFromImages(uint32_t texSize, uint32_t srcTextureMipmapLevel, TextureData* multiLayerTexture
         , std::vector<FrameBufferAttachment>& imageAttachment, VkFormat format);
@@ -513,6 +510,11 @@ private:
     //IBL用のDescriptorSetの用意
     void createIBLDescriptor(TextureData* samplerCube,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
     void createIBLDescriptor(OffScreenPass& passData,VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
+
+    //シャドウマップのレンダリング
+    void renderShadowMap(GltfNode* node, std::shared_ptr<Model> model, ShadowMapData& shadowMapData);
+    //キューブマップのレンダリング
+    void renderCubemap(GltfNode* node, std::shared_ptr<Cubemap> cubemap);
 
 public:
 
@@ -569,17 +571,29 @@ public:
         vkDeviceWaitIdle(device);
     }
 
+    //各種データに応じたuniform buffer用のバッファーの作成
+    void createUniformBuffers(std::shared_ptr<Model> model);
+    void createUniformBuffer(std::shared_ptr<UI> ui);
+    //ShaderMaterial用
+    void createUniformBuffer(std::shared_ptr<Material> material);
+    //ライト用
+    void createUniformBuffer(int lightCount, MappedBuffer* mappedBuffer, size_t size);
+
+    //ポイントライトのgpu上のバッファーなどを作成
+    void createPointLightBuffer(PointLightBuffer& buffer);
+    //平行光源のgpu上のバッファーなどを作成
+    void createDirectionalLightBuffer(DirectionalLightBuffer& buffer);
+
     //シャドウマップ用ンデータを用意する、引数としてシーン上のライトの数だけオフスクリーンレンダリングを行う
-    void prepareShadowMapping(int lightCount);
+    void prepareShadowMapping(int lightCount, ShadowMapData& shadowMap);
 
     //gltfモデルの持つマテリアル用のデータの作成
     void setGltfModelData(std::shared_ptr<GltfModel> gltfModel);
     //Modelクラスの持つバッファーの作成
     void setModelData(std::shared_ptr<Model> model);
     //キューブマップの作成
-    void setCubeMapModel(std::shared_ptr<Model> cubemap);
-    //各種ライトのバッファなどの作成
-    void setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights);
+    void createCubemap(std::shared_ptr<Cubemap> cubemap);
+
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
     //uiのテクスチャを作成する
@@ -587,7 +601,7 @@ public:
     //uiの頂点バッファなどを用意する
     void setUI(std::shared_ptr<UI> ui);
     //ロード画面の描画
-    void drawLoading();
+    //void drawLoading();
     //ロード画面の終了
     void stopLoading();
 
@@ -596,16 +610,33 @@ public:
     //uniform bufferのバッファの作成
     void uiCreateUniformBuffer(MappedBuffer& mappedBuffer);
 
-    uint32_t renderBegin() { return currentFrame; }
-
-    //キューブマップのレンダリング
-    void drawCubeMap(GltfNode* node, std::shared_ptr<Model> model, uint32_t commandIndex);
     //gltfモデルの描画
-    void drawMesh(GltfNode* node, std::shared_ptr<Model> model, uint32_t commandIndex);
-    //シャドウマップの用意
-    void setupShadowMapDepth(std::shared_ptr<Model> model,uint32_t commandIndex);
-    //UIの描画
-    void drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, uint32_t imageIndex);
+    void drawMesh(GltfNode* node, std::shared_ptr<Model> model,VkCommandBuffer& commandBuffer
+        , std::shared_ptr<Cubemap> cubemap, ShadowMapData& shadowMapData, PointLightBuffer& pointLightBuffer, DirectionalLightBuffer& dirLightBuffer);
+
+    //すべてのレンダリングをする前に実行される
+    void renderBegin();
+    //すべてのレンダリングが終わったとき実行される
+    void renderEnd();
+
+    //シャドウマップのレンダリング開始
+    void shadowMapBegin(ShadowMapData& shadowMapData);
+    //シャドウマップのレンダリング
+    void renderShadowMap(std::shared_ptr<Model> model, ShadowMapData& shadowMapData);
+    //シャドウマップのレンダリング終了
+    void shadowMapEnd();
+
+    //3DモデルとUIのレンダリングを開始
+    void sceneRenderBegin();
+    //3Dモデルのレンダリング
+    void renderModel(std::shared_ptr<Model> model, std::shared_ptr<Cubemap> cubemap
+        , ShadowMapData& shadowMapData, PointLightBuffer& pointLightBuffer, DirectionalLightBuffer& dirLightBuffer);
+    //uiのレンダリング
+    void renderUI(std::shared_ptr<UI> ui);
+    //キューブマップのレンダリング
+    void renderCubemap(std::shared_ptr<Cubemap> cubemap);
+    //3DモデルとUIのレンダリングを終了
+    void sceneRenderEnd();
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

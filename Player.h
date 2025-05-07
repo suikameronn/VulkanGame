@@ -33,8 +33,6 @@ class Player : public Model
 	bool aiming;
 	void aim();
 
-	void updateUniformBuffer() override;
-
 public:
 
 	Player();

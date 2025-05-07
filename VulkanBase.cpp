@@ -97,6 +97,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkDestroyFence(device, multiThreadFences[i], nullptr);
         }
 
+        vkDestroyDescriptorSetLayout(device, shadowmapLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, iblLayout, nullptr);
+
         vkDestroyCommandPool(device, commandPool, nullptr);
         vkDestroyCommandPool(device, multiThreadCommandPool, nullptr);
 
@@ -663,10 +666,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layouts[1] = modelDescriptor.materialLayout;//マテリアル
         layouts[2] = modelDescriptor.lightLayout;//ポイントライト
         layouts[3] = modelDescriptor.lightLayout;//平行光源
-        layouts[4] = shadowMapData.layout;//シャドウマップ
-        layouts[5] = iblDiffuse.mainPassLayout;//IBLのdiffuse用
-        layouts[6] = iblSpecularReflection.mainPassLayout;//IBLのspecularの鏡面反射用
-        layouts[7] = iblSpecularBRDF.mainPassLayout;//IBLのspecularのBRDF用
+        layouts[4] = shadowmapLayout;//シャドウマップ
+        layouts[5] = iblLayout;//IBLのdiffuse用
+        layouts[6] = iblLayout;//IBLのspecularの鏡面反射用
+        layouts[7] = iblLayout;//IBLのspecularのBRDF用
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -2643,209 +2646,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    //UIのレンダリング
-    void VulkanBase::drawUI(bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex)
-    {
-        if (beginRenderPass)
-        {
-            vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-
-            VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = renderPass;
-            renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = swapChainExtent;
-
-            VkClearValue clearValue{};
-            clearValue.depthStencil = { 1.0f,0 };
-            renderPassInfo.clearValueCount = 1;
-            renderPassInfo.pClearValues = &clearValue;
-
-            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.pipeline);
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)swapChainExtent.width;
-        viewport.height = (float)swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        Storage* storage = Storage::GetInstance();
-
-        for (int i = 0; i < storage->getUI().size(); i++)
-        {
-            std::shared_ptr<UI> ui = storage->getUI()[i];
-            if (!ui->getVisible())
-            {
-                continue;
-            }
-
-            VkDeviceSize offsets[] = { 0 };
-
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
-
-            vkCmdBindIndexBuffer(commandBuffer, ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
-
-            vkCmdDrawIndexed(commandBuffer, ui->indexCount, 1, 0, 0, 0);
-        }
-
-        if (beginRenderPass)
-        {
-            vkCmdEndRenderPass(commandBuffer);
-
-            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-                throw std::runtime_error("failed to record command buffer!");
-            }
-        }
-    }
-
-    //指定されたUIのみレンダリング ロード画面の描画を想定
-    void VulkanBase::drawUI(std::shared_ptr<UI> ui, bool beginRenderPass, VkCommandBuffer& commandBuffer,uint32_t imageIndex)
-    {
-        if (beginRenderPass)
-        {
-            VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = renderPass;
-            renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = swapChainExtent;
-
-            std::vector<VkClearValue> clearValues(2);
-            clearValues[0].color = { { 1.0f, 1.0f, 1.0f, 1.0f } };
-            clearValues[1].depthStencil = { 1.0f,0 };
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
-
-            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.pipeline);
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)swapChainExtent.width;
-        viewport.height = (float)swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        VkDeviceSize offsets[] = { 0 };
-
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffer, ui->indexCount, 1, 0, 0, 0);
-
-        if (beginRenderPass)
-        {
-            vkCmdEndRenderPass(commandBuffer);
-
-            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-                throw std::runtime_error("failed to record command buffer!");
-            }
-        }
-    }
-
-    //ロードUIの描画
-    void VulkanBase::drawLoading()
-    {
-        std::shared_ptr<UI> loadUI = Storage::GetInstance()->getLoadUI();
-
-        vkWaitForFences(device, 1, &multiThreadFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapChain();
-            return;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("failed to acquire swap chain image!");
-        }
-
-        vkResetFences(device, 1, &multiThreadFences[currentFrame]);
-
-        vkResetCommandBuffer(uiRender.loadCommandBuffers[currentFrame], 0);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(uiRender.loadCommandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-
-        //ここでロードUIの描画
-        drawUI(loadUI, true, uiRender.loadCommandBuffers[currentFrame], imageIndex);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &imageAvailableSemaphores[currentFrame];
-        submitInfo.pWaitDstStageMask = waitStages.data();
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &uiRender.loadCommandBuffers[currentFrame];
-
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentFrame];
-
-        if (vkQueueSubmit(multiThreadGraphicQueue, 1, &submitInfo, multiThreadFences[currentFrame]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
-        }
-
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
-
-        std::vector<VkSwapchainKHR> swapChains = { swapChain };
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains.data();
-
-        presentInfo.pImageIndices = &imageIndex;
-
-        result = vkQueuePresentKHR(multiThreadPresentQueue, &presentInfo);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
-            recreateSwapChain();
-        }
-        else if (result != VK_SUCCESS) {
-            throw std::runtime_error("failed to present swap chain image!");
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-    }
-
     //ロード画面の描画の終了
     void VulkanBase::stopLoading()
     {
@@ -2860,58 +2660,77 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkQueueWaitIdle(multiThreadPresentQueue);
     }
 
-    //キューブマップのレンダリング
-    void VulkanBase::drawCubeMap(GltfNode* node, std::shared_ptr<Cubemap> cubemap, VkCommandBuffer& commandBuffer)
+    //すべてのレンダリングをする前に実行される
+    void VulkanBase::renderBegin()
     {
-        Storage* storage = Storage::GetInstance();
+        vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, node->descriptorInfo.pipeline);
+        vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)swapChainExtent.width;
-        viewport.height = (float)swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        VkDeviceSize offsets[] = { 0 };
-
-        for(auto mesh : node->meshArray)
-        {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cubemap->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
-
-            vkCmdBindIndexBuffer(commandBuffer, cubemap->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-            for (int i = 0; i < mesh->primitives.size(); i++)
-            {
-                std::vector<VkDescriptorSet> descriptorSets =
-                {
-                    cubemap->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
-                    cubemap->getCubemapData().descriptorSet
-                };
-
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-
-                vkCmdDrawIndexed(commandBuffer, mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
-            }
-        }
-
-        for (int i = 0; i < node->children.size(); i++)
-        {
-            drawCubeMap(node->children[i], cubemap, commandBuffer);
+        if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
         }
     }
 
+    //すべてのレンダリングが終わったとき実行される
+    void VulkanBase::renderEnd()
+    {
+        if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitDstStageMask = waitStages.data();
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+
+        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to submit draw command buffer!");
+        }
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores.data();
+
+        std::vector<VkSwapchainKHR> swapChains = { swapChain };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains.data();
+
+        presentInfo.pImageIndices = &availableSwapChaneImageNumber;
+
+        VkResult result;
+        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            framebufferResized = false;
+            recreateSwapChain();
+        }
+        else if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
     //gltfモデルの描画
-    void VulkanBase::drawMesh(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer)
+    void VulkanBase::drawMesh(GltfNode* node, std::shared_ptr<Model> model, VkCommandBuffer& commandBuffer
+        , std::shared_ptr<Cubemap> cubemap, ShadowMapData& shadowMapData,PointLightBuffer& pointLightBuffer,DirectionalLightBuffer& dirLightBuffer)
     {
         Storage* storage = Storage::GetInstance();
 
@@ -2935,13 +2754,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDeviceSize offsets[] = { 0 };
 
-        for(auto mesh : node->meshArray)
+        for (auto mesh : node->meshArray)
         {
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
 
             vkCmdBindIndexBuffer(commandBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (int i = 0;i < mesh->primitives.size();i++)
+            for (int i = 0; i < mesh->primitives.size(); i++)
             {
                 std::shared_ptr<Material> material = model->getGltfModel()->materials[mesh->primitives[i].materialIndex];
 
@@ -2949,12 +2768,12 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 {
                     model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,//MVP行列とアニメーション行列
                     material->descriptorSet,//マテリアル
-                    storage->getPointLightDescriptorSet(),//ポイントライト
-                    storage->getDirectionalLightDescriptorSet(),//平行光源
+                    pointLightBuffer.descriptorSet,//ポイントライト
+                    dirLightBuffer.descriptorSet,//平行光源
                     shadowMapData.descriptorSets[0],//シャドウマップ
-                    iblDiffuse.descriptorSet,//IBLのdiffuse
-                    iblSpecularReflection.descriptorSet,//IBLのspecularの鏡面反射
-                    iblSpecularBRDF.descriptorSet//IBLのspecularのBRDF
+                    cubemap->getDiffuse().descriptorSet,//IBLのdiffuse
+                    cubemap->getSpecularReflection().descriptorSet,//IBLのspecularの鏡面反射
+                    cubemap->getSpecularBRDF().descriptorSet//IBLのspecularのBRDF
                 };
 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -2968,7 +2787,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < node->children.size(); i++)
         {
-            drawMesh(node->children[i], model,commandBuffer);
+            drawMesh(node->children[i], model, commandBuffer, cubemap
+                , shadowMapData,pointLightBuffer,dirLightBuffer);
         }
     }
 
@@ -3022,6 +2842,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //シャドウマップの用意
+
+    /*
     void VulkanBase::setupShadowMapDepth(VkCommandBuffer& commandBuffer)
     {
         VkRenderPassBeginInfo renderPassInfo{};
@@ -3051,21 +2873,135 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkCmdEndRenderPass(commandBuffer);
     }
 
-    //通常のレンダリングのコマンドを記録していく
-    void VulkanBase::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    */
 
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
+    //シャドウマップのレンダリング開始
+    void VulkanBase::shadowMapBegin(ShadowMapData& shadowMapData)
+    {
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = shadowMapData.passData.renderPass;
+        renderPassInfo.framebuffer = shadowMapData.passData.frameBuffer[0];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent.width = shadowMapData.passData.width;
+        renderPassInfo.renderArea.extent.height = shadowMapData.passData.height;
+
+        VkClearValue clearValue{};
+        clearValue.depthStencil = { 1.0f,0 };
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearValue;
+
+        vkCmdBeginRenderPass(commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        //1.75f, 0.0f, 5.75f
+        vkCmdSetDepthBias(commandBuffers[currentFrame], 1.25f, 0.0f, 1.75f);
+
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMapData.passData.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)shadowMapData.passData.width;
+        viewport.height = (float)shadowMapData.passData.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = { (uint32_t)shadowMapData.passData.width,(uint32_t)shadowMapData.passData.height };
+        vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+    }
+
+    //シャドウマップのレンダリング
+    void VulkanBase::renderShadowMap(std::shared_ptr<Model> model, ShadowMapData& shadowMapData)
+    {
+        GltfNode* node = model->getGltfModel()->getRootNode();
+
+        for (auto mesh : node->meshArray)
+        {
+            VkDeviceSize offsets[] = { 0 };
+
+            vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffers[currentFrame], model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            std::vector<VkDescriptorSet> descriptorSets(2);
+            descriptorSets[0] = shadowMapData.passData.descriptorSets[0];
+
+            for (int i = 0; i < mesh->primitives.size(); i++)
+            {
+                descriptorSets[1] = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+
+                vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    shadowMapData.passData.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+                vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
+            }
         }
 
-        setupShadowMapDepth(commandBuffer);
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            renderShadowMap(node->children[i], model, shadowMapData);
+        }
+    }
+
+    //シャドウマップのレンダリング
+    void VulkanBase::renderShadowMap(GltfNode* node,std::shared_ptr<Model> model, ShadowMapData& shadowMapData)
+    {
+        for (auto mesh : node->meshArray)
+        {
+            VkDeviceSize offsets[] = { 0 };
+
+            vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &model->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffers[currentFrame], model->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            std::vector<VkDescriptorSet> descriptorSets(2);
+            descriptorSets[0] = shadowMapData.passData.descriptorSets[0];
+
+            for (int i = 0; i < mesh->primitives.size(); i++)
+            {
+                descriptorSets[1] = model->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet;
+
+                vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    shadowMapData.passData.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+                vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
+            }
+        }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            renderShadowMap(node->children[i], model, shadowMapData);
+        }
+    }
+
+    //シャドウマップのレンダリング終了
+    void VulkanBase::shadowMapEnd()
+    {
+        vkCmdEndRenderPass(commandBuffers[currentFrame]);
+    }
+
+    //3DモデルとUIのレンダリングを開始
+    void VulkanBase::sceneRenderBegin()
+    {
+
+        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX
+            , imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &availableSwapChaneImageNumber);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapChain();
+            return;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+        renderPassInfo.framebuffer = swapChainFramebuffers[availableSwapChaneImageNumber];
         renderPassInfo.renderArea.offset = { 0, 0 };
         renderPassInfo.renderArea.extent = swapChainExtent;
 
@@ -3075,57 +3011,172 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
 
-        Storage* storage = Storage::GetInstance();
-        
-        for (auto model:storage->getModels())
+    //3Dモデルのレンダリング
+    void VulkanBase::renderModel(std::shared_ptr<Model> model, std::shared_ptr<Cubemap> cubemap
+        ,ShadowMapData& shadowMapData, PointLightBuffer& pointLightBuffer, DirectionalLightBuffer& dirLightBuffer)
+    {
+        drawMesh(model->getRootNode(), model, commandBuffers[currentFrame], cubemap
+            , shadowMapData, pointLightBuffer, dirLightBuffer);
+
+        if (model->hasColider() && coliderDraw)
         {
-            drawMesh((model)->getRootNode(),model,commandBuffer);
+            std::shared_ptr<Colider> colider = model->getColider();
 
-            if ((model)->hasColider() && coliderDraw)
+            vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, modelDescriptor.coliderPipeline);
+
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = (float)swapChainExtent.width;
+            viewport.height = (float)swapChainExtent.height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
+
+            VkRect2D scissor{};
+            scissor.offset = { 0, 0 };
+            scissor.extent = swapChainExtent;
+            vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+
+            VkDeviceSize offsets[] = { 0 };
+
+            vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &colider->getPointBufferData()->vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffers[currentFrame], colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                modelDescriptor.coliderPipelineLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
+
+            vkCmdDrawIndexed(commandBuffers[currentFrame], colider->getDrawColiderIndicesSize(), 1, 0, 0, 0);
+        }
+    }
+
+    //UIのレンダリング
+    void VulkanBase::renderUI(std::shared_ptr<UI> ui)
+    {
+        if (!ui->getVisible())
+        {
+            return;
+        }
+
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffers[currentFrame], ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+            uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffers[currentFrame], ui->indexCount, 1, 0, 0, 0);
+    }
+
+    //キューブマップのレンダリング
+    void VulkanBase::renderCubemap(std::shared_ptr<Cubemap> cubemap)
+    {
+        GltfNode* node = cubemap->getGltfModel()->getRootNode();
+
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, node->descriptorInfo.pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        for (auto mesh : node->meshArray)
+        {
+            vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &cubemap->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffers[currentFrame], cubemap->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (int i = 0; i < mesh->primitives.size(); i++)
             {
-                std::shared_ptr<Colider> colider = model->getColider();
+                std::vector<VkDescriptorSet> descriptorSets =
+                {
+                    cubemap->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
+                    cubemap->getBackGroundColor().descriptorSet
+                };
 
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelDescriptor.coliderPipeline);
+                vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-                VkViewport viewport{};
-                viewport.x = 0.0f;
-                viewport.y = 0.0f;
-                viewport.width = (float)swapChainExtent.width;
-                viewport.height = (float)swapChainExtent.height;
-                viewport.minDepth = 0.0f;
-                viewport.maxDepth = 1.0f;
-                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-                VkRect2D scissor{};
-                scissor.offset = { 0, 0 };
-                scissor.extent = swapChainExtent;
-                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-                VkDeviceSize offsets[] = { 0 };
-
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &colider->getPointBufferData()->vertBuffer, offsets);
-
-                vkCmdBindIndexBuffer(commandBuffer, colider->getPointBufferData()->indeBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    modelDescriptor.coliderPipelineLayout, 0, 1, &colider->getDescSetData().descriptorSet, 0, nullptr);
-
-                vkCmdDrawIndexed(commandBuffer, colider->getDrawColiderIndicesSize(), 1, 0, 0, 0);
+                vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
             }
         }
 
-        drawCubeMap(storage->getCubeMap()->getRootNode(), storage->getCubeMap(), commandBuffer);//キューブマッピングの描画
-
-        //UIの描画
-        drawUI(false, commandBuffer, imageIndex);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            renderCubemap(node->children[i], cubemap);
         }
+    }
+
+
+    //キューブマップのレンダリング
+    void VulkanBase::renderCubemap(GltfNode* node,std::shared_ptr<Cubemap> cubemap)
+    {
+        VkDeviceSize offsets[] = { 0 };
+
+        for (auto mesh : node->meshArray)
+        {
+            vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &cubemap->getPointBufferData()[mesh->meshIndex].vertBuffer, offsets);
+
+            vkCmdBindIndexBuffer(commandBuffers[currentFrame], cubemap->getPointBufferData()[mesh->meshIndex].indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (int i = 0; i < mesh->primitives.size(); i++)
+            {
+                std::vector<VkDescriptorSet> descriptorSets =
+                {
+                    cubemap->descSetDatas[mesh->primitives[i].primitiveIndex].descriptorSet,
+                    cubemap->getBackGroundColor().descriptorSet
+                };
+
+                vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    node->descriptorInfo.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+                vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->primitives[i].indexCount, 1, mesh->primitives[i].firstIndex, 0, 0);
+            }
+        }
+
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            renderCubemap(node->children[i], cubemap);
+        }
+    }
+
+    //3DモデルとUIのレンダリングを終了
+    void VulkanBase::sceneRenderEnd()
+    {
+        vkCmdEndRenderPass(commandBuffers[currentFrame]);
     }
 
     void VulkanBase::createSyncObjects() {//描画の動機用の変数を用意
@@ -3149,74 +3200,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
         }
-    }
-
-    //通常のレンダリングを開始する
-    void VulkanBase::drawFrame()
-    {
-        vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapChain();
-            return;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("failed to acquire swap chain image!");
-        }
-
-        vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
-        Storage* storage = Storage::GetInstance();
-
-        vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
-        std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores.data();
-        submitInfo.pWaitDstStageMask = waitStages.data();
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
-
-        std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
-        }
-
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores.data();
-
-        std::vector<VkSwapchainKHR> swapChains = {swapChain};
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains.data();
-
-        presentInfo.pImageIndices = &imageIndex;
-
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
-            recreateSwapChain();
-        }
-        else if (result != VK_SUCCESS) {
-            throw std::runtime_error("failed to present swap chain image!");
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     //シェーダの作成
@@ -3613,6 +3596,25 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         {
+            //シャドウマップ用のレイアウト
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding = 0;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &samplerLayoutBinding;
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowmapLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+        }
+
+        {
             //IBL用のレイアウト
             VkDescriptorSetLayoutBinding samplerLayoutBinding{};
             samplerLayoutBinding.binding = 0;
@@ -3626,17 +3628,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             layoutInfo.bindingCount = 1;
             layoutInfo.pBindings = &samplerLayoutBinding;
 
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &iblDiffuse.mainPassLayout) != VK_SUCCESS)//IBLのdiffuse
-            {
-                throw std::runtime_error("failed to create descriptor set layout!");
-            }
-
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &iblSpecularReflection.mainPassLayout) != VK_SUCCESS)//IBLのspecularの鏡面反射用
-            {
-                throw std::runtime_error("failed to create descriptor set layout!");
-            }
-
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &iblSpecularBRDF.mainPassLayout) != VK_SUCCESS)//IBLのspecularのBRDF用
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &iblLayout) != VK_SUCCESS)//IBLのdiffuse
             {
                 throw std::runtime_error("failed to create descriptor set layout!");
             }
@@ -3693,27 +3685,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //シャドウマップ作成用のdescriptorSet関係のデータの作成
     void VulkanBase::createDescriptorData_ShadowMap(std::vector<VkDescriptorSet>& descriptorSets,OffScreenPass& pass,VkDescriptorSetLayout& layout)
     {
-        //レイアウトはpreapreDescriptorにて作成済み
-        //デプスバッファを入力とするdescriptorsetのレイアウトの作成
-        {
-            //シャドウマップ用
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding = 0;
-            samplerLayoutBinding.descriptorCount = 1;
-            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers = nullptr;
-            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = 1;
-            layoutInfo.pBindings = &samplerLayoutBinding;
-
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMapData.layout) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create descriptor set layout!");
-            }
-        }
-
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
@@ -3752,25 +3723,21 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //ポイントライトのgpu上のバッファーなどを作成
-    void VulkanBase::setPointLights(std::vector<std::shared_ptr<PointLight>> lights)
+    void VulkanBase::createPointLightBuffer(PointLightBuffer& buffer)
     {
-        Storage* storage = Storage::GetInstance();
+        createUniformBuffer(1, &buffer.mappedBuffer, sizeof(PointLightUBO));
 
-        createUniformBuffer(1, &storage->getPointLightsBuffer(), sizeof(PointLightUBO));
-
-        createDescriptorData(storage->getPointLightsBuffer(), modelDescriptor.lightLayout,
-            storage->getPointLightDescriptorSet(), sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+        createDescriptorData(buffer.mappedBuffer, modelDescriptor.lightLayout,
+            buffer.descriptorSet, sizeof(PointLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     //平行光源のgpu上のバッファーなどを作成
-    void VulkanBase::setDirectionalLights(std::vector<std::shared_ptr<DirectionalLight>> lights)
+    void VulkanBase::createDirectionalLightBuffer(DirectionalLightBuffer& buffer)
     {
-        Storage* storage = Storage::GetInstance();
+        createUniformBuffer(1, &buffer.mappedBuffer, sizeof(DirectionalLightUBO));
 
-        createUniformBuffer(1, &storage->getDirectionalLightsBuffer(), sizeof(DirectionalLightUBO));
-
-        createDescriptorData(storage->getDirectionalLightsBuffer(), modelDescriptor.lightLayout,
-            storage->getDirectionalLightDescriptorSet(), sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
+        createDescriptorData(buffer.mappedBuffer, modelDescriptor.lightLayout,
+            buffer.descriptorSet, sizeof(DirectionalLightUBO), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     //gltfモデルの持つマテリアル用のデータの作成
@@ -3796,26 +3763,26 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //シャドウマップ用ンデータを用意する、引数としてシーン上のライトの数だけオフスクリーンレンダリングを行う
-    void VulkanBase::prepareShadowMapping(int lightCount)
+    void VulkanBase::prepareShadowMapping(int lightCount,ShadowMapData& shadowMap)
     {
-        shadowMapData.setFrameCount(lightCount);
-        shadowMapData.descriptorSets.resize(1);
-        shadowMapData.shadowMapScale = 4;
+        shadowMap.setFrameCount(lightCount);
+        shadowMap.descriptorSets.resize(1);
+        shadowMap.shadowMapScale = 4;
 
-        shadowMapData.proj = glm::ortho(shadowMapLeft, shadowMapRight, shadowMapBottom, shadowMapTop, shadowMapNear, shadowMapFar);
+        shadowMap.proj = glm::ortho(shadowMapLeft, shadowMapRight, shadowMapBottom, shadowMapTop, shadowMapNear, shadowMapFar);
 
-        shadowMapData.passData.width = swapChainExtent.width * shadowMapData.shadowMapScale;
-        shadowMapData.passData.height = swapChainExtent.height * shadowMapData.shadowMapScale;
+        shadowMap.passData.width = swapChainExtent.width * shadowMap.shadowMapScale;
+        shadowMap.passData.height = swapChainExtent.height * shadowMap.shadowMapScale;
 
-        for (auto& attachment : shadowMapData.passData.imageAttachment)
+        for (auto& attachment : shadowMap.passData.imageAttachment)
         {
-            createImage(shadowMapData.passData.width, shadowMapData.passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM,
+            createImage(shadowMap.passData.width, shadowMap.passData.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
             attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1,1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            VK_FILTER_LINEAR, VK_FILTER_LINEAR, shadowMapData.passData.sampler);
+            VK_FILTER_LINEAR, VK_FILTER_LINEAR, shadowMap.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
         attachmentDescription.format = VK_FORMAT_D16_UNORM;
@@ -3863,24 +3830,24 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassCreateInfo.pDependencies = dependencies.data();
 
-        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &shadowMapData.passData.renderPass) != VK_SUCCESS)
+        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &shadowMap.passData.renderPass) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create renderpass");
         }
 
         // Create frame buffer
-        for (int i = 0; i < shadowMapData.passData.frameBuffer.size(); i++)
+        for (int i = 0; i < shadowMap.passData.frameBuffer.size(); i++)
         {
             VkFramebufferCreateInfo fbufCreateInfo{};
             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = shadowMapData.passData.renderPass;
+            fbufCreateInfo.renderPass = shadowMap.passData.renderPass;
             fbufCreateInfo.attachmentCount = 1;
-            fbufCreateInfo.pAttachments = &shadowMapData.passData.imageAttachment[i].view;
-            fbufCreateInfo.width = shadowMapData.passData.width;
-            fbufCreateInfo.height = shadowMapData.passData.height;
+            fbufCreateInfo.pAttachments = &shadowMap.passData.imageAttachment[i].view;
+            fbufCreateInfo.width = shadowMap.passData.width;
+            fbufCreateInfo.height = shadowMap.passData.height;
             fbufCreateInfo.layers = 1;
 
-            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMapData.passData.frameBuffer[i]))
+            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.passData.frameBuffer[i]))
             {
                 throw std::runtime_error("failed create frame buffer");
             }
@@ -3888,7 +3855,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < lightCount; i++)
         {
-            createUniformBuffer(1, &shadowMapData.mappedBuffers[i], sizeof(ShadowMapUBO));
+            createUniformBuffer(1, &shadowMap.mappedBuffers[i], sizeof(ShadowMapUBO));
         }
 
         VkDescriptorSetLayoutBinding layoutBinding;
@@ -3903,7 +3870,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layoutInfo.bindingCount = 1;
         layoutInfo.pBindings = &layoutBinding;
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMapData.passData.layout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &shadowMap.passData.layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
 
@@ -3913,9 +3880,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
             allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &shadowMapData.passData.layout;
+            allocInfo.pSetLayouts = &shadowMap.passData.layout;
 
-            if (vkAllocateDescriptorSets(device, &allocInfo, &shadowMapData.passData.descriptorSets[i]) != VK_SUCCESS)
+            if (vkAllocateDescriptorSets(device, &allocInfo, &shadowMap.passData.descriptorSets[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
@@ -3927,13 +3894,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             descriptorSetCount++;
 
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = shadowMapData.mappedBuffers[i].uniformBuffer;
+            bufferInfo.buffer = shadowMap.mappedBuffers[i].uniformBuffer;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(ShadowMapUBO);
 
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = shadowMapData.passData.descriptorSets[i];
+            descriptorWrite.dstSet = shadowMap.passData.descriptorSets[i];
             descriptorWrite.dstBinding = 0;
             descriptorWrite.dstArrayElement = 0;
             descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -3944,9 +3911,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         createShadowMapPipeline("shaders/shadowMapping.vert.spv"
-            , shadowMapData.passData.layout, shadowMapData.passData.pipelineLayout, shadowMapData.passData.pipeline,shadowMapData.passData.renderPass);
+            , shadowMap.passData.layout, shadowMap.passData.pipelineLayout, shadowMap.passData.pipeline,shadowMap.passData.renderPass);
 
-        createDescriptorData_ShadowMap(shadowMapData.descriptorSets,shadowMapData.passData,shadowMapData.layout);//デプスバッファをテクスチャとして利用するためのdescriptorSet
+        createDescriptorData_ShadowMap(shadowMap.descriptorSets,shadowMap.passData,shadowmapLayout);//デプスバッファをテクスチャとして利用するためのdescriptorSet
     }
 
     //UI描画用のパイプラインなどを用意
@@ -4144,13 +4111,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    //各種ライトのバッファなどの作成
-    void VulkanBase::setLightData(std::vector<std::shared_ptr<PointLight>> pointLights, std::vector<std::shared_ptr<DirectionalLight>> dirLights)
-    {
-        setPointLights(pointLights);
-        setDirectionalLights(dirLights);
-    }
-
     //Modelクラスの持つバッファーの作成
     void VulkanBase::setModelData(std::shared_ptr<Model> model)
     {
@@ -4174,37 +4134,39 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //キューブマップの作成
-    void VulkanBase::prepareCubemapTextures()
+    void VulkanBase::prepareCubemapTextures(std::shared_ptr<Cubemap> cubemap)
     {
+        BackGroundColor& backGroundColor = cubemap->getBackGroundColor();
+
         //hdriTextureのデータを作る
         {
-            createTextureImage(cubemapData.srcHdriTexture, Storage::GetInstance()->getCubemapImage(),cubemapData.format);
-            createTextureImageView(cubemapData.srcHdriTexture, cubemapData.format);
-            createTextureSampler(cubemapData.srcHdriTexture);
+            createTextureImage(backGroundColor.srcHdriTexture, cubemap->getHDRIMap(), backGroundColor.format);
+            createTextureImageView(backGroundColor.srcHdriTexture, backGroundColor.format);
+            createTextureSampler(backGroundColor.srcHdriTexture);
         }
 
-        cubemapData.setFrameCount(CUBEMAP_FACE_COUNT);
+        backGroundColor.setFrameCount(CUBEMAP_FACE_COUNT);
 
         //キューブマッピング用にレンダリングイメージを正方形にしておく
-        std::shared_ptr<ImageData> cubemapImage = Storage::GetInstance()->getCubemapImage();
+        std::shared_ptr<ImageData> cubemapImage = cubemap->getHDRIMap();
         int renderSize = std::min(cubemapImage->getWidth(), cubemapImage->getHeight());
 
-        cubemapData.passData.width = renderSize;
-        cubemapData.passData.height = renderSize;
+        backGroundColor.passData.width = renderSize;
+        backGroundColor.passData.height = renderSize;
 
         //レンダリングの結果の出力用のバッファの作成
-        for (auto& attachment : cubemapData.passData.imageAttachment)
+        for (auto& attachment : backGroundColor.passData.imageAttachment)
         {
-            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, cubemapData.format,
+            createImage(renderSize,renderSize, 1, VK_SAMPLE_COUNT_1_BIT, backGroundColor.format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment.image, attachment.memory);
-            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, cubemapData.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
+            attachment.view = createImageView(attachment.image, VK_IMAGE_VIEW_TYPE_2D, backGroundColor.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1);
         }
         createImageSampler(VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
-            VK_FILTER_LINEAR, VK_FILTER_LINEAR, cubemapData.passData.sampler);
+            VK_FILTER_LINEAR, VK_FILTER_LINEAR, backGroundColor.passData.sampler);
 
         VkAttachmentDescription attachmentDescription{};
-        attachmentDescription.format = cubemapData.format;
+        attachmentDescription.format = backGroundColor.format;
         attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
         attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// レンダーパス開始時に深度をクリア
         attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// アタッチメントの情報を記録
@@ -4249,24 +4211,24 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassCreateInfo.pDependencies = dependencies.data();
 
-        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &cubemapData.passData.renderPass) != VK_SUCCESS)
+        if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &backGroundColor.passData.renderPass) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create renderpass");
         }
 
         // Create frame buffer
-        for (int i = 0; i < cubemapData.passData.frameBuffer.size(); i++)
+        for (int i = 0; i < backGroundColor.passData.frameBuffer.size(); i++)
         {
             VkFramebufferCreateInfo fbufCreateInfo{};
             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = cubemapData.passData.renderPass;
+            fbufCreateInfo.renderPass = backGroundColor.passData.renderPass;
             fbufCreateInfo.attachmentCount = 1;
-            fbufCreateInfo.pAttachments = &cubemapData.passData.imageAttachment[i].view;
-            fbufCreateInfo.width = cubemapData.passData.width;
-            fbufCreateInfo.height = cubemapData.passData.height;
+            fbufCreateInfo.pAttachments = &backGroundColor.passData.imageAttachment[i].view;
+            fbufCreateInfo.width = backGroundColor.passData.width;
+            fbufCreateInfo.height = backGroundColor.passData.height;
             fbufCreateInfo.layers = 1;
 
-            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &cubemapData.passData.frameBuffer[i]))
+            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &backGroundColor.passData.frameBuffer[i]))
             {
                 throw std::runtime_error("failed create frame buffer");
             }
@@ -4274,7 +4236,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (int i = 0; i < CUBEMAP_FACE_COUNT; i++)
         {
-            createUniformBuffer(1, &cubemapData.mappedBuffers[i], sizeof(MatricesUBO));
+            createUniformBuffer(1, &backGroundColor.mappedBuffers[i], sizeof(MatricesUBO));
         }
 
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
@@ -4295,7 +4257,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
         layoutInfo.pBindings = layoutBindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &cubemapData.passData.layout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &backGroundColor.passData.layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
 
@@ -4305,9 +4267,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
             allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &cubemapData.passData.layout;
+            allocInfo.pSetLayouts = &backGroundColor.passData.layout;
 
-            if (vkAllocateDescriptorSets(device, &allocInfo, &cubemapData.passData.descriptorSets[i]) != VK_SUCCESS)
+            if (vkAllocateDescriptorSets(device, &allocInfo, &backGroundColor.passData.descriptorSets[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
@@ -4319,18 +4281,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             descriptorSetCount++;
 
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cubemapData.mappedBuffers[i].uniformBuffer;
+            bufferInfo.buffer = backGroundColor.mappedBuffers[i].uniformBuffer;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(MatricesUBO);
 
             VkDescriptorImageInfo info{};
             info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info.imageView = cubemapData.srcHdriTexture->view;
-            info.sampler = cubemapData.srcHdriTexture->sampler;
+            info.imageView = backGroundColor.srcHdriTexture->view;
+            info.sampler = backGroundColor.srcHdriTexture->sampler;
 
             std::vector<VkWriteDescriptorSet> descriptorWrites(2);
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = cubemapData.passData.descriptorSets[i];
+            descriptorWrites[0].dstSet = backGroundColor.passData.descriptorSets[i];
             descriptorWrites[0].dstBinding = 0;
             descriptorWrites[0].dstArrayElement = 0;
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -4338,7 +4300,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             descriptorWrites[0].pBufferInfo = &bufferInfo;
 
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = cubemapData.passData.descriptorSets[i];
+            descriptorWrites[1].dstSet = backGroundColor.passData.descriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -4349,11 +4311,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
 
         createCalcCubeMapPipeline("shaders/calcCubemap.vert.spv","shaders/calcCubemap.frag.spv"
-            , cubemapData.passData.layout, cubemapData.passData.pipelineLayout, cubemapData.passData.pipeline, cubemapData.passData.renderPass);
+            , backGroundColor.passData.layout, backGroundColor.passData.pipelineLayout, backGroundColor.passData.pipeline, backGroundColor.passData.renderPass);
     }
 
     void VulkanBase::prepareIBL(std::string vertShaderPath, std::string fragShaderPath
-        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers)
+        ,OffScreenPass& passData,VkFormat format,uint32_t mipmapLevel,std::vector<MappedBuffer>& mappedBuffers, std::shared_ptr<Cubemap> cubemap)
     {
         //レンダリングの結果の出力用のバッファの作成
         for (auto& attachment : passData.imageAttachment)
@@ -4491,8 +4453,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             //6つのレイヤーを持つ画像を参照するようにする
             VkDescriptorImageInfo info{};
             info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info.imageView = cubemapData.multiTexture->view;
-            info.sampler = cubemapData.multiTexture->sampler;
+            info.imageView = cubemap->getBackGroundColor().multiTexture->view;
+            info.sampler = cubemap->getBackGroundColor().multiTexture->sampler;
 
             std::vector<VkWriteDescriptorSet> descriptorWrites(2);
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -4519,7 +4481,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //specularのIBLの作成のため、レンダーパスを複数作成
-    void VulkanBase::prepareIBL(IBLSpecularReflection& iblSpecular)
+    void VulkanBase::prepareIBL(IBLSpecularReflection& iblSpecular, std::shared_ptr<Cubemap> cubemap)
     {
         //レンダリングの結果の出力用のバッファの作成
         for (int i = 0; i < iblSpecular.imageAttachment.size(); i++)
@@ -4655,15 +4617,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             //キューブマッピングで使う行列のバッファを流用する
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cubemapData.mappedBuffers[i].uniformBuffer;
+            bufferInfo.buffer = cubemap->getBackGroundColor().mappedBuffers[i].uniformBuffer;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(MatricesUBO);
 
             //6つのレイヤーを持つ画像を参照するようにする
             VkDescriptorImageInfo info{};
             info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info.imageView = cubemapData.multiTexture->view;
-            info.sampler = cubemapData.multiTexture->sampler;
+            info.imageView = cubemap->getBackGroundColor().multiTexture->view;
+            info.sampler = cubemap->getBackGroundColor().multiTexture->sampler;
 
             std::vector<VkWriteDescriptorSet> descriptorWrites(2);
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -4691,7 +4653,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //6枚のテクスチャを作成して、キューブマップを作成
-    void VulkanBase::createSamplerCube2D(OffScreenPass& passData,std::vector<MappedBuffer>& mappedBuffers)
+    void VulkanBase::createSamplerCube2D(OffScreenPass& passData,std::vector<MappedBuffer>& mappedBuffers, std::shared_ptr<Cubemap> cubemap)
     {
         auto c = vkResetFences(device, 1, &inFlightFences[0]);
         if (c != VK_SUCCESS)
@@ -4758,7 +4720,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkCmdBeginRenderPass(commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
+            drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), cubemap
                 , passData.width, passData.width, commandBuffers[0], i, passData.descriptorSets
                 , passData.pipelineLayout, passData.pipeline);
 
@@ -4795,7 +4757,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //specular用のSamplerCubeを作る関数
-    void VulkanBase::createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers)
+    void VulkanBase::createSamplerCube2D(IBLSpecularReflection& iblSpecular, std::vector<MappedBuffer>& mappedBuffers, std::shared_ptr<Cubemap> cubemap)
     {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -4861,7 +4823,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 constant.roughness = static_cast<float>(j) / static_cast<float>(iblSpecular.mipmapLevel);
                 vkCmdPushConstants(commandBuffers[0], iblSpecular.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SpecularPushConstant), &constant);
 
-                drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
+                drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), cubemap
                     ,iblSpecular.mipmapLevelSize[j], iblSpecular.mipmapLevelSize[j], commandBuffers[0], i,iblSpecular.descriptorSets
                     ,iblSpecular.pipelineLayout,iblSpecular.pipeline[j]);
 
@@ -4896,7 +4858,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //specular用のSamplerCubeを作る関数
-    void VulkanBase::createLUT(IBLSpecularBRDF& iblSpecular, MappedBuffer& mappedBuffer)
+    void VulkanBase::createLUT(IBLSpecularBRDF& iblSpecular, MappedBuffer& mappedBuffer,std::shared_ptr<Cubemap> cubemap)
     {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -4928,7 +4890,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBeginRenderPass(commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), storage->getCubeMap()
+        drawSamplerCube(storage->getgltfModel(cubemapPath)->getRootNode(), cubemap
             , iblSpecular.passData.width, iblSpecular.passData.height, commandBuffers[0], 0/*一つの面しかレンダリングしないので0で固定*/, iblSpecular.passData.descriptorSets
             , iblSpecular.passData.pipelineLayout, iblSpecular.passData.pipeline);
 
@@ -5043,11 +5005,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //キューブマップの作成
-    void VulkanBase::setCubeMapModel(std::shared_ptr<Model> cubemap)
+    void VulkanBase::createCubemap(std::shared_ptr<Cubemap> cubemap)
     {
-        cubemapData.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        BackGroundColor& backGroundColor = cubemap->getBackGroundColor();
+        IBLDiffuse& diffuse = cubemap->getDiffuse();
+        IBLSpecularReflection& reflection = cubemap->getSpecularReflection();
+        IBLSpecularBRDF& brdf = cubemap->getSpecularBRDF();
 
-        prepareCubemapTextures();//キューブマッピングの用意
+        backGroundColor.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        diffuse.format = backGroundColor.format;
+        reflection.format = backGroundColor.format;
+
+        prepareCubemapTextures(cubemap);//キューブマッピングの用意
 
         /*頂点、インデックスバッファーを持たせる*/
         createMeshesData(cubemap);
@@ -5056,13 +5025,13 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createUniformBuffers(cubemap);
 
         //6枚のテクスチャを作成する
-        createSamplerCube2D(cubemapData.passData,cubemapData.mappedBuffers);
+        createSamplerCube2D(backGroundColor.passData, backGroundColor.mappedBuffers,cubemap);
 
         /*スカイボックス用のテクスチャを用意する*/
         {
             {
                 //スカイボックス用にレイヤーの数を6つに
-                std::shared_ptr<ImageData> image = Storage::GetInstance()->getCubemapImage();
+                std::shared_ptr<ImageData> image = cubemap->getHDRIMap();;
                 int cubemapImageSize = std::min(image->getWidth(), image->getHeight());
 
                 //フレームバッファからキューブマップのレンダリング結果を取得し
@@ -5070,77 +5039,56 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 {
                     for (int i = 0; i < CUBEMAP_FACE_COUNT; i++)
                     {
-                        transitionImageLayout(cubemapData.passData.imageAttachment[i].image,
-                            cubemapData.format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
+                        transitionImageLayout(backGroundColor.passData.imageAttachment[i].image,
+                            backGroundColor.format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1);
                     }
                 }
 
-                cubemapData.multiTexture->mipLevel = calcMipMapLevel(cubemapImageSize, cubemapImageSize);
+                backGroundColor.multiTexture->mipLevel = calcMipMapLevel(cubemapImageSize, cubemapImageSize);
 
                 {//6つのレイヤーを持つテクスチャデータを作成
-                    createMultiLayerTexture(cubemapData.multiTexture, CUBEMAP_FACE_COUNT
-                        , cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel,cubemapData.format);
+                    createMultiLayerTexture(backGroundColor.multiTexture, CUBEMAP_FACE_COUNT
+                        , cubemapImageSize, cubemapImageSize, backGroundColor.multiTexture->mipLevel, backGroundColor.format);
 
                     //画像のすべてのレイヤーを移動させる
-                    transitionImageLayout(cubemapData.multiTexture->image, cubemapData.format
-                        , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    transitionImageLayout(backGroundColor.multiTexture->image, backGroundColor.format
+                        , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, backGroundColor.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
                     std::vector<VkImage> srcImages(CUBEMAP_FACE_COUNT);
-                    for (uint32_t i = 0;i < cubemapData.passData.imageAttachment.size();i++)
+                    for (uint32_t i = 0;i < backGroundColor.passData.imageAttachment.size();i++)
                     {
-                        srcImages[i] = cubemapData.passData.imageAttachment[i].image;
+                        srcImages[i] = backGroundColor.passData.imageAttachment[i].image;
                     }
                     copyImageToMultiLayerImage(srcImages.data(), static_cast<uint32_t>(srcImages.size())
-                        , cubemapData.passData.width, cubemapData.passData.height, cubemapData.multiTexture->image);
+                        , backGroundColor.passData.width, backGroundColor.passData.height, backGroundColor.multiTexture->image);
 
-                    generateMipmaps(cubemapData.multiTexture->image, cubemapData.format
-                        , cubemapImageSize, cubemapImageSize, cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+                    generateMipmaps(backGroundColor.multiTexture->image, backGroundColor.format
+                        , cubemapImageSize, cubemapImageSize, backGroundColor.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
                 }
             }
 
             //ビューをテクスチャキューブに設定
-            cubemapData.multiTexture->view = createImageView(cubemapData.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, cubemapData.format, VK_IMAGE_ASPECT_COLOR_BIT
-                , cubemapData.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
+            backGroundColor.multiTexture->view = createImageView(backGroundColor.multiTexture->image, VK_IMAGE_VIEW_TYPE_CUBE, backGroundColor.format, VK_IMAGE_ASPECT_COLOR_BIT
+                , backGroundColor.multiTexture->mipLevel, CUBEMAP_FACE_COUNT);
 
-            createTextureSampler(cubemapData.multiTexture);
+            createTextureSampler(backGroundColor.multiTexture);
         }
 
-        {
-            //キューブマッピングを反映するためのdescriptorSetのレイアウトを作成
-
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding = 0;
-            samplerLayoutBinding.descriptorCount = 1;
-            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers = nullptr;
-            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = 1;
-            layoutInfo.pBindings = &samplerLayoutBinding;
-
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &cubemapData.layout) != VK_SUCCESS)
-            {
-                throw std::runtime_error("failed to create descriptor set layout!");
-            }
-        }
-
-        createCubemapPipeline("shaders/cubemap.vert.spv", "shaders/cubemap.frag.spv", cubemapData.layout, cubemapData.pipelineLayout, cubemapData.pipeline, renderPass);
+        createCubemapPipeline("shaders/cubemap.vert.spv", "shaders/cubemap.frag.spv", iblLayout, backGroundColor.pipelineLayout, backGroundColor.pipeline, renderPass);
 
         /*ここからパイプラインは、同じグループのモデルでは使いまわせる*/
         /*ディスクリプタセットは、テクスチャデータが異なる場合は使いまわせない*/
-        createDescriptorInfos(cubemapData.pipelineLayout, cubemapData.pipeline, cubemap);
+        createDescriptorInfos(backGroundColor.pipelineLayout, backGroundColor.pipeline, cubemap);
 
-        //cubemapのテクスチャ部分のdescriptorSetのメモリーを確保
+        //SamplerCube用のdescriptorSetの作成
         {
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
             allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &cubemapData.layout;
+            allocInfo.pSetLayouts = &iblLayout;
 
-            if (vkAllocateDescriptorSets(device, &allocInfo, &cubemapData.descriptorSet) != VK_SUCCESS)
+            if (vkAllocateDescriptorSets(device, &allocInfo, &backGroundColor.descriptorSet) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
@@ -5150,18 +5098,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
             descriptorSetCount++;
-        }
 
-        //SamplerCube用のdescriptorSetの作成
-        {
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = cubemapData.multiTexture->view;
-            imageInfo.sampler = cubemapData.multiTexture->sampler;
+            imageInfo.imageView = backGroundColor.multiTexture->view;
+            imageInfo.sampler = backGroundColor.multiTexture->sampler;
 
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = cubemapData.descriptorSet;
+            descriptorWrite.dstSet = backGroundColor.descriptorSet;
             descriptorWrite.dstBinding = 0;
             descriptorWrite.dstArrayElement = 0;
             descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -5178,113 +5123,111 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorSet_CubeMap(cubemap->getRootNode(), cubemap);
 
         //IBLを作成する
-        createIBL();
+        createIBL(diffuse,reflection,brdf,cubemap);
 
         cubemap->getGltfModel()->setup = true;
     }
 
     //IBLを作成する
-    void VulkanBase::createIBL()
+    void VulkanBase::createIBL(IBLDiffuse& diffuse,IBLSpecularReflection& reflection,IBLSpecularBRDF& brdf,std::shared_ptr<Cubemap> cubemap)
     {
         //diffuse
-        iblDiffuse.format = cubemapData.format;
-        createIBLDiffuse();
+        createIBLDiffuse(diffuse,cubemap);
         //specular
-        iblSpecularReflection.format = cubemapData.format;
-        createIBLSpecular();
+        createIBLSpecular(reflection,brdf,cubemap);
     }
 
     //IBLのdiffuseテクスチャを作成する
-    void VulkanBase::createIBLDiffuse()
+    void VulkanBase::createIBLDiffuse(IBLDiffuse& diffuse,std::shared_ptr<Cubemap> cubemap)
     {
         //事前計算用のシェーダの設定
-        iblDiffuse.vertShaderPath = "shaders/calcIBL.vert.spv";
-        iblDiffuse.fragShaderPath = "shaders/calcDiffuse.frag.spv";
+        diffuse.vertShaderPath = "shaders/calcIBL.vert.spv";
+        diffuse.fragShaderPath = "shaders/calcDiffuse.frag.spv";
 
         //オフスクリーンレンダリング用のフレーム数を作成する
-        iblDiffuse.setFrameCount(CUBEMAP_FACE_COUNT);
+        diffuse.setFrameCount(CUBEMAP_FACE_COUNT);
         //テクスチャのサイズ設定
-        iblDiffuse.setRenderSize(IBL_MAP_SIZE);
+        diffuse.setRenderSize(IBL_MAP_SIZE);
 
         //ミップマップレベルの計算
-        iblDiffuse.setMipmapLevel(1);
+        diffuse.setMipmapLevel(1);
 
         //diffuse用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblDiffuse.vertShaderPath, iblDiffuse.fragShaderPath
-            , iblDiffuse.passData, iblDiffuse.format,iblDiffuse.mipmapLevel,iblDiffuse.mappedBuffers);
+        prepareIBL(diffuse.vertShaderPath, diffuse.fragShaderPath
+            , diffuse.passData, diffuse.format,diffuse.mipmapLevel,diffuse.mappedBuffers,cubemap);
 
         //SamperCubeを作成する
-        createSamplerCube2D(iblDiffuse.passData, iblDiffuse.mappedBuffers);
+        createSamplerCube2D(diffuse.passData, diffuse.mappedBuffers,cubemap);
 
         //6つの視点の画像をまとめて、SamplerCubeを作成する
-        createCubeMapTextureFromImages(iblDiffuse.size, iblDiffuse.mipmapLevel, iblDiffuse.multiLayerTexture, iblDiffuse.passData.imageAttachment, iblDiffuse.format);
+        createCubeMapTextureFromImages(diffuse.size, diffuse.mipmapLevel, diffuse.multiLayerTexture, diffuse.passData.imageAttachment, diffuse.format);
 
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
-        createIBLDescriptor(iblDiffuse.multiLayerTexture, iblDiffuse.mainPassLayout, iblDiffuse.descriptorSet);
+        createIBLDescriptor(diffuse.multiLayerTexture, diffuse.mainPassLayout, diffuse.descriptorSet);
     }
 
     //IBLのspecularテクスチャを作成する
-    void VulkanBase::createIBLSpecular()
+    void VulkanBase::createIBLSpecular(IBLSpecularReflection& reflection,IBLSpecularBRDF& brdf, std::shared_ptr<Cubemap> cubemap)
     {
         //specularの鏡面反射項のマップを作成
-        createIBLSpecularReflection();
+        createIBLSpecularReflection(reflection,cubemap);
         //specularのBRDFのマップを作成
-        createIBLSpecularBRDF();
+        createIBLSpecularBRDF(brdf,cubemap);
     }
 
-    void VulkanBase::createIBLSpecularReflection()
+    void VulkanBase::createIBLSpecularReflection(IBLSpecularReflection& reflection, std::shared_ptr<Cubemap> cubemap)
     {
         //事前計算用のシェーダを設定
-        iblSpecularReflection.vertShaderPath = "shaders/calcIBL.vert.spv";
-        iblSpecularReflection.fragShaderPath = "shaders/calcSpecularReflection.frag.spv";
+        reflection.vertShaderPath = "shaders/calcIBL.vert.spv";
+        reflection.fragShaderPath = "shaders/calcSpecularReflection.frag.spv";
 
         //テクスチャのサイズの設定
-        iblSpecularReflection.setRenderSize(IBL_MAP_SIZE);
+        reflection.setRenderSize(IBL_MAP_SIZE);
 
         //オフスクリーンレンダリングのフレーム数を設定する
-        iblSpecularReflection.setFrameCount(CUBEMAP_FACE_COUNT);
+        reflection.setFrameCount(CUBEMAP_FACE_COUNT);
 
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblSpecularReflection);
+        prepareIBL(reflection,cubemap);
 
         //6つの視点からの立方体の内側をレンダリングして、6つの視点それぞれの画像をミップマップの数だけ作成
-        createSamplerCube2D(iblSpecularReflection, iblSpecularReflection.mappedBuffers);
+        createSamplerCube2D(reflection, reflection.mappedBuffers,cubemap);
 
         //6つの視点の画像をまとめて、SamplerCubeを作成する
-        createCubeMapTextureFromImages(iblSpecularReflection.size, iblSpecularReflection.multiLayerTexture
-            , iblSpecularReflection.imageAttachment, iblSpecularReflection.mipmapLevelSize,iblSpecularReflection.format);
+        createCubeMapTextureFromImages(reflection.size, reflection.multiLayerTexture
+            , reflection.imageAttachment, reflection.mipmapLevelSize,reflection.format);
 
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
-        createIBLDescriptor(iblSpecularReflection.multiLayerTexture, iblSpecularReflection.mainPassLayout, iblSpecularReflection.descriptorSet);
+        createIBLDescriptor(reflection.multiLayerTexture, iblLayout, reflection.descriptorSet);
     }
 
     //specularのBRDF項についてのマップを作成
-    void VulkanBase::createIBLSpecularBRDF()
+    void VulkanBase::createIBLSpecularBRDF(IBLSpecularBRDF& brdf, std::shared_ptr<Cubemap> cubemap)
     {
         //事前計算用のシェーダを設定
-        iblSpecularBRDF.vertShaderPath = "shaders\\calcBRDF.vert.spv";
-        iblSpecularBRDF.fragShaderPath = "shaders\\calcSpecularBRDF.frag.spv";
+        brdf.vertShaderPath = "shaders\\calcBRDF.vert.spv";
+        brdf.fragShaderPath = "shaders\\calcSpecularBRDF.frag.spv";
 
         //テクスチャのサイズの設定
-        iblSpecularBRDF.setRenderSize(IBL_MAP_SIZE);
+        brdf.setRenderSize(IBL_MAP_SIZE);
 
         //IBLのspeuclarのBRDFでは、立方体の一面のみレンダリングすればいい
-        iblSpecularBRDF.setFrameCount(1);
+        brdf.setFrameCount(1);
 
         //specular用テクスチャの6回のオフスクリーンレンダリングの準備を行う
-        prepareIBL(iblSpecularBRDF.vertShaderPath, iblSpecularBRDF.fragShaderPath
-            , iblSpecularBRDF.passData, VK_FORMAT_R16G16B16A16_SFLOAT,1,iblSpecularBRDF.mappedBuffers);
+        prepareIBL(brdf.vertShaderPath, brdf.fragShaderPath
+            , brdf.passData, VK_FORMAT_R16G16B16A16_SFLOAT,1,brdf.mappedBuffers,cubemap);
 
         //一つの視点のみから立方体の面をレンダリングして、2DのLUTを作成する
-        createLUT(iblSpecularBRDF, iblSpecularBRDF.mappedBuffers[0]);
+        createLUT(brdf, brdf.mappedBuffers[0],cubemap);
 
         //レンダリングした画像をシェーダで読み取るためのテクスチャに変換する
-        transitionImageLayout(iblSpecularBRDF.passData.imageAttachment[0].image, VK_FORMAT_R16G16B16A16_SFLOAT
+        transitionImageLayout(brdf.passData.imageAttachment[0].image, VK_FORMAT_R16G16B16A16_SFLOAT
             , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 1);
 
         //立方体の一つの面のみのレンダリング結果をLUTとして利用
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
-        createIBLDescriptor(iblSpecularBRDF.passData, iblSpecularBRDF.mainPassLayout, iblSpecularBRDF.descriptorSet);
+        createIBLDescriptor(brdf.passData, iblLayout, brdf.descriptorSet);
     }
 
     //6つの画像を一つの画像にまとめて、SamplerCubeを作る
