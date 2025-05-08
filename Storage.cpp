@@ -5,8 +5,6 @@ Storage* Storage::storage = nullptr;
 
 Storage::Storage()
 {
-	pointLightDescSet = nullptr;
-	directionalLightDescSet = nullptr;
 }
 
 void Storage::cleanup()
@@ -83,18 +81,4 @@ std::shared_ptr<GltfModel> Storage::getgltfModel(std::string obj)
 std::shared_ptr<ImageData> Storage::getImageData(std::string path)
 {
 	return imageDataStorage[path];
-}
-
-//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
-//同じ種類のライトがいくつあろうと、このバッファは一つのみ
-MappedBuffer& Storage::getPointLightsBuffer()
-{
-	return pointLightsBuffer;
-}
-
-//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
-//同じ種類のライトがいくつあろうと、このバッファは一つのみ
-MappedBuffer& Storage::getDirectionalLightsBuffer()
-{
-	return directionalLightsBuffer;
 }

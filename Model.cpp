@@ -509,9 +509,6 @@ void Model::initFrameSetting()//初回フレームの処理
 		colider->initFrameSettings(glm::vec3(1.0f));//コライダーの初期設定
 	}
 
-	//min = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(min, 1.0f);
-	//max = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(max, 1.0f);
-
 	initMin = min;
 	initMax = max;
 

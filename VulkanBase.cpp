@@ -2841,40 +2841,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
-    //シャドウマップの用意
-
-    /*
-    void VulkanBase::setupShadowMapDepth(VkCommandBuffer& commandBuffer)
-    {
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = shadowMapData.passData.renderPass;
-        renderPassInfo.framebuffer = shadowMapData.passData.frameBuffer[0];
-        renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent.width = shadowMapData.passData.width;
-        renderPassInfo.renderArea.extent.height = shadowMapData.passData.height;
-
-        VkClearValue clearValue{};
-        clearValue.depthStencil = { 1.0f,0 };
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearValue;
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        //1.75f, 0.0f, 5.75f
-        vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
-
-        Storage* storage = Storage::GetInstance();
-        for (auto& model : storage->getModels())
-        {
-            calcDepth(model->getRootNode(), model, commandBuffer,shadowMapData.passData);
-        }
-
-        vkCmdEndRenderPass(commandBuffer);
-    }
-
-    */
-
     //シャドウマップのレンダリング開始
     void VulkanBase::shadowMapBegin(ShadowMapData& shadowMapData)
     {
@@ -5163,7 +5129,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createCubeMapTextureFromImages(diffuse.size, diffuse.mipmapLevel, diffuse.multiLayerTexture, diffuse.passData.imageAttachment, diffuse.format);
 
         //通常レンダリング時に使うDescriptorSet関連のデータを作成
-        createIBLDescriptor(diffuse.multiLayerTexture, diffuse.mainPassLayout, diffuse.descriptorSet);
+        createIBLDescriptor(diffuse.multiLayerTexture, iblLayout, diffuse.descriptorSet);
     }
 
     //IBLのspecularテクスチャを作成する
@@ -5355,26 +5321,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //IBL用のDescriptorSetの用意
     void VulkanBase::createIBLDescriptor(TextureData* samplerCube, VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet)
     {
-        //DescriptorSetLayoutの作成
-        if(!layout)
-        {
-            VkDescriptorSetLayoutBinding layoutBinding;
-            layoutBinding.binding = 0;
-            layoutBinding.descriptorCount = 1;
-            layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            layoutBinding.pImmutableSamplers = nullptr;
-            layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = 1;
-            layoutInfo.pBindings = &layoutBinding;
-
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create descriptor set layout!");
-            }
-        }
-
         {//DescriptorSetの実態を作成
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

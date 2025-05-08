@@ -192,9 +192,6 @@ struct IBLDiffuse
     //diffuseについてのテクスチャ
     TextureData* multiLayerTexture;
 
-    //通常のレンダリングでDiffuseのマップを利用するためのレイアウト
-    VkDescriptorSetLayout mainPassLayout;
-
     //diffuseとspecular用のdescriptorSet
     VkDescriptorSet descriptorSet;
 
@@ -238,8 +235,6 @@ struct IBLDiffuse
         multiLayerTexture->destroy(device);
 
         passData.destroy(device);
-
-        vkDestroyDescriptorSetLayout(device, mainPassLayout, nullptr);
 
         for (auto mappedBuffer : mappedBuffers)
         {

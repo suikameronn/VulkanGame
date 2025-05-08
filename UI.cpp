@@ -177,9 +177,7 @@ void UI::cleanupVulkan()
 	vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
 
 	//uniform buffer‚Ì‰ð•ú
-	vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
-	vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
-	mappedBuffer.uniformBufferMapped = nullptr;
+	mappedBuffer.destroy(device);
 
 	uiTexture->destroy(device);
 }

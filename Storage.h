@@ -31,17 +31,6 @@ private:
 	//ロード画面用のUI
 	std::shared_ptr<UI> loadUI;
 
-	//ポイントライト用のDescriptorSet 色と座標を持つuniform buffer
-	VkDescriptorSet pointLightDescSet;
-	//平行光源用のDescriptorSet 色と方向を持つuniform buffer
-	VkDescriptorSet directionalLightDescSet;
-
-	//ライトのデータは種類ごとに一つのバッファー上に配列として格納する
-	//ポイントライトのuniform bufferを格納するためのバッファー
-	MappedBuffer pointLightsBuffer;
-	//平行光源ライトのuniform bufferを格納するためのバッファー
-	MappedBuffer directionalLightsBuffer;
-
 	Storage();
 	~Storage()
 	{
@@ -67,10 +56,6 @@ public:
 	//ロードUIを返す
 	std::shared_ptr<UI>getLoadUI() { return loadUI; }
 
-	//ポイントライトと平行光源のdescriptorSetを返す。ライトは配列としてまとめてgpuに渡すため、descriptorSetは種類ごとに一つ
-	VkDescriptorSet& getPointLightDescriptorSet() { return pointLightDescSet; }
-	VkDescriptorSet& getDirectionalLightDescriptorSet() { return directionalLightDescSet; }
-
 	//gltfモデルを読み込んだ際に、このクラスに格納する。
 	//再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
 	void addModel(std::string obj, GltfModel* geo);
@@ -86,11 +71,6 @@ public:
 	std::shared_ptr<ImageData> getImageData(std::string path);
 	//このクラスにすでに格納されたgltfModelのmapを返す
 	std::unordered_map<std::string, std::shared_ptr<GltfModel>>& getgltfModel();
-	
-	//各種ライト用のバッファを返す、なお種類ごとに複数のライトを一つの配列としてまとめて構造体にしているため
-	//同じ種類のライトがいくつあろうと、このバッファは一つのみ
-	MappedBuffer& getPointLightsBuffer();
-	MappedBuffer& getDirectionalLightsBuffer();
 
 	//カメラへの参照を返す
 	std::shared_ptr<Camera> accessCamera();
