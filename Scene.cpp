@@ -513,6 +513,8 @@ void Scene::cleanupVulkan()
 	}
 	player->cleanupVulkan();
 
+	cubemap->cleanupVulkan();
+
 	//UI
 	for (auto ui : sceneUI)
 	{

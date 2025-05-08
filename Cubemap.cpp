@@ -24,10 +24,7 @@ void Cubemap::frameEnd()
 void Cubemap::cleanupVulkan()
 {
     VkDevice device = VulkanBase::GetInstance()->getDevice();
-
-    backGroundColor.destroy(device);
-
-    //IBL‚Ìƒf[ƒ^‚Ì”jŠü
+               
     iblDiffuse.destroy(device);
     iblSpecularReflection.destroy(device);
     iblSpecularBRDF.destroy(device);

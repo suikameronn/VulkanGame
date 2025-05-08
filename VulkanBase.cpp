@@ -256,7 +256,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             VkDeviceQueueCreateInfo queueCreateInfo{};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 2;//マルチスレッド用のキューも確保する
+            queueCreateInfo.queueCount = 1;//マルチスレッド用のキューも確保する
             queueCreateInfo.pQueuePriorities = queuePrioritys.data();
             queueCreateInfos.push_back(queueCreateInfo);
         }
@@ -291,8 +291,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
-        vkGetDeviceQueue(device, indices.graphicsFamily.value(), 1, &multiThreadGraphicQueue);//インデックスを二つ目に設定
-        vkGetDeviceQueue(device, indices.presentFamily.value(), 1, &multiThreadPresentQueue);
+        //vkGetDeviceQueue(device, indices.graphicsFamily.value(), 1, &multiThreadGraphicQueue);//インデックスを二つ目に設定
+        //vkGetDeviceQueue(device, indices.presentFamily.value(), 1, &multiThreadPresentQueue);
     }
 
     //スワップチェーンの作成
@@ -2656,8 +2656,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         vkResetFences(device, static_cast<uint32_t>(multiThreadFences.size()), multiThreadFences.data());
 
         //キュー上の処理がすべて終わるまで待つ
-        vkQueueWaitIdle(multiThreadGraphicQueue);
-        vkQueueWaitIdle(multiThreadPresentQueue);
+        //vkQueueWaitIdle(multiThreadGraphicQueue);
+        //vkQueueWaitIdle(multiThreadPresentQueue);
     }
 
     //すべてのレンダリングをする前に実行される
