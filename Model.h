@@ -1,4 +1,5 @@
 #pragma once
+
 #include<vector>
 #include<bitset>
 #include <time.h>
@@ -7,6 +8,7 @@
 #include"GltfModel.h"
 #include"Colider.h"
 #include"RTree.h"
+#include"Light.h"
 
 class Scene;
 
@@ -25,7 +27,6 @@ struct FrameBufferAttachment {
 	}
 };
 
-
 //シャドウマッピングやキューブマッピング用のオフスクリーンレンダリング用の構造体
 struct OffScreenPass {
 	int32_t width, height;//レンダリングの出力サイズ
@@ -37,6 +38,35 @@ struct OffScreenPass {
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	std::vector<VkDescriptorSet> descriptorSets;
+
+	OffScreenPass()
+	{
+		width = 0;
+		height = 0;
+
+		for (auto buffer : frameBuffer)
+		{
+			buffer = nullptr;
+		}
+
+		for (auto attachment : imageAttachment)
+		{
+			attachment.image = nullptr;
+			attachment.memory = nullptr;
+			attachment.view = nullptr;
+		}
+
+		renderPass = nullptr;
+		sampler = nullptr;
+		layout = nullptr;
+		pipelineLayout = nullptr;
+		pipeline = nullptr;
+
+		for (auto descriptorSet : descriptorSets)
+		{
+			descriptorSet = nullptr;
+		}
+	}
 
 	void setFrameCount(int count)//オフスクリーンレンダリングを行うフレーム数の設定
 	{
@@ -100,10 +130,58 @@ struct AnimationUBO
 	alignas(16) int boneCount;
 };
 
+//シャドウマップ作成用のuniform buffer
+struct ShadowMapUBO
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+};
+
+//シャドウマップ作成用の構造体
+struct ShadowMapData
+{
+	//平衡投影の行列
+	glm::mat4 proj;
+
+	//シャドウマップの解像度の倍率を設定
+	int shadowMapScale;
+	//オフスクリーンレンダリング用の構造体
+	OffScreenPass passData;
+	//シャドウマップ作成用の行列の配列
+	std::vector<ShadowMapUBO> matUBOs;
+	//行列用のバッファの配列
+	std::vector<MappedBuffer> mappedBuffers;
+
+	//シャドウマップを通常のレンダリングで使用するためのデータ
+	std::vector<VkDescriptorSet> descriptorSets;
+
+	//シーン上のライトの数だけ作成
+	void setFrameCount(int frameCount)
+	{
+		matUBOs.resize(frameCount);
+		mappedBuffers.resize(frameCount);
+		passData.setFrameCount(frameCount);
+	}
+
+	void destroy(VkDevice& device)
+	{
+		passData.destroy(device);
+
+		for (auto& buffer : mappedBuffers)
+		{
+			buffer.destroy(device);
+		}
+	}
+};
+
 //3Dモデルを持つオブジェクトを担うクラス
 class Model:public Object
 {
 protected:
+
+	//半透明描画のフラッグ
+	bool transparent;
 
 	//R-tree用の初期のAABB
 	glm::vec3 initMin, initMax;
@@ -177,13 +255,24 @@ protected:
 	FragmentParam fragParam;
 
 	virtual void updateUniformBuffer(GltfNode* node);
-	virtual void updateUniformBuffer();
+	virtual void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
+		, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
 
 public:
 
 	Model();
 	Model(std::string luaScriptPath);
 	~Model() {};
+
+	bool isTransparent()
+	{
+		return transparent;
+	}
+
+	void setTransparent(bool t)
+	{
+		transparent = t;
+	}
 
 	void registerGlueFunctions() override;//glue関数の設定
 
@@ -280,7 +369,8 @@ public:
 	void addGroundingObject(Model* object);//床に接していたらそれを追加
 	void clearGroundingObject();
 
-	void frameEnd() override;
+	virtual void frameEnd(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
+		, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/

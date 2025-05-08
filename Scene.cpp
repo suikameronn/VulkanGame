@@ -15,7 +15,7 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 
 	rtree = std::make_unique<RTree<Model>>();
 
-	cubemap = std::make_unique<Cubemap>();
+	cubemap = std::shared_ptr<Cubemap>(new Cubemap());
 
 	initLuaScript(luaScriptPath);//luaからステージのデータを読み取り
 
@@ -78,50 +78,37 @@ void Scene::initLuaScript(std::string path)
 	lua_pushlightuserdata(lua, this);//このSceneのインスタンスをluaの仮想マシンに送る
 	lua_setglobal(lua, "Scene");//インスタンスをluaスクリプトで使えるようにする
 
-	registerOBJECT();//gltfモデルを指定しるための番号を送る
 	registerFunctions();//スクリプトから呼び出す関数を登録する
 
 	luaL_dofile(lua,path.c_str());//スクリプトの実行
 }
 
-//luaの仮想マシンにgltfモデルを指定するための番号を設定する
-void Scene::registerOBJECT()//enumをスクリプトと共有する
-{
-	lua_pushnumber(lua, (int)GLTFOBJECT::gltfTEST);
-	lua_setglobal(lua, "gltfTEST");//キャラクター
-
-	lua_pushnumber(lua, (int)GLTFOBJECT::ASPHALT);
-	lua_setglobal(lua, "ASPHALT");//アスファルト
-
-	lua_pushnumber(lua, (int)GLTFOBJECT::LEATHER);
-	lua_setglobal(lua, "LEATHER");//白い革
-}
-
 void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 {
-	lua_register(lua, "glueCreateModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
-	lua_register(lua, "glueCreatePlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
-	lua_register(lua, "glueSetLuaPath", glueSceneFunction::glueSetLuaPath);//スクリプトをオブジェクトに追加
-	lua_register(lua, "glueSetDelayStartLua", glueSceneFunction::glueSetDelayStartLua);//スクリプトの実行開始タイミングを設定
-	lua_register(lua, "glueSetGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加
-	lua_register(lua, "glueSetPos", glueSceneFunction::glueSetPos);//座標の設定
-	lua_register(lua, "glueSetRotate", glueSceneFunction::glueSetRotate);//向きを設定
-	lua_register(lua, "glueSetScale", glueSceneFunction::glueSetScale);//モデルのスケールの設定
-	lua_register(lua, "glueSetBaseColor", glueSceneFunction::glueSetBaseColor);//Diffuseカラーの設定
-	lua_register(lua, "glueBindCamera", glueSceneFunction::glueBindCamera);//カメラが追従するオブジェクトを設定する
-	lua_register(lua, "glueSetAABBColider", glueSceneFunction::glueSetAABBColider);//モデルにAABBコライダーを付ける
-	lua_register(lua, "glueSetColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
-	lua_register(lua, "glueSetDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
-	lua_register(lua, "glueSetGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
-	lua_register(lua, "glueCreatePointLight", glueSceneFunction::glueCreatePointLight);//ポイントライトを作成
-	lua_register(lua, "glueSetLightColor", glueSceneFunction::glueSetLightColor);//ライトのカラーを設定
-	lua_register(lua, "glueCreateDirectionalLight", glueSceneFunction::glueCreateDirectionalLight);//平行光源を作成
-	lua_register(lua, "glueSetLightDirection", glueSceneFunction::glueSetLightDirection);//平行光源の方向を設定
-	lua_register(lua, "glueBindObject", glueSceneFunction::glueBindObject);//オブジェクトに親子関係を設定する
-	lua_register(lua, "glueSetStartPoint", glueSceneFunction::glueSetStartPoint);//初期座標の設定
-	lua_register(lua, "glueSetLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
-	lua_register(lua, "glueSetHDRIMap", glueSceneFunction::glueSetHDRIMap);//HDRI画像の設定
-	lua_register(lua, "glueSetUVScale", glueSceneFunction::glueSetUVScale);//uvを調整するようにして、テクスチャの引き延ばしを防ぐ
+	lua_register(lua, "createModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
+	lua_register(lua, "createPlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
+	lua_register(lua, "setLuaPath", glueSceneFunction::glueSetLuaPath);//スクリプトをオブジェクトに追加
+	lua_register(lua, "setDelayStartLua", glueSceneFunction::glueSetDelayStartLua);//スクリプトの実行開始タイミングを設定
+	lua_register(lua, "setGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加
+	lua_register(lua, "setPos", glueSceneFunction::glueSetPos);//座標の設定
+	lua_register(lua, "setRotate", glueSceneFunction::glueSetRotate);//向きを設定
+	lua_register(lua, "setScale", glueSceneFunction::glueSetScale);//モデルのスケールの設定
+	lua_register(lua, "setBaseColor", glueSceneFunction::glueSetBaseColor);//Diffuseカラーの設定
+	lua_register(lua, "bindCamera", glueSceneFunction::glueBindCamera);//カメラが追従するオブジェクトを設定する
+	lua_register(lua, "setAABBColider", glueSceneFunction::glueSetAABBColider);//モデルにAABBコライダーを付ける
+	lua_register(lua, "setColiderScale", glueSceneFunction::glueSetColiderScale);//コライダーのスケールを設定
+	lua_register(lua, "setDefaultAnimationName", glueSceneFunction::glueSetDefaultAnimationName);//モデルにデフォルトのアニメーションを設定する
+	lua_register(lua, "setGravity", glueSceneFunction::glueSetGravity);//オブジェクトに重量を効かせる
+	lua_register(lua, "createPointLight", glueSceneFunction::glueCreatePointLight);//ポイントライトを作成
+	lua_register(lua, "setLightColor", glueSceneFunction::glueSetLightColor);//ライトのカラーを設定
+	lua_register(lua, "createDirectionalLight", glueSceneFunction::glueCreateDirectionalLight);//平行光源を作成
+	lua_register(lua, "setLightDirection", glueSceneFunction::glueSetLightDirection);//平行光源の方向を設定
+	lua_register(lua, "bindObject", glueSceneFunction::glueBindObject);//オブジェクトに親子関係を設定する
+	lua_register(lua, "setStartPoint", glueSceneFunction::glueSetStartPoint);//初期座標の設定
+	lua_register(lua, "setLimitY", glueSceneFunction::glueSetLimitY);//y座標の下限の設定
+	lua_register(lua, "setHDRIMap", glueSceneFunction::glueSetHDRIMap);//HDRI画像の設定
+	lua_register(lua, "setUVScale", glueSceneFunction::glueSetUVScale);//uvを調整するようにして、テクスチャの引き延ばしを防ぐ
+	lua_register(lua, "setTransparent", glueSceneFunction::glueSetTransparent);//半透明の表示のフラッグを設定
 }
 
 //初期座標の設定
@@ -395,22 +382,22 @@ void Scene::intersect()
 //フレーム終了時に実行
 void Scene::frameEnd()
 {
+	//ライトのユニフォームバッファの更新は別枠で行う
+	updateLightUniformBuffer();
+
 	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
 	//ユニフォームバッファの更新
 	for (auto model : sceneModels)
 	{
-		model->frameEnd();
+		model->frameEnd(sceneDirectionalLights, scenePointLights, shadowMapData);
 	}
-	player->frameEnd();
+	player->frameEnd(sceneDirectionalLights,scenePointLights,shadowMapData);
 	cubemap->frameEnd();
 
 	for (auto ui : sceneUI)
 	{
 		ui->frameEnd();
 	}
-
-	//ライトのユニフォームバッファの更新は別枠で行う
-	updateLightUniformBuffer();
 }
 
 //ライトとシャドウマップのユニフォームバッファの更新
@@ -538,7 +525,11 @@ void Scene::render()
 
 	for (auto model : sceneModels)
 	{
-		vulkan->renderShadowMap(model, shadowMapData);
+		//半透明のオブジェクトの影は作らない
+		if (!model->isTransparent() || true)
+		{
+			vulkan->renderShadowMap(model, shadowMapData);
+		}
 	}
 	vulkan->renderShadowMap(player, shadowMapData);
 
@@ -548,18 +539,48 @@ void Scene::render()
 	//3DモデルとUIのレンダリング開始
 	vulkan->sceneRenderBegin();
 
+	//半透明のオブジェクトのレンダリングは後に行う
+
 	//UI
 	for (auto ui : sceneUI)
 	{
-		vulkan->renderUI(ui);
+		if (!ui->isTransparent())
+		{
+			vulkan->renderUI(ui);
+		}
 	}
 
 	//3Dモデル
 	for (auto model : sceneModels)
 	{
-		vulkan->renderModel(model, cubemap
-			, shadowMapData, pointLightBuffer, dirLightBuffer);
+		if (!model->isTransparent())
+		{
+			vulkan->renderModel(model, cubemap
+				, shadowMapData, pointLightBuffer, dirLightBuffer);
+		}
 	}
+
+	//半透明のオブジェクトをレンダリングする
+
+	//UI
+	for (auto ui : sceneUI)
+	{
+		if (ui->isTransparent())
+		{
+			vulkan->renderUI(ui);
+		}
+	}
+
+	//3Dモデル
+	for (auto model : sceneModels)
+	{
+		if (model->isTransparent())
+		{
+			vulkan->renderModel(model, cubemap
+				, shadowMapData, pointLightBuffer, dirLightBuffer);
+		}
+	}
+
 	vulkan->renderModel(player, cubemap, shadowMapData, pointLightBuffer, dirLightBuffer);
 
 	//キューブマップ

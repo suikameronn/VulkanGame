@@ -270,5 +270,5 @@ void Player::aim()
 	cameraObj.lock()->sphereMove = false;
 
 	//©•ª©g‚ğ”¼“§–¾‚ÅƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚é‚æ‚¤‚É‚·‚é
-	fragParam.alphaness = 0.0f;
+	fragParam.alphaness = 0.5f;
 }

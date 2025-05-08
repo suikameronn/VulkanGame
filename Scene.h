@@ -47,14 +47,6 @@ struct DirectionalLightUBO
 	alignas(16) std::array<glm::vec4, 50> color;
 };
 
-//シャドウマップ作成用のuniform buffer
-struct ShadowMapUBO
-{
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-};
-
 struct DirectionalLightBuffer
 {
 	DirectionalLightUBO ubo;
@@ -68,44 +60,6 @@ struct PointLightBuffer
 	MappedBuffer mappedBuffer;
 	VkDescriptorSet descriptorSet;
 };
-
-//シャドウマップ作成用の構造体
-struct ShadowMapData
-{
-	//平衡投影の行列
-	glm::mat4 proj;
-
-	//シャドウマップの解像度の倍率を設定
-	int shadowMapScale;
-	//オフスクリーンレンダリング用の構造体
-	OffScreenPass passData;
-	//シャドウマップ作成用の行列の配列
-	std::vector<ShadowMapUBO> matUBOs;
-	//行列用のバッファの配列
-	std::vector<MappedBuffer> mappedBuffers;
-
-	//シャドウマップを通常のレンダリングで使用するためのデータ
-	std::vector<VkDescriptorSet> descriptorSets;
-
-	//シーン上のライトの数だけ作成
-	void setFrameCount(int frameCount)
-	{
-		matUBOs.resize(frameCount);
-		mappedBuffers.resize(frameCount);
-		passData.setFrameCount(frameCount);
-	}
-
-	void destroy(VkDevice& device)
-	{
-		passData.destroy(device);
-
-		for (auto& buffer : mappedBuffers)
-		{
-			buffer.destroy(device);
-		}
-	}
-};
-
 
 //luaから読み取ったステージの情報などが格納される
 class Scene
@@ -675,6 +629,24 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		case 2:
 			Model * model = dynamic_cast<Model*>(obj);
 			model->setUVScale();
+			break;
+		}
+
+		return 0;
+	}
+
+	//半透明の表示の可能性があるかどうかのフラッグ
+	static int glueSetTransparent(lua_State* lua)
+	{
+		bool transparent = static_cast<bool>(lua_toboolean(lua, -1));
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+
+		switch (obj->getObjNum())
+		{
+		case 1:
+		case 2:
+			Model * model = dynamic_cast<Model*>(obj);
+			model->setTransparent(transparent);
 			break;
 		}
 

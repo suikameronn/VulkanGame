@@ -56,6 +56,9 @@ class UI
 {
 protected:
 
+	//半透明描画のフラッグ
+	bool transparent;
+
 	//UIの座標のオフセットを設定する
 	int widthOffset, heightOffset;
 
@@ -112,9 +115,20 @@ protected:
 public:
 
 	UI(std::shared_ptr<ImageData> image);
+	~UI() {};
 
 	const uint32_t vertexCount = UIVertexCount;
 	const uint32_t indexCount = UIIndexCount;
+
+	bool isTransparent()
+	{
+		return transparent;
+	}
+
+	void setTransparent(bool t)
+	{
+		transparent = t;
+	}
 
 	//座標の設定
 	void setPosition(glm::vec2 pos);

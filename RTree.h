@@ -300,9 +300,9 @@ RNode<T>::~RNode()
 {
 	for (int i = 0; i < childNodeCount; i++)
 	{
-		if (children[i] == nullptr)
+		if (children[i] != nullptr)
 		{
-			//delete children[i];
+			delete children[i];
 		}
 	}
 }
@@ -379,8 +379,6 @@ std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<T*, RNodeMAX + 1>& 
 	glm::vec3 tMin, tMax;
 	std::array<int, 2> pairNodeIndex;
 
-	bool a = false;
-
 	//³‹K‰»‚³‚ê‚½‹——£‚ªÅ‚à‘å‚«‚¢ƒm[ƒh‚ÌƒyƒA‚ğ’T‚·
 	for (int i = 0; i < 3; i++)
 	{
@@ -395,14 +393,7 @@ std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<T*, RNodeMAX + 1>& 
 			farthestDist = dist;
 			pairNodeIndex[0] = minIndex[i];
 			pairNodeIndex[1] = maxIndex[i];
-
-			a = true;
 		}
-	}
-
-	if (!a)
-	{
-		std::cout << "AAA" << std::endl;
 	}
 
 	return pairNodeIndex;

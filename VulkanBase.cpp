@@ -84,7 +84,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             gltfModel.second->cleanUpVulkan(device);
         }
 
-        storage->getLoadUI()->cleanupVulkan();
+        //storage->getLoadUI()->cleanupVulkan();
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -1530,7 +1530,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             void* data;
             vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-            memcpy(data, imageData->getPixelsData(), static_cast<size_t>(imageSize));
+            memcpy(data, imageData->getPixelsData(), imageSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
             textureData->mipLevel = calcMipMapLevel(imageData->getWidth(), imageData->getHeight());

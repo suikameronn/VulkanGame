@@ -58,8 +58,8 @@ void Object::setDelayFrameCount(int delay)
 //luaから呼び出される静的関数の登録
 void Object::registerGlueFunctions()
 {
-	lua_register(lua, "glueSetPos", glueObjectFunction::glueSetPos);
-	lua_register(lua, "glueSetRotate", glueObjectFunction::glueSetRotate);
+	lua_register(lua, "setPos", glueObjectFunction::glueSetPos);
+	lua_register(lua, "setRotate", glueObjectFunction::glueSetRotate);
 }
 
 void Object::bindObject(Object* obj)//引数のオブジェクトを子オブジェクトとして設定する

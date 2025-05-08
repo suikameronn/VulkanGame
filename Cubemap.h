@@ -104,6 +104,20 @@ struct IBLSpecularReflection
     IBLSpecularReflection()
     {
         multiLayerTexture = new TextureData();
+
+        prePassLayout = nullptr;
+        pipelineLayout = nullptr;
+        
+        for (auto p : pipeline)
+        {
+            p = nullptr;
+        }
+
+        descriptorSet = nullptr;
+        for (auto desc : descriptorSets)
+        {
+            desc = nullptr;
+        }
     }
 
     //オフスクリーンレンダリングのフレーム数を設定する
@@ -204,6 +218,8 @@ struct IBLDiffuse
     IBLDiffuse()
     {
         multiLayerTexture = new TextureData();
+
+        descriptorSet = nullptr;
     }
 
     //オフスクリーンレンダリングのフレーム数を設定する
@@ -277,6 +293,15 @@ struct BackGroundColor
         srcHdriTexture = new TextureData();
         //キューブマップとなる6枚の画像を一つのテクスチャデータにまとめたもの
         multiTexture = new TextureData();
+
+        format = VK_FORMAT_R8G8B8A8_UNORM;
+
+        view = glm::mat4(1.0f);
+        proj = glm::mat4(1.0f);
+
+        descriptorSet = nullptr;
+        pipelineLayout = nullptr;
+        pipeline = nullptr;
     }
 
     //キューブマップの面の数だけ作成
@@ -318,6 +343,7 @@ private:
 public:
 
     Cubemap() {};
+    ~Cubemap() {};
 
     //hdri画像の設定と取得
     void setHDRIMap(std::shared_ptr<ImageData> image)
@@ -355,10 +381,10 @@ public:
     }
 
     //ユニフォームバッファの更新
-	void updateUniformBuffer() override;
+	void updateUniformBuffer();
 
     //フレーム終了時に実行
-    void frameEnd() override;
+    void frameEnd();
 
     void cleanupVulkan() override;
 };

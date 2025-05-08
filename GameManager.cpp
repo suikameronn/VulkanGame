@@ -14,15 +14,15 @@ void GameManager::initGame()//初期化設定
 
     vulkan->initVulkan();//Vulkanのデータの一部をあらかじめ用意しておく
 
-    setLoadUI();//ロードUIの設定
+    //setLoadUI();//ロードUIの設定
 
     bool load = false;
-    drawLoading(load);
+    //drawLoading(load);
 
     load = createScene();//ステージの読み込み
 
     //ロード画面描画の終了を待つ
-    ThreadPool::GetInstance()->stopMainThreadSingle();
+    //ThreadPool::GetInstance()->stopMainThreadSingle();
 
     mainGameLoop();//ゲームループ
 }

@@ -87,9 +87,9 @@ Model::Model(std::string luaScriptPath)
 
 void Model::registerGlueFunctions()//glue関数を設定する
 {
-	lua_register(lua, "glueSetPos", glueObjectFunction::glueSetPos);
-	lua_register(lua, "glueSetRotate", glueObjectFunction::glueSetRotate);
-	lua_register(lua, "glueSetScale", glueModelFunction::glueSetScale);
+	lua_register(lua, "setPos", glueObjectFunction::glueSetPos);
+	lua_register(lua, "setRotate", glueObjectFunction::glueSetRotate);
+	lua_register(lua, "setScale", glueModelFunction::glueSetScale);
 }
 
 void Model::cleanupVulkan()//Vulkanの変数の後処理
@@ -616,8 +616,8 @@ void Model::updateUniformBuffer(GltfNode* node)
 	}
 }
 
-//ユニフォームバッファの更新
-void Model::updateUniformBuffer()
+void Model::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
+	, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
 {
 	Storage* storage = Storage::GetInstance();
 
@@ -640,6 +640,13 @@ void Model::updateUniformBuffer()
 	ubo.proj = camera->perspectiveMat;
 	ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0f);
 
+	ubo.lightCount = static_cast<int>(std::min(ubo.lightMVP.size(), dirLights.size()));
+	for (int i = 0; i < ubo.lightCount; i++)
+	{
+		ubo.lightMVP[i] = shadowMapData.proj
+			* glm::lookAt(dirLights[i]->getPosition(), dirLights[i]->getPosition() + dirLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+
 	memcpy(modelViewMappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
 
 	updateUniformBuffer(gltfModel->getRootNode());
@@ -657,13 +664,13 @@ void Model::updateUniformBuffer()
 	}
 }
 
-//フレーム終了時に実行される
-void Model::frameEnd()
+void Model::frameEnd(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
+	, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
 {
 	if (uniformBufferChange)
 	{
 		updateTransformMatrix();
 	}
 
-	updateUniformBuffer();
+	updateUniformBuffer(dirLights, pointLights, shadowMapData);
 }

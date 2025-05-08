@@ -215,9 +215,6 @@ public:
 	virtual void sendTransformToLua();
 	//luaスクリプトから、座標、回転の値を受け取る
 	virtual void receiveTransformFromLua();
-
-	//フレーム最後に実行される
-	virtual void frameEnd() {};
 };
 
 /*以下の関数はluaスクリプトから実行される*/
