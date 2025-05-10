@@ -18,7 +18,7 @@ private:
     {
     private:
 
-        std::pair<inputTypes,std::function<void(inputTypes&)>> currentTask;
+        std::function<void()> currentTask;
         bool isRequestedTermination{ false };
         bool isInitilized{ false };
         std::thread thread;
@@ -28,7 +28,7 @@ private:
         //スレッドを待機させる
         void waitInitilize() {
             std::unique_lock<std::mutex> lock(mutex);
-            cond.wait(lock, [this]() { return !isRequestedTermination || !currentTask.second; });
+            cond.wait(lock, [this]() { return !isRequestedTermination || !currentTask; });
         }
 
         void procWorker() {
@@ -37,8 +37,7 @@ private:
             while (true)
             {
                 std::unique_lock<std::mutex> lock(mutex);
-                currentTask.first = {};
-                currentTask.second = {};
+                currentTask = {};
                 cond.notify_all();  // 何も処理していないことを通知する
                 cond.wait(lock, [&]()
                     {
@@ -50,7 +49,7 @@ private:
                             return true;
                         }
 
-                        if (currentTask.second)
+                        if (currentTask)
                         {
                             return true;
                         }
@@ -61,7 +60,7 @@ private:
                     break;
                 }
 
-                currentTask.second(currentTask.first);
+                currentTask();
             }
         }
 
@@ -84,7 +83,7 @@ private:
             cond.notify_all();
         }
 
-        void push(std::pair<inputTypes, std::function<void(inputTypes&)>>& function)
+        void push(std::function<void()>& function)
         {
             //初期化が別スレッドで終わるまで、メインスレッドを待機させる
             while (!isInitilized)
@@ -106,7 +105,7 @@ private:
         //通知が来るか、ローカルのキューが空になるまで、タスクの中断通知がされるまで待機する
         void waitUntilIdle() {
             std::unique_lock<std::mutex> lock(mutex);
-            cond.wait(lock, [this]() { return !currentTask.second || isRequestedTermination; });
+            cond.wait(lock, [this]() { return !currentTask || isRequestedTermination; });
         }
 
         //スレッドに中断を通知する
@@ -125,7 +124,7 @@ private:
         //メインスレッドを待機させる
         void stopMainThread()
         {
-            while (currentTask.second)
+            while (currentTask)
             {
                 //タスクが終わったら、抜け出す
             }
@@ -139,10 +138,10 @@ private:
 
         ThreadPool* parent;
         int index{ -1 };
-        std::pair<inputTypes, std::function<void(inputTypes&)>> currentTask;
+        std::function<void()> currentTask;
         bool isRequestedTermination{ false };
         std::thread thread;
-        std::deque<std::pair<inputTypes,std::function<void(inputTypes&)>>> localQueue;
+        std::deque<std::function<void()>> localQueue;
         std::mutex mutex;
         std::condition_variable cond;
 
@@ -171,11 +170,10 @@ private:
 
                     //自身のスレッドを除いたスレッドからタスクを持ってくる
                     auto task = parent->stealOrPull(index);
-                    if (!task.second) {
+                    if (!task) {
 
                         std::unique_lock<std::mutex> lock(mutex);
-                        currentTask.first = {};
-                        currentTask.second = {};
+                        currentTask = {};
                         cond.notify_all();  // 何も処理していないことを通知する
                         cond.wait(lock, [&]() {
                             // この述語内ではロックを取得しているはず
@@ -188,7 +186,7 @@ private:
                             lock.lock();
                             // current_task_の更新時に再度ロックを取得する
                             currentTask = std::move(task);
-                            return !!currentTask.second;
+                            return !!currentTask;
                             });
                         if (isRequestedTermination) {
                             break;
@@ -199,7 +197,8 @@ private:
                         currentTask = std::move(task);
                     }
                 }
-                currentTask.second(currentTask.first);
+
+                currentTask();
             }
         }
 
@@ -223,19 +222,18 @@ private:
             cond.notify_all();
         }
 
-        void push(std::pair<inputTypes, std::function<void(inputTypes&)>> task) {
+        void push(std::function<void()> task) {
             std::unique_lock<std::mutex> lock(mutex);
             localQueue.emplace_back(task);
         }
 
         //タスクを送る
-        std::pair<inputTypes,std::function<void(inputTypes&)>> steal() 
+        std::function<void()> steal() 
         {
             std::unique_lock<std::mutex> lock(mutex);
             if (localQueue.empty()) {
-                std::pair<inputTypes, std::function<void(inputTypes&)>> t;
-                t.first = {};
-                t.second = {};
+                std::function<void()> t;
+                t = {};
                 return t;
             }
 
@@ -254,7 +252,7 @@ private:
         //ローカルのキューが空になるか、タスクの中断通知がされるまで待機する
         void waitUntilIdle() {
             std::unique_lock<std::mutex> lock(mutex);
-            cond.wait(lock, [this]() { return (localQueue.empty() && !currentTask.second) || isRequestedTermination; });
+            cond.wait(lock, [this]() { return (localQueue.empty() && !currentTask) || isRequestedTermination; });
         }
 
         //スレッドに中断を通知する
@@ -272,7 +270,7 @@ private:
         bool isIdle()
         {
             bool idle = localQueue.empty();
-            idle = !currentTask.second;
+            idle = !currentTask;
 
             //待機状態の場合trueを返す
             return idle;
@@ -284,7 +282,7 @@ private:
 
     InnerWorker* innerWorkers;
     bool isRequestedTermination{ false };
-    std::deque<std::pair<inputTypes, std::function<void(inputTypes&)>>> globalQueue;
+    std::deque<std::function<void()>> globalQueue;
     std::mutex mutex;
     std::condition_variable cond;
 
@@ -347,7 +345,7 @@ public:
     }
 
     //関数をセットし、実行させる
-    void run(std::pair<inputTypes, std::function<void(inputTypes&)>> task) {
+    void run(std::function<void()> task) {
         auto current_thread_index = getCurrentThreadIndex();
         {
             std::unique_lock<std::mutex> lock(mutex);
@@ -389,7 +387,7 @@ public:
     }
 
     //タスクを 自身のスレッド以外のスレッド全体からとってくる
-    std::pair<inputTypes, std::function<void(inputTypes&)>> stealOrPull(int index) 
+    std::function<void()> stealOrPull(int index) 
     {
         for (int i = 0; i < totalThreadSize; ++i) {
             if (i == index) {
@@ -398,7 +396,7 @@ public:
             }
 
             auto task = innerWorkers[i].steal();
-            if (!!task.second) {
+            if (!!task) {
                 //タスクが存在すれば、それを返す
                 return task;
             }
@@ -409,9 +407,8 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         if (globalQueue.empty()) 
         {
-            std::pair<inputTypes, std::function<void(inputTypes)>> t;
-            t.first = {};
-            t.second = {};
+            std::function<void()> t;
+            t = {};
             return t;
         }
 
@@ -435,7 +432,7 @@ public:
     }
 
     //別枠の一つのスレッドに処理を任せる
-    void runSingle(std::pair<inputTypes, std::function<void(inputTypes&)>> function)
+    void runSingle(std::function<void()> function)
     {
         singleWorker.push(function);
     }
@@ -451,18 +448,5 @@ public:
     void stopMainThreadSingle()
     {
         singleWorker.stopMainThread();
-    }
-
-    template <typename T>
-    void safeAnyCast(T& value,int index,std::vector<std::any>& params)
-    {
-        try
-        {
-            value = std::any_cast<T>(params[index]);
-        }
-        catch (const std::bad_any_cast& e)
-        {
-            std::cerr << "failed cast" << e.what() << std::endl;
-        }
     }
 };

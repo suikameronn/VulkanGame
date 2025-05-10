@@ -23,7 +23,7 @@ Model::Model()//3Dモデルを持つクラス
 	scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	initScale = glm::vec3(1.0f);
 
-	forward = glm::vec3{ 0,0,1 };
+	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
 	up = glm::vec3{ 0,1,0 };
 
@@ -243,6 +243,8 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 
 	//MBRの更新
 	calcMBR();
+
+	pivot = (mbrMin + mbrMax) / 2.0f;
 
 	if (colider)
 	{
@@ -616,8 +618,8 @@ void Model::updateUniformBuffer(GltfNode* node)
 	}
 }
 
-void Model::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
-	, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
+void Model::updateUniformBuffer(std::list<std::shared_ptr<DirectionalLight>>& dirLights
+	, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
 {
 	Storage* storage = Storage::GetInstance();
 
@@ -641,10 +643,21 @@ void Model::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& 
 	ubo.worldCameraPos = glm::vec4(camera->getPosition(), 1.0f);
 
 	ubo.lightCount = static_cast<int>(std::min(ubo.lightMVP.size(), dirLights.size()));
-	for (int i = 0; i < ubo.lightCount; i++)
+
 	{
-		ubo.lightMVP[i] = shadowMapData.proj
-			* glm::lookAt(dirLights[i]->getPosition(), dirLights[i]->getPosition() + dirLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		int index = 0;
+		for (auto itr = dirLights.begin(); itr != dirLights.end(); itr++)
+		{
+			ubo.lightMVP[index] = shadowMapData.proj
+				* glm::lookAt((*itr)->getPosition(), (*itr)->getPosition() + (*itr)->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+
+			if (index >= ubo.lightCount)
+			{
+				break;
+			}
+
+			index++;
+		}
 	}
 
 	memcpy(modelViewMappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
@@ -664,8 +677,8 @@ void Model::updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& 
 	}
 }
 
-void Model::frameEnd(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
-	, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
+void Model::frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
+	, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData)
 {
 	if (uniformBufferChange)
 	{

@@ -68,6 +68,7 @@ public:
 		VulkanBase::FinishVulkanBase();
 		Storage::FinishStorage();
 		Controller::FinishController();
+		ThreadPool::FinishThreadPool();
 
 		if (gameManager)
 		{

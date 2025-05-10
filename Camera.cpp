@@ -132,8 +132,8 @@ void Camera::setSpherePos(float theta, float phi)
 	pos += parentPos + offsetPos;
 
 	//カメラの回転に合わせて、カメラの正面と右のベクトルも計算
-	this->forward = glm::normalize(glm::vec3(pos - parentPos));
-	this->right = glm::cross(glm::vec3(0, 1, 0), this->forward);
+	this->forward = glm::normalize(glm::vec3(parentPos - pos));
+	this->right = glm::cross(glm::vec3(0, -1, 0), this->forward);
 
 	setPosition(pos);
 }

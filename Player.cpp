@@ -1,5 +1,6 @@
 #include"Scene.h"
 #include"VulkanBase.h"
+#include"Bullet.h"
 
 #include "Player.h"
 
@@ -13,6 +14,11 @@ Player::Player()
 	moveSpeed = 1.0f;
 
 	physicBase = std::make_unique<PhysicBase>();
+
+	bulletFilePath = "beamBullet.glb";
+	bulletSpeed = 1.0f;
+	rayCastLength = 1.0f;
+	bulletDistanceLimit = 1000.0f;
 }
 
 Player::Player(std::string luaScriptPath)
@@ -23,6 +29,11 @@ Player::Player(std::string luaScriptPath)
 	moveSpeed = 1.0f;
 
 	physicBase = std::make_unique<PhysicBase>();
+
+	bulletFilePath = "beamBullet.glb";
+	bulletSpeed = 1.0f;
+	rayCastLength = 1.0f;
+	bulletDistanceLimit = 1000.0f;
 }
 
 //luaから呼び出される関数を登録される
@@ -48,39 +59,78 @@ glm::vec3 Player::inputMove()
 		cameraDirDeg = cameraObj.lock()->getTheta();
 	}
 
-	if (controller->getKey(GLFW_KEY_W))
+	if (!aiming)
 	{
-		moveDirec = -forward;
-		rotate.y = cameraDirDeg;
-	}
-	else if (controller->getKey(GLFW_KEY_A))
-	{
-		moveDirec = -right;
-		rotate.y = cameraDirDeg - 90.0f;
-	}
-	else if (controller->getKey(GLFW_KEY_D))
-	{
-		moveDirec = right;
-		rotate.y = cameraDirDeg + 90.0f;
-	}
-	else if (controller->getKey(GLFW_KEY_S))
-	{
-		moveDirec = forward;
-		rotate.y = cameraDirDeg + 180.0f;
-	}
-	else
-	{
-		moveDirec = { 0,0,0 };
-	}
+		if (controller->getKey(GLFW_KEY_W))
+		{
+			moveDirec = forward;
+			rotate.y = cameraDirDeg;
+		}
+		else if (controller->getKey(GLFW_KEY_A))
+		{
+			moveDirec = -right;
+			rotate.y = cameraDirDeg - 90.0f;
+		}
+		else if (controller->getKey(GLFW_KEY_D))
+		{
+			moveDirec = right;
+			rotate.y = cameraDirDeg + 90.0f;
+		}
+		else if (controller->getKey(GLFW_KEY_S))
+		{
+			moveDirec = -forward;
+			rotate.y = cameraDirDeg + 180.0f;
+		}
+		else
+		{
+			moveDirec = { 0,0,0 };
+		}
 
-	if (moveDirec == glm::vec3(0.0f))
-	{
-		switchPlayAnimation("Idle_gunMiddle");
+		if (moveDirec == glm::vec3(0.0f))
+		{
+			switchPlayAnimation("Idle_gunMiddle");
+		}
+		else
+		{
+			moveDirec = glm::normalize(moveDirec) * moveSpeed;
+			switchPlayAnimation("run");
+		}
 	}
 	else
 	{
-		moveDirec = glm::normalize(moveDirec) * moveSpeed;
-		switchPlayAnimation("run");
+		if (controller->getKey(GLFW_KEY_W))
+		{
+			moveDirec = forward;
+			switchPlayAnimation("walk_back_shoot");
+		}
+		else if (controller->getKey(GLFW_KEY_A))
+		{
+			moveDirec = -right;
+			switchPlayAnimation("walk_left_shoot");
+		}
+		else if (controller->getKey(GLFW_KEY_D))
+		{
+			moveDirec = right;
+			switchPlayAnimation("walk_right_shoot");
+		}
+		else if (controller->getKey(GLFW_KEY_S))
+		{
+			moveDirec = -forward;
+			switchPlayAnimation("walk_front_shoot");
+		}
+		else
+		{
+			moveDirec = { 0,0,0 };
+		}
+
+		if (moveDirec == glm::vec3(0.0f))
+		{
+			switchPlayAnimation("aiming");
+		}
+		else
+		{
+			moveDirec = glm::normalize(moveDirec) * moveSpeed;
+		}
 	}
 
 	glm::vec3 groundNormal;
@@ -124,9 +174,6 @@ void Player::initFrameSetting()
 		colider->initFrameSettings(glm::vec3(1.0f));//コライダーの初期設定
 	}
 
-	//min = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(min, 1.0f);
-	//max = glm::scale(glm::mat4(1.0f), scale) * glm::vec4(max, 1.0f);
-
 	initMin = min;
 	initMax = max;
 
@@ -139,7 +186,6 @@ void Player::initFrameSetting()
 
 	//カメラの位置を調整
 	sendPosToCamera(((min + max) / 2.0f));
-	//sendPosToCamera(position);
 }
 
 //キー入力の取得
@@ -209,6 +255,7 @@ void Player::setTargetUIImageAndScale(std::string filePath, float scale)
 	targetUI->setScale(scale);
 	targetUI->setPosition(glm::vec2(manager->getWindowWidth() / 2.0f, manager->getWindowHeight() / 2.0f));
 	targetUI->setVisible(false);//デフォルトで非表示に指定おく
+	targetUI->setTransparent(true);
 
 	scene->sceneUI.push_back(targetUI);
 }
@@ -240,6 +287,8 @@ void Player::updateTransformMatrix()
 	//MBRの更新
 	calcMBR();
 
+	pivot = (mbrMin + mbrMax) / 2.0f;
+
 	if (colider)
 	{
 		colider->reflectMovement(transformMatrix);
@@ -256,19 +305,43 @@ void Player::updateTransformMatrix()
 
 void Player::aim()
 {
+	Controller* controller = Controller::GetInstance();
+
 	//照準UIの表示
 	targetUI->setVisible(true);
-
-	//モーションを狙うモーションに切り替える
-	switchPlayAnimation("aiming");
 
 	//カメラを所定の位置に設定する
 	cameraObj.lock()->setPosition(aimingCameraOffset);
 
-	cameraObj.lock()->setParentPos((aimingCameraOffset - forward * 1.1f) - cameraObj.lock()->getViewTarget());
+	cameraObj.lock()->setParentPos((aimingCameraOffset + forward * 1.1f) - cameraObj.lock()->getViewTarget());
 
 	cameraObj.lock()->sphereMove = false;
 
 	//自分自身を半透明でレンダリングするようにする
-	fragParam.alphaness = 0.5f;
+	fragParam.alphaness = 0.7f;
+
+	if (controller->getMouseButton(GLFW_MOUSE_BUTTON_LEFT))
+	{
+		shootBullet();
+	}
+}
+
+void Player::shootBullet()
+{
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+
+	//弾の進行方向
+	bulletDirection = forward;
+
+	std::shared_ptr bullet =
+		std::shared_ptr<Bullet>(new Bullet(bulletSpeed, rayCastLength, bulletDirection, pivot, bulletDistanceLimit));
+
+	//3Dモデルを設定
+	bullet->setgltfModel(Storage::GetInstance()->getgltfModel(bulletFilePath));
+
+	//モデル用のバッファを作成
+	vulkan->setModelData(bullet);
+
+	//レンダリングのリストに追加
+	scene->sceneModels.push_back(bullet);
 }

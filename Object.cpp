@@ -13,7 +13,7 @@ Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 	position = { 0,0,0 };
 	posOffSet = 0.0f;
 
-	forward = glm::vec3{ 0,0,1 };
+	forward = glm::vec3{ 0,0,-1 };
 	right = glm::vec3{ 1,0,0 };
 	
 	rotate.x = rotate.getRadian(0.0f);

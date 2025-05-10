@@ -47,20 +47,10 @@ void GameManager::setLoadUI()
 //ロードUIの表示
 void GameManager::drawLoading(bool& loadFinish)
 {
-    //別スレッドに渡す、引数用の変数
-    inputTypes settings(2);
-    settings[0] = &loadFinish;
-    settings[1] = frameDuration;
-
     //ロード画面の描画(別スレッドで実行)
-    std::function<void(inputTypes&)> function = [](std::vector<std::any>& loadSettings)
+    std::function<void()> function = [this,&loadFinish]()
         {
-            //配列から設定を取得する
-            bool* loadFinish = nullptr;
-            float frameDuration = 0.0f;
             ThreadPool* pool = ThreadPool::GetInstance();
-            pool->safeAnyCast(loadFinish, 0, loadSettings);
-            pool->safeAnyCast(frameDuration, 1, loadSettings);
 
             VulkanBase* vulkan = VulkanBase::GetInstance();
             Storage* storage = Storage::GetInstance();
@@ -72,7 +62,7 @@ void GameManager::drawLoading(bool& loadFinish)
 
             std::shared_ptr<UI> loadUI = storage->getLoadUI();
 
-            while (!*loadFinish)
+            while (!loadFinish)
             {
                 //UIの回転行列を計算
                 loadUI->setRotate(rot2D);
@@ -89,9 +79,9 @@ void GameManager::drawLoading(bool& loadFinish)
                 //fps調整
                 auto end = std::chrono::system_clock::now();//フレーム終了時間
                 float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());//フレーム間時間計測
-                if (elapsed < frameDuration)
+                if (elapsed < this->frameDuration)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//処理を停止する
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(this->frameDuration - elapsed)));//処理を停止する
                 }
                 start = std::chrono::system_clock::now();
             }
@@ -101,8 +91,7 @@ void GameManager::drawLoading(bool& loadFinish)
         };
 
     //別スレッドで実行開始
-    std::pair<inputTypes, std::function<void(inputTypes&)>> pair = { settings,function };
-    ThreadPool::GetInstance()->runSingle(pair);
+    ThreadPool::GetInstance()->runSingle(function);
 }
 
 bool GameManager::createScene()//luaからステージの様子を読み込む

@@ -30,8 +30,23 @@ class Player : public Model
 	glm::vec3 aimingCameraOffsetSrc;
 	glm::vec3 aimingCameraOffset;
 
+	//弾のステータス
+	//弾のスピード
+	float bulletSpeed;
+	//レイキャスト時のレイの長さ
+	float rayCastLength;
+	//弾の進行方向
+	glm::vec3 bulletDirection;
+	//弾の射程距離
+	float bulletDistanceLimit;
+
 	bool aiming;
+	//弾のGltfモデルのパス
+	std::string bulletFilePath;
+	//狙いを定める際の処理
 	void aim();
+	//弾を発射
+	void shootBullet();
 
 public:
 

@@ -180,6 +180,9 @@ class Model:public Object
 {
 protected:
 
+	//オブジェクトの中心位置
+	glm::vec3 pivot;
+
 	//半透明描画のフラッグ
 	bool transparent;
 
@@ -255,14 +258,24 @@ protected:
 	FragmentParam fragParam;
 
 	virtual void updateUniformBuffer(GltfNode* node);
-	virtual void updateUniformBuffer(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
-		, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
+	virtual void updateUniformBuffer(std::list<std::shared_ptr<DirectionalLight>>& dirLights
+		, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
+
+	virtual void cleanupVulkan();//Vulkanの変数の破棄
 
 public:
 
 	Model();
 	Model(std::string luaScriptPath);
-	~Model() {};
+	~Model()
+	{
+		if (lua)
+		{
+			lua_close(lua);
+		}
+
+		cleanupVulkan();
+	}
 
 	bool isTransparent()
 	{
@@ -272,6 +285,11 @@ public:
 	void setTransparent(bool t)
 	{
 		transparent = t;
+	}
+
+	glm::vec3 getPivot()
+	{
+		return pivot;
 	}
 
 	void registerGlueFunctions() override;//glue関数の設定
@@ -348,8 +366,6 @@ public:
 
 	void updateTransformMatrix() override;//座標変換行列の更新
 
-	virtual void cleanupVulkan();//Vulkanの変数の破棄
-
 	void setPosition(glm::vec3 pos) override;//位置の設定
 
 	void Update() override;//更新処理
@@ -369,8 +385,8 @@ public:
 	void addGroundingObject(Model* object);//床に接していたらそれを追加
 	void clearGroundingObject();
 
-	virtual void frameEnd(std::vector<std::shared_ptr<DirectionalLight>>& dirLights
-		, std::vector<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
+	virtual void frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
+		, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/

@@ -28,6 +28,8 @@ Scene::Scene()
 
 Scene::~Scene()
 {
+	lua_close(lua);
+
 	cleanupVulkan();
 }
 
@@ -43,10 +45,10 @@ void Scene::initFrameSetting()
 
 	VulkanBase* vulkan = VulkanBase::GetInstance();
 
-	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの初期化処理
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//すべてのオブジェクトの初期化処理
 	{
-		vulkan->setModelData(sceneModels[i]);
-		sceneModels[i]->initFrameSetting();//オブジェクトの初期化処理
+		vulkan->setModelData(*itr);
+		(*itr)->initFrameSetting();//オブジェクトの初期化処理
 	}
 
 	vulkan->setModelData(player);
@@ -55,10 +57,10 @@ void Scene::initFrameSetting()
 
 	vulkan->createCubemap(cubemap);
 
-	for (int i = 0; i < sceneUI.size(); i++)
+	for (auto itr = sceneUI.begin(); itr != sceneUI.end(); itr++)
 	{
-		vulkan->setUI(sceneUI[i]);
-		sceneUI[i]->initFrameSettings();
+		vulkan->setUI(*itr);
+		(*itr)->initFrameSettings();
 	}
 
 	//シャドウマッピングの用意
@@ -85,11 +87,12 @@ void Scene::initLuaScript(std::string path)
 
 void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 {
+	lua_register(lua, "loadGltfModel", glueSceneFunction::glueLoadGltfModel);//Gltfモデルの読み込みのみを行う
 	lua_register(lua, "createModel", glueSceneFunction::glueCreateModel);//3Dモデルクラスの追加
 	lua_register(lua, "createPlayer", glueSceneFunction::glueCreatePlayer);//プレイヤーの追加
 	lua_register(lua, "setLuaPath", glueSceneFunction::glueSetLuaPath);//スクリプトをオブジェクトに追加
 	lua_register(lua, "setDelayStartLua", glueSceneFunction::glueSetDelayStartLua);//スクリプトの実行開始タイミングを設定
-	lua_register(lua, "setGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加
+	lua_register(lua, "setGltfModel", glueSceneFunction::glueSetGltfModel);//gltfモデルの追加し、オブジェクトに設定する
 	lua_register(lua, "setPos", glueSceneFunction::glueSetPos);//座標の設定
 	lua_register(lua, "setRotate", glueSceneFunction::glueSetRotate);//向きを設定
 	lua_register(lua, "setScale", glueSceneFunction::glueSetScale);//モデルのスケールの設定
@@ -151,13 +154,13 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 	player->Update();//プレイヤーの更新処理
 	player->updateTransformMatrix();//プレイヤーの座標変換行列の更新
 
-	for (int i = 0; i < sceneModels.size(); i++)//すべてのオブジェクトの更新処理
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//すべてのオブジェクトの更新処理
 	{
-		sceneModels[i]->Update();//オブジェクトの更新処理
+		(*itr)->Update();//オブジェクトの更新処理
 
-		if (sceneModels[i]->uniformBufferChange)//オブジェクトの位置や向きが変わった場合
+		if ((*itr)->uniformBufferChange)//オブジェクトの位置や向きが変わった場合
 		{
-			sceneModels[i]->updateTransformMatrix();//MVPのモデル行列を更新する
+			(*itr)->updateTransformMatrix();//MVPのモデル行列を更新する
 		}
 	}
 
@@ -199,22 +202,22 @@ bool Scene::groundCollision(glm::vec3 collisionVector)
 //四角形を延ばして、衝突判定を行う、接地判定に使われる
 std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal)
 {
-	for (int i = 0; i < sceneModels.size(); i++)
+	for (auto itr = sceneModels.begin();itr != sceneModels.end();itr++)
 	{
-		if (model == sceneModels[i].get())
+		if (model == (itr->get()))
 		{
 			continue;
 		}
 
-		if (!sceneModels[i]->hasColider())
+		if (!(*itr)->hasColider())
 		{
 			continue;
 		}
 
-		std::shared_ptr<Colider> colider2 = sceneModels[i]->getColider();
+		std::shared_ptr<Colider> colider2 = (*itr)->getColider();
 		if (colider2->Intersect(origin,dir,length,normal))//コライダーと線分の衝突判定
 		{
-			return sceneModels[i];
+			return (*itr);
 		}
 	}
 
@@ -235,32 +238,32 @@ void Scene::updateObjectPos(Model* model, RNode<Model>* node)
 
 void Scene::rtreeIntersect()
 {
-	for (int i = 0; i < sceneModels.size(); i++)//モデル同士の当たり判定を行う
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//モデル同士の当たり判定を行う
 	{
-		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
+		if (!(*itr)->hasColider())//コライダーを持っていなかったらスキップ
 		{
 			continue;
 		}
 
 		//R木を使って、当たり判定を行うオブジェクトを絞る
 		std::vector<Model*> collisionDetectTarget;
-		rtree->broadPhaseCollisionDetection(collisionDetectTarget, sceneModels[i]->getMbrMin(), sceneModels[i]->getMbrMax());
+		rtree->broadPhaseCollisionDetection(collisionDetectTarget, (*itr)->getMbrMin(), (*itr)->getMbrMax());
 
 		for (int j = 0; j < collisionDetectTarget.size(); j++)
 		{
 			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
-			if (collisionDetectTarget[j]->hasColider() && sceneModels[i].get() == collisionDetectTarget[j])
+			if (collisionDetectTarget[j]->hasColider() && (*itr).get() == collisionDetectTarget[j])
 			{
-				if (sceneModels[i]->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
+				if ((*itr)->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
 				{
-					if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
+					if ((*itr)->isMovable)//壁など動かさないものは除外する
 					{
-						sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+						(*itr)->setPosition((*itr)->getPosition() + collisionVector);//衝突を解消する
 						if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
 							//つまり、床のようなオブジェクトの上に載っている状況の場合
 						{
 							collisionDetectTarget[j]->isGrounding = true;
-							sceneModels[i]->addGroundingObject(collisionDetectTarget[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+							(*itr)->addGroundingObject(collisionDetectTarget[j]);//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
 						}
 					}
 
@@ -269,8 +272,8 @@ void Scene::rtreeIntersect()
 						collisionDetectTarget[j]->setPosition(collisionDetectTarget[j]->getPosition() - collisionVector);
 						if (groundCollision(-collisionVector))
 						{
-							sceneModels[i]->isGrounding = true;
-							collisionDetectTarget[j]->addGroundingObject(sceneModels[i].get());
+							(*itr)->isGrounding = true;
+							collisionDetectTarget[j]->addGroundingObject((*itr).get());
 						}
 					}
 				}
@@ -311,41 +314,42 @@ void Scene::rtreeIntersect()
 
 void Scene::intersect()
 {
-	for (int i = 0; i < sceneModels.size() - 1; i++)//モデル同士の当たり判定を行う
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//モデル同士の当たり判定を行う
 	{
-		if (!sceneModels[i]->hasColider())//コライダーを持っていなかったらスキップ
+		if (!(*itr)->hasColider())//コライダーを持っていなかったらスキップ
 		{
 			continue;
 		}
 
-		for (int j = i + 1; j < sceneModels.size(); j++)
+		auto nextItr = std::next(itr);
+		for (auto opp = nextItr; opp != sceneModels.end();opp++)
 		{
-			if (!sceneModels[j]->hasColider())
+			if (!(*opp)->hasColider())
 			{
 				continue;
 			}
 
 			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
-			if (sceneModels[i]->getColider()->Intersect(sceneModels[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
+			if ((*itr)->getColider()->Intersect((*opp)->getColider(), collisionVector))//GJKによる当たり判定を行う
 			{
-				if (sceneModels[i]->isMovable)//壁など動かさないものは除外する
+				if ((*itr)->isMovable)//壁など動かさないものは除外する
 				{
-					sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);//衝突を解消する
+					(*itr)->setPosition((*itr)->getPosition() + collisionVector);//衝突を解消する
 					if (groundCollision(collisionVector))//もし一つ目のオブジェクトが二つめのオブジェクトの真上にある
 						//つまり、床のようなオブジェクトの上に載っている状況の場合
 					{
-						sceneModels[j]->isGrounding = true;
-						sceneModels[i]->addGroundingObject(sceneModels[j].get());//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+						(*opp)->isGrounding = true;
+						(*itr)->addGroundingObject((*opp).get());//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
 					}
 				}
 
-				if (sceneModels[j]->isMovable)//上と同様
+				if ((*opp)->isMovable)//上と同様
 				{
-					sceneModels[j]->setPosition(sceneModels[j]->getPosition() - collisionVector);
+					(*opp)->setPosition((*opp)->getPosition() - collisionVector);
 					if (groundCollision(-collisionVector))
 					{
-						sceneModels[i]->isGrounding = true;
-						sceneModels[j]->addGroundingObject(sceneModels[i].get());
+						(*itr)->isGrounding = true;
+						(*opp)->addGroundingObject((*itr).get());
 					}
 				}
 			}
@@ -353,15 +357,15 @@ void Scene::intersect()
 	}
 
 	//プレイヤーキャラクターについての当たり判定を行う
-	for (int i = 0; i < sceneModels.size(); i++)
+	for (auto itr = sceneModels.begin(); itr != sceneModels.end(); itr++)
 	{
-		if (sceneModels[i]->getColider())
+		if ((*itr)->getColider())
 		{
-			if (player->getColider()->Intersect(sceneModels[i]->getColider(), collisionVector))
+			if (player->getColider()->Intersect((*itr)->getColider(), collisionVector))
 			{
-				if (sceneModels[i]->isMovable)
+				if ((*itr)->isMovable)
 				{
-					sceneModels[i]->setPosition(sceneModels[i]->getPosition() + collisionVector);
+					(*itr)->setPosition((*itr)->getPosition() + collisionVector);
 				}
 
 				if (player->isMovable)
@@ -369,7 +373,7 @@ void Scene::intersect()
 					if (groundCollision(collisionVector))
 					{
 						player->isGrounding = true;
-						sceneModels[i]->addGroundingObject(player.get());
+						(*itr)->addGroundingObject(player.get());
 					}
 
 					player->setPosition(player->getPosition() - collisionVector);
@@ -429,10 +433,20 @@ void Scene::updateDirLightUniformBuffer()
 
 	ubo.lightCount = loopLimit;
 
-	for (int i = 0; i < loopLimit; i++)
 	{
-		ubo.dir[i] = glm::vec4(sceneDirectionalLights[i]->direction, 0.0f);
-		ubo.color[i] = glm::vec4(sceneDirectionalLights[i]->color, 0.0f);
+		int index = 0;
+		for (auto itr = sceneDirectionalLights.begin(); itr != sceneDirectionalLights.end(); itr++)
+		{
+			ubo.dir[index] = glm::vec4((*itr)->direction, 0.0f);
+			ubo.color[index] = glm::vec4((*itr)->color, 0.0f);
+
+			if (index >= loopLimit)
+			{
+				break;
+			}
+
+			index++;
+		}
 	}
 
 	memcpy(dirLightBuffer.mappedBuffer.uniformBufferMapped, &ubo, sizeof(DirectionalLightUBO));
@@ -452,10 +466,20 @@ void Scene::updatePointLightUniformBuffer()
 
 	ubo.lightCount = loopLimit;
 
-	for (int i = 0; i < loopLimit; i++)
 	{
-		ubo.pos[i] = glm::vec4(scenePointLights[i]->getPosition(), 1.0f);
-		ubo.color[i] = glm::vec4(scenePointLights[i]->color, 1.0f);
+		int index = 0;
+		for (auto itr = scenePointLights.begin();itr != scenePointLights.end();itr++)
+		{
+			ubo.pos[index] = glm::vec4((*itr)->getPosition(), 1.0f);
+			ubo.color[index] = glm::vec4((*itr)->color, 1.0f);
+
+			if (index >= loopLimit)
+			{
+				break;
+			}
+
+			index++;
+		}
 	}
 
 	memcpy(pointLightBuffer.mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
@@ -468,14 +492,19 @@ void Scene::updateShadowMapUniformBuffer()
 
 	std::shared_ptr<Camera> camera = storage->accessCamera();
 
-	for (int i = 0; i < sceneDirectionalLights.size(); i++)
 	{
-		shadowMapData.matUBOs[i].view = glm::lookAt(sceneDirectionalLights[i]->getPosition()
-			, sceneDirectionalLights[i]->getPosition() + sceneDirectionalLights[i]->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		int index = 0;
+		for (auto itr = sceneDirectionalLights.begin();itr != sceneDirectionalLights.end();itr++)
+		{
+			shadowMapData.matUBOs[index].view = glm::lookAt((*itr)->getPosition()
+				, (*itr)->getPosition() + (*itr)->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
-		shadowMapData.matUBOs[i].proj = shadowMapData.proj;
+			shadowMapData.matUBOs[index].proj = shadowMapData.proj;
 
-		memcpy(shadowMapData.mappedBuffers[i].uniformBufferMapped, &shadowMapData.matUBOs[i], sizeof(ShadowMapUBO));
+			memcpy(shadowMapData.mappedBuffers[index].uniformBufferMapped, &shadowMapData.matUBOs[index], sizeof(ShadowMapUBO));
+
+			index++;
+		}
 	}
 }
 
@@ -492,21 +521,6 @@ void Scene::cleanupVulkan()
 	vulkan->gpuWaitIdle();
 
 	shadowMapData.destroy(device);
-
-	//モデル
-	for (auto model : sceneModels)
-	{
-		model->cleanupVulkan();
-	}
-	player->cleanupVulkan();
-
-	cubemap->cleanupVulkan();
-
-	//UI
-	for (auto ui : sceneUI)
-	{
-		ui->cleanupVulkan();
-	}
 
 	//ライト
 	pointLightBuffer.mappedBuffer.destroy(device);
@@ -560,16 +574,10 @@ void Scene::render()
 		}
 	}
 
-	//半透明のオブジェクトをレンダリングする
+	//キューブマップ
+	vulkan->renderCubemap(cubemap);
 
-	//UI
-	for (auto ui : sceneUI)
-	{
-		if (ui->isTransparent())
-		{
-			vulkan->renderUI(ui);
-		}
-	}
+	//半透明のオブジェクトをレンダリングする
 
 	//3Dモデル
 	for (auto model : sceneModels)
@@ -580,11 +588,16 @@ void Scene::render()
 				, shadowMapData, pointLightBuffer, dirLightBuffer);
 		}
 	}
-
 	vulkan->renderModel(player, cubemap, shadowMapData, pointLightBuffer, dirLightBuffer);
 
-	//キューブマップ
-	vulkan->renderCubemap(cubemap);
+	//UI
+	for (auto ui : sceneUI)
+	{
+		if (ui->isTransparent())
+		{
+			vulkan->renderUI(ui);
+		}
+	}
 
 	//3DモデルとUIのレンダリング終了
 	vulkan->sceneRenderEnd();

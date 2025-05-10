@@ -14,7 +14,7 @@ GLFWwindow* window;
 int main() 
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);//メモリリーク検出用
-    //_CrtSetBreakAlloc(19533387);
+    //_CrtSetBreakAlloc(1597);
 
     glfwInit();//ライブラリの準備
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

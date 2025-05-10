@@ -12,24 +12,6 @@ FileManager::FileManager()
 {
 }
 
-//埋め込められたgltfモデルを取得する
-int FileManager::getModelResource(GLTFOBJECT obj)
-{
-    switch (obj)
-    {
-    case GLTFOBJECT::gltfTEST:
-        return IDR_MODEL1;
-    case GLTFOBJECT::ASPHALT:
-        return IDR_MODEL2;
-    case GLTFOBJECT::LEATHER:
-        return IDR_MODEL3;
-    case GLTFOBJECT::CUBEMAP:
-        return IDR_MODEL4;
-    }
-
-    return -1;
-}
-
 //埋め込まれたgltfモデルを取得する
 void FileManager::loadgltfModel(int id, void** ptr, int& size)
 {
@@ -57,7 +39,7 @@ void FileManager::loadgltfModel(int id, void** ptr, int& size)
 //Modelクラスに付与するgltfファイルとModelクラスのリストを作る
 void FileManager::addLoadModelList(std::string filePath, Model* model)
 {
-    loadModelList.push_back(std::pair<std::string,Model*>(filePath, model));
+    loadModelList[filePath].push_back(model);
 }
 
 //ModelクラスにgltfModelクラスを設定する
@@ -65,42 +47,47 @@ void FileManager::setGltfModel()
 {
     VulkanBase* vulkan = VulkanBase::GetInstance();
 
-    /*
-
     ThreadPool* pool = ThreadPool::GetInstance();
 
+
     std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
-    for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
     {
-        inputTypes input(2);
-        input[0] = i;
-        input[1] = gltfModels[i];
+        int index = 0;
+        for (auto itr = loadModelList.begin(); itr != loadModelList.end(); itr++)
+        {
+            std::function<void()> loadModelFunc = [this, itr,&gltfModels, index]()
+                {
+                    gltfModels[index] = loadModel(itr->first);
+                };
 
-        std::function<void(inputTypes&)> loadModelFunc = [this](inputTypes& input)
-            {
-                ThreadPool* pool = ThreadPool::GetInstance();
+            pool->run(loadModelFunc);
 
-                int index;
-                std::shared_ptr<GltfModel> gltfModel;
-                pool->safeAnyCast(index, 0, input);
-                pool->safeAnyCast(gltfModel, 1, input);
-
-                gltfModel = loadModel(loadModelList[index].first);
-            };
-
-        pool->run({ input,loadModelFunc });
+            index++;
+        }
     }
 
     pool->waitUntilIdle();
 
-    for (int i = 0; i < loadModelList.size(); i++)
     {
-        vulkan->setGltfModelData(gltfModels[i]);
-        loadModelList[i].second->setgltfModel(gltfModels[i]);
+        int index = 0;
+        for (auto itr = loadModelList.begin(); itr != loadModelList.end(); itr++)
+        {
+            vulkan->setGltfModelData(gltfModels[index]);
+
+            for (int j = 0; j < itr->second.size(); j++)
+            {
+                if (itr->second[j])
+                {
+                    itr->second[j]->setgltfModel(gltfModels[index]);
+                }
+            }
+
+            index++;
+        }
     }
 
-    */
-
+    /*
+    
     std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
     for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
     {
@@ -112,6 +99,8 @@ void FileManager::setGltfModel()
     {
         loadModelList[i].second->setgltfModel(gltfModels[i]);
     }
+    
+    */
 }
 
 //luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
@@ -757,6 +746,8 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         pixels = stbi_loadf(filePath.c_str(), &width, &height, &texChannels, 0);
 
         imageData = new ImageData(width, height, texChannels, pixels);
+
+        stbi_image_free(pixels);
     }
     else
     {
@@ -769,6 +760,8 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels, 0);
 
         imageData = new ImageData(width, height, texChannels, pixels);
+
+        stbi_image_free(pixels);
     }
 
     storage->addImageData(registerImageName,imageData);

@@ -340,10 +340,15 @@ private:
     //キューブマッピング用の画像
     std::shared_ptr<ImageData> hdriMap;
 
+    void cleanupVulkan() override;
+
 public:
 
     Cubemap() {};
-    ~Cubemap() {};
+    ~Cubemap()
+    {
+        cleanupVulkan();
+    }
 
     //hdri画像の設定と取得
     void setHDRIMap(std::shared_ptr<ImageData> image)
@@ -385,6 +390,4 @@ public:
 
     //フレーム終了時に実行
     void frameEnd();
-
-    void cleanupVulkan() override;
 };

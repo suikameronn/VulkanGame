@@ -61,3 +61,6 @@ setStartPoint(0.0,100.0,0.0)
 
 --背景やIBLで使うHDRI画像の設定
 setHDRIMap("textures/grass.hdr")
+
+--ゲーム内で使うリソースを読み込んでおく
+loadGltfModel("models/beamBullet.glb")

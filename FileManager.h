@@ -28,12 +28,9 @@ private:
 
 	//スクリプトから指定された3Dモデルのファイルのリストと
 	//それを持たせるModelクラス
-	std::vector<std::pair<std::string, Model*>> loadModelList;
+	std::unordered_map<std::string,std::vector<Model*>> loadModelList;
 
 	FileManager();
-
-	//埋め込められたgltfモデルを取得する
-	int getModelResource(GLTFOBJECT obj);
 
 	//コライダーの計算用変数
 	glm::vec3 minPos;

@@ -112,10 +112,16 @@ protected:
 
 	void updateUniformBuffer();
 
+	void cleanupVulkan();
+
 public:
 
 	UI(std::shared_ptr<ImageData> image);
-	~UI() {};
+	~UI()
+	{
+		//gpu上のバッファなどを破棄
+		cleanupVulkan();
+	}
 
 	const uint32_t vertexCount = UIVertexCount;
 	const uint32_t indexCount = UIIndexCount;
@@ -183,7 +189,4 @@ public:
 
 	//座標変換行列を返す
 	glm::mat4 getTransfromMatrix() { return transformMatrix; }
-
-	//gpu上のバッファなどを破棄
-	void cleanupVulkan();
 };

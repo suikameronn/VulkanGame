@@ -162,13 +162,13 @@ public:
 	//キューブマッピング用の立方体オブジェクト
 	std::shared_ptr<Cubemap> cubemap;
 	//ステージ上のオブジェクトの配列
-	std::vector<std::shared_ptr<Model>> sceneModels;
+	std::list<std::shared_ptr<Model>> sceneModels;
 	//ステージ上のポイントライトの配列
-	std::vector<std::shared_ptr<PointLight>> scenePointLights;
+	std::list<std::shared_ptr<PointLight>> scenePointLights;
 	//ステージ上の平行光源の配列
-	std::vector<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;
+	std::list<std::shared_ptr<DirectionalLight>> sceneDirectionalLights;
 	//ステージ上のUI
-	std::vector<std::shared_ptr<UI>> sceneUI;
+	std::list<std::shared_ptr<UI>> sceneUI;
 
 	//ステージ上のオブジェクトなどの更新処理
 	int UpdateScene();
@@ -220,6 +220,19 @@ static void printStack(lua_State* L) {
 
 namespace glueSceneFunction//Sceneクラスの用のglue関数
 {
+
+	//GLTFモデルの読み込みのみを行う
+	static int glueLoadGltfModel(lua_State* lua)
+	{
+		std::string modelFilePath = static_cast<std::string>(lua_tostring(lua, -1));
+
+		lua_getglobal(lua, "Scene");
+		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+		FileManager::GetInstance()->addLoadModelList(modelFilePath,nullptr);
+
+		return 1;
+	}
 
 	//オブジェクトを作成する 通常は使わない
 	static int glueCreateObject(lua_State* lua)
