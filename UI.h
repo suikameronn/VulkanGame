@@ -107,9 +107,6 @@ protected:
 	//画像データ(uiイラストなど)
 	std::shared_ptr<ImageData> uiImage;
 
-	//uiのテクスチャ
-	TextureData* uiTexture;
-
 	void updateUniformBuffer();
 
 	void cleanupVulkan();

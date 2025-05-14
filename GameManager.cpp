@@ -144,6 +144,9 @@ void GameManager::exitScene()
         scene->Destroy();
     }
 
+    //破棄予定のバッファをすべて破棄する
+    VulkanBase::GetInstance()->allCleanupDefferedBuffer();
+
     if (exit == GAME_FINISH || glfwWindowShouldClose(window))
     {
         //ゲーム全体を終了

@@ -159,9 +159,11 @@ void Object::receiveTransformFromLua()
 	}
 }
 
-void Object::Update()//更新処理
+bool Object::Update()//更新処理
 {
 	customUpdate();
+	
+	return SHOULD_KEEP;
 }
 
 void Object::setPosition(glm::vec3 pos)//座標の設定

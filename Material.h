@@ -14,6 +14,30 @@
 
 #include"Object.h"
 
+//gpu上のテクスチャデータ
+struct TextureData
+{
+	//テクスチャのみっぷレベル
+	uint32_t mipLevel;
+	//テクスチャの画像データ
+	VkImage image;
+	VkDeviceMemory memory;
+	//画像のビュー
+	VkImageView view;
+	//画像のサンプラー テクスチャの境界の設定など
+	VkSampler sampler;
+
+	void destroy(VkDevice& device)//各種データの破棄
+	{
+		vkDestroyImageView(device, view, nullptr);
+		vkDestroyImage(device, image, nullptr);
+		vkFreeMemory(device, memory, nullptr);
+		vkDestroySampler(device, sampler, nullptr);
+
+		delete this;
+	}
+};
+
 //画像のデータを担うクラス 4チャンネル専用
 class ImageData
 {
@@ -29,6 +53,9 @@ private:
 	//HDRI画像用のピクセル配列
 	std::vector<float> hdriPixels;
 
+	//テクスチャ
+	TextureData* texture;
+
 public:
 
 	//チャンネル数は4に固定
@@ -40,6 +67,8 @@ public:
 		this->texChannels = 4;
 		this->pixels.resize(width * height * 4);
 		std::fill(this->pixels.begin(), this->pixels.end(), 255);
+
+		texture = new TextureData();
 
 		if (channels == 4)//画像に透明度のチャンネルがある場合は、そのまま
 		{
@@ -66,6 +95,8 @@ public:
 		this->texChannels = 4;
 		this->hdriPixels.resize(width * height * 4);
 		std::fill(this->hdriPixels.begin(), this->hdriPixels.end(), 255.0f);
+
+		texture = new TextureData();
 
 		if (channels == 4)//画像に透明度のチャンネルがある場合は、そのまま
 		{
@@ -121,29 +152,15 @@ public:
 			return hdriPixels.data();
 		}
 	}
-};
 
-//gpu上のテクスチャデータ
-struct TextureData
-{
-	//テクスチャのみっぷレベル
-	uint32_t mipLevel;
-	//テクスチャの画像データ
-	VkImage image;
-	VkDeviceMemory memory;
-	//画像のビュー
-	VkImageView view;
-	//画像のサンプラー テクスチャの境界の設定など
-	VkSampler sampler;
-
-	void destroy(VkDevice& device)//各種データの破棄
+	TextureData* getTexture()
 	{
-		vkDestroyImageView(device, view, nullptr);
-		vkDestroyImage(device, image, nullptr);
-		vkFreeMemory(device, memory, nullptr);
-		vkDestroySampler(device, sampler, nullptr);
+		return texture;
+	}
 
-		delete this;
+	void cleanUpVulkan(VkDevice& device)
+	{
+		texture->destroy(device);
 	}
 };
 

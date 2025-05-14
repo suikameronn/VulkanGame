@@ -71,6 +71,8 @@ public:
 	std::shared_ptr<ImageData> getImageData(std::string path);
 	//このクラスにすでに格納されたgltfModelのmapを返す
 	std::unordered_map<std::string, std::shared_ptr<GltfModel>>& getgltfModel();
+	//このクラスにすでに格納されたimageDataのmapを返す
+	std::unordered_map<std::string, std::shared_ptr<ImageData>>& getImageData();
 
 	//カメラへの参照を返す
 	std::shared_ptr<Camera> accessCamera();

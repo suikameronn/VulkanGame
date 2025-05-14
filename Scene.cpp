@@ -156,7 +156,14 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//すべてのオブジェクトの更新処理
 	{
-		(*itr)->Update();//オブジェクトの更新処理
+		//オブジェクトの更新処理
+		if ((*itr)->Update())
+		{
+			//オブジェクトを削除する
+			itr = sceneModels.erase(itr);
+
+			itr--;
+		}
 
 		if ((*itr)->uniformBufferChange)//オブジェクトの位置や向きが変わった場合
 		{
@@ -184,6 +191,10 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 		exit = GAME_FINISH;
 	}
 
+	//前のフレームの破棄予定のバッファを破棄する
+	VulkanBase::GetInstance()->cleanupDefferedBuffer();
+	
+	//レンダリング
 	render();
 
 	return exit;//ウィンドウを閉じようとした場合は、falsを送り、ゲームの終了処理をさせる 

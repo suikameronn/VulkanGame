@@ -84,14 +84,16 @@ Bullet::~Bullet()
 	}
 }
 
-void Bullet::Update()
+bool Bullet::Update()
 {
 	if (abs(glm::length(shootPos - getPosition())) > distanceLimit)
 	{
-
+		return SHOULD_DELETE;
 	}
 
 	setLastFrameTransform();
 
 	setPosition(getPosition() + direction * speed);
+
+	return SHOULD_KEEP;
 }

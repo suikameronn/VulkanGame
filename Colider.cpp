@@ -99,6 +99,23 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel)
 	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 }
 
+Colider::~Colider()
+{
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+
+	if (pointBuffer.vertBuffer)
+	{
+		//バッファが作成されていたら
+		vulkan->addDefferedDestructBuffer(pointBuffer);
+	}
+
+	if (mappedBuffer.uniformBuffer)
+	{
+		//バッファが作成されていたら
+		vulkan->addDefferedDestructBuffer(mappedBuffer);
+	}
+}
+
 //Modelクラスの初期座標から座標変換を適用する
 void Colider::initFrameSettings(glm::vec3 initScale)
 {
@@ -654,22 +671,6 @@ MappedBuffer* Colider::getMappedBufferData()
 DescriptorInfo& Colider::getDescInfo()
 {
 	return descInfo;
-}
-
-//コライダー用のgpu上のバッファの破棄
-void Colider::cleanupVulkan()
-{
-	VkDevice device = VulkanBase::GetInstance()->GetDevice();
-
-	vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
-
-	vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
-
-	vkDestroyBuffer(device, mappedBuffer.uniformBuffer, nullptr);
-	vkFreeMemory(device, mappedBuffer.uniformBufferMemory, nullptr);
-	mappedBuffer.uniformBufferMapped = nullptr;
 }
 
 glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point)

@@ -71,6 +71,12 @@ std::unordered_map<std::string, std::shared_ptr<GltfModel>>& Storage::getgltfMod
 	return gltfModelStorage;
 }
 
+//‚±‚ÌƒNƒ‰ƒX‚É‚·‚Å‚ÉŠi”[‚³‚ê‚½imageData‚Ìmap‚ð•Ô‚·
+std::unordered_map<std::string, std::shared_ptr<ImageData>>& Storage::getImageData()
+{
+	return imageDataStorage;
+}
+
 //‚±‚ÌƒNƒ‰ƒX‚É‚·‚Å‚ÉŠi”[‚³‚ê‚½gltfModel‚Ìmap‚ð•Ô‚·
 std::shared_ptr<GltfModel> Storage::getgltfModel(std::string obj)
 {

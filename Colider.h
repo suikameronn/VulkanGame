@@ -123,6 +123,7 @@ private:
 public:
 
 	Colider(std::shared_ptr<GltfModel> model);
+	~Colider();
 
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings(glm::vec3 initScale);
@@ -165,6 +166,4 @@ public:
 	int getDrawColiderIndicesSize() { return static_cast<int>(drawColiderIndices.size()); }
 	//描画用のインデックスを取得
 	uint32_t* getDrawColiderIndices() { return drawColiderIndices.data(); }
-	//コライダー用のgpu上のバッファの破棄
-	void cleanupVulkan();
 };

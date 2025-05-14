@@ -176,7 +176,7 @@ struct ShadowMapData
 };
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object
+class Model:public Object, std::enable_shared_from_this<Model>
 {
 protected:
 
@@ -217,8 +217,6 @@ protected:
 
 	//mvp行列用のバッファー
 	MappedBuffer modelViewMappedBuffer;
-	//gltfモデルの頂点関連用のバッファ
-	std::vector<BufferObject> pointBuffers;
 	//アニメーション用行列のバッファ
 	std::vector<MappedBuffer> animationMappedBuffers;
 	//アニメーション用行列の配列
@@ -351,7 +349,7 @@ public:
 	std::array<glm::mat4, 128>& getJointMatrices(int index);//特定のスケルトンのアニメーション行列を計算
 
 	std::vector<DescSetData> descSetDatas;
-	BufferObject* getPointBufferData() { return pointBuffers.data(); }//頂点用バッファの取得
+	BufferObject* getPointBufferData() { return gltfModel->getPointBuffer(); }//頂点用バッファの取得
 	MappedBuffer& getModelViewMappedBuffer() { return modelViewMappedBuffer; }//モデルビュー行列用のバッファの取得
 	MappedBuffer* getAnimationMappedBufferData();//アニメーション用の行列のバッファの取得
 
@@ -368,7 +366,7 @@ public:
 
 	void setPosition(glm::vec3 pos) override;//位置の設定
 
-	void Update() override;//更新処理
+	bool Update() override;//更新処理
 	void customUpdate() override;//特殊な更新処理
 
 	glm::vec3 getLastScale();

@@ -367,6 +367,17 @@ struct Animation {
 	float end = std::numeric_limits<float>::min();//終了時間
 };
 
+//頂点バッファーとインデックスバッファの構造体
+//Modelクラスが持つ
+struct BufferObject
+{
+	VkBuffer vertBuffer;
+	VkDeviceMemory vertHandler;
+
+	VkBuffer indeBuffer;
+	VkDeviceMemory indeHandler;
+};
+
 //読み込んだgltfモデル全体のクラス
 class GltfModel
 {
@@ -395,6 +406,9 @@ public:
 	int vertexNum;
 	int indexNum;
 
+	//gltfモデルの頂点関連用のバッファ
+	std::vector<BufferObject> pointBuffers;
+
 	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;
 	//スケルトン 通常は一つ
@@ -402,8 +416,6 @@ public:
 
 	//gltfモデルで使われる画像データ
 	std::vector < std::shared_ptr<ImageData>> imageDatas;
-	//同じくテクスチャデータ
-	std::vector<TextureData*> textureDatas;
 	//同じくマテリアルデータ Primitive構造体のmaterialIndexから指定される
 	std::vector<std::shared_ptr<Material>> materials;
 
@@ -413,6 +425,9 @@ public:
 	GltfNode* getRootNode() { return root; }
 	GltfNode* nodeFromIndex(int index);
 	GltfNode* findNode(GltfNode* parent,int index);
+
+	void setPointBufferNum() { pointBuffers.resize(meshCount); }
+	BufferObject* getPointBuffer() { return pointBuffers.data(); }
 
 	//AABBの計算
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);

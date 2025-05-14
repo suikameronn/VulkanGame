@@ -133,6 +133,15 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 //gpu上のバッファなどの削除処理
 void GltfModel::cleanUpVulkan(VkDevice& device)
 {
+	for (size_t i = 0; i < pointBuffers.size(); i++)//頂点用バッファの解放
+	{
+		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
+		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
+
+		vkDestroyBuffer(device, pointBuffers[i].indeBuffer, nullptr);
+		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
+	}
+
 	for (std::shared_ptr<Material> material:materials)
 	{
 		vkDestroyBuffer(device, material->sMaterialMappedBuffer.uniformBuffer, nullptr);
@@ -140,10 +149,10 @@ void GltfModel::cleanUpVulkan(VkDevice& device)
 		material->sMaterialMappedBuffer.uniformBufferMapped = nullptr;
 	}
 
-	for (int i = 0; i < textureDatas.size(); i++)
+	for (int i = 0; i < imageDatas.size(); i++)
 	{
 		//テクスチャのデータの破棄
-		textureDatas[i]->destroy(device);
+		imageDatas[i]->getTexture()->destroy(device);
 	}
 
 	deleteNodes(root,device);

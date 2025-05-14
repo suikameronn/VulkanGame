@@ -260,7 +260,7 @@ void Player::setTargetUIImageAndScale(std::string filePath, float scale)
 	scene->sceneUI.push_back(targetUI);
 }
 
-void Player::Update()
+bool Player::Update()
 {
 	setLastFrameTransform();
 
@@ -269,6 +269,8 @@ void Player::Update()
 	setPosition(getPosition() + physicBase->getVelocity());
 
 	playAnimation();//アニメーションの再生
+
+	return SHOULD_KEEP;
 }
 
 //座標変換行列の更新

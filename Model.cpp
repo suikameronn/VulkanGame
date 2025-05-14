@@ -94,17 +94,15 @@ void Model::registerGlueFunctions()//glue関数を設定する
 
 void Model::cleanupVulkan()//Vulkanの変数の後処理
 {
-	VkDevice device = VulkanBase::GetInstance()->GetDevice();
+	VulkanBase* vulkan = VulkanBase::GetInstance();
 
-	for (size_t i = 0; i < pointBuffers.size(); i++)//頂点用バッファの解放
+	vulkan->addDefferedDestructBuffer(modelViewMappedBuffer);
+	for (auto& buffer : animationMappedBuffers)
 	{
-		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
-		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
-
-		vkDestroyBuffer(device, pointBuffers[i].indeBuffer, nullptr);
-		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
+		vulkan->addDefferedDestructBuffer(buffer);
 	}
 
+	/*
 	//uniform bufferの解放
 	vkDestroyBuffer(device, modelViewMappedBuffer.uniformBuffer, nullptr);
 	vkFreeMemory(device, modelViewMappedBuffer.uniformBufferMemory, nullptr);
@@ -117,11 +115,7 @@ void Model::cleanupVulkan()//Vulkanの変数の後処理
 		vkFreeMemory(device, animationMappedBuffers[i].uniformBufferMemory, nullptr);
 		animationMappedBuffers[i].uniformBufferMapped = nullptr;
 	}
-
-	if (colider)
-	{
-		colider->cleanupVulkan();//コライダーの変数の後処理
-	}
+	*/
 }
 
 MappedBuffer* Model::getAnimationMappedBufferData()
@@ -158,7 +152,6 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 	//バッファを用意する
 	descSetDatas.resize(model->primitiveCount);
 	jointMatrices.resize(model->jointNum);
-	pointBuffers.resize(model->meshCount);
 	animationMappedBuffers.resize(model->primitiveCount);
 }
 
@@ -445,7 +438,7 @@ void Model::setLastFrameTransform()
 	lastScale = scale;
 }
 
-void Model::Update()
+bool Model::Update()
 {
 	setLastFrameTransform();
 
@@ -476,6 +469,8 @@ void Model::Update()
 	{
 		passFrameCount++;
 	}
+
+	return SHOULD_KEEP;
 }
 
 void Model::customUpdate()

@@ -79,9 +79,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         Storage* storage = Storage::GetInstance();
 
-        for (auto gltfModel:storage->getgltfModel())//gltfモデルのバッファーなどの削除
+        for (auto& gltfModel:storage->getgltfModel())//gltfモデルのバッファーなどの削除
         {
             gltfModel.second->cleanUpVulkan(device);
+        }
+
+        for (auto& image : storage->getImageData())
+        {
+            image.second->cleanUpVulkan(device);
         }
 
         //storage->getLoadUI()->cleanupVulkan();
@@ -303,7 +308,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
         VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-        uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+        uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
@@ -346,6 +351,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
+
+        defferedDestruct.setSwapChainImageCount(imageCount);
     }
 
     void VulkanBase::createImageViews() {
@@ -1449,8 +1456,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //画像からテクスチャ画像の作成 
-    void VulkanBase::createTextureImage(TextureData* textureData,std::shared_ptr<ImageData> image,VkFormat format)
+    void VulkanBase::createTextureImage(std::shared_ptr<ImageData> image,VkFormat format)
     {
+        TextureData* texture = image->getTexture();
+
         VkDeviceSize bufferSize = image->getWidth() * image->getHeight() * image->getTexChannels() * image->getPixelPerByte();
 
         VkBuffer stagingBuffer;
@@ -1462,14 +1471,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         memcpy(data, image->getPixelsData(), bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        textureData->mipLevel = calcMipMapLevel(image->getWidth(),image->getHeight());
-        createImage(image->getWidth(), image->getHeight(), textureData->mipLevel, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureData->image, textureData->memory);
+        texture->mipLevel = calcMipMapLevel(image->getWidth(),image->getHeight());
+        createImage(image->getWidth(), image->getHeight(), texture->mipLevel, VK_SAMPLE_COUNT_1_BIT
+            , format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture->image, texture->memory);
 
-        transitionImageLayout(textureData->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, textureData->mipLevel,1);
-        copyBufferToImage(stagingBuffer, textureData->image, static_cast<uint32_t>(image->getWidth()), static_cast<uint32_t>(image->getHeight()),1);
+        transitionImageLayout(texture->image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture->mipLevel,1);
+        copyBufferToImage(stagingBuffer, texture->image, static_cast<uint32_t>(image->getWidth()), static_cast<uint32_t>(image->getHeight()),1);
 
-        generateMipmaps(textureData->image, format, image->getWidth(), image->getHeight(), textureData->mipLevel,1);
+        generateMipmaps(texture->image, format, image->getWidth(), image->getHeight(), texture->mipLevel,1);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1512,15 +1522,15 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルのマテリアルのテクスチャの作成
     void VulkanBase::createTextureImage(std::shared_ptr<GltfModel> gltfModel,VkFormat format)
     {
-        if (gltfModel->textureDatas.size() == 0)
+        if (gltfModel->imageDatas.size() == 0)
         {
             return;
         }
 
-        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        for (int i = 0; i < gltfModel->imageDatas.size(); i++)
         {
             std::shared_ptr<ImageData> imageData = gltfModel->imageDatas[i];
-            TextureData* textureData = gltfModel->textureDatas[i];
+            TextureData* textureData = imageData->getTexture();
 
             VkDeviceSize imageSize = imageData->getWidth() * imageData->getHeight() * imageData->getTexChannels() * imageData->getPixelPerByte();
 
@@ -1652,14 +1662,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルのテクスチャ用のビューの作成
     void VulkanBase::createTextureImageView(std::shared_ptr<GltfModel> gltfModel,VkFormat format) 
     {
-        if (gltfModel->textureDatas.size() == 0)
+        if (gltfModel->imageDatas.size() == 0)
         {
             return;
         }
 
-        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        for (int i = 0; i < gltfModel->imageDatas.size(); i++)
         {
-            TextureData* textureData = gltfModel->textureDatas[i];
+            TextureData* textureData = gltfModel->imageDatas[i]->getTexture();
             textureData->view = createImageView(textureData->image, VK_IMAGE_VIEW_TYPE_2D, format, VK_IMAGE_ASPECT_COLOR_BIT, textureData->mipLevel,1);
         }
     }
@@ -1727,14 +1737,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルのテクスチャのサンプラーの作成
     void VulkanBase::createTextureSampler(std::shared_ptr<GltfModel> gltfModel)
     {
-        if (gltfModel->textureDatas.size() == 0)
+        if (gltfModel->imageDatas.size() == 0)
         {
             return;
         }
 
-        for (int i = 0; i < gltfModel->textureDatas.size(); i++)
+        for (int i = 0; i < gltfModel->imageDatas.size(); i++)
         {
-            TextureData* textureData = gltfModel->textureDatas[i];
+            TextureData* textureData = gltfModel->imageDatas[i]->getTexture();
 
             VkPhysicalDeviceProperties properties{};
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -1985,20 +1995,20 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //uiのテクスチャを作成する
-    void VulkanBase::createUITexture(TextureData* texture, std::shared_ptr<ImageData> image)
+    void VulkanBase::createTexture(std::shared_ptr<ImageData> image,VkFormat format)
     {
         //gpu上に画像データを展開
-        createTextureImage(texture, image,VK_FORMAT_R8G8B8A8_UNORM);
+        createTextureImage(image, format);
 
         //このテクスチャのビューを作成
-        createTextureImageView(texture, VK_FORMAT_R8G8B8A8_UNORM);
+        createTextureImageView(image->getTexture(), format);
 
         //サンプラーの作成
-        createTextureSampler(texture);
+        createTextureSampler(image->getTexture());
     }
 
     //Modelクラス用の頂点バッファーを作成する
-    void VulkanBase::createVertexBuffer(GltfNode* node,std::shared_ptr<Model> model)
+    void VulkanBase::createVertexBuffer(GltfNode* node,std::shared_ptr<GltfModel> gltfModel)
     {
         for(auto mesh : node->meshArray)
         {
@@ -2014,10 +2024,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkUnmapMemory(device, stagingBufferMemory);
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                model->getPointBufferData()[mesh->meshIndex].vertBuffer, model->getPointBufferData()[mesh->meshIndex].vertHandler);
+                gltfModel->getPointBuffer()[mesh->meshIndex].vertBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].vertHandler);
 
             //vertexBuffer配列にコピーしていく(vector型)
-            copyBuffer(stagingBuffer, model->getPointBufferData()[mesh->meshIndex].vertBuffer, bufferSize);
+            copyBuffer(stagingBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].vertBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -2025,7 +2035,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (size_t i = 0; i < node->children.size(); i++)
         {
-            createVertexBuffer(node->children[i], model);
+            createVertexBuffer(node->children[i], gltfModel);
         }
     }
 
@@ -2077,7 +2087,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //Modelクラス用のインデックスバッファーを作成する
-    void VulkanBase::createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model)
+    void VulkanBase::createIndexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel)
     {
         for(auto mesh : node->meshArray)
         {
@@ -2093,9 +2103,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             vkUnmapMemory(device, stagingBufferMemory);
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                model->getPointBufferData()[mesh->meshIndex].indeBuffer, model->getPointBufferData()[mesh->meshIndex].indeHandler);
+                gltfModel->getPointBuffer()[mesh->meshIndex].indeBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].indeHandler);
 
-            copyBuffer(stagingBuffer, model->getPointBufferData()[mesh->meshIndex].indeBuffer, bufferSize);
+            copyBuffer(stagingBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].indeBuffer, bufferSize);
 
             vkDestroyBuffer(device, stagingBuffer, nullptr);
             vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -2103,7 +2113,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (size_t i = 0; i < node->children.size(); i++)
         {
-            createIndexBuffer(node->children[i],model);
+            createIndexBuffer(node->children[i], gltfModel);
         }
     }
 
@@ -2441,28 +2451,38 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         if (material->baseColorTextureIndex != -1)
         {
-            imageInfo[0].imageView = gltfModel->textureDatas[material->baseColorTextureIndex]->view;
-            imageInfo[0].sampler = gltfModel->textureDatas[material->baseColorTextureIndex]->sampler;
+            TextureData* texture = gltfModel->imageDatas[material->baseColorTextureIndex]->getTexture();
+
+            imageInfo[0].imageView = texture->view;
+            imageInfo[0].sampler = texture->sampler;
         }
         if (material->metallicRoughnessTextureIndex != -1)
         {
-            imageInfo[1].imageView = gltfModel->textureDatas[material->metallicRoughnessTextureIndex]->view;
-            imageInfo[1].sampler = gltfModel->textureDatas[material->metallicRoughnessTextureIndex]->sampler;
+            TextureData* texture = gltfModel->imageDatas[material->metallicRoughnessTextureIndex]->getTexture();
+
+            imageInfo[1].imageView = texture->view;
+            imageInfo[1].sampler = texture->sampler;
         }
         if (material->normalTextureIndex != -1)
         {
-            imageInfo[2].imageView = gltfModel->textureDatas[material->normalTextureIndex]->view;
-            imageInfo[2].sampler = gltfModel->textureDatas[material->normalTextureIndex]->sampler;
+            TextureData* texture = gltfModel->imageDatas[material->normalTextureIndex]->getTexture();
+
+            imageInfo[2].imageView = texture->view;
+            imageInfo[2].sampler = texture->sampler;
         }
         if (material->occlusionTextureIndex != -1)
         {
-            imageInfo[3].imageView = gltfModel->textureDatas[material->occlusionTextureIndex]->view;
-            imageInfo[3].sampler = gltfModel->textureDatas[material->occlusionTextureIndex]->sampler;
+            TextureData* texture = gltfModel->imageDatas[material->occlusionTextureIndex]->getTexture();
+
+            imageInfo[3].imageView = texture->view;
+            imageInfo[3].sampler = texture->sampler;
         }
         if (material->emissiveTextureIndex != -1)
         {
-            imageInfo[4].imageView = gltfModel->textureDatas[material->emissiveTextureIndex]->view;
-            imageInfo[4].sampler = gltfModel->textureDatas[material->emissiveTextureIndex]->sampler;
+            TextureData* texture = gltfModel->imageDatas[material->emissiveTextureIndex]->getTexture();
+
+            imageInfo[4].imageView = texture->view;
+            imageInfo[4].sampler = texture->sampler;
         }
 
         VkDescriptorBufferInfo bufferInfo{};
@@ -3356,16 +3376,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //gltfモデルの頂点バッファーなどの作成、付随するコライダーの頂点のバッファーも用意
-    void VulkanBase::createMeshesData(std::shared_ptr<Model> model)
+    void VulkanBase::createMeshesData(std::shared_ptr<GltfModel> gltfModel)
     {
-        createVertexBuffer(model->getRootNode(),model);
-        createIndexBuffer(model->getRootNode(), model);
+        createVertexBuffer(gltfModel->getRootNode(), gltfModel);
+        createIndexBuffer(gltfModel->getRootNode(), gltfModel);
+    }
 
-        if (model->hasColider())
-        {
-            createVertexBuffer(model->getColider());
-            createIndexBuffer(model->getColider());
-        }
+    void VulkanBase::createMeshesData(std::shared_ptr<Colider> colider)
+    {
+        createVertexBuffer(colider);
+        createIndexBuffer(colider);
     }
 
     //gltfモデルの各ノードにパイプラインとそのレイアウトを設定する
@@ -3709,6 +3729,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //gltfモデルの持つマテリアル用のデータの作成
     void VulkanBase::setGltfModelData(std::shared_ptr<GltfModel> gltfModel)
     {
+        /*頂点、インデックスバッファーを持たせる*/
+        createMeshesData(gltfModel);
+
         /*テクスチャ関連の設定を持たせる*/
         createTextureImage(gltfModel, VK_FORMAT_R8G8B8A8_UNORM);
         createTextureImageView(gltfModel, VK_FORMAT_R8G8B8A8_UNORM);
@@ -4080,8 +4103,10 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //Modelクラスの持つバッファーの作成
     void VulkanBase::setModelData(std::shared_ptr<Model> model)
     {
-        /*頂点、インデックスバッファーを持たせる*/
-        createMeshesData(model);
+        if (model->hasColider())
+        {
+            createMeshesData(model->getColider());
+        }
 
         /*UnifomBufferを持たせる*/
         createUniformBuffers(model);
@@ -4103,13 +4128,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::prepareCubemapTextures(std::shared_ptr<Cubemap> cubemap)
     {
         BackGroundColor& backGroundColor = cubemap->getBackGroundColor();
-
-        //hdriTextureのデータを作る
-        {
-            createTextureImage(backGroundColor.srcHdriTexture, cubemap->getHDRIMap(), backGroundColor.format);
-            createTextureImageView(backGroundColor.srcHdriTexture, backGroundColor.format);
-            createTextureSampler(backGroundColor.srcHdriTexture);
-        }
+        backGroundColor.srcHdriTexture = cubemap->getHDRIMap()->getTexture();
 
         backGroundColor.setFrameCount(CUBEMAP_FACE_COUNT);
 
@@ -4984,9 +5003,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         prepareCubemapTextures(cubemap);//キューブマッピングの用意
 
-        /*頂点、インデックスバッファーを持たせる*/
-        createMeshesData(cubemap);
-
         /*UnifomBufferを持たせる*/
         createUniformBuffers(cubemap);
 
@@ -5496,4 +5512,79 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         descriptorWrites[1].pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+
+    //gpuのバッファを破棄リストに追加
+    void VulkanBase::addDefferedDestructBuffer(BufferObject& pointBuffer)
+    {
+        uint32_t frameNum = (currentFrame == 0) ? 1 : 0;
+
+        defferedDestruct.bufferList[frameNum].push_back(pointBuffer.vertBuffer);
+        defferedDestruct.memoryList[frameNum].push_back(pointBuffer.vertHandler);
+
+        defferedDestruct.bufferList[frameNum].push_back(pointBuffer.indeBuffer);
+        defferedDestruct.memoryList[frameNum].push_back(pointBuffer.indeHandler);
+    }
+
+    void VulkanBase::addDefferedDestructBuffer(MappedBuffer& mappedBuffer)
+    {
+        uint32_t frameNum = (currentFrame == 0) ? 1 : 0;
+
+        defferedDestruct.bufferList[frameNum].push_back(mappedBuffer.uniformBuffer);
+        defferedDestruct.memoryList[frameNum].push_back(mappedBuffer.uniformBufferMemory);
+    }
+
+    void VulkanBase::addDefferedDestructBuffer(VkBuffer& buffer, VkDeviceMemory& memory)
+    {
+        uint32_t frameNum = (currentFrame == 0) ? 1 : 0;
+
+        defferedDestruct.bufferList[frameNum].push_back(buffer);
+        defferedDestruct.memoryList[frameNum].push_back(memory);
+    }
+
+    //gpuのバッファを破棄
+    void VulkanBase::cleanupDefferedBuffer()
+    {
+        uint32_t frameNum = (currentFrame == 0) ? 1 : 0;
+
+        //レンダリング終了を待つ
+        //フェンスのリセットはしない
+        vkWaitForFences(device, 1, &inFlightFences[frameNum], true, UINT64_MAX);
+
+        for (auto& buffer : defferedDestruct.bufferList[frameNum])
+        {
+            vkDestroyBuffer(device, buffer, nullptr);
+        }
+
+        for (auto& memory : defferedDestruct.memoryList[frameNum])
+        {
+            vkFreeMemory(device, memory, nullptr);
+        }
+
+        defferedDestruct.bufferList[frameNum].clear();
+        defferedDestruct.memoryList[frameNum].clear();
+    }
+
+    //リスト上のバッファをすべて破棄する
+    void VulkanBase::allCleanupDefferedBuffer()
+    {
+        //レンダリング終了を待つ
+        //フェンスのリセットはしない
+        vkWaitForFences(device, static_cast<uint32_t>(inFlightFences.size()), inFlightFences.data(), true, UINT64_MAX);
+
+        for (int i = 0; i < swapChainFramebuffers.size(); i++)
+        {
+            for (auto& buffer : defferedDestruct.bufferList[i])
+            {
+                vkDestroyBuffer(device, buffer, nullptr);
+            }
+
+            for (auto& memory : defferedDestruct.memoryList[i])
+            {
+                vkFreeMemory(device, memory, nullptr);
+            }
+
+            defferedDestruct.bufferList[i].clear();
+            defferedDestruct.memoryList[i].clear();
+        }
     }

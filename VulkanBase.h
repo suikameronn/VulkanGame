@@ -138,6 +138,18 @@ struct UIRender
     }
 };
 
+struct DefferedDestruct
+{
+    std::vector<std::list<VkBuffer>> bufferList;
+    std::vector<std::list<VkDeviceMemory>> memoryList;
+
+    void setSwapChainImageCount(uint32_t count)
+    {
+        bufferList.resize(count);
+        memoryList.resize(count);
+    }
+};
+
 class VulkanBase
 {
 private:
@@ -275,6 +287,9 @@ private:
 
     ImageDescriptor emptyImage;//ダミーのテクスチャ用データ
 
+    //破棄する予定のgpuのバッファのリスト
+    DefferedDestruct defferedDestruct;
+
     //ゲーム終了時にデータのgpu上のデータをすべて破棄する
     void cleanup();
     //スワップチェーンの破棄
@@ -346,7 +361,7 @@ private:
     void copyImageToMultiLayerImage(VkImage* srcImages, uint32_t imageCount, uint32_t width, uint32_t height, VkImage& dstImage);
 
     //画像からテクスチャ画像の作成
-    void createTextureImage(TextureData* textureData, std::shared_ptr<ImageData> image, VkFormat format);//ImageDataからVkImageを作成
+    void createTextureImage(std::shared_ptr<ImageData> image, VkFormat format);//ImageDataからVkImageを作成
     void createTextureImage();//空のテクスチャを作成
     void createTextureImage(std::shared_ptr<GltfModel> gltfModel, VkFormat format);//gltfモデルのマテリアルにテクスチャ用データを作成
     //ミップマップ画像の作成
@@ -374,14 +389,14 @@ private:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height,uint32_t layerCount);
     
     //頂点バッファーの作成
-    void createVertexBuffer(GltfNode* node, std::shared_ptr<Model> model);
+    void createVertexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createVertexBuffer(std::shared_ptr<UI> ui);
     //コライダー用
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     
     //インデックスバッファーの作成
-    void createIndexBuffer(GltfNode* node, std::shared_ptr<Model> model);
+    void createIndexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createIndexBuffer(std::shared_ptr<UI> ui);
     //コライダー用
@@ -448,7 +463,8 @@ private:
     bool checkValidationLayerSupport();
 
     //gltfモデルの頂点バッファーなどの作成、付随するコライダーの頂点のバッファーも用意
-    void createMeshesData(std::shared_ptr<Model> model);
+    void createMeshesData(std::shared_ptr<GltfModel> gltfModel);
+    void createMeshesData(std::shared_ptr<Colider> colider);
     //gltfモデルの各ノードにパイプラインとそのレイアウトを設定する
     void createDescriptorInfos(VkPipelineLayout& pLayout, VkPipeline& pipeline, std::shared_ptr<Model> model);
     void createDescriptorInfo(VkPipelineLayout& pLayout, VkPipeline& pipeline, GltfNode* node,std::shared_ptr<Model> model);
@@ -597,7 +613,7 @@ public:
     float getAspect() { return (float)swapChainExtent.width / (float)swapChainExtent.height; }
 
     //uiのテクスチャを作成する
-    void createUITexture(TextureData* texture, std::shared_ptr<ImageData> image);
+    void createTexture(std::shared_ptr<ImageData> image, VkFormat format);
     //uiの頂点バッファなどを用意する
     void setUI(std::shared_ptr<UI> ui);
     //ロード画面の描画
@@ -637,6 +653,14 @@ public:
     void renderCubemap(std::shared_ptr<Cubemap> cubemap);
     //3DモデルとUIのレンダリングを終了
     void sceneRenderEnd();
+
+    //gpuのバッファを破棄リストに追加
+    void addDefferedDestructBuffer(BufferObject& pointBuffer);
+    void addDefferedDestructBuffer(MappedBuffer& mappedBuffer);
+    void addDefferedDestructBuffer(VkBuffer& buffer, VkDeviceMemory& memory);
+    //gpuのバッファを破棄
+    void cleanupDefferedBuffer();
+    void allCleanupDefferedBuffer();
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

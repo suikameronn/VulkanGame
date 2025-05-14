@@ -37,8 +37,6 @@ UI::UI(std::shared_ptr<ImageData> image)
 	uiWidth = 1.0f;
 	uiHeight = 1.0f;
 
-	uiTexture = new TextureData();
-
 	//座標変換行列用のバッファの作成
 	VulkanBase::GetInstance()->uiCreateUniformBuffer(mappedBuffer);
 
@@ -98,7 +96,7 @@ BufferObject& UI::getPointBuffer()
 //uiとして見られるテクスチャの取得
 TextureData* UI::getUITexture()
 {
-	return uiTexture;
+	return uiImage->getTexture();
 }
 
 //ui画像を返す
@@ -115,19 +113,10 @@ void UI::createTexture(std::shared_ptr<ImageData> image)
 	VulkanBase* vulkan = VulkanBase::GetInstance();
 	VkDevice device = vulkan->GetDevice();
 
-	if (uiTexture)
-	{
-		uiTexture->destroy(device);
-		uiTexture = new TextureData();
-	}
-
-	//gpu上にテクスチャのデータを作成
-	vulkan->createUITexture(uiTexture, uiImage);
-
 	//VkDescriptorSetの用意が出来ているなら、結び付けを更新する
 	if (descriptorSet)
 	{
-		vulkan->changeUITexture(uiTexture,mappedBuffer,descriptorSet);
+		vulkan->changeUITexture(uiImage->getTexture(), mappedBuffer, descriptorSet);
 	}
 
 	//画像のアスペクト比を計算する
@@ -178,8 +167,6 @@ void UI::cleanupVulkan()
 
 	//uniform bufferの解放
 	mappedBuffer.destroy(device);
-
-	uiTexture->destroy(device);
 }
 
 //ユニフォームバッファの更新

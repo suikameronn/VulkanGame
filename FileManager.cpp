@@ -135,6 +135,8 @@ std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデ
     model->initPoseMin = minPos;
     model->initPoseMax = maxPos;
 
+    model->setPointBufferNum();
+
     storage->addModel(path, model);//ストレージにモデルを加える
 
     return storage->getgltfModel(path);
@@ -152,12 +154,6 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
             std::shared_ptr<ImageData>(new ImageData(source.width, source.height, source.component, source.image.data()));
 
         model->imageDatas[i] = image;
-    }
-
-    model->textureDatas.resize(gltfModel.textures.size());
-    for (size_t i = 0; i < model->textureDatas.size(); i++)
-    {
-        model->textureDatas[i] = new TextureData();
     }
 }
 
@@ -734,6 +730,7 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
     }
 
     ImageData* imageData = nullptr;
+    VkFormat format;
 
     if (stbi_is_hdr(filePath.c_str()))
     {
@@ -748,6 +745,8 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         imageData = new ImageData(width, height, texChannels, pixels);
 
         stbi_image_free(pixels);
+
+        format = VK_FORMAT_R32G32B32A32_SFLOAT;
     }
     else
     {
@@ -762,9 +761,13 @@ std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
         imageData = new ImageData(width, height, texChannels, pixels);
 
         stbi_image_free(pixels);
+
+        format = VK_FORMAT_R8G8B8A8_UNORM;
     }
 
     storage->addImageData(registerImageName,imageData);
+
+    VulkanBase::GetInstance()->createTexture(storage->getImageData(registerImageName), format);
 
     return storage->getImageData(registerImageName);
 }

@@ -2,7 +2,7 @@
 
 #include"Model.h"
 
-class Bullet : public Model
+class Bullet : public Model, std::enable_shared_from_this<Bullet>
 {
 private:
 
@@ -26,6 +26,6 @@ public:
 	Bullet(float s,float length,glm::vec3 dir,glm::vec3 pos,float limit);
 	~Bullet();
 
-	void Update() override;
+	bool Update() override;
 
 };

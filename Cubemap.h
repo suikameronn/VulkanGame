@@ -289,8 +289,6 @@ struct BackGroundColor
 
     BackGroundColor()
     {
-        //キューブマップの元となるHDRI画像のテクスチャデータ
-        srcHdriTexture = new TextureData();
         //キューブマップとなる6枚の画像を一つのテクスチャデータにまとめたもの
         multiTexture = new TextureData();
 
@@ -314,7 +312,6 @@ struct BackGroundColor
 
     void destroy(VkDevice& device)
     {
-        srcHdriTexture->destroy(device);
         multiTexture->destroy(device);
         passData.destroy(device);
 
