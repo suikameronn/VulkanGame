@@ -75,7 +75,7 @@ private:
 
 	static Scene* instance;
 
-	std::unique_ptr<RTree<Model>> rtree;
+	std::unique_ptr<RTree<std::shared_ptr<Model>>> rtree;
 
 	//上方向のベクトル
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -180,10 +180,10 @@ public:
 	void setHDRIMap(std::string imagePath);
 
 	//シーン全体のオブジェクトについてのRTreeにオブジェクトを追加する
-	void addModelToRTree(Model* model);
+	void addModelToRTree(std::shared_ptr<Model> model);
 
 	//Rツリー内のオブジェクトの位置を更新する
-	void updateObjectPos(Model* model, RNode<Model>* node);
+	void updateObjectPos(std::shared_ptr<Model> model, RNode<std::shared_ptr<Model>>* node);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/
@@ -251,12 +251,11 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		lua_getglobal(lua, "Scene");
 		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
-		Model* model = new Model();
+		std::shared_ptr<Model> model = std::make_shared<Model>();
 
-		lua_pushlightuserdata(lua, model);
+		lua_pushlightuserdata(lua, model.get());
 
-		std::shared_ptr<Model> sharedModel = std::shared_ptr<Model>(model);
-		scene->sceneModels.push_back(sharedModel);
+		scene->sceneModels.push_back(model);
 
 		return 1;
 	}
@@ -300,10 +299,9 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 			return -1;
 		}
 
-		Player* player = new Player();
-		scene->player = std::shared_ptr<Player>(player);
+		scene->player = std::make_shared<Player>();
 
-		lua_pushlightuserdata(lua, player);
+		lua_pushlightuserdata(lua, scene->player.get());
 
 		return 1;
 	}

@@ -13,7 +13,7 @@ void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 	camera = std::shared_ptr<Camera>(new Camera(manager->getWindowWidth(), manager->getWindowHeight()));
 	Storage::GetInstance()->setCamera(camera);
 
-	rtree = std::make_unique<RTree<Model>>();
+	rtree = std::make_unique<RTree<std::shared_ptr<Model>>>();
 
 	cubemap = std::shared_ptr<Cubemap>(new Cubemap());
 
@@ -28,8 +28,6 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-	lua_close(lua);
-
 	cleanupVulkan();
 }
 
@@ -83,6 +81,8 @@ void Scene::initLuaScript(std::string path)
 	registerFunctions();//スクリプトから呼び出す関数を登録する
 
 	luaL_dofile(lua,path.c_str());//スクリプトの実行
+
+	lua_close(lua);
 }
 
 void Scene::registerFunctions()//luaから呼び出される静的関数を設定
@@ -236,13 +236,13 @@ std::shared_ptr<Model> Scene::raycast(glm::vec3 origin, glm::vec3 dir, float len
 }
 
 //シーン全体のR木にオブジェクトを追加する
-void Scene::addModelToRTree(Model* model)
+void Scene::addModelToRTree(std::shared_ptr<Model> model)
 {
 	rtree->insert(model, model->getMbrMin(), model->getMbrMax());
 }
 
 //ツリー内のオブジェクトの位置を更新する
-void Scene::updateObjectPos(Model* model, RNode<Model>* node)
+void Scene::updateObjectPos(std::shared_ptr<Model> model, RNode<std::shared_ptr<Model>>* node)
 {
 	rtree->reflectMove(model, node);
 }
@@ -257,13 +257,13 @@ void Scene::rtreeIntersect()
 		}
 
 		//R木を使って、当たり判定を行うオブジェクトを絞る
-		std::vector<Model*> collisionDetectTarget;
+		std::vector<std::shared_ptr<Model>> collisionDetectTarget;
 		rtree->broadPhaseCollisionDetection(collisionDetectTarget, (*itr)->getMbrMin(), (*itr)->getMbrMax());
 
 		for (int j = 0; j < collisionDetectTarget.size(); j++)
 		{
 			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
-			if (collisionDetectTarget[j]->hasColider() && (*itr).get() == collisionDetectTarget[j])
+			if (collisionDetectTarget[j]->hasColider() && (*itr) == collisionDetectTarget[j])
 			{
 				if ((*itr)->getColider()->Intersect(collisionDetectTarget[j]->getColider(), collisionVector))//GJKによる当たり判定を行う
 				{
@@ -284,7 +284,7 @@ void Scene::rtreeIntersect()
 						if (groundCollision(-collisionVector))
 						{
 							(*itr)->isGrounding = true;
-							collisionDetectTarget[j]->addGroundingObject((*itr).get());
+							collisionDetectTarget[j]->addGroundingObject((*itr));
 						}
 					}
 				}
@@ -293,7 +293,7 @@ void Scene::rtreeIntersect()
 	}
 
 	{//プレイヤーキャラクターについての当たり判定を行う
-		std::vector<Model*> collisionDetectTarget;
+		std::vector<std::shared_ptr<Model>> collisionDetectTarget;
 		rtree->broadPhaseCollisionDetection(collisionDetectTarget, player->getMbrMin(), player->getMbrMax());
 
 		for (int i = 0; i < collisionDetectTarget.size(); i++)
@@ -312,7 +312,7 @@ void Scene::rtreeIntersect()
 						if (groundCollision(collisionVector))
 						{
 							player->isGrounding = true;
-							collisionDetectTarget[i]->addGroundingObject(player.get());
+							collisionDetectTarget[i]->addGroundingObject(player);
 						}
 
 						player->setPosition(player->getPosition() - collisionVector);
@@ -350,7 +350,7 @@ void Scene::intersect()
 						//つまり、床のようなオブジェクトの上に載っている状況の場合
 					{
 						(*opp)->isGrounding = true;
-						(*itr)->addGroundingObject((*opp).get());//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
+						(*itr)->addGroundingObject((*opp));//床のオブジェクトの移動に、上に載っているオブジェクトを追従させる
 					}
 				}
 
@@ -360,7 +360,7 @@ void Scene::intersect()
 					if (groundCollision(-collisionVector))
 					{
 						(*itr)->isGrounding = true;
-						(*opp)->addGroundingObject((*itr).get());
+						(*opp)->addGroundingObject((*itr));
 					}
 				}
 			}
@@ -384,7 +384,7 @@ void Scene::intersect()
 					if (groundCollision(collisionVector))
 					{
 						player->isGrounding = true;
-						(*itr)->addGroundingObject(player.get());
+						(*itr)->addGroundingObject(player);
 					}
 
 					player->setPosition(player->getPosition() - collisionVector);

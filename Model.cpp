@@ -44,6 +44,8 @@ Model::Model()//3Dモデルを持つクラス
 
 	mbrMin = glm::vec3(FLT_MAX);
 	mbrMax = glm::vec3(-FLT_MAX);
+
+	rNode = nullptr;
 }
 
 Model::Model(std::string luaScriptPath)
@@ -249,7 +251,7 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 	if (rNode)
 	{
 		//Rツリー上のオブジェクトの位置を更新する
-		scene->updateObjectPos(this, rNode);
+		scene->updateObjectPos(shared_from_this(), rNode);
 	}
 }
 
@@ -514,7 +516,7 @@ void Model::initFrameSetting()//初回フレームの処理
 	//シーン全体のR-treeにこのオブジェクトを追加
 
 	/////shared_from_thisでなぜかエラーがでる
-	scene->addModelToRTree(this);
+	scene->addModelToRTree(shared_from_this());
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う
@@ -549,7 +551,7 @@ bool Model::isGround(glm::vec3& normal)
 
 //当たり判定の結果、真上にいたオブジェクトを自分の移動に追従させるため、配列に追加する
 //ただし、この配列は毎フレーム初期化される
-void Model::addGroundingObject(Model* object)
+void Model::addGroundingObject(std::shared_ptr<Model> object)
 {
 	groundingObjects.push_back(object);
 }

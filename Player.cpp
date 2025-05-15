@@ -180,7 +180,7 @@ void Player::initFrameSetting()
 	updateTransformMatrix();
 
 	//Rツリーにオブジェクトを追加
-	scene->addModelToRTree(this);
+	scene->addModelToRTree(std::enable_shared_from_this<Model>::shared_from_this());
 
 	aimingCameraOffset = aimingCameraOffsetSrc;
 
@@ -301,7 +301,7 @@ void Player::updateTransformMatrix()
 	if (rNode)
 	{
 		//Rツリー上のオブジェクトの位置を更新する
-		scene->updateObjectPos(this, rNode);
+		scene->updateObjectPos(std::enable_shared_from_this<Model>::shared_from_this(), rNode);
 	}
 }
 

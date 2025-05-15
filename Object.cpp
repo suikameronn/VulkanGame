@@ -25,6 +25,9 @@ Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 
 	rotateSpeed = 0.1f;
 	length = 1.0f;
+
+	lua = nullptr;
+	coroutine = nullptr;
 }
 
 bool Object::containTag(Tag tag)//指定されたタグを持っているかどうかを返す

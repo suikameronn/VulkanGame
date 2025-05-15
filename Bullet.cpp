@@ -80,7 +80,7 @@ Bullet::~Bullet()
 	if (rNode)
 	{
 		//r–Ø‚©‚çŽ©•ª‚ðŠO‚µ‚Ä‚¨‚­
-		rNode->deleteObject(this);
+		rNode->deleteObject(std::enable_shared_from_this<Bullet>::shared_from_this());
 	}
 }
 

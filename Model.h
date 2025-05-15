@@ -176,7 +176,7 @@ struct ShadowMapData
 };
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object, std::enable_shared_from_this<Model>
+class Model:public Object, public std::enable_shared_from_this<Model>
 {
 protected:
 
@@ -192,7 +192,7 @@ protected:
 	glm::vec3 min, max;
 
 	//現在所属しているRTreeのノード
-	RNode<Model>* rNode;
+	RNode<std::shared_ptr<Model>>* rNode;
 
 	//R-tree用のMBRについて最大値と最小値
 	glm::vec3 mbrMin, mbrMax;
@@ -247,7 +247,7 @@ protected:
 	std::vector<std::string> animationNames;
 
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
-	std::vector<Model*> groundingObjects;
+	std::vector<std::shared_ptr<Model>> groundingObjects;
 
 	//コライダー用のAABBからMBRを計算
 	void calcMBR();
@@ -273,6 +273,18 @@ public:
 		}
 
 		cleanupVulkan();
+	}
+
+	void expired()
+	{
+		if (weak_from_this().use_count() == 0)
+		{
+			std::cout << "not" << std::endl;
+		}
+		else
+		{
+			std::cout << "ok" << std::endl;
+		}
 	}
 
 	bool isTransparent()
@@ -321,7 +333,7 @@ public:
 	glm::vec3 getScale() { return initScale * scale; }
 
 	//現在所属しているノードを設定する
-	void setRNode(RNode<Model>* node) { rNode = node; }
+	void setRNode(RNode<std::shared_ptr<Model>>* node) { rNode = node; }
 
 	//スケール
 	glm::vec3 scale;
@@ -380,7 +392,7 @@ public:
 	void initFrameSetting() override;//初期フレームのみの処理
 
 	bool isGround(glm::vec3& normal);//オブジェクトが床に接しているかどうか
-	void addGroundingObject(Model* object);//床に接していたらそれを追加
+	void addGroundingObject(std::shared_ptr<Model> object);//床に接していたらそれを追加
 	void clearGroundingObject();
 
 	virtual void frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
