@@ -176,7 +176,7 @@ struct ShadowMapData
 };
 
 //3Dモデルを持つオブジェクトを担うクラス
-class Model:public Object, public std::enable_shared_from_this<Model>
+class Model:public Object
 {
 protected:
 
@@ -192,7 +192,7 @@ protected:
 	glm::vec3 min, max;
 
 	//現在所属しているRTreeのノード
-	RNode<std::shared_ptr<Model>>* rNode;
+	RNode<Model>* rNode;
 
 	//R-tree用のMBRについて最大値と最小値
 	glm::vec3 mbrMin, mbrMax;
@@ -214,6 +214,8 @@ protected:
 
 	//コライダーを持つかどうか
 	bool hasColiderFlag;
+	//当たり判定を解消するかどうか
+	bool trigger;
 
 	//mvp行列用のバッファー
 	MappedBuffer modelViewMappedBuffer;
@@ -247,7 +249,7 @@ protected:
 	std::vector<std::string> animationNames;
 
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
-	std::vector<std::shared_ptr<Model>> groundingObjects;
+	std::list<std::weak_ptr<Model>> groundingObjects;
 
 	//コライダー用のAABBからMBRを計算
 	void calcMBR();
@@ -267,24 +269,17 @@ public:
 	Model(std::string luaScriptPath);
 	~Model()
 	{
+		if (rNode)
+		{
+			rNode->deleteObject(this);
+		}
+
 		if (lua)
 		{
 			lua_close(lua);
 		}
 
 		cleanupVulkan();
-	}
-
-	void expired()
-	{
-		if (weak_from_this().use_count() == 0)
-		{
-			std::cout << "not" << std::endl;
-		}
-		else
-		{
-			std::cout << "ok" << std::endl;
-		}
 	}
 
 	bool isTransparent()
@@ -300,6 +295,12 @@ public:
 	glm::vec3 getPivot()
 	{
 		return pivot;
+	}
+
+	//自身のweak_ptrを返す
+	std::weak_ptr<Model> getThisWeakPtr()
+	{
+		return std::dynamic_pointer_cast<Model>(shared_from_this());
 	}
 
 	void registerGlueFunctions() override;//glue関数の設定
@@ -333,7 +334,7 @@ public:
 	glm::vec3 getScale() { return initScale * scale; }
 
 	//現在所属しているノードを設定する
-	void setRNode(RNode<std::shared_ptr<Model>>* node) { rNode = node; }
+	void setRNode(RNode<Model>* node) { rNode = node; }
 
 	//スケール
 	glm::vec3 scale;
@@ -369,16 +370,16 @@ public:
 	bool isMovable;
 	//コライダーを持っているかどうか
 	bool hasColider();
-	void setColider();//コライダーの設定
+	void setColider(bool isTrigger);//コライダーの設定
 	std::shared_ptr<Colider> getColider() { return colider; }
 	
-	std::shared_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal);
+	std::weak_ptr<Model> rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal);
 
 	void updateTransformMatrix() override;//座標変換行列の更新
 
 	void setPosition(glm::vec3 pos) override;//位置の設定
 
-	bool Update() override;//更新処理
+	void Update() override;//更新処理
 	void customUpdate() override;//特殊な更新処理
 
 	glm::vec3 getLastScale();
@@ -392,11 +393,14 @@ public:
 	void initFrameSetting() override;//初期フレームのみの処理
 
 	bool isGround(glm::vec3& normal);//オブジェクトが床に接しているかどうか
-	void addGroundingObject(std::shared_ptr<Model> object);//床に接していたらそれを追加
+	void addGroundingObject(std::weak_ptr<Model> object);//床に接していたらそれを追加
 	void clearGroundingObject();
 
 	virtual void frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
 		, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
+
+	//衝突時の処理(特に何もしない)
+	void collision(std::weak_ptr<Model> model) {};
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/

@@ -5,6 +5,8 @@
 
 Model::Model()//3Dモデルを持つクラス
 {
+	gltfModel = nullptr;
+
 	uvScale = false;
 
 	scene = Scene::GetInstance();
@@ -50,6 +52,8 @@ Model::Model()//3Dモデルを持つクラス
 
 Model::Model(std::string luaScriptPath)
 {
+	gltfModel = nullptr;
+
 	uvScale = false;
 
 	tags.push_back(Tag::GROUND);
@@ -138,23 +142,18 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 	min = gltfModel->initPoseMin;
 	max = gltfModel->initPoseMax;
 
-	if (hasColiderFlag)
-	{
-		colider = std::shared_ptr<Colider>(new Colider(gltfModel));
-	}
-
-	animationNames.resize(model->animations.size());
+	animationNames.resize(gltfModel->animations.size());
 	int i = 0;
-	for (auto itr = model->animations.begin(); itr != model->animations.end(); itr++)
+	for (auto itr = gltfModel->animations.begin(); itr != gltfModel->animations.end(); itr++)
 	{
 		animationNames[i] = itr->first;
 		i++;
 	}
 
 	//バッファを用意する
-	descSetDatas.resize(model->primitiveCount);
-	jointMatrices.resize(model->jointNum);
-	animationMappedBuffers.resize(model->primitiveCount);
+	descSetDatas.resize(gltfModel->primitiveCount);
+	jointMatrices.resize(gltfModel->jointNum);
+	animationMappedBuffers.resize(gltfModel->primitiveCount);
 }
 
 //再生するアニメーションをアイドル時に再生するものにする
@@ -251,7 +250,7 @@ void Model::updateTransformMatrix()//座標変換行列を計算する
 	if (rNode)
 	{
 		//Rツリー上のオブジェクトの位置を更新する
-		scene->updateObjectPos(shared_from_this(), rNode);
+		scene->updateObjectPos(std::dynamic_pointer_cast<Model>(shared_from_this()), rNode);
 	}
 }
 
@@ -275,9 +274,10 @@ void Model::calcMBR()
 }
 
 //コライダーの設定
-void Model::setColider()
+void Model::setColider(bool isTrigger)
 {
 	hasColiderFlag = true;
+	trigger = isTrigger;
 }
 
 bool Model::hasColider()
@@ -295,7 +295,7 @@ void Model::sendPosToChildren()
 
 	for (auto itr = groundingObjects.begin(); itr != groundingObjects.end(); itr++)
 	{
-		(*itr)->setParentPos(lastPos, position);
+		(*itr).lock()->setParentPos(lastPos, position);
 	}
 }
 
@@ -440,7 +440,7 @@ void Model::setLastFrameTransform()
 	lastScale = scale;
 }
 
-bool Model::Update()
+void Model::Update()
 {
 	setLastFrameTransform();
 
@@ -471,8 +471,6 @@ bool Model::Update()
 	{
 		passFrameCount++;
 	}
-
-	return SHOULD_KEEP;
 }
 
 void Model::customUpdate()
@@ -503,9 +501,10 @@ void Model::initFrameSetting()//初回フレームの処理
 		switchPlayAnimation();
 	}
 
-	if (colider)
+	if (hasColiderFlag)
 	{
-		colider->initFrameSettings(glm::vec3(1.0f));//コライダーの初期設定
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel, trigger));
+		colider->initFrameSettings(glm::vec3(1.0f));
 	}
 
 	initMin = min;
@@ -516,31 +515,31 @@ void Model::initFrameSetting()//初回フレームの処理
 	//シーン全体のR-treeにこのオブジェクトを追加
 
 	/////shared_from_thisでなぜかエラーがでる
-	scene->addModelToRTree(shared_from_this());
+	scene->addModelToRTree(std::dynamic_pointer_cast<Model>(shared_from_this()));
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う
-std::shared_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal)
+std::weak_ptr<Model> Model::rayCast(glm::vec3 origin,glm::vec3 dir,float maxLength,glm::vec3& normal)
 {
 	for (float i = 0.1f; i <= maxLength; i += 0.1f)
 	{
-		std::shared_ptr<Model> hitModel = scene->raycast(origin,dir,i,this,normal);
-		if (hitModel)
+		std::weak_ptr<Model> hitModel = scene->raycast(origin,dir,i,this,normal);
+		if (!hitModel.expired())
 		{
 			return hitModel;
 		}
 	}
 
-	return nullptr;
+	return std::weak_ptr<Model>();
 }
 
 //下のほうにあるオブジェクトが床かどうか調べる
 bool Model::isGround(glm::vec3& normal)
 {
-	std::shared_ptr<Model> model = rayCast(position + up * 1.0f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f,normal);
-	if (model)
+	std::weak_ptr<Model> model = rayCast(position + up * 1.0f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f,normal);
+	if (!model.expired())
 	{
-		if (model->containTag(Tag::GROUND))
+		if (model.lock()->containTag(Tag::GROUND))
 		{
 			return true;
 		}
@@ -551,7 +550,7 @@ bool Model::isGround(glm::vec3& normal)
 
 //当たり判定の結果、真上にいたオブジェクトを自分の移動に追従させるため、配列に追加する
 //ただし、この配列は毎フレーム初期化される
-void Model::addGroundingObject(std::shared_ptr<Model> object)
+void Model::addGroundingObject(std::weak_ptr<Model> object)
 {
 	groundingObjects.push_back(object);
 }

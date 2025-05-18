@@ -2,7 +2,7 @@
 
 #include"Model.h"
 
-class Bullet : public Model, std::enable_shared_from_this<Bullet>
+class Bullet : public Model
 {
 private:
 
@@ -26,6 +26,14 @@ public:
 	Bullet(float s,float length,glm::vec3 dir,glm::vec3 pos,float limit);
 	~Bullet();
 
-	bool Update() override;
+	//é©êgÇÃweak_ptrÇï‘Ç∑
+	std::weak_ptr<Bullet> getThisWeakPtr()
+	{
+		return std::dynamic_pointer_cast<Bullet>(shared_from_this());
+	}
 
+	void Update() override;
+
+	void collision(std::weak_ptr<Model> collideObj);
+	void collision(std::weak_ptr<Player> player);
 };

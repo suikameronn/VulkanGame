@@ -42,26 +42,26 @@ private:
 	std::string splitFileName(std::string filePath);
 
 	//gltfモデルの読み込みを開始する
-	GltfModel* loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel);
+	std::shared_ptr<GltfModel> loadGLTFModel(const tinygltf::Scene& scene,const tinygltf::Model& gltfModel);
 	//gltfモデルのノードを再帰的に読み込む
-	void loadNode(GltfNode* parent,GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
+	void loadNode(GltfNode* parent,GltfNode* current, std::shared_ptr<GltfModel> model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale);
 	//gltfモデルのメッシュを読み込む
-	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model,int meshIndex);
+	void processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, std::shared_ptr<GltfModel> model,int meshIndex);
 	//AABBのためにgltfモデルの頂点のxyzの各軸の最小値と最大値を求める
 	void calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max);
 	//gltfモデルのプリミティブ単位で読み込む
-	void processPrimitive(Mesh* mesh, int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel, GltfModel* model);
+	void processPrimitive(Mesh* mesh, int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model);
 	//gltfモデルのアニメーションを読み込む
-	void loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
+	void loadAnimations(std::shared_ptr<GltfModel> model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
 	//gltfモデルのスケルトンを読み込む
-	void loadSkin(GltfModel* model, tinygltf::Model gltfModel);
+	void loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel);
 	//自前のModelクラスにスケルトンを設定する
-	void setSkin(GltfNode* node, GltfModel* model);
+	void setSkin(GltfNode* node, std::shared_ptr<GltfModel> model);
 
 	//テクスチャを読み込む
-	void loadTextures(GltfModel* model,const tinygltf::Model gltfModel);
+	void loadTextures(std::shared_ptr<GltfModel> model,const tinygltf::Model gltfModel);
 	//マテリアルをメッシュに設定する
-	void loadMaterial(GltfModel* model,tinygltf::Model gltfModel);
+	void loadMaterial(std::shared_ptr<GltfModel> model,tinygltf::Model gltfModel);
 	//埋め込まれたgltfモデルを取得する
 	void loadgltfModel(int id, void** ptr, int& size);
 

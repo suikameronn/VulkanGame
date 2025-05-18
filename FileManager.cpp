@@ -131,7 +131,7 @@ std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデ
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-    GltfModel* model = loadGLTFModel(scene, gltfModel);//ファイルからgltfモデルのデータを読み取る
+    std::shared_ptr<GltfModel> model = loadGLTFModel(scene, gltfModel);//ファイルからgltfモデルのデータを読み取る
     model->initPoseMin = minPos;
     model->initPoseMax = maxPos;
 
@@ -143,7 +143,7 @@ std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデ
 }
 
 //テクスチャを読み込む
-void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel)//画像データを読み取り、テクスチャデータを作成する
+void FileManager::loadTextures(std::shared_ptr<GltfModel> model, const tinygltf::Model gltfModel)//画像データを読み取り、テクスチャデータを作成する
 {
     model->imageDatas.resize(gltfModel.textures.size());
     for (int i = 0;i < gltfModel.textures.size();i++)
@@ -158,11 +158,11 @@ void FileManager::loadTextures(GltfModel* model, const tinygltf::Model gltfModel
 }
 
 //埋め込まれたgltfモデルを取得する
-GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
+std::shared_ptr<GltfModel> FileManager::loadGLTFModel(const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
 {
     float scale = 1.0f;
     GltfNode* root = new GltfNode();
-    GltfModel* model = new GltfModel(root);
+    std::shared_ptr<GltfModel> model = std::make_shared<GltfModel>(root);
 
     minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -199,7 +199,8 @@ GltfModel* FileManager::loadGLTFModel(const tinygltf::Scene& scene, const tinygl
 }
 
 //gltfモデルのノードを再帰的に読み込む
-void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale)
+void FileManager::loadNode(GltfNode* parent, GltfNode* current, std::shared_ptr<GltfModel> model
+    , const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale)
 {
     current->index = nodeIndex;
     current->parent = parent;
@@ -249,7 +250,8 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, GltfModel* model
 }
 
 //メッシュの読み取り
-void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel, GltfNode* currentNode, GltfModel* model,int meshIndex)
+void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel
+    , GltfNode* currentNode, std::shared_ptr<GltfModel> model,int meshIndex)
 {
     const tinygltf::Mesh gltfMesh = gltfModel.meshes[meshIndex];
     int indexStart = 0;
@@ -306,7 +308,8 @@ void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
 }
 
 //プリミティブの読み取り
-void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primitive glPrimitive, tinygltf::Model glModel,GltfModel* model)
+void FileManager::processPrimitive(Mesh* mesh,int& indexStart
+    , tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model)
 {
     const float* bufferPos = nullptr;
     int vertexCount;
@@ -475,7 +478,7 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart, tinygltf::Primiti
 }
 
 //gltfモデルのアニメーションを読み込む
-void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
+void FileManager::loadAnimations(std::shared_ptr<GltfModel> model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
 {
     for (tinygltf::Animation anim : gltfModel.animations) 
     {
@@ -596,7 +599,7 @@ void FileManager::loadAnimations(GltfModel* model, const tinygltf::Scene& scene,
 }
 
 //gltfモデルのスケルトンを読み込む
-void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
+void FileManager::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel)
 {
     for (tinygltf::Skin& source : gltfModel.skins) {
         Skin* newSkin = new Skin{};
@@ -638,7 +641,7 @@ void FileManager::loadSkin(GltfModel* model, tinygltf::Model gltfModel)
 }
 
 //自前のModelクラスにスケルトンを設定する
-void FileManager::setSkin(GltfNode* node,GltfModel* model)
+void FileManager::setSkin(GltfNode* node, std::shared_ptr<GltfModel> model)
 {
     if (node->skinIndex > -1)
     {
@@ -661,7 +664,7 @@ std::string FileManager::splitFileName(std::string filePath)
 }
 
 //マテリアルをメッシュに設定する
-void FileManager::loadMaterial(GltfModel* model,tinygltf::Model gltfModel)
+void FileManager::loadMaterial(std::shared_ptr<GltfModel> model,tinygltf::Model gltfModel)
 {
     for (tinygltf::Material& mat : gltfModel.materials)
     {

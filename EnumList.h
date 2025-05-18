@@ -1,14 +1,5 @@
 #pragma once
 
-//gltfモデルの種類を指定する
-enum class GLTFOBJECT
-{
-	gltfTEST = 0,
-	ASPHALT,
-	LEATHER,
-	CUBEMAP
-};
-
 //コライダーの形状
 enum COLIDER
 {
@@ -19,11 +10,16 @@ enum COLIDER
 enum ObjNum
 {
 	OBJECT = 0,
-	MODEL,
-	PLAYYER,
-	POINTLIGHT,
+	MODEL = 1,
+	PLAYER,
+	BULLET,
+	POINTLIGHT = 101,
 	DIRECTIONALLIGHT
 };
+
+#define TYPEOBJECT 0
+#define TYPEMODEL 1
+#define TYPELIGHT 101
 
 //オブジェクトの性質を示す
 enum Tag

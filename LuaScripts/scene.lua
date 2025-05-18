@@ -11,14 +11,14 @@ setRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
 --第二引数として、衝突解消時、このModelも動かすかどうかを決める
 --このModelは床のため動かさない、よってfalse
-setAABBColider(model,false)
+setAABBColider(model,false,false)
 setUVScale(model)
 
 --プレイヤーの作成
 local player = createPlayer()
 setGltfModel(player,"models/robot.glb")
 setScale(player,30.0,30.0,30.0)
-setAABBColider(player,true)
+setAABBColider(player,true,false)
 setColiderScale(player,1.0,1.0,0.3)
 --アイドル時に再生するアニメーションを指定
 setDefaultAnimationName(player,"Idle_gunMiddle")

@@ -72,7 +72,7 @@ public:
 	//狙いを定めた時のカメラの位置の設定
 	void setAimingCameraPos(glm::vec3 pos) { aimingCameraOffsetSrc = pos; }
 
-	bool Update() override;
+	void Update() override;
 	void updateTransformMatrix() override;//座標変換行列の更新
 };
 

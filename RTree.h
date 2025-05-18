@@ -33,7 +33,7 @@ private:
 	int objCount;
 
 	//ノード内のオブジェクト
-	std::array<T, RNodeMAX> nodeObject;
+	std::array<std::weak_ptr<T>, RNodeMAX> nodeObject;
 
 	//ノードの範囲
 	glm::vec3 min;
@@ -43,7 +43,7 @@ public:
 
 	RNode(RNode<T>* parent, glm::vec3 newMin, glm::vec3 newMax);
 	RNode(RNode<T>* parent, std::vector<RNode<T>*>& srcChildren);
-	RNode(RNode<T>* parent, std::vector<T>& objects);
+	RNode(RNode<T>* parent, std::vector<std::weak_ptr<T>>& objects);
 
 	~RNode();
 	
@@ -113,7 +113,7 @@ public:
 
 	//与えられた範囲がノードの持つ範囲に一部でも重なっていたらtrueを返す
 	bool isOverlap(glm::vec3 newMin, glm::vec3 newMax);
-	bool isOverlap(glm::vec3 newMin, glm::vec3 newMax, T model);
+	bool isOverlap(glm::vec3 newMin, glm::vec3 newMax, std::weak_ptr<T> model);
 
 	void expandAABB(glm::vec3 newMin, glm::vec3 newMax)
 	{
@@ -129,9 +129,9 @@ public:
 	{
 		for (int i = 0; i < RNodeMAX - 1; i++)
 		{
-			if (nodeObject[i] == nullptr)
+			if (nodeObject[i].expired())
 			{
-				T tmp = nodeObject[i];
+				std::weak_ptr<T> tmp = nodeObject[i];
 				nodeObject[i] = nodeObject[i + 1];
 				nodeObject[i + 1] = tmp;
 			}
@@ -167,21 +167,21 @@ public:
 	void genAABB(glm::vec3& newMin, glm::vec3& newMax);
 
 	//現在のノードを分割して、作成したもう一方のノードを返す
-	void split(T model, glm::vec3 min, glm::vec3 max);
+	void split(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max);
 	void split(RNode<T>* node, glm::vec3 min, glm::vec3 max);
 
 	//オブジェクトをRTreeに追加する
-	void insert(T model, glm::vec3 min, glm::vec3 max);
+	void insert(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max);
 	
 	//分割した際のそれぞれのノードに収めるエントリのインデックスを決める
-	std::array<std::vector<int>, 2> linearCostSplit(std::array<T, RNodeMAX + 1>& objects,
+	std::array<std::vector<int>, 2> linearCostSplit(std::array<std::weak_ptr<T>, RNodeMAX + 1>& objects,
 		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
 
 	std::array<std::vector<int>, 2> linearCostSplit(std::array<RNode<T>*, RNodeMAX + 1>& nodes,
 		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
 
 	//距離が最大のペアのノードを返す
-	std::array<int, 2> calcFarthestNodePair(std::array<T, RNodeMAX + 1>& objects,
+	std::array<int, 2> calcFarthestNodePair(std::array<std::weak_ptr<T>, RNodeMAX + 1>& objects,
 		glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex);
 
 	std::array<int, 2> calcFarthestNodePair(std::array<RNode<T>*, RNodeMAX + 1>& nodes,
@@ -191,13 +191,14 @@ public:
 	void requestUpdate() { isUpdate = true; }
 
 	//オブジェクトを消去する
-	void deleteObject(T model);
+	void deleteObject(std::weak_ptr<T> model);
+	void deleteObject(T* model);
 
 	//ノードを削除する
 	void deleteNode(RNode<T>* childNode);
 
 	//与えられた範囲のすべて、あるいは一部を内包するノードのオブジェクトを配列に入れる
-	void searchInRange(std::vector<T>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
+	void searchInRange(std::vector<std::weak_ptr<T>>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
 };
 
 template<typename T>
@@ -225,17 +226,14 @@ public:
 
 	RNode<T>* getRoot() { return root; }
 
-	void insert(T model, glm::vec3 min, glm::vec3 max);
+	void insert(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max);
 
 	//オブジェクトが移動した場合、そのオブジェクトを一度消去し、再び木に登録する
-	void reflectMove(T model, RNode<T>* currentNode);
+	void reflectMove(std::weak_ptr<T> model, RNode<T>* currentNode);
 
 	//RTreeのノードから探索対象のオブジェクトの配列を用意する
-	void broadPhaseCollisionDetection(std::vector<T>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
+	void broadPhaseCollisionDetection(std::vector<std::weak_ptr<T>>& collisionDetectTarget, glm::vec3 min, glm::vec3 max);
 };
-
-
-#include"Model.h"
 
 #include"RTree.h"
 
@@ -255,7 +253,7 @@ RNode<T>::RNode(RNode<T>* parent, glm::vec3 newMin, glm::vec3 newMax)
 }
 
 template<typename T>
-RNode<T>::RNode(RNode<T>* parent, std::vector<T>& objects)
+RNode<T>::RNode(RNode<T>* parent, std::vector<std::weak_ptr<T>>& objects)
 {
 	this->parent = parent;
 
@@ -264,7 +262,7 @@ RNode<T>::RNode(RNode<T>* parent, std::vector<T>& objects)
 
 	childNodeCount = 0;
 
-	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
+	std::fill(nodeObject.begin(), nodeObject.end(), std::weak_ptr<T>());
 
 	//ノードにオブジェクトをコピー
 	std::copy(objects.begin(), objects.end(), nodeObject.begin());
@@ -320,8 +318,8 @@ void RNode<T>::updateAABB()
 	{
 		for (int j = 0; j < 3; j++)
 		{
-			min[j] = std::min(min[j], nodeObject[i]->getMbrMin()[j]);
-			max[j] = std::max(max[j], nodeObject[i]->getMbrMax()[j]);
+			min[j] = std::min(min[j], nodeObject[i].lock()->getMbrMin()[j]);
+			max[j] = std::max(max[j], nodeObject[i].lock()->getMbrMax()[j]);
 		}
 	}
 
@@ -348,7 +346,7 @@ void RNode<T>::updateRefNode()
 	{
 		for (int i = 0; i < objCount; i++)
 		{
-			nodeObject[i]->setRNode(this);
+			nodeObject[i].lock()->setRNode(this);
 		}
 	}
 }
@@ -365,7 +363,7 @@ void RNode<T>::genAABB(glm::vec3& newMin, glm::vec3& newMax)
 
 //最も距離の離れたオブジェクトのペアのインデックスを返す(リーフノード版)
 template<typename T>
-std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<T, RNodeMAX + 1>& objects,
+std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<std::weak_ptr<T>, RNodeMAX + 1>& objects,
 	glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex)
 {
 	//分母を計算
@@ -382,8 +380,8 @@ std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<T, RNodeMAX + 1>& o
 	//正規化された距離が最も大きいノードのペアを探す
 	for (int i = 0; i < 3; i++)
 	{
-		tMin = objects[minIndex[i]]->getMbrMax();
-		tMax = objects[maxIndex[i]]->getMbrMin();
+		tMin = objects[minIndex[i]].lock()->getMbrMax();
+		tMax = objects[maxIndex[i]].lock()->getMbrMin();
 
 		float dist = tMax[i] - tMin[i];
 		dist /= distance[i];
@@ -437,7 +435,7 @@ std::array<int, 2> RNode<T>::calcFarthestNodePair(std::array<RNode<T>*, RNodeMAX
 
 ////分割した際のそれぞれのノードに収めるエントリのインデックスを決める(子ノード版)
 template<typename T>
-std::array<std::vector<int>, 2> RNode<T>::linearCostSplit(std::array<T, RNodeMAX + 1>& objects,
+std::array<std::vector<int>, 2> RNode<T>::linearCostSplit(std::array<std::weak_ptr<T>, RNodeMAX + 1>& objects,
 	glm::vec3 allObjMax, glm::vec3 allObjMin, glm::ivec3 minIndex, glm::ivec3 maxIndex)
 {
 	//もう片方のノードに入れるオブジェクトをまとめる
@@ -517,7 +515,7 @@ std::array<std::vector<int>, 2> RNode<T>::linearCostSplit(std::array<RNode<T>*, 
 
 //現在のノードを分割して、作成したもう一方のノードを返す(リーフノード版)
 template<typename T>
-void RNode<T>::split(T model, glm::vec3 min, glm::vec3 max)
+void RNode<T>::split(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max)
 {
 	//各軸の最大値と最小値を計算する
 	//その値を持つノードのインデックスを記録する
@@ -525,7 +523,7 @@ void RNode<T>::split(T model, glm::vec3 min, glm::vec3 max)
 	glm::ivec3 minIndex, maxIndex;
 
 	//オブジェクトをノードに追加した仮の配列を追加する
-	std::array<T, RNodeMAX + 1> objects;
+	std::array<std::weak_ptr<T>, RNodeMAX + 1> objects;
 	for (int i = 0; i < RNodeMAX; i++)
 	{
 		objects[i] = nodeObject[i];
@@ -541,8 +539,8 @@ void RNode<T>::split(T model, glm::vec3 min, glm::vec3 max)
 	{
 		for (int j = 0; j < RNodeMAX + 1; j++)
 		{
-			maxMBR[i][j].first = objects[j]->getMbrMax()[i];
-			minMBR[i][j].first = objects[j]->getMbrMin()[i];
+			maxMBR[i][j].first = objects[j].lock()->getMbrMax()[i];
+			minMBR[i][j].first = objects[j].lock()->getMbrMin()[i];
 
 			maxMBR[i][j].second = j;
 			minMBR[i][j].second = j;
@@ -581,10 +579,10 @@ void RNode<T>::split(T model, glm::vec3 min, glm::vec3 max)
 	std::array<std::vector<int>, 2> pairNodeObjectIndex = linearCostSplit(objects, allObjMax, allObjMin, minIndex, maxIndex);
 
 	//もう一方のノードに登録するオブジェクトを記録するための配列
-	std::vector<T> anotherObjects(pairNodeObjectIndex[1].size());
+	std::vector<std::weak_ptr<T>> anotherObjects(pairNodeObjectIndex[1].size());
 
 	//このノードのオブジェクトを初期化する
-	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
+	std::fill(nodeObject.begin(), nodeObject.end(), std::weak_ptr<T>());
 
 	//インデックスからそれぞれのノードにオブジェクトを登録する
 	for (int i = 0; i < pairNodeObjectIndex[0].size(); i++)
@@ -756,7 +754,7 @@ void RNode<T>::split(RNode<T>* node, glm::vec3 min, glm::vec3 max)
 }
 
 template<typename T>
-void RNode<T>::insert(T model, glm::vec3 min, glm::vec3 max)
+void RNode<T>::insert(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max)
 {
 	if (childNodeCount == 0)
 	{//リーフノードの場合
@@ -771,7 +769,7 @@ void RNode<T>::insert(T model, glm::vec3 min, glm::vec3 max)
 		{//空きがあるときは、ノードにオブジェクトを追加し、AABBを拡張する
 
 			nodeObject[objCount] = model;
-			model->setRNode(this);
+			model.lock()->setRNode(this);
 
 			objCount++;
 
@@ -849,7 +847,7 @@ void RNode<T>::resetToRootNode()
 	objCount = 0;
 
 	//登録されたデータの初期化
-	std::fill(nodeObject.begin(), nodeObject.end(), nullptr);
+	std::fill(nodeObject.begin(), nodeObject.end(), std::weak_ptr<T>());
 	std::fill(children.begin(), children.end(), nullptr);
 
 	//ルートノードのAABBを初期化
@@ -859,15 +857,54 @@ void RNode<T>::resetToRootNode()
 
 //ノード内のオブジェクトを削除する
 template<typename T>
-void RNode<T>::deleteObject(T model)
+void RNode<T>::deleteObject(std::weak_ptr<T> model)
 {
 	//該当のオブジェクトを削除し、オブジェクトのポインタを先頭に詰める
 	for (int i = 0; i < objCount; i++)
 	{
 		//該当オブジェクトをノードから削除する
-		if (nodeObject[i] == model)
+		if (nodeObject[i].lock() == model.lock())
 		{
-			nodeObject[i] = nullptr;
+			nodeObject[i].reset();
+
+			break;
+		}
+	}
+
+	//オブジェクト側のノードの登録を削除する
+	model.lock()->setRNode(nullptr);
+
+	sortNodeObject();
+
+	//オブジェクト数を減らす
+	objCount--;
+
+	//ここまででノード内のオブジェクトの配列は整頓され
+	//配列は先頭に向けてオブジェクトへの参照が詰められ、間にnullptrが挟まっていない状態に
+
+	//この時、オブジェクト数が0になったら、このノード自体を削除し、上のノードのAABBも調整する
+	if (objCount <= 0)
+	{
+		//親ノードから自分を削除する
+		parent->deleteNode(this);
+
+		delete this;
+	}
+}
+
+//ノード内のオブジェクトを削除する
+template<typename T>
+void RNode<T>::deleteObject(T* model)
+{
+	//該当のオブジェクトを削除し、オブジェクトのポインタを先頭に詰める
+	for (int i = 0; i < objCount; i++)
+	{
+		//該当オブジェクトをノードから削除する
+		if (!nodeObject[i].expired() && std::weak_ptr<T>().owner_before(nodeObject[i]))
+		{
+			nodeObject[i].reset();
+
+			break;
 		}
 	}
 
@@ -938,13 +975,13 @@ bool RNode<T>::isOverlap(glm::vec3 newMin, glm::vec3 newMax)
 
 //一部でも重なっていたらtrue
 template<typename T>
-bool RNode<T>::isOverlap(glm::vec3 newMin, glm::vec3 newMax, T model)
+bool RNode<T>::isOverlap(glm::vec3 newMin, glm::vec3 newMax, std::weak_ptr<T> model)
 {
 	bool isOverlap = true;
 
 	for (int i = 0; i < 3; i++)
 	{
-		if (model->getMbrMin()[i] > newMax[i] || model->getMbrMax()[i] < newMin[i])
+		if (model.lock()->getMbrMin()[i] > newMax[i] || model.lock()->getMbrMax()[i] < newMin[i])
 		{
 			isOverlap = false;
 		}
@@ -955,7 +992,7 @@ bool RNode<T>::isOverlap(glm::vec3 newMin, glm::vec3 newMax, T model)
 
 //与えられた範囲のすべて、あるいは一部を内包するノードのオブジェクトを配列に入れる
 template<typename T>
-void RNode<T>::searchInRange(std::vector<T>& collisionDetectTarget, glm::vec3 min, glm::vec3 max)
+void RNode<T>::searchInRange(std::vector<std::weak_ptr<T>>& collisionDetectTarget, glm::vec3 min, glm::vec3 max)
 {
 	//まずそのノードが与えられた範囲の一部かすべてを内包するかどうかを調べる
 	if (isOverlap(min, max))
@@ -980,7 +1017,7 @@ void RNode<T>::searchInRange(std::vector<T>& collisionDetectTarget, glm::vec3 mi
 }
 
 template<typename T>
-void RTree<T>::insert(T model, glm::vec3 min, glm::vec3 max)
+void RTree<T>::insert(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max)
 {
 	root->insert(model, min, max);
 }
@@ -988,19 +1025,19 @@ void RTree<T>::insert(T model, glm::vec3 min, glm::vec3 max)
 //オブジェクト移動したときの関数
 //オブジェクトから木から削除し、再び追加する
 template<typename T>
-void RTree<T>::reflectMove(T model, RNode<T>* currentNode)
+void RTree<T>::reflectMove(std::weak_ptr<T> model, RNode<T>* currentNode)
 {
 	//まずオブジェクトの所属するノードから自分を削除する
 	currentNode->deleteObject(model);
 
 	//再び適切なノードに挿入する
 	//オブジェクトにはinsert関数内で新たに所属するノードを設定される
-	insert(model, model->getMbrMin(), model->getMbrMax());
+	insert(model, model.lock()->getMbrMin(), model.lock()->getMbrMax());
 }
 
 //与えられたMBRから詳細な当たり判定を行う必要があるオブジェクトを配列にまとめる
 template<typename T>
-void RTree<T>::broadPhaseCollisionDetection(std::vector<T>& collisionDetectTarget, glm::vec3 min, glm::vec3 max)
+void RTree<T>::broadPhaseCollisionDetection(std::vector<std::weak_ptr<T>>& collisionDetectTarget, glm::vec3 min, glm::vec3 max)
 {
 	root->searchInRange(collisionDetectTarget, min, max);
 }

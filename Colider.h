@@ -59,6 +59,9 @@ class Colider
 {
 private:
 
+	//コライダーが当たり判定を解消するかどうか
+	bool trigger;
+
 	//AABB上の左上、右下の頂点
 	glm::vec3 min, max;
 	//AABBに座標変換を加えたもの
@@ -122,8 +125,13 @@ private:
 
 public:
 
-	Colider(std::shared_ptr<GltfModel> model);
+	Colider(std::shared_ptr<GltfModel> model,bool isTrigger);
 	~Colider();
+
+	bool isTrigger()
+	{
+		return trigger;
+	}
 
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings(glm::vec3 initScale);

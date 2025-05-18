@@ -14,9 +14,9 @@ void Storage::cleanup()
 
 //gltfモデルを読み込んだ際に、このクラスに格納する。
 //再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
-void Storage::addModel(std::string obj, GltfModel* model)
+void Storage::addModel(std::string obj, std::shared_ptr<GltfModel> model)
 {
-	gltfModelStorage[obj] = std::shared_ptr<GltfModel>(model);
+	gltfModelStorage[obj] = model;
 }
 
 //上と同様、画像を読み込んだ際にこのクラスに格納する

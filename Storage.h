@@ -58,7 +58,7 @@ public:
 
 	//gltfモデルを読み込んだ際に、このクラスに格納する。
 	//再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
-	void addModel(std::string obj, GltfModel* geo);
+	void addModel(std::string obj, std::shared_ptr<GltfModel> geo);
 	//上と同様、画像を読み込んだ際にこのクラスに格納する
 	void addImageData(std::string, ImageData* image);
 

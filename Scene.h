@@ -75,7 +75,7 @@ private:
 
 	static Scene* instance;
 
-	std::unique_ptr<RTree<std::shared_ptr<Model>>> rtree;
+	std::unique_ptr<RTree<Model>> rtree;
 
 	//上方向のベクトル
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -173,17 +173,20 @@ public:
 	//ステージ上のオブジェクトなどの更新処理
 	int UpdateScene();
 
+	//オブジェクトの衝突時の処理
+	void collision(std::weak_ptr<Model> model, std::weak_ptr<Model> model2);
+
 	//四角形を延ばして、衝突判定を行う、接地判定に使われる
-	std::shared_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal);
+	std::weak_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal);
 
 	//HDRIマップの設定
 	void setHDRIMap(std::string imagePath);
 
 	//シーン全体のオブジェクトについてのRTreeにオブジェクトを追加する
-	void addModelToRTree(std::shared_ptr<Model> model);
+	void addModelToRTree(std::weak_ptr<Model> model);
 
 	//Rツリー内のオブジェクトの位置を更新する
-	void updateObjectPos(std::shared_ptr<Model> model, RNode<std::shared_ptr<Model>>* node);
+	void updateObjectPos(std::weak_ptr<Model> model, RNode<Model>* node);
 };
 
 /*以下の関数はluaスクリプトから呼び出される*/
@@ -251,7 +254,7 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		lua_getglobal(lua, "Scene");
 		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
 
-		std::shared_ptr<Model> model = std::make_shared<Model>();
+		std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 
 		lua_pushlightuserdata(lua, model.get());
 
@@ -335,14 +338,13 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 		std::string filePath = lua_tostring(lua, -1);
 
-		switch (obj->getObjNum())
-		{
-		case 1:
-			Model * model = dynamic_cast<Model*>(obj);
-			FileManager::GetInstance()->addLoadModelList(filePath, model);
-			break;
-		}
+		ObjNum num = obj->getObjNum();
 
+		if (num >= TYPEMODEL && num < TYPELIGHT)
+		{
+			Model* model = dynamic_cast<Model*>(obj);
+			FileManager::GetInstance()->addLoadModelList(filePath, model);
+		}
 
 		return 0;
 	}
@@ -352,21 +354,10 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
 
-		switch (obj->getObjNum())
-		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		{
-			float x = static_cast<float>(lua_tonumber(lua, -3));
-			float y = static_cast<float>(lua_tonumber(lua, -2));
-			float z = static_cast<float>(lua_tonumber(lua, -1));
-			obj->setPosition(glm::vec3(x, y, z));
-			break;
-		}
-		}
+		float x = static_cast<float>(lua_tonumber(lua, -3));
+		float y = static_cast<float>(lua_tonumber(lua, -2));
+		float z = static_cast<float>(lua_tonumber(lua, -1));
+		obj->setPosition(glm::vec3(x, y, z));
 
 		return 0;
 	}
@@ -376,14 +367,13 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 0:
-		case 1:
 			obj->rotate.x = static_cast<float>(lua_tonumber(lua, -3));
 			obj->rotate.y = static_cast<float>(lua_tonumber(lua, -2));
 			obj->rotate.z = static_cast<float>(lua_tonumber(lua, -1));
-			break;
 		}
 
 		return 0;
@@ -394,10 +384,11 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 
 			glm::vec3 scale;
 			for (int i = 0; i < 3; i++)
@@ -406,7 +397,6 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 			}
 
 			model->scale = scale;
-			break;
 		}
 
 		return 0;
@@ -418,10 +408,11 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -5));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			float r = static_cast<float>(lua_tonumber(lua, -4));
 			float g = static_cast<float>(lua_tonumber(lua, -3));
 			float b = static_cast<float>(lua_tonumber(lua, -2));
@@ -449,16 +440,15 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	//オブジェクトにAABBコライダーを設定する
 	static int glueSetAABBColider(lua_State* lua)
 	{
-		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
+		Object* obj = static_cast<Object*>(lua_touserdata(lua, -3));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
-			model->setColider();
-			model->isMovable = static_cast<bool>(lua_toboolean(lua, -1));
-			break;
+			Model* model = dynamic_cast<Model*>(obj);
+			model->setColider(static_cast<bool>(lua_toboolean(lua, -1)));
+			model->isMovable = static_cast<bool>(lua_toboolean(lua, -2));
 		}
 
 		return 0;
@@ -469,11 +459,11 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -4));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			std::shared_ptr<Colider> colider = model->getColider();
 			if (colider)
 			{
@@ -482,7 +472,6 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 				float z = static_cast<float>(lua_tonumber(lua, -1));
 				colider->scale = glm::vec3(x, y, z);
 			}
-			break;
 		}
 
 		return 0;
@@ -493,13 +482,12 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			model->setDefaultAnimationName(std::string(lua_tostring(lua, -1)));
-			break;
 		}
 
 		return 0;
@@ -510,13 +498,12 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			model->gravity = static_cast<float>(lua_tonumber(lua, -1));
-			break;
 		}
 
 		return 0;
@@ -533,23 +520,28 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 			static_cast<float>(lua_tonumber(lua, -1))
 		};
 
-		switch (obj->getObjNum())
-		{
-		case 3://ポイントライト用
-		{
-			PointLight* pl = dynamic_cast<PointLight*>(obj);
-			pl->color = color;
-			break;
-		}
-		case 4://平行光源用
-		{
-			DirectionalLight* dl = dynamic_cast<DirectionalLight*>(obj);
-			dl->color = color;
-			break;
-		}
-		}
+		ObjNum num = obj->getObjNum();
 
-		return 0;
+		if (num >= TYPELIGHT)
+		{
+			switch (num)
+			{
+			case ObjNum::POINTLIGHT://ポイントライト用
+			{
+				PointLight* pl = dynamic_cast<PointLight*>(obj);
+				pl->color = color;
+				break;
+			}
+			case ObjNum::DIRECTIONALLIGHT://平行光源用
+			{
+				DirectionalLight* dl = dynamic_cast<DirectionalLight*>(obj);
+				dl->color = color;
+				break;
+			}
+			}
+
+			return 0;
+		}
 	}
 
 	//平行光源の光の方向を設定する
@@ -565,7 +557,7 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 
 		switch (obj->getObjNum())
 		{
-		case 4://平行光源のみ
+		case ObjNum::DIRECTIONALLIGHT://平行光源のみ
 		{
 			DirectionalLight* dl = dynamic_cast<DirectionalLight*>(obj);
 			dl->direction = dir;
@@ -634,13 +626,12 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 	{
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -1));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			model->setUVScale();
-			break;
 		}
 
 		return 0;
@@ -652,13 +643,12 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		bool transparent = static_cast<bool>(lua_toboolean(lua, -1));
 		Object* obj = static_cast<Object*>(lua_touserdata(lua, -2));
 
-		switch (obj->getObjNum())
+		ObjNum num = obj->getObjNum();
+
+		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-		case 1:
-		case 2:
-			Model * model = dynamic_cast<Model*>(obj);
+			Model* model = dynamic_cast<Model*>(obj);
 			model->setTransparent(transparent);
-			break;
 		}
 
 		return 0;

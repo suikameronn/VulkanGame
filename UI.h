@@ -56,6 +56,9 @@ class UI
 {
 protected:
 
+	//UIの存在フラッグ
+	bool exist;
+
 	//半透明描画のフラッグ
 	bool transparent;
 
@@ -118,6 +121,11 @@ public:
 	{
 		//gpu上のバッファなどを破棄
 		cleanupVulkan();
+	}
+
+	bool isExist()
+	{
+		return exist;
 	}
 
 	const uint32_t vertexCount = UIVertexCount;

@@ -5,45 +5,9 @@
 
 Bullet::Bullet(float s, float length, glm::vec3 dir, glm::vec3 pos, float limit)
 {
-	{
-		uvScale = false;
+	objNum = ObjNum::BULLET;
 
-		scene = Scene::GetInstance();
-
-		objNum = ObjNum::MODEL;
-		tags.push_back(Tag::GROUND);
-
-		uniformBufferChange = true;
-
-		rotate.x = rotate.getRadian(0.0f);
-		rotate.y = rotate.getRadian(0.0f);
-		rotate.z = rotate.getRadian(0.0f);
-		initScale = glm::vec3(1.0f);
-
-		forward = glm::vec3{ 0,0,1 };
-		right = glm::vec3{ 1,0,0 };
-		up = glm::vec3{ 0,1,0 };
-
-		childObjects.clear();
-		spherePos = false;
-
-		rotateSpeed = 0.1f;
-
-		deltaTime = 0.0;
-		animationChange = true;
-
-		isMovable = false;
-		colider = nullptr;
-
-		gravity = 0.0f;
-
-		defaultAnimationName = "Idle";
-
-		mbrMin = glm::vec3(FLT_MAX);
-		mbrMax = glm::vec3(-FLT_MAX);
-	}
-
-	speed = s;
+	speed = 100.0f;
 	rayLength = length;
 	direction = glm::normalize(dir);
 
@@ -77,23 +41,27 @@ void Bullet::calculateBulletAngle()
 
 Bullet::~Bullet()
 {
-	if (rNode)
-	{
-		//r木から自分を外しておく
-		rNode->deleteObject(std::enable_shared_from_this<Bullet>::shared_from_this());
-	}
 }
 
-bool Bullet::Update()
+void Bullet::Update()
 {
 	if (abs(glm::length(shootPos - getPosition())) > distanceLimit)
 	{
-		return SHOULD_DELETE;
+		//弾丸のオブジェクトを削除する
+		exist = false;
 	}
 
 	setLastFrameTransform();
 
 	setPosition(getPosition() + direction * speed);
+}
 
-	return SHOULD_KEEP;
+void Bullet::collision(std::weak_ptr<Model> collideObj)
+{
+	std::cout << "Collision Model" << std::endl;
+}
+
+void Bullet::collision(std::weak_ptr<Player> player)
+{
+	std::cout << "Collision player" << std::endl;
 }

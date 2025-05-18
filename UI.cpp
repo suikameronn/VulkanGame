@@ -5,6 +5,8 @@
 
 UI::UI(std::shared_ptr<ImageData> image)
 {
+	exist = true;
+
 	GameManager* manager = GameManager::GetInstance();
 	widthOffset = manager->getWindowWidth();
 	heightOffset = manager->getWindowHeight();

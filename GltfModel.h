@@ -392,6 +392,7 @@ public:
 		this->meshCount = 0;
 		this->primitiveCount = 0;
 		this->setup = false;
+		this->jointNum = 0;
 	}
 	~GltfModel();
 

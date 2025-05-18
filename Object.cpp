@@ -4,6 +4,8 @@
 
 Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 {
+	exist = true;
+
 	objNum = ObjNum::OBJECT;
 
 	physicBase = std::make_unique<PhysicBase>();
@@ -162,11 +164,9 @@ void Object::receiveTransformFromLua()
 	}
 }
 
-bool Object::Update()//更新処理
+void Object::Update()//更新処理
 {
 	customUpdate();
-	
-	return SHOULD_KEEP;
 }
 
 void Object::setPosition(glm::vec3 pos)//座標の設定

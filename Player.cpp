@@ -8,6 +8,8 @@
 
 Player::Player()
 {
+	objNum = ObjNum::PLAYER;
+
 	aiming = false;
 
 	controllable = true;
@@ -169,9 +171,10 @@ void Player::initFrameSetting()
 		switchPlayAnimation();
 	}
 
-	if (colider)
+	if (hasColiderFlag)
 	{
-		colider->initFrameSettings(glm::vec3(1.0f));//コライダーの初期設定
+		colider = std::shared_ptr<Colider>(new Colider(gltfModel, trigger));
+		colider->initFrameSettings(glm::vec3(1.0f));
 	}
 
 	initMin = min;
@@ -180,7 +183,7 @@ void Player::initFrameSetting()
 	updateTransformMatrix();
 
 	//Rツリーにオブジェクトを追加
-	scene->addModelToRTree(std::enable_shared_from_this<Model>::shared_from_this());
+	scene->addModelToRTree(std::dynamic_pointer_cast<Model>(shared_from_this()));
 
 	aimingCameraOffset = aimingCameraOffsetSrc;
 
@@ -260,7 +263,7 @@ void Player::setTargetUIImageAndScale(std::string filePath, float scale)
 	scene->sceneUI.push_back(targetUI);
 }
 
-bool Player::Update()
+void Player::Update()
 {
 	setLastFrameTransform();
 
@@ -269,8 +272,6 @@ bool Player::Update()
 	setPosition(getPosition() + physicBase->getVelocity());
 
 	playAnimation();//アニメーションの再生
-
-	return SHOULD_KEEP;
 }
 
 //座標変換行列の更新
@@ -301,7 +302,7 @@ void Player::updateTransformMatrix()
 	if (rNode)
 	{
 		//Rツリー上のオブジェクトの位置を更新する
-		scene->updateObjectPos(std::enable_shared_from_this<Model>::shared_from_this(), rNode);
+		scene->updateObjectPos(std::dynamic_pointer_cast<Model>(shared_from_this()), rNode);
 	}
 }
 
@@ -318,6 +319,22 @@ void Player::aim()
 	cameraObj.lock()->setParentPos((aimingCameraOffset + forward * 1.1f) - cameraObj.lock()->getViewTarget());
 
 	cameraObj.lock()->sphereMove = false;
+
+	{
+		//プレイヤーの向きを狙いを定めた方向に向ける
+
+		//y軸
+		float yaw = atan2(-forward.z, -forward.x);
+		//x軸
+		float pitch = asin(-forward.y);
+		//z軸は回転させない
+		float roll = 0.0f;
+
+		//度に変換しておく
+		rotate.x = pitch * (180.0f / glm::pi<float>());
+		rotate.y = yaw * (180.0f / glm::pi<float>());
+		rotate.z = roll * (180.0f / glm::pi<float>());
+	}
 
 	//自分自身を半透明でレンダリングするようにする
 	fragParam.alphaness = 0.7f;
@@ -336,10 +353,16 @@ void Player::shootBullet()
 	bulletDirection = forward;
 
 	std::shared_ptr bullet =
-		std::shared_ptr<Bullet>(new Bullet(bulletSpeed, rayCastLength, bulletDirection, pivot, bulletDistanceLimit));
+		std::shared_ptr<Bullet>(new Bullet(bulletSpeed, rayCastLength
+			, bulletDirection, pivot, bulletDistanceLimit));
 
 	//3Dモデルを設定
 	bullet->setgltfModel(Storage::GetInstance()->getgltfModel(bulletFilePath));
+
+	//コライダーを設定(トリガーの設定にする)
+	bullet->setColider(true);
+
+	bullet->initFrameSetting();
 
 	//モデル用のバッファを作成
 	vulkan->setModelData(bullet);

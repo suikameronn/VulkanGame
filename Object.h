@@ -4,9 +4,6 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-#define SHOULD_KEEP false
-#define SHOULD_DELETE true
-
 #define PI 3.14159265359
 
 #include<iostream>
@@ -85,9 +82,12 @@ struct Rotate
 };
 
 //すべてのオブジェクトの継承元のクラス、座標の設定、luaスクリプトの設定などを担う
-class Object
+class Object : public std::enable_shared_from_this<Object>
 {
 protected:
+
+	//オブジェクトの存在のフラッグ
+	bool exist;
 
 	//経過したフレーム数
 	int passFrameCount;
@@ -136,6 +136,17 @@ protected:
 
 public:
 	Object();
+
+	bool isExist()
+	{
+		return exist;
+	}
+
+	//自身のweak_ptrを返す
+	std::weak_ptr<Object> getThisWeakPtr()
+	{
+		return weak_from_this();
+	}
 
 	//自身のオブジェクトのタイプを返す
 	ObjNum getObjNum() { return objNum; }
@@ -200,7 +211,7 @@ public:
 	//モデル行列の更新
 	virtual void updateTransformMatrix() {};
 	//更新処理
-	virtual bool Update();
+	virtual void Update();
 	//特異な更新処理(通常はなし)
 	virtual void customUpdate() {};
 	//luaスクリプトに自身の現在の座標、回転の値を送る

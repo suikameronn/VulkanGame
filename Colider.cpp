@@ -2,8 +2,10 @@
 
 #include"VulkanBase.h"
 
-Colider::Colider(std::shared_ptr<GltfModel> gltfModel)
+Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger)
 {
+	trigger = isTrigger;
+
 	this->min = gltfModel->initPoseMin;
 	this->max = gltfModel->initPoseMax;
 
