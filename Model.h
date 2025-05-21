@@ -12,6 +12,13 @@
 
 class Scene;
 
+struct Ray
+{
+	float length;
+	glm::vec3 origin;
+	glm::vec3 direction;
+};
+
 //フレームバッファとしてのgpu上の画像用のバッファーの構造体
 //その画像へのビューも持つ
 struct FrameBufferAttachment {
@@ -188,11 +195,13 @@ protected:
 
 	//R-tree用の初期のAABB
 	glm::vec3 initMin, initMax;
-	//R-tree用のAABB
+	//AABB
 	glm::vec3 min, max;
 
 	//現在所属しているRTreeのノード
 	RNode<Model>* rNode;
+	//RTreeのノード内のインデックス
+	int rNodeIndex;
 
 	//R-tree用のMBRについて最大値と最小値
 	glm::vec3 mbrMin, mbrMax;
@@ -247,6 +256,8 @@ protected:
 	std::string nextPlayAnimationName;
 	//gltfモデルの持つアニメーションの名前の配列
 	std::vector<std::string> animationNames;
+	//ノードごとのトランスフォームを記録
+	NodeTransform nodeTransform;
 
 	//自身が床の場合、上に載っているオブジェクトの配列、自身の移動時、それらのオブジェクトも追従させる
 	std::list<std::weak_ptr<Model>> groundingObjects;
@@ -297,12 +308,6 @@ public:
 		return pivot;
 	}
 
-	//自身のweak_ptrを返す
-	std::weak_ptr<Model> getThisWeakPtr()
-	{
-		return std::dynamic_pointer_cast<Model>(shared_from_this());
-	}
-
 	void registerGlueFunctions() override;//glue関数の設定
 
 	float gravity;//重力の強さ
@@ -334,7 +339,16 @@ public:
 	glm::vec3 getScale() { return initScale * scale; }
 
 	//現在所属しているノードを設定する
-	void setRNode(RNode<Model>* node) { rNode = node; }
+	void setRNode(RNode<Model>* node,int index) 
+	{ 
+		rNode = node; 
+		rNodeIndex = index;
+	}
+
+	int getRNodeIndex()
+	{
+		return rNodeIndex;
+	}
 
 	//スケール
 	glm::vec3 scale;
@@ -400,7 +414,7 @@ public:
 		, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
 
 	//衝突時の処理(特に何もしない)
-	void collision(std::weak_ptr<Model> model) {};
+	virtual void collision(std::shared_ptr<Model> model) {};
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/

@@ -66,6 +66,11 @@ class Scene
 {
 private:
 
+	//同期用オブジェクト
+	std::mutex mtx;
+
+	ThreadPool* threadPool;
+
 	//シーン全体のポイントライト用のバッファ
 	PointLightBuffer pointLightBuffer;
 	//シーン全体のディレクショナルライト用のバッファ
@@ -125,6 +130,9 @@ private:
 
 	//レンダリング
 	void render();
+	
+	//破棄するオブジェクトのリスト
+	void deleteObjects(std::list <std::shared_ptr<Model>> deleteList);
 
 	//gpu上のバッファを破棄する
 	//シーン管轄のインスタンスのバッファのみ破棄する
@@ -174,7 +182,7 @@ public:
 	int UpdateScene();
 
 	//オブジェクトの衝突時の処理
-	void collision(std::weak_ptr<Model> model, std::weak_ptr<Model> model2);
+	void collision(std::shared_ptr<Model> model, std::shared_ptr<Model> model2);
 
 	//四角形を延ばして、衝突判定を行う、接地判定に使われる
 	std::weak_ptr<Model> raycast(glm::vec3 origin, glm::vec3 dir, float length,Model* model,glm::vec3& normal);

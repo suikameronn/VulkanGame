@@ -6,6 +6,8 @@ Scene* Scene::instance = nullptr;
 
 void Scene::init(std::string luaScriptPath)//luaファイルのパスを受け取る
 {
+	threadPool = ThreadPool::GetInstance();
+
 	startPoint = glm::vec3(0.0f);
 
 	GameManager* manager = GameManager::GetInstance();
@@ -187,6 +189,8 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 		player->restart(startPoint);
 	}
 
+	threadPool->waitUntilIdle();
+
 	//フレーム終了時に、バッファの更新などをする
 	frameEnd();
 
@@ -272,9 +276,8 @@ void Scene::rtreeIntersect()
 			std::shared_ptr<Colider> targetColider = target->getColider();
 
 			//コライダーが設定されているかつ、自分自身を除くオブジェクトと当たり判定を行う
-			if (targetColider && (*itr) == target)
+			if (targetColider && (*itr) != target && target->getObjNum() != ObjNum::PLAYER)
 			{
-
 				if (itrColider->Intersect(targetColider, collisionVector))//GJKによる当たり判定を行う
 				{
 					if ((*itr)->isMovable && !targetColider->isTrigger())//壁など動かさないものは除外する
@@ -297,6 +300,8 @@ void Scene::rtreeIntersect()
 							target->addGroundingObject((*itr));
 						}
 					}
+
+					collision((*itr), target);
 				}
 			}
 		}
@@ -333,6 +338,8 @@ void Scene::rtreeIntersect()
 						player->setPosition(player->getPosition() - collisionVector);
 					}
 				}
+
+				collision(player, target);
 			}
 		}
 	}
@@ -415,12 +422,12 @@ void Scene::intersect()
 }
 
 //オブジェクトの衝突時の処理
-void Scene::collision(std::weak_ptr<Model> model,std::weak_ptr<Model> model2)
+void Scene::collision(std::shared_ptr<Model> model,std::shared_ptr<Model> model2)
 {
 	//それぞれのオブジェクトの衝突処理
-	model.lock()->getThisWeakPtr().lock()->collision(model2.lock()->getThisWeakPtr());
+	model->collision(model2);
 
-	model2.lock()->getThisWeakPtr().lock()->collision(model.lock()->getThisWeakPtr());
+	model2->collision(model);
 }
 
 //フレーム終了時に実行
@@ -428,6 +435,8 @@ void Scene::frameEnd()
 {
 	//ライトのユニフォームバッファの更新は別枠で行う
 	updateLightUniformBuffer();
+
+	player->frameEnd(sceneDirectionalLights, scenePointLights, shadowMapData);
 
 	//当たり判定の処理により、移動したオブジェクトの座標変換行列やコライダーの位置を更新する
 	//ユニフォームバッファの更新
@@ -446,7 +455,6 @@ void Scene::frameEnd()
 		itr++;
 	}
 
-	player->frameEnd(sceneDirectionalLights,scenePointLights,shadowMapData);
 	cubemap->frameEnd();
 
 	for (auto itr = sceneUI.begin(); itr != sceneUI.end();)

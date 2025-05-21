@@ -221,7 +221,6 @@ public:
 
 	~RTree()
 	{
-		delete root;
 	}
 
 	RNode<T>* getRoot() { return root; }
@@ -296,13 +295,6 @@ RNode<T>::RNode(RNode<T>* parent, std::vector<RNode<T>*>& srcChildren)
 template<typename T>
 RNode<T>::~RNode()
 {
-	for (int i = 0; i < childNodeCount; i++)
-	{
-		if (children[i] != nullptr)
-		{
-			delete children[i];
-		}
-	}
 }
 
 //このノードのAABBを更新
@@ -346,7 +338,7 @@ void RNode<T>::updateRefNode()
 	{
 		for (int i = 0; i < objCount; i++)
 		{
-			nodeObject[i].lock()->setRNode(this);
+			nodeObject[i].lock()->setRNode(this,i);
 		}
 	}
 }
@@ -769,7 +761,7 @@ void RNode<T>::insert(std::weak_ptr<T> model, glm::vec3 min, glm::vec3 max)
 		{//空きがあるときは、ノードにオブジェクトを追加し、AABBを拡張する
 
 			nodeObject[objCount] = model;
-			model.lock()->setRNode(this);
+			model.lock()->setRNode(this,objCount);
 
 			objCount++;
 
@@ -860,24 +852,28 @@ template<typename T>
 void RNode<T>::deleteObject(std::weak_ptr<T> model)
 {
 	//該当のオブジェクトを削除し、オブジェクトのポインタを先頭に詰める
-	for (int i = 0; i < objCount; i++)
-	{
-		//該当オブジェクトをノードから削除する
-		if (nodeObject[i].lock() == model.lock())
-		{
-			nodeObject[i].reset();
-
-			break;
-		}
-	}
+	nodeObject[model.lock()->getRNodeIndex()].reset();
 
 	//オブジェクト側のノードの登録を削除する
-	model.lock()->setRNode(nullptr);
+	model.lock()->setRNode(nullptr,-1);
 
+	//nullptrを末尾のほうに追いやる
 	sortNodeObject();
 
-	//オブジェクト数を減らす
-	objCount--;
+	//オブジェクト数を更新する
+	objCount = 0;
+	for (int i = 0; i < nodeObject.size(); i++)
+	{
+		if (nodeObject[i].lock() == nullptr)
+		{
+			break;
+		}
+
+		objCount++;
+	}
+
+	//モデル側のインデックスの記録を更新する
+	updateRefNode();
 
 	//ここまででノード内のオブジェクトの配列は整頓され
 	//配列は先頭に向けてオブジェクトへの参照が詰められ、間にnullptrが挟まっていない状態に
@@ -897,24 +893,28 @@ template<typename T>
 void RNode<T>::deleteObject(T* model)
 {
 	//該当のオブジェクトを削除し、オブジェクトのポインタを先頭に詰める
-	for (int i = 0; i < objCount; i++)
-	{
-		//該当オブジェクトをノードから削除する
-		if (!nodeObject[i].expired() && std::weak_ptr<T>().owner_before(nodeObject[i]))
-		{
-			nodeObject[i].reset();
-
-			break;
-		}
-	}
+	nodeObject[model->getRNodeIndex()].reset();
 
 	//オブジェクト側のノードの登録を削除する
-	model->setRNode(nullptr);
+	model->setRNode(nullptr,-1);
 
+	//nullptrを末尾のほうに追いやる
 	sortNodeObject();
 
-	//オブジェクト数を減らす
-	objCount--;
+	//オブジェクト数を更新する
+	objCount = 0;
+	for (int i = 0; i < nodeObject.size(); i++)
+	{
+		if (nodeObject[i].lock() == nullptr)
+		{
+			break;
+		}
+
+		objCount++;
+	}
+
+	//モデル側のインデックスの記録を更新する
+	updateRefNode();
 
 	//ここまででノード内のオブジェクトの配列は整頓され
 	//配列は先頭に向けてオブジェクトへの参照が詰められ、間にnullptrが挟まっていない状態に
@@ -950,7 +950,10 @@ void RNode<T>::deleteNode(RNode<T>* childNode)
 
 	if (childNodeCount == 0)
 	{
-		parent->deleteNode(this);
+		if (parent)
+		{
+			parent->deleteNode(this);
+		}
 
 		delete this;
 	}

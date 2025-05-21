@@ -42,12 +42,14 @@ Model::Model()//3Dモデルを持つクラス
 
 	gravity = 0.0f;
 
-	defaultAnimationName = "Idle";
+	defaultAnimationName = "none";
+	currentPlayAnimationName = "none";
 
 	mbrMin = glm::vec3(FLT_MAX);
 	mbrMax = glm::vec3(-FLT_MAX);
 
 	rNode = nullptr;
+	rNodeIndex = 0;
 }
 
 Model::Model(std::string luaScriptPath)
@@ -89,6 +91,11 @@ Model::Model(std::string luaScriptPath)
 
 	mbrMin = glm::vec3(FLT_MAX);
 	mbrMax = glm::vec3(-FLT_MAX);
+
+	rNode = nullptr;
+	rNodeIndex = 0;
+
+	deltaTime = 0.0;
 }
 
 void Model::registerGlueFunctions()//glue関数を設定する
@@ -159,7 +166,8 @@ void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfモデルを設定する
 //再生するアニメーションをアイドル時に再生するものにする
 void Model::switchPlayAnimation()
 {
-	currentPlayAnimationName = defaultAnimationName;
+	//currentPlayAnimationName = defaultAnimationName;
+	nextPlayAnimationName = defaultAnimationName;
 }
 
 //アニメーションを切り替える
@@ -178,24 +186,25 @@ void Model::playAnimation()//アニメーション用の行列を計算する
 {
 	if (currentPlayAnimationName != "none")
 	{
-		//アニメーションを再生し終えた
-		//あるいは、アニメーションが切り替わった場合
-		if (deltaTime > gltfModel->animationDuration(currentPlayAnimationName)
-			|| currentPlayAnimationName != nextPlayAnimationName)
-		{
-			currentPlayAnimationName = nextPlayAnimationName;
-			//再生時間を再び計測し始める
-			animationChange = false;
-			startTime = clock();
-		}
-
-
 		currentTime = clock();
 
 		deltaTime = static_cast<double>(currentTime - startTime) / CLOCKS_PER_SEC;
 
+		//アニメーションを再生し終えた
+		//あるいは、アニメーションが切り替わった場合
+		if (deltaTime >= gltfModel->animationDuration(currentPlayAnimationName)
+			|| currentPlayAnimationName != nextPlayAnimationName)
+		{
+			currentPlayAnimationName = nextPlayAnimationName;
+			//再生時間を再び計測し始める
+
+			startTime = clock();
+
+			deltaTime = 0.0;
+		}
+
 		//アニメーション行列の計算
-		gltfModel->updateAnimation(deltaTime, gltfModel->animations[currentPlayAnimationName], jointMatrices);
+		gltfModel->updateAnimation(deltaTime, currentPlayAnimationName, nodeTransform, jointMatrices);
 	}
 }
 
@@ -465,12 +474,17 @@ void Model::Update()
 		receiveTransformFromLua();//luaから座標などを受け取る
 	}
 
-	playAnimation();//アニメーションの再生
-
-	if (passFrameCount < MAXFRAMECOUNT)
+	if (defaultAnimationName != "none")
 	{
-		passFrameCount++;
+		switchPlayAnimation();
 	}
+
+	std::function<void()> playAnim = [this]()
+		{
+			playAnimation();//アニメーションの再生
+		};
+
+	threadPool->run(playAnim);
 }
 
 void Model::customUpdate()
@@ -498,7 +512,9 @@ void Model::initFrameSetting()//初回フレームの処理
 
 	if (defaultAnimationName != "none")
 	{
-		switchPlayAnimation();
+		//switchPlayAnimation();
+		currentPlayAnimationName = defaultAnimationName;
+		nextPlayAnimationName = defaultAnimationName;
 	}
 
 	if (hasColiderFlag)
@@ -509,6 +525,12 @@ void Model::initFrameSetting()//初回フレームの処理
 
 	initMin = min;
 	initMax = max;
+
+	//アニメーション行列の初期化
+	for (auto& matrices : jointMatrices)
+	{
+		std::fill(matrices.begin(), matrices.end(), glm::mat4(1.0f));
+	}
 
 	updateTransformMatrix();
 
@@ -591,8 +613,15 @@ void Model::updateUniformBuffer(GltfNode* node)
 
 		AnimationUBO ubo;
 
-		ubo.nodeMatrix = node->getMatrix();
-		ubo.matrix = node->matrix;
+		ubo.matrix = glm::mat4(1.0f);
+		ubo.nodeMatrix = glm::mat4(1.0f);
+		if (nodeTransform.nodeTransform.size() != 0)
+		{
+			ubo.matrix = nodeTransform.matrix[node->index];
+			ubo.nodeMatrix = nodeTransform.nodeTransform[node->index];
+		}
+		
+
 		if (node->skin != nullptr && node->globalHasSkinNodeIndex > -1)
 		{
 			ubo.boneMatrix = getJointMatrices(node->globalHasSkinNodeIndex);

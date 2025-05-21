@@ -514,7 +514,7 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 	std::vector<glm::vec3> polytope;
 	simplex.setSimplexVertices(polytope);
 
-	std::vector<size_t> faces =
+	std::vector<int> faces =
 	{
 		0,1,2,
 		0,3,1,
@@ -538,12 +538,13 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 		if (abs(sDistance - minDistance) > 0.001f)
 		{
 			minDistance = FLT_MAX;
-			std::vector<std::pair<size_t, size_t>> uniqueEdges;
-			for (size_t i = 0; i < normals.size(); i++)
+			std::vector<std::pair<int, int>> uniqueEdges;
+
+			for (int i = 0; i < normals.size(); i++)
 			{
 				if (sameDirection(normals[i], support))
 				{
-					size_t f = i * 3;
+					int f = i * 3;
 
 					addIfUniqueEdge(uniqueEdges, faces, f, f + 1);
 					addIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
@@ -563,19 +564,24 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 				}
 			}
 
-			std::vector<size_t> newFaces;
+			if (uniqueEdges.size() == 0)
+			{
+				break;
+			}
+
+			std::vector<int> newFaces;
 			for (int i = 0; i < uniqueEdges.size(); i++)
 			{
 				newFaces.push_back(uniqueEdges[i].first);
 				newFaces.push_back(uniqueEdges[i].second);
-				newFaces.push_back(polytope.size());
+				newFaces.push_back(static_cast<int>(polytope.size()));
 			}
 			polytope.push_back(support);
 
 			auto[newNormals,newMinFace] = getFaceNormals(polytope, newFaces);
 
 			float oldMinDistance = FLT_MAX;
-			for (size_t i = 0; i < normals.size(); i++)
+			for (int i = 0; i < normals.size(); i++)
 			{
 				if (normals[i].w < oldMinDistance)
 				{
@@ -586,12 +592,11 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 			
 			if (newNormals[newMinFace].w < oldMinDistance)
 			{
-				minFace = newMinFace + normals.size();
+				minFace = newMinFace + static_cast<int>(normals.size());
 			}
 
 			faces.insert(faces.end(), newFaces.begin(), newFaces.end());
 			normals.insert(normals.end(), newNormals.begin(), newNormals.end());
-
 		}
 
 		limit--;
@@ -602,10 +607,10 @@ void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec
 
 //ìØàÍÇÃê¸ï™Çä‹Ç‹Ç»ÇØÇÍÇŒÇªÇÃí∏ì_ÇíPëÃÇ…ä‹ÇﬂÇÈ
 void Colider::addIfUniqueEdge(
-	std::vector<std::pair<size_t, size_t>>& edges,
-	const std::vector<size_t>& faces,
-	size_t a,
-	size_t b)
+	std::vector<std::pair<int, int>>& edges,
+	const std::vector<int>& faces,
+	int a,
+	int b)
 {
 	auto reverse = std::find(
 		edges.begin(),
@@ -623,15 +628,15 @@ void Colider::addIfUniqueEdge(
 }
 
 //ñ ÇÃñ@ê¸ÇéÊìæ
-std::pair<std::vector<glm::vec4>, size_t> Colider::getFaceNormals(
+std::pair<std::vector<glm::vec4>, int> Colider::getFaceNormals(
 	std::vector<glm::vec3>& vertices,
-	std::vector<size_t>& faces)
+	std::vector<int>& faces)
 {
 	std::vector<glm::vec4> normals;
-	size_t minTriangle = 0;
+	int minTriangle = 0;
 	float  minDistance = FLT_MAX;
 
-	for (size_t i = 0; i < faces.size(); i += 3) {
+	for (int i = 0; i < faces.size(); i += 3) {
 		glm::vec3 a = vertices[faces[i]];
 		glm::vec3 b = vertices[faces[i + 1]];
 		glm::vec3 c = vertices[faces[i + 2]];

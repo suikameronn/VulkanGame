@@ -1,6 +1,7 @@
 #pragma once
 #include<bitset>
 #include<unordered_map>
+#include<mutex>
 
 #include"EnumList.h"
 #include"Light.h"
@@ -20,6 +21,8 @@ class ImageData;
 class Storage
 {
 private:
+	std::mutex mtx;
+
 	//gltfモデルが格納される
 	std::unordered_map<std::string, std::shared_ptr<GltfModel>> gltfModelStorage;
 	//ファイル名をキーとして、画像データを格納する

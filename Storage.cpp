@@ -16,12 +16,16 @@ void Storage::cleanup()
 //再びそのgltfモデルが必要になった場合は、このクラスから参照取得する
 void Storage::addModel(std::string obj, std::shared_ptr<GltfModel> model)
 {
+	std::lock_guard<std::mutex> lock(mtx);
+
 	gltfModelStorage[obj] = model;
 }
 
 //上と同様、画像を読み込んだ際にこのクラスに格納する
 void Storage::addImageData(std::string path,ImageData* image)
 {
+	std::lock_guard<std::mutex> lock(mtx);
+
 	imageDataStorage[path] = std::shared_ptr<ImageData>(image);
 }
 

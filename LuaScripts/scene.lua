@@ -5,7 +5,7 @@ setGltfModel(model,"models/concrete.glb")
 --初期座標の設定
 setPos(model,0.0,0.0,0.0)
 --スケールの設定
-setScale(model,100.0,10.0,100.0)
+setScale(model,300.0,10.0,300.0)
 --回転の設定
 setRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
@@ -13,6 +13,23 @@ setRotate(model,0.0,0.0,0.0)
 --このModelは床のため動かさない、よってfalse
 setAABBColider(model,false,false)
 setUVScale(model)
+
+
+local model2 = createModel()
+--Modelオブジェクトにgltfモデルをセット
+setGltfModel(model2,"models/robot.glb")
+--初期座標の設定
+setPos(model2,0.0,20.0,0.0)
+--スケールの設定
+setScale(model2,30.0,30.0,30.0)
+--回転の設定
+--setRotate(model2,0.0,0.0,0.0)
+--コライダーを付与する
+--第二引数として、衝突解消時、このModelも動かすかどうかを決める
+--このModelは床のため動かさない、よってfalse
+setAABBColider(model2,false,false)
+setDefaultAnimationName(model2,"run")
+setColiderScale(model2,1.0,1.0,0.3)
 
 --プレイヤーの作成
 local player = createPlayer()
@@ -64,3 +81,5 @@ setHDRIMap("textures/grass.hdr")
 
 --ゲーム内で使うリソースを読み込んでおく
 loadGltfModel("models/beamBullet.glb")
+
+print("lua finish")

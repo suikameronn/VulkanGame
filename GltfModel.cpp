@@ -49,17 +49,17 @@ GltfNode* GltfModel::nodeFromIndex(int index)
 }
 
 //アニメーションの各ノードの更新処理
-void GltfModel::updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex)
+void GltfModel::updateAllNodes(GltfNode* parent, NodeTransform& nodeTransform, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex)
 {
 	if (parent->meshArray.size() != 0 && parent->skin)
 	{
 		//このノードの所属するジョイントのアニメーション行列を計算
-		parent->update(jointMatrices[parent->globalHasSkinNodeIndex],updatedIndex);
+		parent->update(nodeTransform, jointMatrices[parent->globalHasSkinNodeIndex], updatedIndex);
 	}
 
 	for (size_t i = 0; i < parent->children.size(); i++)
 	{
-		updateAllNodes(parent->children[i],jointMatrices,updatedIndex);
+		updateAllNodes(parent->children[i], nodeTransform, jointMatrices, updatedIndex);
 	}
 }
 
@@ -72,17 +72,23 @@ float GltfModel::animationDuration(std::string animationName)
 }
 
 //指定したアニメーションの行列を取得
-void GltfModel::updateAnimation(double animationTime,Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
+void GltfModel::updateAnimation(double animationTime, std::string animationName
+	, NodeTransform& nodeTransform, std::vector<std::array<glm::mat4, 128>>& jointMatrices)
 {
 	if (animations.empty()) {
 		std::cout << ".glTF does not contain animation." << std::endl;
 		return;
 	}
 
+	Animation& animation = animations[animationName];
+
+	//アニメーション行列の初期化
+	nodeTransform.setNodeCount(nodeCount);
+
 	bool updated = false;
 	for (auto& channel : animation.channels) {
 
-		AnimationSampler sampler = animation.samplers[channel.samplerIndex];
+		AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
 
 		if (sampler.inputs.size() > sampler.outputsVec4.size()) {
 			continue;
@@ -92,15 +98,18 @@ void GltfModel::updateAnimation(double animationTime,Animation& animation, std::
 			if ((animationTime >= sampler.inputs[i]) && (animationTime <= sampler.inputs[i + 1])) {
 				float u = static_cast<float>(std::max(0.0, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]));
 				if (u <= 1.0f) {
+
+					int nodeIndex = channel.node->index;
+
 					switch (channel.path) {
 					case AnimationChannel::PathType::TRANSLATION://平行移動
-						sampler.translate(i, animationTime, channel.node);
+						nodeTransform.translation[nodeIndex] = sampler.translate(i, animationTime, channel.node);
 						break;
 					case AnimationChannel::PathType::SCALE://スケール
-						sampler.scale(i, animationTime, channel.node);
+						nodeTransform.scale[nodeIndex] = sampler.scale(i, animationTime, channel.node);
 						break;
 					case AnimationChannel::PathType::ROTATION://回転
-						sampler.rotate(i, animationTime, channel.node);
+						nodeTransform.rotation[nodeIndex] = sampler.rotate(i, animationTime, channel.node);
 						break;
 					}
 					updated = true;
@@ -111,7 +120,10 @@ void GltfModel::updateAnimation(double animationTime,Animation& animation, std::
 
 	if (updated) {
 		size_t updatedIndex = 0;
-		updateAllNodes(root,jointMatrices,updatedIndex);
+
+		root->setLocalMatrix(nodeTransform);
+
+		updateAllNodes(root, nodeTransform, jointMatrices, updatedIndex);
 	}
 }
 

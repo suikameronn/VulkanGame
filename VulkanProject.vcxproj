@@ -123,6 +123,7 @@
       <DisableSpecificWarnings>4005</DisableSpecificWarnings>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,6 +145,8 @@
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

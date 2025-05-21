@@ -4,6 +4,8 @@
 
 Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 {
+	threadPool = ThreadPool::GetInstance();
+
 	exist = true;
 
 	objNum = ObjNum::OBJECT;

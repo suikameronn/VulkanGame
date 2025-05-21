@@ -25,6 +25,7 @@
 #include"Controller.h"
 #include"Camera.h"
 #include"PhysicBase.h"
+#include"ThreadPool.h"
 
 //経過したフレーム数の最大数
 #define MAXFRAMECOUNT 10000
@@ -86,6 +87,8 @@ class Object : public std::enable_shared_from_this<Object>
 {
 protected:
 
+	ThreadPool* threadPool;
+
 	//オブジェクトの存在のフラッグ
 	bool exist;
 
@@ -140,12 +143,6 @@ public:
 	bool isExist()
 	{
 		return exist;
-	}
-
-	//自身のweak_ptrを返す
-	std::weak_ptr<Object> getThisWeakPtr()
-	{
-		return weak_from_this();
 	}
 
 	//自身のオブジェクトのタイプを返す

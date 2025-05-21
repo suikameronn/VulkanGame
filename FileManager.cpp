@@ -85,22 +85,6 @@ void FileManager::setGltfModel()
             index++;
         }
     }
-
-    /*
-    
-    std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
-    for (int i = 0; i < loadModelList.size(); i++)//シングルスレッド約16秒
-    {
-        gltfModels[i] = loadModel(loadModelList[i].first);
-        vulkan->setGltfModelData(gltfModels[i]);
-    }
-
-    for (int i = 0; i < loadModelList.size(); i++)
-    {
-        loadModelList[i].second->setgltfModel(gltfModels[i]);
-    }
-    
-    */
 }
 
 //luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
@@ -134,6 +118,7 @@ std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデ
     std::shared_ptr<GltfModel> model = loadGLTFModel(scene, gltfModel);//ファイルからgltfモデルのデータを読み取る
     model->initPoseMin = minPos;
     model->initPoseMax = maxPos;
+    model->nodeCount = static_cast<int>(gltfModel.nodes.size());
 
     model->setPointBufferNum();
 
@@ -211,17 +196,17 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, std::shared_ptr<
     glm::vec3 translation = glm::vec3(0.0f);//平行移動行列
     if (gltfNode.translation.size() == 3) {
         translation = glm::make_vec3(gltfNode.translation.data());
-        current->translation = translation;
+        //current->translation = translation;
     }
     glm::mat4 rotation = glm::mat4(1.0f);//回転行列
     if (gltfNode.rotation.size() == 4) {
         glm::quat q = glm::make_quat(gltfNode.rotation.data());
-        current->rotation = glm::mat4(q);
+        //current->rotation = glm::mat4(q);
     }
     glm::vec3 scale = glm::vec3(1.0f);//拡大行列
     if (gltfNode.scale.size() == 3) {
         scale = glm::make_vec3(gltfNode.scale.data());
-        current->scale = scale;
+        //current->scale = scale;
     }
     if (gltfNode.matrix.size() == 16) {
         current->matrix = glm::make_mat4x4(gltfNode.matrix.data());

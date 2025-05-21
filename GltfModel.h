@@ -147,6 +147,32 @@ struct Mesh
 	glm::vec3 max;
 };
 
+//ノードごとのトランスフォームを記録
+struct NodeTransform
+{
+	std::vector<glm::vec3> translation;
+	std::vector<glm::quat> rotation;
+	std::vector<glm::vec3> scale;
+
+	std::vector<glm::mat4> matrix;
+	std::vector<glm::mat4> nodeTransform;
+
+	void setNodeCount(int nodeCount)
+	{
+		translation.resize(nodeCount);
+		rotation.resize(nodeCount);
+		scale.resize(nodeCount);
+		matrix.resize(nodeCount);
+		nodeTransform.resize(nodeCount);
+
+		std::fill(translation.begin(), translation.end(), glm::vec3(0.0f));
+		std::fill(rotation.begin(), rotation.end(), glm::quat());
+		std::fill(scale.begin(), scale.end(), glm::vec3(1.0f));
+		std::fill(matrix.begin(), matrix.end(), glm::mat4(1.0f));
+		std::fill(nodeTransform.begin(), nodeTransform.end(), glm::mat4(1.0f));
+	}
+};
+
 struct GltfNode
 {
 	GltfNode* parent;
@@ -158,9 +184,6 @@ struct GltfNode
 	Skin* skin;
 	int skinIndex = -1;
 	int globalHasSkinNodeIndex = 0;
-	glm::vec3 translation{};
-	glm::vec3 scale{ 1.0f };
-	glm::quat rotation{};
 
 	DescriptorInfo descriptorInfo;
 
@@ -183,28 +206,69 @@ struct GltfNode
 		}
 	}
 
-	glm::mat4 localMatrix()//このノードのローカル空間への変換行列の計算
+	/*
+	glm::mat4 localMatrix(NodeTransform& nodeTransform)//このノードのローカル空間への変換行列の計算
 	{
-		return glm::translate(glm::mat4(1.0f), translation) * 
+		glm::mat4 mat = glm::translate(glm::mat4(1.0f), translation) *
 			glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
-	}
 
-	glm::mat4 getMatrix()//再帰的にこのノードまでの変換行列を求める
+		return mat;
+	}
+	*/
+
+	/*
+	glm::mat4 getMatrix(NodeTransform& nodeTransform)//再帰的にこのノードまでの変換行列を求める
 	{
-		glm::mat4 mat = localMatrix();
+		glm::mat4 mat = localMatrix(nodeTransform);
 		GltfNode* p = parent;
 		while (p)
 		{
-			mat = p->localMatrix() * mat;
+			mat = p->localMatrix(nodeTransform) * mat;
 			p = p->parent;
 		}
+
+		nodeTransform.nodeTransform[index] = mat;
+
 		return mat;
+	}
+	*/
+
+	void setLocalMatrix(NodeTransform& nodeTransform, glm::mat4 parentMatrix)
+	{
+		//このノード個別の行列
+		glm::mat4 localMatrix = glm::translate(glm::mat4(1.0f), nodeTransform.translation[index]) *
+			glm::mat4(nodeTransform.rotation[index]) * glm::scale(glm::mat4(1.0f), nodeTransform.scale[index]) * matrix;
+
+		nodeTransform.nodeTransform[index] = parentMatrix * localMatrix;
+
+		nodeTransform.matrix[index] = matrix;
+
+		for (auto& child : children)
+		{
+			child->setLocalMatrix(nodeTransform, nodeTransform.nodeTransform[index]);
+		}
+	}
+
+	void setLocalMatrix(NodeTransform& nodeTransform)
+	{
+		//このノード個別の行列
+		glm::mat4 localMatrix = glm::translate(glm::mat4(1.0f), nodeTransform.translation[index]) *
+			glm::mat4(nodeTransform.rotation[index]) * glm::scale(glm::mat4(1.0f), nodeTransform.scale[index]) * matrix;
+
+		nodeTransform.nodeTransform[index] = localMatrix;
+
+		nodeTransform.matrix[index] = matrix;
+
+		for (auto& child : children)
+		{
+			child->setLocalMatrix(nodeTransform, nodeTransform.nodeTransform[index]);
+		}
 	}
 
 	//このノードが所属するスケルトンのアニメーション行列を計算する
-	void update(std::array<glm::mat4, 128>& jointMatrices,size_t& updatedIndex)
+	void update(NodeTransform& nodeTransform, std::array<glm::mat4, 128>& jointMatrices, size_t& updatedIndex)
 	{
-		glm::mat4 m = getMatrix();
+		glm::mat4 m = nodeTransform.nodeTransform[index];
 
 		//ボーンの行列の更新
 		glm::mat4 inverseTransform = glm::inverse(m);
@@ -218,7 +282,7 @@ struct GltfNode
 		{
 			GltfNode* jointNode = skin->joints[i];
 
-			glm::mat4 jointMat = jointNode->getMatrix() * skin->inverseBindMatrices[i];
+			glm::mat4 jointMat = nodeTransform.nodeTransform[jointNode->index] * skin->inverseBindMatrices[i];
 			jointMat = inverseTransform * jointMat;
 			jointMatrices[i] = jointMat;
 		}
@@ -277,47 +341,41 @@ struct AnimationSampler {
 	}
 
 	//平行移動の補間
-	void translate(size_t index, double time, GltfNode* node)
+	glm::vec3 translate(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
 			float u = static_cast<float>(std::max(0.0, time - inputs[index]) / (inputs[index + 1] - inputs[index]));
-			node->translation = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
-			break;
+			return glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
 		}
 		case AnimationSampler::InterpolationType::STEP: {
-			node->translation = outputsVec4[index];
-			break;
+			return outputsVec4[index];
 		}
 		case AnimationSampler::InterpolationType::CUBICSPLINE: {
-			node->translation = cubicSplineInterpolation(index, time, 3);
-			break;
+			return cubicSplineInterpolation(index, time, 3);
 		}
 		}
 	}
 
 	//拡大の補間
-	void scale(size_t index, double time, GltfNode* node)
+	glm::vec3 scale(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
 			float u = static_cast<float>(std::max(0.0, time - inputs[index]) / (inputs[index + 1] - inputs[index]));
-			node->scale = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
-			break;
+			return glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
 		}
 		case AnimationSampler::InterpolationType::STEP: {
-			node->scale = outputsVec4[index];
-			break;
+			return outputsVec4[index];
 		}
 		case AnimationSampler::InterpolationType::CUBICSPLINE: {
-			node->scale = cubicSplineInterpolation(index, time, 3);
-			break;
+			return cubicSplineInterpolation(index, time, 3);
 		}
 		}
 	}
 
 	//回転の補間
-	void rotate(size_t index, double time, GltfNode* node)
+	glm::quat rotate(size_t index, double time, GltfNode* node)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
@@ -332,8 +390,7 @@ struct AnimationSampler {
 			q2.y = outputsVec4[index + 1].y;
 			q2.z = outputsVec4[index + 1].z;
 			q2.w = outputsVec4[index + 1].w;
-			node->rotation = glm::normalize(glm::slerp(q1, q2, u));
-			break;
+			return glm::normalize(glm::slerp(q1, q2, u));
 		}
 		case AnimationSampler::InterpolationType::STEP: {
 			glm::quat q1;
@@ -341,8 +398,7 @@ struct AnimationSampler {
 			q1.y = outputsVec4[index].y;
 			q1.z = outputsVec4[index].z;
 			q1.w = outputsVec4[index].w;
-			node->rotation = q1;
-			break;
+			return q1;
 		}
 		case AnimationSampler::InterpolationType::CUBICSPLINE: {
 			glm::vec4 rot = cubicSplineInterpolation(index, time, 4);
@@ -351,8 +407,7 @@ struct AnimationSampler {
 			q.y = rot.y;
 			q.z = rot.z;
 			q.w = rot.w;
-			node->rotation = glm::normalize(q);
-			break;
+			return glm::normalize(q);
 		}
 		}
 	}
@@ -407,6 +462,9 @@ public:
 	int vertexNum;
 	int indexNum;
 
+	//ノードの個数
+	int nodeCount;
+
 	//gltfモデルの頂点関連用のバッファ
 	std::vector<BufferObject> pointBuffers;
 
@@ -436,12 +494,14 @@ public:
 	void getVertexMinMax(GltfNode* node);
 	
 	//アニメーションの各ノードの更新処理
-	void updateAllNodes(GltfNode* parent, std::vector<std::array<glm::mat4, 128>>& jointMatrices,size_t& updatedIndex);
+	void updateAllNodes(GltfNode* parent, NodeTransform& nodeTransform
+		, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex);
 
 	//アニメーションの長さを取得
 	float animationDuration(std::string animationName);
 	//指定したアニメーションの行列を取得
-	void updateAnimation(double animationTime, Animation& animation, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
+	void updateAnimation(double animationTime, std::string animationName, NodeTransform& nodeTransform
+		, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
 	//gpu上のバッファなどの削除処理
 	void cleanUpVulkan(VkDevice& device);
 };

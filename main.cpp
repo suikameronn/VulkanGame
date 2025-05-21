@@ -49,6 +49,8 @@ int main()
 
     gameManager->initGame();//ゲームループの開始
 
+    std::cout << "Finish" << std::endl;
+
     return EXIT_SUCCESS;
 }
 #else

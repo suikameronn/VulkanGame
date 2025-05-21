@@ -168,7 +168,8 @@ void Player::initFrameSetting()
 
 	if (defaultAnimationName != "none")
 	{
-		switchPlayAnimation();
+		currentPlayAnimationName = defaultAnimationName;
+		nextPlayAnimationName = defaultAnimationName;
 	}
 
 	if (hasColiderFlag)
@@ -179,6 +180,12 @@ void Player::initFrameSetting()
 
 	initMin = min;
 	initMax = max;
+
+	//アニメーション行列の初期化
+	for (auto& matrices : jointMatrices)
+	{
+		std::fill(matrices.begin(), matrices.end(), glm::mat4(1.0f));
+	}
 
 	updateTransformMatrix();
 

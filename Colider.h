@@ -113,12 +113,12 @@ private:
 	//分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
 	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 	//同一の線分を含まなければその頂点を単体に含める
-	void addIfUniqueEdge(std::vector<std::pair<size_t, size_t>>& edges, const std::vector<size_t>& faces,
-						 size_t a, size_t b);
+	void addIfUniqueEdge(std::vector<std::pair<int, int>>& edges, const std::vector<int>& faces,
+						 int a, int b);
 	//面の法線を取得
-	std::pair<std::vector<glm::vec4>, size_t> getFaceNormals(
+	std::pair<std::vector<glm::vec4>, int> getFaceNormals(
 		std::vector<glm::vec3>& vertices,
-		std::vector<size_t>& faces);
+		std::vector<int>& faces);
 
 	//gltfモデルから頂点を取得する
 	void setVertices(GltfNode* node, int& loadedVertexCount, int& loadedIndexCount);
