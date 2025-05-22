@@ -160,6 +160,16 @@ private:
     //キューブマップ用の立方体のモデル
     const std::string cubemapPath = "cubemap.glb";
 
+    //レイキャスト用のコンピュートシェーダ
+    const std::string raycastShaderPath = "shaders/raycast.spv";
+    //レイキャスト用のパイプラインとレイアウト
+    VkPipelineLayout raycastPLayout;
+    VkPipeline raycastPipeline;
+    //レイキャスト用のディスクリプタセット
+    VkDescriptorSet raycastDescriptorSet;
+    //レイキャスト用のフェンス
+    VkFence raycastFence;
+
     //シャドウマップ作成時の平衡投影行列用の範囲の変数
     const float shadowMapTop = -500;
     const float shadowMapBottom = 500;
@@ -531,6 +541,9 @@ private:
     void renderShadowMap(GltfNode* node, std::shared_ptr<Model> model, ShadowMapData& shadowMapData);
     //キューブマップのレンダリング
     void renderCubemap(GltfNode* node, std::shared_ptr<Cubemap> cubemap);
+
+    //レイキャストのこんぴゅーとオブジェクトの作成
+    void setupRaycast();
 
 public:
 
