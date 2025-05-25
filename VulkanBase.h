@@ -36,6 +36,32 @@ extern GLFWwindow* window;
 //VkDescriptorSetの確保できる数
 #define MAX_VKDESCRIPTORSET 1000
 
+//gpu上のエラーのメッセージを表示
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+    return VK_FALSE;
+}
+
+//シェーダの読み込み
+static std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    file.close();
+
+    return buffer;
+}
+
 enum Extension
 {
     OBJ,
@@ -64,6 +90,7 @@ struct ModelDescriptor
     VkDescriptorSetLayout layout;//MVP行列用レイアウト
     VkDescriptorSetLayout materialLayout;//マテリアルのデータ用のレイアウト
     VkDescriptorSetLayout lightLayout;//ライト用のレイアウト
+    VkDescriptorSetLayout raycastLayout;//頂点バッファを示すレイキャスト用のレイアウト
 
     VkPipelineLayout texturePipelineLayout;//通常のオブジェクトレンダリング用のパイプラインレイアウト
     VkPipeline texturePipeline;//実際のパイプライン
@@ -76,6 +103,7 @@ struct ModelDescriptor
         vkDestroyDescriptorSetLayout(device, layout, nullptr);
         vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, lightLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, raycastLayout, nullptr);
 
         vkDestroyPipelineLayout(device, texturePipelineLayout, nullptr);
         vkDestroyPipelineLayout(device, coliderPipelineLayout, nullptr);
@@ -150,6 +178,277 @@ struct DefferedDestruct
     }
 };
 
+struct RaycastReturn
+{
+    uint32_t nodeCount;
+    uint64_t pointer;
+    float distance;
+
+    RaycastReturn()
+    {
+        nodeCount = 0;
+        pointer = 0;
+        distance = -1.0f;
+    }
+};
+
+struct RaycastPushConstant
+{
+    uint32_t indexCount;
+    uint64_t pointer;
+};
+
+struct Raycast
+{
+    //レイキャスト用のコンピュートシェーダ
+    const std::string shaderPath = "shaders/raycast.comp.spv";
+    //レイキャスト用のパイプラインとレイアウト
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+    //レイキャスト用のディスクリプタセットのレイアウト
+    VkDescriptorSetLayout layout;
+    //レイキャスト用のディスクリプタセット
+    VkDescriptorSet descriptorSet;
+    //レイキャスト用のフェンス
+    VkFence fence;
+
+    //ストレージバッファの内容をリセットするための以降用バッファ
+    MappedBuffer stagingBuffer;
+
+    //レイが当たったときに返すデータを記録するバッファ
+    MappedBuffer storage;
+
+    //レイキャスト用のコマンドバッファ
+    VkCommandBuffer commandBuffer;
+
+    void destroy(VkDevice& device, VkCommandPool& commandPool)
+    {
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+        vkDestroyFence(device, fence, nullptr);
+
+        //storage.destroy(device);
+        //stagingBuffer.destroy(device);
+
+        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    }
+
+    void setupPipelineLayout(VkDevice& device,ModelDescriptor& modelDescriptor)
+    {
+        VkPushConstantRange pushConstant;
+        pushConstant.offset = 0;
+        pushConstant.size = sizeof(RaycastPushConstant);
+        pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        std::array<VkDescriptorSetLayout, 3> layouts;
+        layouts[0] = layout;
+        layouts[1] = modelDescriptor.layout;
+        layouts[2] = modelDescriptor.raycastLayout;
+
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+        pipelineLayoutInfo.pSetLayouts = layouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute pipeline layout!");
+        }
+    }
+
+    void setupPipeline(VkDevice& device)
+    {
+        auto computeShaderCode = readFile(shaderPath);
+
+        VkShaderModuleCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        createInfo.codeSize = computeShaderCode.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t*>(computeShaderCode.data());
+
+        VkShaderModule computeShaderModule;
+        if (vkCreateShaderModule(device, &createInfo, nullptr, &computeShaderModule) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create shader module!");
+        }
+
+        VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+        computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        computeShaderStageInfo.module = computeShaderModule;
+        computeShaderStageInfo.pName = "main";
+
+        VkComputePipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        pipelineInfo.layout = pipelineLayout;
+        pipelineInfo.stage = computeShaderStageInfo;
+
+        if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute pipeline!");
+        }
+
+        vkDestroyShaderModule(device, computeShaderModule, nullptr);
+    }
+
+    void setupLayout(VkDevice& device)
+    {
+        std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings{};
+        layoutBindings[0].binding = 0;
+        layoutBindings[0].descriptorCount = 1;
+        layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBindings[0].pImmutableSamplers = nullptr;
+        layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutBindings[1].binding = 1;
+        layoutBindings[1].descriptorCount = 1;
+        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        layoutBindings[1].pImmutableSamplers = nullptr;
+        layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+        layoutInfo.pBindings = layoutBindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+    }
+
+    void setupDescriptorSet(VkDevice& device,VkDescriptorPool& descriptorPool)
+    {
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+        allocInfo.pSetLayouts = &layout;
+
+        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
+    }
+
+    void setupFence(VkDevice& device)
+    {
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create compute synchronization objects for a frame!");
+        }
+    }
+
+    void waitFence(VkDevice& device)
+    {
+        vkWaitForFences(device, 1, &fence, true, UINT64_MAX);
+        vkResetFences(device, 1, &fence);
+    }
+
+    void setupCommandBuffer(VkDevice& device, VkCommandPool& commandPool)
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = commandPool;
+        allocInfo.commandBufferCount = 1;
+
+        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    }
+
+    //一度だけ実行しレイキャストの用意
+    void setup(VkDevice& device, VkCommandPool& commandPool, VkDescriptorPool& descriptorPool, ModelDescriptor& modelDescriptor)
+    {
+        setupLayout(device);
+        setupDescriptorSet(device, descriptorPool);
+        setupPipelineLayout(device, modelDescriptor);
+        setupPipeline(device);
+        setupFence(device);
+        setupCommandBuffer(device, commandPool);
+    }
+
+    //レイキャスト開始ごとに実行
+    void startRaycast(Ray& ray,VkDevice& device,VkCommandBuffer& commandBuffer,uint32_t nodeCount)
+    {
+        RaycastReturn returnObj;
+        returnObj.nodeCount = nodeCount;
+        returnObj.distance = FLT_MAX;
+        returnObj.pointer = 0;
+
+        std::vector<RaycastReturn> returnArray(nodeCount);
+        std::fill(returnArray.begin(), returnArray.end(), returnObj);
+
+        vkMapMemory(device, stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn) * nodeCount, 0, &stagingBuffer.uniformBufferMapped);
+        memcpy(stagingBuffer.uniformBufferMapped, &returnObj, sizeof(RaycastReturn) * nodeCount);
+        vkUnmapMemory(device, stagingBuffer.uniformBufferMemory);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.size = sizeof(RaycastReturn) * nodeCount;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.uniformBuffer, storage.uniformBuffer, 1, &copyRegion);
+
+        vkResetFences(device, 1, &fence);
+
+        //レイの数値やバッファの値を更新、初期化
+        updateRaycastBuffer(device, ray, nodeCount);
+    }
+
+    void updateRaycastBuffer(VkDevice& device,Ray& ray,uint32_t nodeCount)
+    {
+        VkDescriptorBufferInfo info{};
+        info.buffer = ray.mappedBuffer.uniformBuffer;
+        info.offset = 0;
+        info.range = ray.getSize();
+
+        VkDescriptorBufferInfo storageInfo{};
+        storageInfo.buffer = storage.uniformBuffer;
+        storageInfo.offset = 0;
+        storageInfo.range = sizeof(RaycastReturn) * nodeCount;
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites(2);
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &info;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSet;
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pBufferInfo = &storageInfo;
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+
+    //ストレージバッファから値を取り出す
+    std::vector<RaycastReturn>& getStorageBufferData(VkDevice& device, VkCommandBuffer& commandBuffer,uint32_t nodeCount)
+    {
+        //ストレージバッファから遷移用のバッファに値をコピーする
+        VkBufferCopy copyRegion{};
+        copyRegion.size = sizeof(RaycastReturn) * nodeCount;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.uniformBuffer, storage.uniformBuffer, 1, &copyRegion);
+
+        //遷移用バッファから値を取り出す
+        std::vector<RaycastReturn> returnObj(nodeCount);
+
+        vkMapMemory(device, stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn) * nodeCount, 0, &stagingBuffer.uniformBufferMapped);
+        memcpy(stagingBuffer.uniformBufferMapped, returnObj.data(), sizeof(RaycastReturn) * nodeCount);
+        vkUnmapMemory(device, stagingBuffer.uniformBufferMemory);
+
+        storage.destroy(device);
+        stagingBuffer.destroy(device);
+
+        return returnObj;
+    }
+};
+
 class VulkanBase
 {
 private:
@@ -159,16 +458,6 @@ private:
 
     //キューブマップ用の立方体のモデル
     const std::string cubemapPath = "cubemap.glb";
-
-    //レイキャスト用のコンピュートシェーダ
-    const std::string raycastShaderPath = "shaders/raycast.spv";
-    //レイキャスト用のパイプラインとレイアウト
-    VkPipelineLayout raycastPLayout;
-    VkPipeline raycastPipeline;
-    //レイキャスト用のディスクリプタセット
-    VkDescriptorSet raycastDescriptorSet;
-    //レイキャスト用のフェンス
-    VkFence raycastFence;
 
     //シャドウマップ作成時の平衡投影行列用の範囲の変数
     const float shadowMapTop = -500;
@@ -187,7 +476,8 @@ private:
     };
 
     const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME
     };
 
 #ifdef NDEBUG
@@ -299,6 +589,9 @@ private:
 
     //破棄する予定のgpuのバッファのリスト
     DefferedDestruct defferedDestruct;
+
+    //レイキャスト用のデータ
+    Raycast raycast;
 
     //ゲーム終了時にデータのgpu上のデータをすべて破棄する
     void cleanup();
@@ -442,6 +735,9 @@ private:
     //キューブマップ用
     void createDescriptorSet_CubeMap(GltfNode* node, std::shared_ptr<Model> model);
 
+    //gltfモデル用のVkDesciptorSetの作成(レイキャスト時使用)
+    void createRaycastDescriptorSet(GltfNode* node, std::shared_ptr<GltfModel> model);
+
     //バッファの作成
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     //使い捨てのコマンドの記録開始
@@ -453,14 +749,12 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     //コマンドバッファーを二つ作成する
     void createCommandBuffers();
+
     //通常のレンダリングのコマンドを記録していく
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     
     //同期用変数の用意
     void createSyncObjects();
-
-    //シェーダの作成
-    VkShaderModule createShaderModule(const std::vector<char>& code);
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -542,7 +836,7 @@ private:
     //キューブマップのレンダリング
     void renderCubemap(GltfNode* node, std::shared_ptr<Cubemap> cubemap);
 
-    //レイキャストのこんぴゅーとオブジェクトの作成
+    //レイキャストのコンピュートオブジェクトの作成
     void setupRaycast();
 
 public:
@@ -607,6 +901,9 @@ public:
     void createUniformBuffer(std::shared_ptr<Material> material);
     //ライト用
     void createUniformBuffer(int lightCount, MappedBuffer* mappedBuffer, size_t size);
+
+    //汎用的なユニフォームバッファの作成用
+    void createUniformBuffer(MappedBuffer* mappedBuffer, size_t size);
 
     //ポイントライトのgpu上のバッファーなどを作成
     void createPointLightBuffer(PointLightBuffer& buffer);
@@ -674,36 +971,18 @@ public:
     //gpuのバッファを破棄
     void cleanupDefferedBuffer();
     void allCleanupDefferedBuffer();
+
+    //シェーダの作成
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
+    //レイキャストの開始
+    void startRaycast(Ray& ray, std::shared_ptr<Model> model, RaycastReturn& returnObj);
+    void raycasting(VkCommandBuffer& commandBuffer, Ray& ray
+        , GltfNode* node, std::shared_ptr<Model> model, RaycastReturn& returnObj);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<VulkanBase*>(glfwGetWindowUserPointer(window));
     app->framebufferResized = true;
-}
-
-//gpu上のエラーのメッセージを表示
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-    return VK_FALSE;
-}
-
-//シェーダの読み込み
-static std::vector<char> readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
 }

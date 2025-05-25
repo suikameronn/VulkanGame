@@ -1,0 +1,150 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_atomic_float : enable
+#extension GL_EXT_shader_atomic_int64 : enable
+#extension GL_EXT_shader_atomic_float2 : enable
+
+//レイ
+layout(binding = 0) uniform UniformBufferObject
+{
+    float Length;
+    vec3 origin;
+    vec3 direction;
+}ray;
+
+//レイがヒットしたときに返すデータ
+layout(std430,binding = 1) buffer StorageBufferObject
+{
+    uint64_t pointer;
+
+    float dist;
+}returnObj;
+
+struct Vertex
+{
+    vec3 pos;
+    vec3 color;
+    vec2 texCoord0;
+    vec2 texCoord1;
+    vec3 normal;
+
+    uint index;
+
+    ivec4 boneID;
+    vec4 weight;
+};
+
+layout(set = 1,binding = 0) uniform mvpUniformBufferObject 
+{
+    vec3 scale;
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+    vec4 camPos;
+    int lightCount;
+    mat4[20] lightMVP;
+} matricesUBO;
+
+layout(set = 1,binding = 1) uniform animationUniformBufferObject
+{
+    mat4 nodeMatrix;
+    mat4 matrix;
+    mat4[128] boneMatrix;
+    int boneCount;
+} animationUBO;
+
+layout(set = 2,binding = 0) readonly buffer VertexBufferObject
+{
+    Vertex[] vertex;
+}vertexBuffer;
+
+layout(std430,set = 2,binding = 1) readonly buffer IndexBufferObject
+{
+    uint[] index;
+}indiexBuffer;
+
+
+layout(push_constant) uniform PushConstants {
+    uint indexCount;
+    uint64_t pointer;
+} pushConstant;
+
+float det(vec3 a,vec3 b, vec3 c)
+{
+    float t1 = (a[0] * b[1] * c[2]) + (b[0] * c[1] * a[2]) + (c[0] * a[1] * b[2]) ;
+    float t2 = -(c[0] * b[1] * a[2]) - (b[0] * a[1] * c[2]) - (a[0] * b[2] * c[1]);
+
+    return t1 + t2;
+}
+
+void main()
+{
+    uint id = gl_GlobalInvocationID.x * 3;
+
+    if(pushConstant.indexCount <= id)
+    {
+        return;
+    }
+
+    Vertex[3] vertices;
+
+    for(int i = 0;i < 3;i++)
+    {
+        vertices[i] = vertexBuffer.vertex[indiexBuffer.index[id + i]];
+
+        if(animationUBO.boneCount != 0)
+        {
+            mat4 skinMat = 
+            vertices[i].weight.x * animationUBO.boneMatrix[vertices[i].boneID.x] +
+            vertices[i].weight.y * animationUBO.boneMatrix[vertices[i].boneID.y] +
+            vertices[i].weight.z * animationUBO.boneMatrix[vertices[i].boneID.z] +
+            vertices[i].weight.w * animationUBO.boneMatrix[vertices[i].boneID.w];
+
+            vertices[i].pos = vec3(matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(vertices[i].pos,1.0));
+        }
+        else
+        {
+            vertices[i].pos = vec3(matricesUBO.model * animationUBO.nodeMatrix * vec4(vertices[i].pos,1.0));
+        }
+    }
+
+    vec3 v0 = vertices[0].pos;
+    vec3 v1 = vertices[1].pos;
+    vec3 v2 = vertices[2].pos;
+
+    vec3 edge1 = v1 - v0;
+    vec3 edge2 = v2 - v0;
+
+    float under = determinant(mat3(edge1,edge2,-ray.direction));
+
+    //レイが三角形と平行の場合は中断
+    if(under <= 0.0)
+    {
+        return;
+    }
+
+    float u = determinant(mat3((ray.origin - v0),edge2,-ray.direction)) / under;
+
+    if(u >= 0.0 && u <= 1.0)
+    {
+        float v = determinant(mat3(edge1,(ray.origin - v0),-ray.direction)) / under;
+
+        if(v >= 0.0 && (u + v) <= 1.0)
+        {
+            float t = determinant(mat3(edge1,edge2,(ray.origin - v0))) / under;
+
+            if(ray.Length >= t && t >= 0.0)
+            {
+                //ここまで来たらレイと三角形は交差している
+                if(returnObj.dist >= t)
+                {
+                    atomicMin(returnObj.dist,t);
+
+                    //返したいデータのあるアドレスを書き込む
+                    atomicExchange(returnObj.pointer,pushConstant.pointer);
+                }
+            }
+        }
+    }
+}

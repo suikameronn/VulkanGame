@@ -15,8 +15,28 @@ class Scene;
 struct Ray
 {
 	float length;
-	glm::vec3 origin;
-	glm::vec3 direction;
+	alignas(16) glm::vec3 origin;
+	alignas(16) glm::vec3 direction;
+
+	MappedBuffer mappedBuffer;
+
+	size_t getSize()
+	{
+		return sizeof(float) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(char) * 16;
+	}
+
+	void copyToGpuBuffer()
+	{
+		if (mappedBuffer.uniformBufferMapped)
+		{
+			memcpy(mappedBuffer.uniformBufferMapped, this, getSize());
+		}
+	}
+
+	void destroy(VkDevice& device)
+	{
+		mappedBuffer.destroy(device);
+	}
 };
 
 //フレームバッファとしてのgpu上の画像用のバッファーの構造体

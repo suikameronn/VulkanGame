@@ -27,5 +27,7 @@ public:
 	void initFrameSetting() override;
 	void Update() override;
 
+	void updateTransformMatrix() override;//座標変換行列の更新
+
 	void collision(std::shared_ptr<Model> model) override;
 };

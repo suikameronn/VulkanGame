@@ -14,12 +14,12 @@ Bullet::Bullet(float s, float length, glm::vec3 dir, glm::vec3 pos, float limit)
 
 	distanceLimit = limit;
 
+	ray.direction = glm::normalize(dir);
+
 	//弾の向きを進行方向に合わせる
 	calculateBulletAngle();
 
 	updateTransformMatrix();
-
-	ray.direction = glm::normalize(dir);
 }
 
 void Bullet::calculateBulletAngle()
@@ -39,6 +39,9 @@ void Bullet::calculateBulletAngle()
 
 Bullet::~Bullet()
 {
+	VulkanBase* vulkan = VulkanBase::GetInstance();
+
+	vulkan->addDefferedDestructBuffer(ray.mappedBuffer);
 }
 
 //初回フレームの設定
@@ -90,8 +93,16 @@ void Bullet::initFrameSetting()
 	scene->addModelToRTree(std::dynamic_pointer_cast<Model>(shared_from_this()));
 
 	//レイキャスト時のレイの設定
-	ray.length = abs(glm::dot(max - min, ray.direction));
+	glm::vec3 d = mbrMax - mbrMin;
+	float a = glm::dot(mbrMax - mbrMin, ray.direction);
+	ray.length = abs(glm::dot(mbrMax - mbrMin, ray.direction));
 	ray.origin = pivot - ray.direction * (ray.length / 2.0f);
+
+	//gpuレイキャスト時のバッファを作成
+	VulkanBase::GetInstance()->createUniformBuffer(&ray.mappedBuffer, ray.getSize());
+
+	//gpu上に値をコピー
+	ray.copyToGpuBuffer();
 }
 
 void Bullet::Update()
@@ -107,6 +118,39 @@ void Bullet::Update()
 	setPosition(getPosition() + ray.direction * speed);
 }
 
+void Bullet::updateTransformMatrix()//座標変換行列を計算する
+{
+	transformMatrix = glm::translate(glm::mat4(1.0), position)
+		* rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f), initScale * scale);
+
+	//AABBの更新
+	min = transformMatrix * glm::vec4(initMin, 1.0f);
+	max = transformMatrix * glm::vec4(initMax, 1.0f);
+
+	//MBRの更新
+	calcMBR();
+
+	pivot = (mbrMin + mbrMax) / 2.0f;
+
+	//レイの始点の更新
+	ray.origin = pivot - ray.direction * (ray.length / 2.0f);
+	//レイの情報の更新
+	ray.copyToGpuBuffer();
+
+	if (colider)
+	{
+		colider->reflectMovement(transformMatrix);
+	}
+
+	uniformBufferChange = false;
+
+	if (rNode)
+	{
+		//Rツリー上のオブジェクトの位置を更新する
+		scene->updateObjectPos(std::dynamic_pointer_cast<Model>(shared_from_this()), rNode);
+	}
+}
+
 void Bullet::collision(std::shared_ptr<Model> model)
 {
 	if (model->getObjNum() == ObjNum::PLAYER || model->getObjNum() == ObjNum::BULLET)
@@ -114,5 +158,7 @@ void Bullet::collision(std::shared_ptr<Model> model)
 		return;
 	}
 
-	std::cout << "Bulllet" << std::endl;
+	RaycastReturn returnObj{};
+
+	VulkanBase::GetInstance()->startRaycast(ray, model, returnObj);
 }

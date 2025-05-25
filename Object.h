@@ -44,6 +44,11 @@ struct MappedBuffer
 	VkDeviceMemory uniformBufferMemory;
 	void* uniformBufferMapped;
 
+	MappedBuffer()
+	{
+		uniformBufferMapped = nullptr;
+	}
+
 	void destroy(VkDevice& device)
 	{
 		vkDestroyBuffer(device, uniformBuffer, nullptr);

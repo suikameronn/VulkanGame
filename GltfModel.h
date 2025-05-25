@@ -21,8 +21,8 @@ struct BoundingBox;
 //頂点データ
 struct Vertex {
 	glm::vec3 pos;//座標
-	glm::vec3 color;//頂点カラー
-	glm::vec2 texCoord0;//uv座標
+	alignas(16) glm::vec3 color;//頂点カラー
+	alignas(16) glm::vec2 texCoord0;//uv座標
 	glm::vec2 texCoord1;
 	glm::vec3 normal;//法線
 
@@ -184,6 +184,8 @@ struct GltfNode
 	Skin* skin;
 	int skinIndex = -1;
 	int globalHasSkinNodeIndex = 0;
+	int firstIndex;
+	int indexCount;
 
 	DescriptorInfo descriptorInfo;
 
@@ -205,33 +207,6 @@ struct GltfNode
 			delete mesh;
 		}
 	}
-
-	/*
-	glm::mat4 localMatrix(NodeTransform& nodeTransform)//このノードのローカル空間への変換行列の計算
-	{
-		glm::mat4 mat = glm::translate(glm::mat4(1.0f), translation) *
-			glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
-
-		return mat;
-	}
-	*/
-
-	/*
-	glm::mat4 getMatrix(NodeTransform& nodeTransform)//再帰的にこのノードまでの変換行列を求める
-	{
-		glm::mat4 mat = localMatrix(nodeTransform);
-		GltfNode* p = parent;
-		while (p)
-		{
-			mat = p->localMatrix(nodeTransform) * mat;
-			p = p->parent;
-		}
-
-		nodeTransform.nodeTransform[index] = mat;
-
-		return mat;
-	}
-	*/
 
 	void setLocalMatrix(NodeTransform& nodeTransform, glm::mat4 parentMatrix)
 	{
@@ -467,6 +442,8 @@ public:
 
 	//gltfモデルの頂点関連用のバッファ
 	std::vector<BufferObject> pointBuffers;
+	//頂点バッファ用のVkDescriptorSet
+	std::vector<VkDescriptorSet> raycastDescriptorSets;
 
 	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;
@@ -485,8 +462,13 @@ public:
 	GltfNode* nodeFromIndex(int index);
 	GltfNode* findNode(GltfNode* parent,int index);
 
-	void setPointBufferNum() { pointBuffers.resize(meshCount); }
+	void setPointBufferNum() 
+	{ 
+		pointBuffers.resize(meshCount);
+		raycastDescriptorSets.resize(meshCount);
+	}
 	BufferObject* getPointBuffer() { return pointBuffers.data(); }
+	VkDescriptorSet* getRaycastDescriptorSet() { return raycastDescriptorSets.data(); }
 
 	//AABBの計算
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);

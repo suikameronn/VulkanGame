@@ -363,6 +363,9 @@ void Player::shootBullet()
 		std::shared_ptr<Bullet>(new Bullet(bulletSpeed, rayCastLength
 			, bulletDirection, pivot, bulletDistanceLimit));
 
+	//スケールの設定
+	bullet->scale = glm::vec3(2.0f, 1.0f, 1.0f);
+
 	//3Dモデルを設定
 	bullet->setgltfModel(Storage::GetInstance()->getgltfModel(bulletFilePath));
 

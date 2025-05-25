@@ -43,6 +43,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createDescriptorSetLayout();//VkDescriptorSetLayoutの用意
         prepareUIRendering();//ui描画の用意
         createPipelines();//パイプラインをあらかじめ作成
+
+        //レイキャストのセットアップ
+        setupRaycast();
     }
 
     //スワップチェーンの破棄
@@ -76,6 +79,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         emptyImage.destroy(device);
         modelDescriptor.destroy(device);
         uiRender.destroy(device,multiThreadCommandPool);
+
+        //レイキャストのデータの破棄
+        raycast.destroy(device, commandPool);
 
         Storage* storage = Storage::GetInstance();
 
@@ -269,6 +275,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
         deviceFeatures.sampleRateShading = VK_TRUE;
+        deviceFeatures.shaderInt64 = VK_TRUE;
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -280,6 +287,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+        VkPhysicalDeviceShaderAtomicInt64FeaturesKHR enabledAtomicInt64Features{};
+        enabledAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
+        enabledAtomicInt64Features.shaderBufferInt64Atomics = VK_TRUE; // バッファでの64ビットアトミックを有効
+        enabledAtomicInt64Features.shaderSharedInt64Atomics = VK_TRUE; // 共有メモリでの64ビットアトミックを有効
+
+        VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT enabledAtomicFloatFeatures{};
+        enabledAtomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
+        enabledAtomicFloatFeatures.shaderBufferFloat32AtomicMinMax = VK_TRUE;
+
+        createInfo.pNext = &enabledAtomicInt64Features;
+        enabledAtomicInt64Features.pNext = &enabledAtomicFloatFeatures;
 
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -2023,7 +2042,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             memcpy(data, mesh->vertices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
                 gltfModel->getPointBuffer()[mesh->meshIndex].vertBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].vertHandler);
 
             //vertexBuffer配列にコピーしていく(vector型)
@@ -2102,7 +2121,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             memcpy(data, mesh->indices.data(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 gltfModel->getPointBuffer()[mesh->meshIndex].indeBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].indeHandler);
 
             copyBuffer(stagingBuffer, gltfModel->getPointBuffer()[mesh->meshIndex].indeBuffer, bufferSize);
@@ -2166,6 +2185,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     void VulkanBase::createUniformBuffer(int count,MappedBuffer* mappedBuffer,size_t size)
     {
         VkDeviceSize bufferSize = size * count;
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
+
+        vkMapMemory(device, mappedBuffer->uniformBufferMemory, 0, bufferSize, 0, &mappedBuffer->uniformBufferMapped);
+    }
+
+    //汎用的なユニフォームバッファの作成用
+    void VulkanBase::createUniformBuffer(MappedBuffer* mappedBuffer, size_t size)
+    {
+        VkDeviceSize bufferSize = size;
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mappedBuffer->uniformBuffer, mappedBuffer->uniformBufferMemory);
 
@@ -3278,10 +3307,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
-        VkPhysicalDeviceFeatures supportedFeatures;
-        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+        VkPhysicalDeviceFeatures2 supportedFeatures{};
+        supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        vkGetPhysicalDeviceFeatures2(device, &supportedFeatures);
+
+        return indices.isComplete() && extensionsSupported
+            && swapChainAdequate && (supportedFeatures.features.samplerAnisotropy == VK_TRUE)
+            && (supportedFeatures.features.shaderInt64 == VK_TRUE);
     }
 
     bool VulkanBase::checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -3375,11 +3408,68 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         return true;
     }
 
+    //gltfモデル用のVkDesciptorSetの作成(レイキャスト時使用)
+    void VulkanBase::createRaycastDescriptorSet(GltfNode* node, std::shared_ptr<GltfModel> model)
+    {
+        for (auto& mesh : node->meshArray)
+        {
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = descriptorPool;
+            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
+            allocInfo.pSetLayouts = &modelDescriptor.raycastLayout;
+
+            if (vkAllocateDescriptorSets(device, &allocInfo, &model->getRaycastDescriptorSet()[mesh->meshIndex]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            {
+                VkDescriptorBufferInfo info{};
+                info.buffer = model->getPointBuffer()[mesh->meshIndex].vertBuffer;
+                info.offset = 0;
+                info.range = sizeof(Vertex) * static_cast<uint32_t>(mesh->vertices.size());
+
+                VkDescriptorBufferInfo storageInfo{};
+                storageInfo.buffer = model->getPointBuffer()[mesh->meshIndex].indeBuffer;
+                storageInfo.offset = 0;
+                storageInfo.range = sizeof(uint32_t) * static_cast<uint32_t>(mesh->indices.size());
+
+                std::vector<VkWriteDescriptorSet> descriptorWrites(2);
+
+                descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[0].dstSet = model->getRaycastDescriptorSet()[mesh->meshIndex];
+                descriptorWrites[0].dstBinding = 0;
+                descriptorWrites[0].dstArrayElement = 0;
+                descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                descriptorWrites[0].descriptorCount = 1;
+                descriptorWrites[0].pBufferInfo = &info;
+
+                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[1].dstSet = model->getRaycastDescriptorSet()[mesh->meshIndex];
+                descriptorWrites[1].dstBinding = 1;
+                descriptorWrites[1].dstArrayElement = 0;
+                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                descriptorWrites[1].descriptorCount = 1;
+                descriptorWrites[1].pBufferInfo = &storageInfo;
+
+                vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            }
+        }
+
+        for (auto& child : node->children)
+        {
+            createRaycastDescriptorSet(child, model);
+        }
+    }
+
     //gltfモデルの頂点バッファーなどの作成、付随するコライダーの頂点のバッファーも用意
     void VulkanBase::createMeshesData(std::shared_ptr<GltfModel> gltfModel)
     {
         createVertexBuffer(gltfModel->getRootNode(), gltfModel);
         createIndexBuffer(gltfModel->getRootNode(), gltfModel);
+
+        createRaycastDescriptorSet(gltfModel->getRootNode(), gltfModel);
     }
 
     void VulkanBase::createMeshesData(std::shared_ptr<Colider> colider)
@@ -3507,14 +3597,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             uboLayoutBinding.descriptorCount = 1;
             uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
             VkDescriptorSetLayoutBinding uboLayoutBindingAnimation{};
             uboLayoutBindingAnimation.binding = 1;
             uboLayoutBindingAnimation.descriptorCount = 1;
             uboLayoutBindingAnimation.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             uboLayoutBindingAnimation.pImmutableSamplers = nullptr;
-            uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            uboLayoutBindingAnimation.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
             bindings[0] = uboLayoutBinding;
             bindings[1] = uboLayoutBindingAnimation;
@@ -3619,6 +3709,32 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("failed to create descriptor set layout!");
             }
         }
+        
+        {
+            //レイキャスト用のレイアウト
+            std::array<VkDescriptorSetLayoutBinding, 2> layoutBinding{};
+            layoutBinding[0].binding = 0;
+            layoutBinding[0].descriptorCount = 1;
+            layoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            layoutBinding[0].pImmutableSamplers = nullptr;
+            layoutBinding[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            layoutBinding[1].binding = 1;
+            layoutBinding[1].descriptorCount = 1;
+            layoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            layoutBinding[1].pImmutableSamplers = nullptr;
+            layoutBinding[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            VkDescriptorSetLayoutCreateInfo info{};
+            info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            info.bindingCount = static_cast<uint32_t>(layoutBinding.size());
+            info.pBindings = layoutBinding.data();
+
+            if (vkCreateDescriptorSetLayout(device, &info, nullptr, &modelDescriptor.raycastLayout) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to creat descriptor set layout");
+            }
+        }
     }
 
     void VulkanBase::createPipelines()
@@ -3629,6 +3745,105 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         createGraphicsPipeline("shaders/line.vert.spv", "shaders/line.frag.spv",
             VK_PRIMITIVE_TOPOLOGY_LINE_LIST, modelDescriptor.layout, modelDescriptor.coliderPipelineLayout, modelDescriptor.coliderPipeline);//コライダー表示用
+    }
+
+    //レイキャストのセットアップ
+    void VulkanBase::setupRaycast()
+    {
+        //レイキャストのセットアップ
+        raycast.setup(device, commandPool, descriptorPool, modelDescriptor);
+    }
+
+    void VulkanBase::raycasting(VkCommandBuffer& commandBuffer, Ray& ray
+        , GltfNode* node, std::shared_ptr<Model> model, RaycastReturn& returnObj)
+    {
+        RaycastPushConstant pushConstant;
+        pushConstant.pointer = uint64_t(node);
+
+        for (auto& mesh : node->meshArray)
+        {
+            pushConstant.indexCount = static_cast<uint32_t>(mesh->indices.size());
+
+            std::array<VkDescriptorSet, 3> descriptorSets =
+            {
+                raycast.descriptorSet,
+                model->descSetDatas[mesh->meshIndex].descriptorSet,
+                model->getGltfModel()->getRaycastDescriptorSet()[mesh->meshIndex]
+            };
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, raycast.pipelineLayout,
+                0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, 0);
+
+            vkCmdPushConstants(commandBuffer, raycast.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(RaycastPushConstant), &pushConstant);
+
+            vkCmdDispatch(commandBuffer, static_cast<uint32_t>(mesh->indices.size()) * 2.0f, 1, 1);
+        }
+
+        for (auto& child : node->children)
+        {
+            raycasting(commandBuffer, ray, child, model, returnObj);
+        }
+    }
+
+    //レイキャストの開始
+    void VulkanBase::startRaycast(Ray& ray, std::shared_ptr<Model> model, RaycastReturn& returnObj)
+    {
+        //先にレイキャスト時に帰ってくるデータを受け取るバッファを作成
+        createBuffer(sizeof(RaycastReturn) * model->getGltfModel()->nodeCount, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            , raycast.storage.uniformBuffer, raycast.storage.uniformBufferMemory);
+
+        //ステージングバッファを作成
+        createBuffer(sizeof(RaycastReturn) * model->getGltfModel()->nodeCount, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            , raycast.stagingBuffer.uniformBuffer, raycast.stagingBuffer.uniformBufferMemory);
+
+        {
+            //レイキャスト開始時のバッファの更新
+            VkCommandBuffer copyCommand = beginSingleTimeCommands();
+            raycast.startRaycast(ray, device, copyCommand, model->getGltfModel()->nodeCount);
+            endSingleTimeCommands(copyCommand);
+        }
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        vkBeginCommandBuffer(raycast.commandBuffer, &beginInfo);
+
+        vkCmdBindPipeline(raycast.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, raycast.pipeline);
+
+        raycasting(raycast.commandBuffer, ray, model->getRootNode(), model, returnObj);
+
+        vkEndCommandBuffer(raycast.commandBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount = 0;
+        submitInfo.pWaitSemaphores = nullptr;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &raycast.commandBuffer;
+        submitInfo.signalSemaphoreCount = 0;
+        submitInfo.pSignalSemaphores = nullptr;
+
+        auto submit = vkQueueSubmit(graphicsQueue, 1, &submitInfo, raycast.fence);
+        if (submit != VK_SUCCESS) {
+            throw std::runtime_error("failed to submit compute command buffer!");
+        }
+
+        raycast.waitFence(device);
+
+        std::vector<RaycastReturn> obj;
+        {
+            VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+            obj = raycast.getStorageBufferData(device, commandBuffer, model->getGltfModel()->nodeCount);
+            endSingleTimeCommands(commandBuffer);
+        }
+
+        for(int i = 0;i < static_cast<int>(obj.size());i++)
+        if (obj[i].pointer != (uint32_t)0)
+        {
+            std::cout << "raycast success" << std::endl;
+        }
     }
 
     //ライトのdescriptorSet関係のデータを作成
@@ -5587,10 +5802,4 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             defferedDestruct.bufferList[i].clear();
             defferedDestruct.memoryList[i].clear();
         }
-    }
-
-    //レイキャストのセットアップ
-    void VulkanBase::setupRaycast()
-    {
-
     }
