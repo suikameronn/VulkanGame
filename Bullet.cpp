@@ -158,7 +158,16 @@ void Bullet::collision(std::shared_ptr<Model> model)
 		return;
 	}
 
-	RaycastReturn returnObj{};
+	//レイキャスト時に衝突するメッシュまでの距離とメッシュが所属するノードへのポインタ
+	float distance;
+	GltfNode* node;
 
-	VulkanBase::GetInstance()->startRaycast(ray, model, returnObj);
+	VulkanBase::GetInstance()->startRaycast(ray, model, distance, &node);
+
+	if (node)
+	{
+		//衝突した二つのモデルを消す
+		model->notExist();
+		this->notExist();
+	}
 }

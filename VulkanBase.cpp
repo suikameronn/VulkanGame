@@ -293,12 +293,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         enabledAtomicInt64Features.shaderBufferInt64Atomics = VK_TRUE; // バッファでの64ビットアトミックを有効
         enabledAtomicInt64Features.shaderSharedInt64Atomics = VK_TRUE; // 共有メモリでの64ビットアトミックを有効
 
-        VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT enabledAtomicFloatFeatures{};
-        enabledAtomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
-        enabledAtomicFloatFeatures.shaderBufferFloat32AtomicMinMax = VK_TRUE;
-
         createInfo.pNext = &enabledAtomicInt64Features;
-        enabledAtomicInt64Features.pNext = &enabledAtomicFloatFeatures;
 
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -560,6 +555,9 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         {
             bindingDescription.stride = sizeof(Vertex);
+
+            std::cout << offsetof(RaycastReturn, pointer) << std::endl;
+            std::cout << offsetof(RaycastReturn, distance) << std::endl;
 
             attributeDescriptions.resize(7);
             attributeDescriptions[0].binding = 0;
@@ -3755,7 +3753,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     void VulkanBase::raycasting(VkCommandBuffer& commandBuffer, Ray& ray
-        , GltfNode* node, std::shared_ptr<Model> model, RaycastReturn& returnObj)
+        , GltfNode* node, std::shared_ptr<Model> model)
     {
         RaycastPushConstant pushConstant;
         pushConstant.pointer = uint64_t(node);
@@ -3781,27 +3779,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         for (auto& child : node->children)
         {
-            raycasting(commandBuffer, ray, child, model, returnObj);
+            raycasting(commandBuffer, ray, child, model);
         }
     }
 
     //レイキャストの開始
-    void VulkanBase::startRaycast(Ray& ray, std::shared_ptr<Model> model, RaycastReturn& returnObj)
+    void VulkanBase::startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance,GltfNode** node)
     {
         //先にレイキャスト時に帰ってくるデータを受け取るバッファを作成
-        createBuffer(sizeof(RaycastReturn) * model->getGltfModel()->nodeCount, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+        createBuffer(sizeof(RaycastReturn), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             , raycast.storage.uniformBuffer, raycast.storage.uniformBufferMemory);
 
         //ステージングバッファを作成
-        createBuffer(sizeof(RaycastReturn) * model->getGltfModel()->nodeCount, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+        createBuffer(sizeof(RaycastReturn), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             , raycast.stagingBuffer.uniformBuffer, raycast.stagingBuffer.uniformBufferMemory);
 
         {
             //レイキャスト開始時のバッファの更新
             VkCommandBuffer copyCommand = beginSingleTimeCommands();
-            raycast.startRaycast(ray, device, copyCommand, model->getGltfModel()->nodeCount);
+            raycast.startRaycast(ray, device, copyCommand);
             endSingleTimeCommands(copyCommand);
         }
 
@@ -3812,7 +3810,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         vkCmdBindPipeline(raycast.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, raycast.pipeline);
 
-        raycasting(raycast.commandBuffer, ray, model->getRootNode(), model, returnObj);
+        raycasting(raycast.commandBuffer, ray, model->getRootNode(), model);
 
         vkEndCommandBuffer(raycast.commandBuffer);
 
@@ -3832,17 +3830,41 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         raycast.waitFence(device);
 
-        std::vector<RaycastReturn> obj;
+        RaycastReturn obj{};
+        obj.initilize();
+
         {
             VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-            obj = raycast.getStorageBufferData(device, commandBuffer, model->getGltfModel()->nodeCount);
+            raycast.getStorageBufferData(device, commandBuffer, obj);
             endSingleTimeCommands(commandBuffer);
+
+            //遷移用バッファから値を取り出す
+            vkMapMemory(device, raycast.stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn)
+                , 0, &raycast.stagingBuffer.uniformBufferMapped);
+            memcpy(&obj, raycast.stagingBuffer.uniformBufferMapped, sizeof(RaycastReturn));
+            vkUnmapMemory(device, raycast.stagingBuffer.uniformBufferMemory);
+
+            raycast.storage.destroy(device);
+            raycast.stagingBuffer.destroy(device);
         }
 
-        for(int i = 0;i < static_cast<int>(obj.size());i++)
-        if (obj[i].pointer != (uint32_t)0)
+        //レイキャストの結果を取り出す
+        //なお、最も近いヒットの結果を取り出す
+
+        distance = FLT_MAX;
+        *node = nullptr;
+
+        for (int i = 0; i < obj.pointer.size(); i++)
         {
-            std::cout << "raycast success" << std::endl;
+            if (obj.pointer[i] != (uint64_t)0)
+            {
+                if (distance > obj.distance[i])
+                {
+                    distance = obj.distance[i];
+
+                    (*node) = reinterpret_cast<GltfNode*>(obj.pointer[i]);
+                }
+            }
         }
     }
 

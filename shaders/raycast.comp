@@ -16,9 +16,11 @@ layout(binding = 0) uniform UniformBufferObject
 //レイがヒットしたときに返すデータ
 layout(std430,binding = 1) buffer StorageBufferObject
 {
-    uint64_t pointer;
+    int hitCount;
 
-    float dist;
+    uint64_t[10] pointer;
+
+    float[10] dist;
 }returnObj;
 
 struct Vertex
@@ -101,11 +103,13 @@ void main()
             vertices[i].weight.z * animationUBO.boneMatrix[vertices[i].boneID.z] +
             vertices[i].weight.w * animationUBO.boneMatrix[vertices[i].boneID.w];
 
-            vertices[i].pos = vec3(matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(vertices[i].pos,1.0));
+            vec4 pos = matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(vertices[i].pos,1.0);
+            vertices[i].pos = pos.xyz / pos.w;
         }
         else
         {
-            vertices[i].pos = vec3(matricesUBO.model * animationUBO.nodeMatrix * vec4(vertices[i].pos,1.0));
+            vec4 pos = matricesUBO.model * animationUBO.nodeMatrix * vec4(vertices[i].pos,1.0);
+            vertices[i].pos = pos.xyz / pos.w;
         }
     }
 
@@ -137,12 +141,12 @@ void main()
             if(ray.Length >= t && t >= 0.0)
             {
                 //ここまで来たらレイと三角形は交差している
-                if(returnObj.dist >= t)
+                if(returnObj.hitCount < 10)
                 {
-                    atomicMin(returnObj.dist,t);
-
-                    //返したいデータのあるアドレスを書き込む
-                    atomicExchange(returnObj.pointer,pushConstant.pointer);
+                    atomicAdd(returnObj.hitCount,1);
+                    
+                    returnObj.pointer[returnObj.hitCount] = pushConstant.pointer;
+                    returnObj.dist[returnObj.hitCount] = t;
                 }
             }
         }

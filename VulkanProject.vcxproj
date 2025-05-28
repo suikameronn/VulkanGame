@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;C:\Users\sukai\Documents\VulkanGame\Freetype\include\freetype2</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -128,8 +128,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib;Freetype\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;freetyped.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -140,7 +140,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include;Freetype/include/freetype2</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
@@ -153,8 +153,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib;C:\Users\sukai\Documents\VulkanGame\Freetype\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;freetype.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -163,6 +163,7 @@
     <ClCompile Include="Colider.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Cubemap.cpp" />
+    <ClCompile Include="FontManager.cpp" />
     <ClCompile Include="GltfModel.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="GameManager.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Cubemap.h" />
     <ClInclude Include="EnumList.h" />
+    <ClInclude Include="FontManager.h" />
     <ClInclude Include="GltfModel.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="GameManager.h" />

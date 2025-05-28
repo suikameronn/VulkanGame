@@ -174,9 +174,10 @@ void Colider::reflectMovement(glm::mat4& transform)
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
-		transformedMin = transform * glm::vec4(min, 1.0f);
-		transformedMax = transform * glm::vec4(max, 1.0f);
 	}
+
+	transformedMin = transform * glm::vec4(min, 1.0f);
+	transformedMax = transform * glm::vec4(max, 1.0f);
 }
 
 //SAT—p“–‚½‚è”»’è‚ÌŽÀs

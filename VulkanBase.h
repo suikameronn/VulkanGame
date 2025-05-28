@@ -178,17 +178,18 @@ struct DefferedDestruct
     }
 };
 
-struct RaycastReturn
+struct alignas(16) RaycastReturn
 {
-    uint32_t nodeCount;
-    uint64_t pointer;
-    float distance;
+    int hitCount;
 
-    RaycastReturn()
+    std::array<uintptr_t,10> pointer;
+    std::array<float,10> distance;
+
+    void initilize()
     {
-        nodeCount = 0;
-        pointer = 0;
-        distance = -1.0f;
+        hitCount = -1;
+        std::fill(pointer.begin(), pointer.end(), 0);
+        std::fill(distance.begin(), distance.end(), -1.0f);
     }
 };
 
@@ -370,31 +371,26 @@ struct Raycast
     }
 
     //レイキャスト開始ごとに実行
-    void startRaycast(Ray& ray,VkDevice& device,VkCommandBuffer& commandBuffer,uint32_t nodeCount)
+    void startRaycast(Ray& ray,VkDevice& device,VkCommandBuffer& commandBuffer)
     {
-        RaycastReturn returnObj;
-        returnObj.nodeCount = nodeCount;
-        returnObj.distance = FLT_MAX;
-        returnObj.pointer = 0;
+        RaycastReturn returnObj{};
+        returnObj.initilize();
 
-        std::vector<RaycastReturn> returnArray(nodeCount);
-        std::fill(returnArray.begin(), returnArray.end(), returnObj);
-
-        vkMapMemory(device, stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn) * nodeCount, 0, &stagingBuffer.uniformBufferMapped);
-        memcpy(stagingBuffer.uniformBufferMapped, &returnObj, sizeof(RaycastReturn) * nodeCount);
+        vkMapMemory(device, stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn), 0, &stagingBuffer.uniformBufferMapped);
+        memcpy(stagingBuffer.uniformBufferMapped, &returnObj, sizeof(RaycastReturn));
         vkUnmapMemory(device, stagingBuffer.uniformBufferMemory);
 
         VkBufferCopy copyRegion{};
-        copyRegion.size = sizeof(RaycastReturn) * nodeCount;
+        copyRegion.size = sizeof(RaycastReturn);
         vkCmdCopyBuffer(commandBuffer, stagingBuffer.uniformBuffer, storage.uniformBuffer, 1, &copyRegion);
 
         vkResetFences(device, 1, &fence);
 
         //レイの数値やバッファの値を更新、初期化
-        updateRaycastBuffer(device, ray, nodeCount);
+        updateRaycastBuffer(device, ray);
     }
 
-    void updateRaycastBuffer(VkDevice& device,Ray& ray,uint32_t nodeCount)
+    void updateRaycastBuffer(VkDevice& device,Ray& ray)
     {
         VkDescriptorBufferInfo info{};
         info.buffer = ray.mappedBuffer.uniformBuffer;
@@ -404,7 +400,7 @@ struct Raycast
         VkDescriptorBufferInfo storageInfo{};
         storageInfo.buffer = storage.uniformBuffer;
         storageInfo.offset = 0;
-        storageInfo.range = sizeof(RaycastReturn) * nodeCount;
+        storageInfo.range = sizeof(RaycastReturn);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites(2);
 
@@ -428,24 +424,12 @@ struct Raycast
     }
 
     //ストレージバッファから値を取り出す
-    std::vector<RaycastReturn>& getStorageBufferData(VkDevice& device, VkCommandBuffer& commandBuffer,uint32_t nodeCount)
+    void getStorageBufferData(VkDevice& device, VkCommandBuffer& commandBuffer, RaycastReturn& returnObj)
     {
         //ストレージバッファから遷移用のバッファに値をコピーする
         VkBufferCopy copyRegion{};
-        copyRegion.size = sizeof(RaycastReturn) * nodeCount;
-        vkCmdCopyBuffer(commandBuffer, stagingBuffer.uniformBuffer, storage.uniformBuffer, 1, &copyRegion);
-
-        //遷移用バッファから値を取り出す
-        std::vector<RaycastReturn> returnObj(nodeCount);
-
-        vkMapMemory(device, stagingBuffer.uniformBufferMemory, 0, sizeof(RaycastReturn) * nodeCount, 0, &stagingBuffer.uniformBufferMapped);
-        memcpy(stagingBuffer.uniformBufferMapped, returnObj.data(), sizeof(RaycastReturn) * nodeCount);
-        vkUnmapMemory(device, stagingBuffer.uniformBufferMemory);
-
-        storage.destroy(device);
-        stagingBuffer.destroy(device);
-
-        return returnObj;
+        copyRegion.size = sizeof(RaycastReturn);
+        vkCmdCopyBuffer(commandBuffer, storage.uniformBuffer, stagingBuffer.uniformBuffer, 1, &copyRegion);
     }
 };
 
@@ -839,6 +823,10 @@ private:
     //レイキャストのコンピュートオブジェクトの作成
     void setupRaycast();
 
+    //再帰的のレイキャストを開始
+    void raycasting(VkCommandBuffer& commandBuffer, Ray& ray
+        , GltfNode* node, std::shared_ptr<Model> model);
+
 public:
 
     static VulkanBase* GetInstance()
@@ -976,9 +964,7 @@ public:
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
     //レイキャストの開始
-    void startRaycast(Ray& ray, std::shared_ptr<Model> model, RaycastReturn& returnObj);
-    void raycasting(VkCommandBuffer& commandBuffer, Ray& ray
-        , GltfNode* node, std::shared_ptr<Model> model, RaycastReturn& returnObj);
+    void startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance, GltfNode** node);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

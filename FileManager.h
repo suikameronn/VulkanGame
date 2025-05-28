@@ -16,8 +16,6 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
-#include"font.h"
-
 enum IMAGE;
 
 //‰æ‘œ‚âgltfƒ‚ƒfƒ‹‚Ì“Ç‚İ‚İ‚ğ’S“–‚·‚éƒNƒ‰ƒX

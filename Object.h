@@ -145,10 +145,14 @@ protected:
 public:
 	Object();
 
+	//このオブジェクトが存在しているかどうかの確認
 	bool isExist()
 	{
 		return exist;
 	}
+
+	//このオブジェクトを次の更新処理の時に削除する
+	void notExist() { exist = false; }
 
 	//自身のオブジェクトのタイプを返す
 	ObjNum getObjNum() { return objNum; }

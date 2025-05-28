@@ -14,6 +14,9 @@
 
 #include"Object.h"
 
+#include"ft2build.h"
+#include FT_FREETYPE_H
+
 //gpu上のテクスチャデータ
 struct TextureData
 {
@@ -111,6 +114,21 @@ public:
 				hdriPixels[i * 4 + 1] = srcPixels[i * 3 + 1];
 				hdriPixels[i * 4 + 2] = srcPixels[i * 3 + 2];
 			}
+		}
+	}
+
+	ImageData(const FT_Bitmap& bitmap)
+	{
+		width = bitmap.width;//幅
+		height = bitmap.rows;//高さ
+		texChannels = 4;
+		
+		for (int i = 0; i < width * height; i++)
+		{
+			pixels[i * 4] = bitmap.buffer[i];
+			pixels[i * 4 + 1] = bitmap.buffer[i];
+			pixels[i * 4 + 2] = bitmap.buffer[i];
+			pixels[i * 4 + 3] = 255;
 		}
 	}
 

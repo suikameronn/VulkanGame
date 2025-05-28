@@ -364,7 +364,7 @@ void Player::shootBullet()
 			, bulletDirection, pivot, bulletDistanceLimit));
 
 	//スケールの設定
-	bullet->scale = glm::vec3(2.0f, 1.0f, 1.0f);
+	bullet->scale = glm::vec3(20.0f, 1.0f, 1.0f);
 
 	//3Dモデルを設定
 	bullet->setgltfModel(Storage::GetInstance()->getgltfModel(bulletFilePath));
