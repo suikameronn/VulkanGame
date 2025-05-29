@@ -288,13 +288,6 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        VkPhysicalDeviceShaderAtomicInt64FeaturesKHR enabledAtomicInt64Features{};
-        enabledAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
-        enabledAtomicInt64Features.shaderBufferInt64Atomics = VK_TRUE; // バッファでの64ビットアトミックを有効
-        enabledAtomicInt64Features.shaderSharedInt64Atomics = VK_TRUE; // 共有メモリでの64ビットアトミックを有効
-
-        createInfo.pNext = &enabledAtomicInt64Features;
-
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
