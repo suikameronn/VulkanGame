@@ -116,7 +116,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+<<<<<<< HEAD
       <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;utfcpp;lua/include;glfw3/include;Freetype\include\freetype2;icu/include</AdditionalIncludeDirectories>
+=======
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;Freetype/include/freetype2</AdditionalIncludeDirectories>
+>>>>>>> 06d1c030a9af26f4879c68ea8cffb22bce4046bc
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>

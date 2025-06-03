@@ -1246,3 +1246,4 @@ Freetype/lib/cmake/freetype/freetype-config-release.cmake
 Freetype/lib/cmake/freetype/freetype-config-version.cmake
 Freetype/lib/pkgconfig/freetype2.pc
 Freetype/include/freetype2/freetype/ttnameid.h
+Freetype/lib/cmake/freetype/freetype-config-debug.cmake
