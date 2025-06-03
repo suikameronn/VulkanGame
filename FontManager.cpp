@@ -1,7 +1,13 @@
+#include"VulkanBase.h"
+
 #include"FontManager.h"
+
+FontManager* FontManager::instance = nullptr;
 
 FontManager::FontManager()
 {
+    texturePack = nullptr;
+
     // 1. libraryを初期化
     auto error = FT_Init_FreeType(&library);
     if (error)
@@ -16,26 +22,219 @@ FontManager::FontManager()
         throw std::runtime_error("font face create failed");
     }
 
-
-    // 3. 文字サイズを設定
-    error = FT_Set_Char_Size(face, 0,
-        16 * 54, // 幅と高さ
-        300, 300);  // 水平、垂直解像度*/
+    FT_Set_Pixel_Sizes(face, 0, 48);
 
     slot = face->glyph;
+
+    createAtlasTexture();
 }
 
-const CharFont& FontManager::getCharFont(const char c)
+FontManager::~FontManager()
 {
-    if (fontMap.find(c) != fontMap.end())
+    VkDevice device = VulkanBase::GetInstance()->getDevice();
+
+    atlasTexture->cleanUpVulkan(device);
+}
+
+//日本語のアトラステクスチャを作る
+void FontManager::createAtlasTexture()
+{
+    //文字のビットマップを取得する
+    loadJapaneseFile();
+
+    //それらをくっつけてすべての文字のビットマップを
+    //含むテクスチャを作る
+    
+    //アトラステクスチャの縦と横のサイズ
+    int atlasWidth, atlasHeight;
+    //作成したビットマップの数
+    int characterNum = static_cast<int>(fontMap.size());
+
+    //ビットマップの総面積を計算する
+    int totalArea = 0;
+    for (auto itr = fontMap.begin(); itr != fontMap.end(); itr++)
     {
-        return fontMap[c];
+        totalArea += itr->second.size.x * itr->second.size.y;
     }
 
-    FT_Load_Glyph(face, FT_Get_Char_Index(face, c), FT_LOAD_RENDER);
-    
-    const FT_Bitmap& bitmap = slot->bitmap;
+    //おおよそのテクスチャサイズの一辺の大きさ
+    int estimatedSize = static_cast<int>(std::sqrt(totalArea));
 
-    std::shared_ptr<ImageData> fontImage =
-        std::make_shared<ImageData>(bitmap);
+    //テクスチャのサイズを計算
+    //なおテクスチャのサイズは2のべき乗にする
+    int texSize = 1;
+    while (texSize < estimatedSize)
+    {
+        texSize *= 2;
+    }
+
+    //アトラステクスチャのサイズを決定
+    atlasWidth = texSize;
+    atlasHeight = texSize;
+
+    //テクスチャパッキングを開始する
+    texturePack = std::make_unique<MaxRectPacking>(atlasWidth, atlasHeight);
+
+    //テクスチャパックに挿入していく
+    //パッキングに失敗した場合は、アトラステクスチャのサイズを大きくする
+    bool packingSuccess = true;
+    for (auto itr = fontMap.begin(); itr != fontMap.end(); itr++)
+    {
+        itr->second.rect = texturePack->insert(packingSuccess,itr->second.size.x, itr->second.size.y);
+    }
+
+    //テクスチャパッキングを終了する
+    texturePack.reset();
+
+    //文字一つずつのuvなどを設定していく
+    for (auto itr = fontMap.begin(); itr != fontMap.end(); itr++)
+    {
+        itr->second.uvSet(atlasWidth, atlasHeight);
+    }
+
+    //すべての文字のビットマップをアトラステクスチャにまとめる
+    packBitmapsToAtlas(atlasWidth, atlasHeight);
+}
+
+//日本語の一覧を文字列として読み込む
+void FontManager::loadJapaneseFile()
+{
+    std::ifstream ifs(characterPath);
+
+    if (!ifs)
+    {
+        throw std::runtime_error("failed load character file");
+    }
+
+    //すべての文字のビットマップを作成する
+    std::string line;
+    while (std::getline(ifs, line))
+    {
+        const char* begin = line.c_str();
+        const char* end = begin + strlen(line.c_str());
+
+        while (begin < end)
+        {
+            uint32_t code = utf8::next(begin, end);
+
+            createBitmap(code);
+        }
+    }
+
+    //ファイルを閉じる
+    ifs.close();
+}
+
+//ビットマップを作成
+void FontManager::createBitmap(const uint32_t c)
+{
+    if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+    {
+        return;
+    }
+
+    FT_GlyphSlot& glyph = face->glyph;
+
+    //フォントのオフセットなどを設定
+    CharFont font;
+    font.size = glm::vec2(glyph->bitmap.width + 2 * PADDING_PIXEL, glyph->bitmap.rows + 2 * PADDING_PIXEL);
+    font.bearing = glm::vec2(glyph->bitmap_left, glyph->bitmap_top);
+    font.advance = static_cast<uint32_t>(glyph->advance.x);
+    fontMap[c] = font;
+
+    bitmaps[c] = std::make_shared<ImageData>(glyph->bitmap);
+}
+
+//すべての文字のビットマップをアトラステクスチャにまとめる
+void FontManager::packBitmapsToAtlas(int atlasWidth, int atlasHeight)
+{
+    //アトラステクスチャのピクセル配列
+    std::vector<unsigned char> pixels(atlasWidth * atlasHeight,0);
+
+    for (auto itr = fontMap.begin(); itr != fontMap.end(); itr++)
+    {
+        const uint32_t c = itr->first;
+        const Rect& rect = itr->second.rect;
+
+        if (!rect.rotated)
+        {
+            //左から右に、一行ずつ読み取っていく
+
+            for (int i = rect.y + PADDING_PIXEL; i < rect.height - PADDING_PIXEL; i++)
+            {
+                for (int j = rect.x + PADDING_PIXEL; j < rect.width - PADDING_PIXEL; j++)
+                {
+                    const int location = (j - rect.x - 1) + (i - rect.y - 1) * rect.height;
+
+                    const unsigned char black =
+                        static_cast<unsigned char*>(bitmaps[c]->getPixelsData())[location];
+
+                    pixels[i * atlasHeight + j] = black;
+                }
+            }
+        }
+        else
+        {
+            //左から右に、一行ずつ読み取っていく
+
+            for (int i = rect.y + PADDING_PIXEL; i < rect.height - PADDING_PIXEL; i++)
+            {
+                for (int j = rect.x + PADDING_PIXEL; j < rect.width - PADDING_PIXEL; j++)
+                {
+                    const int location = (j - rect.x - 1) + (i - rect.y - 1) * rect.height;
+
+                    const unsigned char black =
+                        static_cast<unsigned char*>(bitmaps[c]->getPixelsData())[location];
+
+                    pixels[i * atlasHeight + j] = black;
+                }
+            }
+        }
+    }
+
+    //アトラステクスチャを作成
+    atlasTexture = std::make_shared<ImageData>(atlasWidth, atlasHeight, 1, pixels.data());
+    //gpu上に画像を展開
+    VkFormat format = VK_FORMAT_R8_UNORM;
+    VulkanBase::GetInstance()->createTexture(atlasTexture, format);
+    //VkDescriptorSetの作成
+    createDescriptorSet();
+}
+
+//VkDescriptorSetの作成
+void FontManager::createDescriptorSet()
+{
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = atlasTexture->getTexture()->view;
+    imageInfo.sampler = atlasTexture->getTexture()->sampler;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = atlasTexDescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &imageInfo;
+
+    VkDevice device = VulkanBase::GetInstance()->getDevice();
+
+    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+}
+
+std::vector<CharFont>& FontManager::getCharFont(const std::string str)
+{
+    std::vector<CharFont> charFont;
+
+    const char* begin = str.c_str();
+    const char* end = begin + strlen(str.c_str());
+    while (begin < end)
+    {
+        uint32_t code = utf8::next(begin, end);
+
+        charFont.push_back(fontMap[code]);
+    }
+
+    return charFont;
 }

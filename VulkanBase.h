@@ -923,6 +923,7 @@ public:
     void changeUITexture(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
     //uniform bufferのバッファの作成
     void uiCreateUniformBuffer(MappedBuffer& mappedBuffer);
+    //UI用のテクスチャを張り付けるポリゴンのためのバッファのVkDescriptorSetを作る
 
     //gltfモデルの描画
     void drawMesh(GltfNode* node, std::shared_ptr<Model> model,VkCommandBuffer& commandBuffer

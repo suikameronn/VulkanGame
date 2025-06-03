@@ -61,31 +61,40 @@ private:
 
 public:
 
-	//チャンネル数は4に固定
 	ImageData(int width, int height,
 		int channels,unsigned char* srcPixels)
 	{
 		this->width = width;
 		this->height = height;
-		this->texChannels = 4;
-		this->pixels.resize(width * height * 4);
-		std::fill(this->pixels.begin(), this->pixels.end(), 255);
+		this->texChannels = channels;
 
 		texture = new TextureData();
 
 		if (channels == 4)//画像に透明度のチャンネルがある場合は、そのまま
 		{
+			this->pixels.resize(width * height * channels);
+			std::fill(this->pixels.begin(), this->pixels.end(), 255);
+
 			this->pixels.assign(srcPixels, srcPixels + ((width * height * channels) - 1));
 		}
 		else if (channels == 3)//画像に透明度のチャンネルが無い場合は、すべてのピクセルの透明度を255として
 							  //強引にチャンネルを4つに gpuでのテクスチャ作成の都合上
 		{
+			this->pixels.resize(width * height * channels);
+			std::fill(this->pixels.begin(), this->pixels.end(), 255);
+
 			for (int i = 0; i < width * height; i++)
 			{
 				pixels[i * 4] = srcPixels[i * 3];
 				pixels[i * 4 + 1] = srcPixels[i * 3 + 1];
 				pixels[i * 4 + 2] = srcPixels[i * 3 + 2];
 			}
+		}
+		else if(channels == 1)
+		{
+			this->pixels.resize(width * height * channels);
+
+			std::copy(srcPixels, srcPixels + (width * height), pixels.data());
 		}
 	}
 
@@ -117,18 +126,19 @@ public:
 		}
 	}
 
-	ImageData(const FT_Bitmap& bitmap)
+	ImageData(FT_Bitmap& bitmap)
 	{
 		width = bitmap.width;//幅
 		height = bitmap.rows;//高さ
-		texChannels = 4;
+		texChannels = 1;
+
+		texture = nullptr;
 		
+		pixels.resize(width * height);
+
 		for (int i = 0; i < width * height; i++)
 		{
-			pixels[i * 4] = bitmap.buffer[i];
-			pixels[i * 4 + 1] = bitmap.buffer[i];
-			pixels[i * 4 + 2] = bitmap.buffer[i];
-			pixels[i * 4 + 3] = 255;
+			pixels[i] = bitmap.buffer[i];
 		}
 	}
 

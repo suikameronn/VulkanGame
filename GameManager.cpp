@@ -14,6 +14,8 @@ void GameManager::initGame()//初期化設定
 
     vulkan->initVulkan();//Vulkanのデータの一部をあらかじめ用意しておく
 
+    FontManager* fontmanager = FontManager::GeInstance();
+
     //setLoadUI();//ロードUIの設定
 
     bool load = false;

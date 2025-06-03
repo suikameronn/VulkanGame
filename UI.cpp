@@ -8,8 +8,6 @@ UI::UI(std::shared_ptr<ImageData> image)
 	exist = true;
 
 	GameManager* manager = GameManager::GetInstance();
-	widthOffset = manager->getWindowWidth();
-	heightOffset = manager->getWindowHeight();
 
 	projMatrix = manager->getUIProjection();
 
@@ -113,12 +111,11 @@ void UI::createTexture(std::shared_ptr<ImageData> image)
 	uiImage = image;
 
 	VulkanBase* vulkan = VulkanBase::GetInstance();
-	VkDevice device = vulkan->GetDevice();
 
 	//VkDescriptorSetの用意が出来ているなら、結び付けを更新する
 	if (descriptorSet)
 	{
-		vulkan->changeUITexture(uiImage->getTexture(), mappedBuffer, descriptorSet);
+		createDescriptorSet();
 	}
 
 	//画像のアスペクト比を計算する
@@ -185,4 +182,41 @@ void UI::updateUniformBuffer()
 void UI::frameEnd()
 {
 	updateUniformBuffer();
+}
+
+//VkDescriptorSetの作成 行列用バッファ一つとテクスチャ用を一つ
+void UI::createDescriptorSet()
+{
+	VkDescriptorBufferInfo bufferInfo{};
+	bufferInfo.buffer = mappedBuffer.uniformBuffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(MatricesUBO2D);
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = uiImage->getTexture() ->view;
+	imageInfo.sampler = uiImage->getTexture()->sampler;
+
+	std::vector<VkWriteDescriptorSet> descriptorWrites;
+	descriptorWrites.resize(2);
+
+	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[0].dstSet = descriptorSet;
+	descriptorWrites[0].dstBinding = 0;
+	descriptorWrites[0].dstArrayElement = 0;
+	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[0].descriptorCount = 1;
+	descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+	descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[1].dstSet = descriptorSet;
+	descriptorWrites[1].dstBinding = 1;
+	descriptorWrites[1].dstArrayElement = 0;
+	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[1].descriptorCount = 1;
+	descriptorWrites[1].pImageInfo = &imageInfo;
+
+	VkDevice device = VulkanBase::GetInstance()->getDevice();
+
+	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }

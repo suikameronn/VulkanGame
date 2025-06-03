@@ -54,16 +54,35 @@ struct MatricesUBO2D
 
 class UI
 {
+private:
+	//座標変換行列
+	glm::mat4 transformMatrix;
+
+	//ui画像のアスペクト比
+	glm::vec2 aspect;
+
+	//uiの幅と高さ
+	float uiWidth, uiHeight;
+
+	//uniform buffer用のバッファ
+	MappedBuffer mappedBuffer;
+
+	//長方形の頂点
+	std::array<Vertex2D, UIVertexCount> vertices;
+
+	//uiのテクスチャを張り付けるための長方形のバッファ
+	BufferObject pointBuffer;
+
 protected:
+
+	//uiの伸縮
+	float scale;
 
 	//UIの存在フラッグ
 	bool exist;
 
 	//半透明描画のフラッグ
 	bool transparent;
-
-	//UIの座標のオフセットを設定する
-	int widthOffset, heightOffset;
 
 	//UI用のプロジェクション行列
 	glm::mat4 projMatrix;
@@ -77,32 +96,11 @@ protected:
 	//uiの回転の情報
 	Rotate2D rotate;
 
-	//uiの伸縮
-	float scale;
-
-	//座標変換行列
-	glm::mat4 transformMatrix;
-
-	//ui画像のアスペクト比
-	glm::vec2 aspect;
-
-	//uiの幅と高さ
-	float uiWidth, uiHeight;
-
 	//uiの表示非表示
 	bool isVisible;
 
-	//長方形の頂点
-	std::array<Vertex2D, UIVertexCount> vertices;
-
 	//長方形のインデックス
 	std::array<uint32_t, 6> indices;
-
-	//uiのテクスチャを張り付けるための長方形のバッファ
-	BufferObject pointBuffer;
-
-	//uniform buffer用のバッファ
-	MappedBuffer mappedBuffer;
 
 	//UI用の画像が結び付けられている
 	VkDescriptorSet descriptorSet;
@@ -112,10 +110,13 @@ protected:
 
 	void updateUniformBuffer();
 
-	void cleanupVulkan();
+	virtual void cleanupVulkan();
+
+	virtual void createDescriptorSet();
 
 public:
 
+	UI() {};
 	UI(std::shared_ptr<ImageData> image);
 	~UI()
 	{

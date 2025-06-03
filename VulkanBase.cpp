@@ -3774,7 +3774,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
             vkCmdPushConstants(commandBuffer, raycast.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(RaycastPushConstant), &pushConstant);
 
-            vkCmdDispatch(commandBuffer, static_cast<uint32_t>(mesh->indices.size()) * 2.0f, 1, 1);
+            vkCmdDispatch(commandBuffer, static_cast<uint32_t>(mesh->indices.size()) * 2, 1, 1);
         }
 
         for (auto& child : node->children)

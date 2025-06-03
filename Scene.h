@@ -547,9 +547,9 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 				break;
 			}
 			}
-
-			return 0;
 		}
+
+		return 0;
 	}
 
 	//平行光源の光の方向を設定する

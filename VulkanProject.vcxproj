@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;glfw3/include;C:\Users\sukai\Documents\VulkanGame\Freetype\include\freetype2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;utfcpp;lua/include;glfw3/include;Freetype\include\freetype2;icu/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -128,8 +128,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib;Freetype\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;freetyped.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lua;VulkanSDK\Lib;GLM\lib;glfw3/lib;Freetype\lib;icu/lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glm.lib;lua54.lib;freetype.lib;icudt.lib;icuin.lib;icuio.lib;icutest.lib;icutu.lib;icuuc.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -140,7 +140,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;lua/include;sol;glfw3/include;Freetype/include/freetype2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LoadModel;VulkanSDK\Include;GLM;tinygltf;utfcpp;lua/include;sol;glfw3/include;Freetype/include/freetype2</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <SupportJustMyCode>true</SupportJustMyCode>
@@ -169,12 +169,14 @@
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MaxRectPacking.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Storage.cpp" />
+    <ClCompile Include="Text.cpp" />
     <ClCompile Include="UI.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
   </ItemGroup>
@@ -192,6 +194,7 @@
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="MaxRectPacking.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="PhysicBase.h" />
@@ -200,6 +203,7 @@
     <ClInclude Include="RTree.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Storage.h" />
+    <ClInclude Include="Text.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="VulkanBase.h" />

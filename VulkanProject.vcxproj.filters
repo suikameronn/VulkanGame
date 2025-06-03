@@ -31,6 +31,18 @@
     <Filter Include="ヘッダー ファイル\Lights">
       <UniqueIdentifier>{4cac4a24-a511-466b-ae6b-2183316919ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Font">
+      <UniqueIdentifier>{91c87190-28a4-46e1-880e-a2b3843b6206}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Font">
+      <UniqueIdentifier>{62926d93-0ca9-488d-b53b-67382d487d1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\UI">
+      <UniqueIdentifier>{2ce631bd-f6f5-4348-987d-8d7cbe28552f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\UI">
+      <UniqueIdentifier>{4f8aa097-4077-4d98-b031-04d863ec83f6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -78,9 +90,6 @@
     <ClCompile Include="Storage.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UI.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Cubemap.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -88,7 +97,16 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="FontManager.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="MaxRectPacking.cpp">
+      <Filter>ソース ファイル\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="UI.cpp">
+      <Filter>ソース ファイル\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Text.cpp">
+      <Filter>ソース ファイル\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -149,9 +167,6 @@
     <ClInclude Include="RTree.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UI.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="ThreadPool.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -162,7 +177,16 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="FontManager.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ヘッダー ファイル\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="MaxRectPacking.h">
+      <Filter>ヘッダー ファイル\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="UI.h">
+      <Filter>ヘッダー ファイル\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Text.h">
+      <Filter>ヘッダー ファイル\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

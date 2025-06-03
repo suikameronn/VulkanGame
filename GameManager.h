@@ -12,6 +12,7 @@
 #include"Controller.h"
 #include"Scene.h"
 #include"FileManager.h"
+#include"FontManager.h"
 #include"UI.h"
 
 #include"ThreadPool.h"
@@ -64,6 +65,7 @@ public:
 	//各クラスの終了処理も行う
 	void FinishInstance()
 	{
+		FontManager::FinishInstance();
 		FileManager::FinishFileManger();
 		VulkanBase::FinishVulkanBase();
 		Storage::FinishStorage();
