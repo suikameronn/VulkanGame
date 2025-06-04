@@ -30,6 +30,7 @@
 #include"Storage.h"
 #include"Cubemap.h"
 #include"Scene.h"
+#include"Text.h"
 
 extern GLFWwindow* window;
 
@@ -548,6 +549,10 @@ private:
     VkDescriptorSetLayout shadowmapLayout;
     //IBLのVkDescriptorSetLayout
     VkDescriptorSetLayout iblLayout;
+    //フォント用のVkDescriptorSetLayout
+    VkDescriptorSetLayout fontLayout;
+    //テキスト用のVkDescriptorSetLayout
+    VkDescriptorSetLayout textLayout;
 
     //コマンドバッファーの配列 スワップチェーンが持つ画像の数だけバッファーを持つ
     std::vector<VkCommandBuffer> commandBuffers;
@@ -678,6 +683,8 @@ private:
     void createVertexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createVertexBuffer(std::shared_ptr<UI> ui);
+    //テキスト用
+    void createVertexBuffer(std::shared_ptr<Text> text);
     //コライダー用
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     
@@ -685,6 +692,8 @@ private:
     void createIndexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createIndexBuffer(std::shared_ptr<UI> ui);
+    //テキスト用
+    void createIndexBuffer(std::shared_ptr<Text> text);
     //コライダー用
     void createIndexBuffer(std::shared_ptr<Colider> colider);
 
@@ -768,6 +777,9 @@ private:
 
     //通常のレンダリングで必要なdescriptorSetのレイアウトをあらかじめ作成する
     void createDescriptorSetLayout();
+
+    //UIレンダリング用のVkDescriptorSetのバッファを用意
+    void allocateUIDescriptorSet(const VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
 
     //パイプラインをあらかじめ作成
     void createPipelines();
@@ -913,16 +925,22 @@ public:
     void createTexture(std::shared_ptr<ImageData> image, VkFormat format);
     //uiの頂点バッファなどを用意する
     void setUI(std::shared_ptr<UI> ui);
+    //テキストの頂点バッファなどを用意する
+    void setText(std::shared_ptr<Text> text);
     //ロード画面の描画
     //void drawLoading();
     //ロード画面の終了
     void stopLoading();
 
     //UIのテクスチャ変更を反映する
-    void changeUITexture(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
+    void createUIDescriptorSet(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
+    //UI用のテクスチャを張り付けるポリゴンのためのバッファのVkDescriptorSetを作る
+    void createUIDescriptorSet(MappedBuffer& mappedBuffer, VkDescriptorSet& descriptorSet);
     //uniform bufferのバッファの作成
     void uiCreateUniformBuffer(MappedBuffer& mappedBuffer);
-    //UI用のテクスチャを張り付けるポリゴンのためのバッファのVkDescriptorSetを作る
+
+    //フォント用のVkDescriptorSetを作成する
+    void createFontDescriptorSet(std::shared_ptr<ImageData> atlasTexture, VkDescriptorSet& descriptorSet);
 
     //gltfモデルの描画
     void drawMesh(GltfNode* node, std::shared_ptr<Model> model,VkCommandBuffer& commandBuffer

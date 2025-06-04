@@ -82,8 +82,8 @@ private:
 	//すべての文字のビットマップをアトラステクスチャにまとめる
 	void packBitmapsToAtlas(int atlasWidth,int atlasHeight);
 
-	//VkDescriptorSetの作成
-	void createDescriptorSet();
+	//utf-8からshif-jisに変換
+	std::string convUtf8ToShiftJis(std::string& utf);
 
 	~FontManager();
 
@@ -104,6 +104,9 @@ public:
 		delete instance;
 		instance = nullptr;
 	}
+
+	std::shared_ptr<ImageData> getTexture() { return atlasTexture; }
+	VkDescriptorSet& getDescriptorSet() { return atlasTexDescriptorSet; }
 
 	//一つの文字のフォント画像を取得
 	std::vector<CharFont>& getCharFont(const std::string str);

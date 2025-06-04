@@ -73,7 +73,13 @@ private:
 	//uiのテクスチャを張り付けるための長方形のバッファ
 	BufferObject pointBuffer;
 
+	//UI用の画像が結び付けられている
+	VkDescriptorSet descriptorSet;
+
 protected:
+
+	//UIのタイプ
+	UINum uiNum;
 
 	//uiの伸縮
 	float scale;
@@ -102,17 +108,12 @@ protected:
 	//長方形のインデックス
 	std::array<uint32_t, 6> indices;
 
-	//UI用の画像が結び付けられている
-	VkDescriptorSet descriptorSet;
-
 	//画像データ(uiイラストなど)
 	std::shared_ptr<ImageData> uiImage;
 
 	void updateUniformBuffer();
 
 	virtual void cleanupVulkan();
-
-	virtual void createDescriptorSet();
 
 public:
 
@@ -122,6 +123,11 @@ public:
 	{
 		//gpu上のバッファなどを破棄
 		cleanupVulkan();
+	}
+
+	UINum getUINum()
+	{
+		return uiNum;
 	}
 
 	bool isExist()

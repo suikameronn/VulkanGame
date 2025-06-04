@@ -197,30 +197,7 @@ void FontManager::packBitmapsToAtlas(int atlasWidth, int atlasHeight)
     //gpuã‚É‰æ‘œ‚ð“WŠJ
     VkFormat format = VK_FORMAT_R8_UNORM;
     VulkanBase::GetInstance()->createTexture(atlasTexture, format);
-    //VkDescriptorSet‚Ìì¬
-    createDescriptorSet();
-}
-
-//VkDescriptorSet‚Ìì¬
-void FontManager::createDescriptorSet()
-{
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = atlasTexture->getTexture()->view;
-    imageInfo.sampler = atlasTexture->getTexture()->sampler;
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = atlasTexDescriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pImageInfo = &imageInfo;
-
-    VkDevice device = VulkanBase::GetInstance()->getDevice();
-
-    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    VulkanBase::GetInstance()->createFontDescriptorSet(atlasTexture, atlasTexDescriptorSet);
 }
 
 std::vector<CharFont>& FontManager::getCharFont(const std::string str)

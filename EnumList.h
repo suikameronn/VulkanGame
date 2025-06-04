@@ -17,6 +17,12 @@ enum ObjNum
 	DIRECTIONALLIGHT
 };
 
+enum UINum
+{
+	UI = 0,
+	TEXT
+};
+
 #define TYPEOBJECT 0
 #define TYPEMODEL 1
 #define TYPELIGHT 101

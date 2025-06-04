@@ -4,6 +4,8 @@
 
 Text::Text(std::string text)
 {
+	uiNum = UINum::TEXT;
+
 	exist = true;
 
 	GameManager* manager = GameManager::GetInstance();
@@ -31,21 +33,29 @@ Text::Text(std::string text)
 	{
 		uint32_t code = utf8::next(begin, end);
 
-		if (code != ' ')
+		if (!isSpaceCharacter(code))
 		{
+			//その文字が空白ではない場合
 			textLengthNonSpace++;
+
+			//utf8のコードを記録する
+			utf8Codes.push_back(code);
 		}
 	}
 
 	//スペースを除いた文字数の数だけ、ポリゴンを作成する
 	vertices.resize(UIVertexCount * textLengthNonSpace);
+	mappedBuffers.resize(textLengthNonSpace);
+	descriptorSets.resize(textLengthNonSpace);
 
 	indices = { 0, 1, 2, // 最初の三角形
 				2, 3, 1 };  // 2番目の三角形
+}
 
-	//座標変換行列用のバッファの作成
-	for (auto& mappedBuffer : mappedBuffers)
-	{
-		VulkanBase::GetInstance()->uiCreateUniformBuffer(mappedBuffer);
-	}
+//utf8の文字が空白かそうでないか
+//空白の場合true
+bool Text::isSpaceCharacter(const char32_t code)
+{
+	return code == U'\u0020' || code == U'\u00A0'
+		|| code == U'\u3000';
 }
