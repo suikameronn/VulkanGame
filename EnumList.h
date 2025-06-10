@@ -19,7 +19,7 @@ enum ObjNum
 
 enum UINum
 {
-	UI = 0,
+	IMAGE = 0,
 	TEXT
 };
 

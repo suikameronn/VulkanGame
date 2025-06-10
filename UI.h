@@ -17,10 +17,19 @@
 #define UIVertexCount 4
 #define UIIndexCount 6
 
+//UIの表示優先度を示す 降順
+enum class UILayer
+{
+	MENU = 0,//最前列
+	INGAME,
+	BACKGROUND
+};
+
 //2D用の頂点構造体
 struct Vertex2D
 {
-	glm::vec2 pos;
+	//z値は、UIをレンダイングする際の優先順位に使用
+	glm::vec3 pos;
 	glm::vec2 uv;
 };
 
@@ -54,9 +63,13 @@ struct MatricesUBO2D
 
 class UI
 {
-private:
-	//座標変換行列
-	glm::mat4 transformMatrix;
+protected:
+
+	//長方形のインデックス
+	std::vector<uint32_t> indices;
+
+	//長方形の頂点
+	std::vector<Vertex2D> vertices;
 
 	//ui画像のアスペクト比
 	glm::vec2 aspect;
@@ -64,19 +77,8 @@ private:
 	//uiの幅と高さ
 	float uiWidth, uiHeight;
 
-	//uniform buffer用のバッファ
-	MappedBuffer mappedBuffer;
-
-	//長方形の頂点
-	std::array<Vertex2D, UIVertexCount> vertices;
-
-	//uiのテクスチャを張り付けるための長方形のバッファ
-	BufferObject pointBuffer;
-
-	//UI用の画像が結び付けられている
-	VkDescriptorSet descriptorSet;
-
-protected:
+	//座標変換行列
+	glm::mat4 transformMatrix;
 
 	//UIのタイプ
 	UINum uiNum;
@@ -105,8 +107,15 @@ protected:
 	//uiの表示非表示
 	bool isVisible;
 
-	//長方形のインデックス
-	std::array<uint32_t, 6> indices;
+	//uiのテクスチャを張り付けるための長方形のバッファ
+	std::array<BufferObject, 2> pointBuffers;
+
+	//UI用の画像が結び付けられている
+	VkDescriptorSet transformDescriptorSet;
+	VkDescriptorSet imageDescriptorSet;
+
+	//uniform buffer用のバッファ
+	MappedBuffer mappedBuffer;
 
 	//画像データ(uiイラストなど)
 	std::shared_ptr<ImageData> uiImage;
@@ -135,9 +144,6 @@ public:
 		return exist;
 	}
 
-	const uint32_t vertexCount = UIVertexCount;
-	const uint32_t indexCount = UIIndexCount;
-
 	bool isTransparent()
 	{
 		return transparent;
@@ -163,20 +169,27 @@ public:
 	void setVisible(bool visible);
 	bool getVisible() { return isVisible; }
 
+	uint32_t getVerticesSize() { return static_cast<uint32_t>(vertices.size()); }
+	uint32_t getIndicesSize() { return static_cast<uint32_t>(indices.size()); }
+
 	//頂点配列の取得
 	Vertex2D* getVertices();
 
 	//インデックス配列の取得
 	uint32_t* getIndices();
 
+	//gpu上のバッファの数
+	const int getPointBufferSize() { return static_cast<int>(pointBuffers.size()); }
+
 	//gpu上の頂点に関するバッファを取得
-	BufferObject& getPointBuffer();
+	BufferObject* getPointBuffer();
 
 	//uniform bufferを取得
 	MappedBuffer& getMappedBuffer() { return mappedBuffer; }
 
 	//descriptroSetの取得
-	VkDescriptorSet& getDescriptorSet() { return descriptorSet; }
+	VkDescriptorSet& getTransformDescriptorSet() { return transformDescriptorSet; }
+	virtual VkDescriptorSet& getImageDescriptorSet() { return imageDescriptorSet; }
 
 	//uiとして見られるテクスチャの取得
 	TextureData* getUITexture();
@@ -191,10 +204,10 @@ public:
 	void createTexture(std::shared_ptr<ImageData> image);
 
 	//座標変換行列の更新
-	void updateTransformMatrix();
+	virtual void updateTransformMatrix();
 
 	//初期フレームの時に実行する
-	void initFrameSettings();
+	virtual void initFrameSettings();
 
 	//フレーム終了時に実行する
 	void frameEnd();

@@ -60,7 +60,16 @@ void Scene::initFrameSetting()
 	for (auto itr = sceneUI.begin(); itr != sceneUI.end(); itr++)
 	{
 		(*itr)->initFrameSettings();
-		vulkan->setUI(*itr);
+
+		switch ((*itr)->getUINum())
+		{
+		case UINum::IMAGE:
+			vulkan->setUI(*itr);
+			break;
+		case UINum::TEXT:
+			vulkan->setText(std::static_pointer_cast<Text>(*itr));
+			break;
+		}
 	}
 
 	//シャドウマッピングの用意
@@ -114,6 +123,7 @@ void Scene::registerFunctions()//luaから呼び出される静的関数を設定
 	lua_register(lua, "setHDRIMap", glueSceneFunction::glueSetHDRIMap);//HDRI画像の設定
 	lua_register(lua, "setUVScale", glueSceneFunction::glueSetUVScale);//uvを調整するようにして、テクスチャの引き延ばしを防ぐ
 	lua_register(lua, "setTransparent", glueSceneFunction::glueSetTransparent);//半透明の表示のフラッグを設定
+	lua_register(lua, "createText", glueSceneFunction::glueCreateText);//テキストUIを作成
 }
 
 //初期座標の設定
@@ -629,7 +639,14 @@ void Scene::render()
 	{
 		if (!ui->isTransparent())
 		{
-			vulkan->renderUI(ui);
+			switch (ui->getUINum())
+			{
+			case UINum::IMAGE:
+				vulkan->renderUI(ui);
+				break;
+			case UINum::TEXT:
+				vulkan->renderText(std::static_pointer_cast<Text>(ui));
+			}
 		}
 	}
 
@@ -664,7 +681,15 @@ void Scene::render()
 	{
 		if (ui->isTransparent())
 		{
-			vulkan->renderUI(ui);
+			switch (ui->getUINum())
+			{
+			case UINum::IMAGE:
+				vulkan->renderUI(ui);
+				break;
+			case UINum::TEXT:
+				vulkan->renderText(std::static_pointer_cast<Text>(ui));
+				break;
+			}
 		}
 	}
 

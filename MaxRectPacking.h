@@ -5,17 +5,25 @@
 
 struct Rect
 {
-	int x;
-	int y;
-	int width;
-	int height;
+	float x;
+	float y;
+	float width;
+	float height;
 
 	//回転させたかどうか
-	bool rotated = false;
+	bool rotated;
 
-	//引数のRectをこのRectが完全に含んでいるかどうか
-	//このRectが引数のRectの一部でも含んでいない部分があれば
-	//falseを返す
+	Rect()
+	{
+		x = 0.0f;
+		y = 0.0f;
+		width = 0.0f;
+		height = 0.0f;
+
+		rotated = false;
+	}
+
+	//引数のrectがこのrectを完全に含んでいるかどうか
 	bool isContain(const Rect& rect) const
 	{
 		return x >= rect.x && y >= rect.y
@@ -29,8 +37,8 @@ class MaxRectPacking
 private:
 
 	//ビンの幅と高さ
-	int binWidth;
-	int binHeight;
+	float binWidth;
+	float binHeight;
 
 	//最新の新しい空き領域の数
 	size_t newFreeRectLastSize;
@@ -46,8 +54,8 @@ private:
 	void placeRect(const Rect& node);
 
 	//面積を考慮した現在の空き領域の中で最適な領域を選択する
-	Rect findPositionNewBAF(int width, int height
-		, int& bestAreaFit, int& bestShortSideFit);
+	Rect findPositionNewBAF(float width, float height
+		, float& bestAreaFit, float& bestShortSideFit);
 
 	//新しい空き矩形を空きリストに入れる
 	void insertNewFreeRect(const Rect& rect);
@@ -63,10 +71,10 @@ private:
 
 public:
 
-	MaxRectPacking(int width, int height);
+	MaxRectPacking(float width, float height);
 
 	~MaxRectPacking() {};
 
 	//ビンを挿入する
-	Rect& insert(bool& packingSuccess,int width, int height);
+	Rect insert(bool& packingSuccess,float width, float height);
 };

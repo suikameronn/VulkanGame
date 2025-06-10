@@ -16,7 +16,7 @@ Bullet::Bullet(float s, float length, glm::vec3 dir, glm::vec3 pos, float limit)
 
 	ray.direction = glm::normalize(dir);
 
-	//弾の向きを進行方向に合わせる
+	//弾の3Dモデルの向きを計算する
 	calculateBulletAngle();
 
 	updateTransformMatrix();
@@ -31,7 +31,7 @@ void Bullet::calculateBulletAngle()
 	//z軸は回転させない
 	float roll = 0.0f;
 
-	//度に変換しておく
+	//3Dモデルの回転角度を計算
 	rotate.x = pitch * (180.0f / glm::pi<float>());
 	rotate.y = yaw * (180.0f / glm::pi<float>());
 	rotate.z = roll * (180.0f / glm::pi<float>());
@@ -44,7 +44,7 @@ Bullet::~Bullet()
 	vulkan->addDefferedDestructBuffer(ray.mappedBuffer);
 }
 
-//初回フレームの設定
+//初期フレームに、レイキャスト時のレイの長さなどを計算
 void Bullet::initFrameSetting()
 {
 	if (lua)
@@ -52,7 +52,7 @@ void Bullet::initFrameSetting()
 		luaL_dofile(lua, luaPath.c_str());
 		coroutine = lua_newthread(lua);
 
-		createTransformTable();//オブジェクトのトランスフォームをluaに送る
+		createTransformTable();//luaに座標変換用の行列の変数を作成
 
 		lua_getglobal(coroutine, "Update");
 
@@ -79,7 +79,7 @@ void Bullet::initFrameSetting()
 	initMin = min;
 	initMax = max;
 
-	//アニメーション行列の初期化
+	//アニメーション行列の配列を初期化
 	for (auto& matrices : jointMatrices)
 	{
 		std::fill(matrices.begin(), matrices.end(), glm::mat4(1.0f));
@@ -87,21 +87,17 @@ void Bullet::initFrameSetting()
 
 	updateTransformMatrix();
 
-	//シーン全体のR-treeにこのオブジェクトを追加
-
-	/////shared_from_thisでなぜかエラーがでる
+	//R木にこのインスタンスを追加
 	scene->addModelToRTree(std::dynamic_pointer_cast<Model>(shared_from_this()));
 
-	//レイキャスト時のレイの設定
-	glm::vec3 d = mbrMax - mbrMin;
-	float a = glm::dot(mbrMax - mbrMin, ray.direction);
+	//レイキャスト時のレイの長さとレイの始点を設定
 	ray.length = abs(glm::dot(mbrMax - mbrMin, ray.direction));
 	ray.origin = pivot - ray.direction * (ray.length / 2.0f);
 
-	//gpuレイキャスト時のバッファを作成
+	//gpu上にバッファを作成
 	VulkanBase::GetInstance()->createUniformBuffer(&ray.mappedBuffer, ray.getSize());
 
-	//gpu上に値をコピー
+	//gpuにレイのデータをコピーする
 	ray.copyToGpuBuffer();
 }
 
@@ -109,7 +105,7 @@ void Bullet::Update()
 {
 	if (abs(glm::length(shootPos - getPosition())) >= distanceLimit)
 	{
-		//弾丸のオブジェクトを削除する
+		//この場合、弾を削除予定にする
 		exist = false;
 	}
 
@@ -118,23 +114,23 @@ void Bullet::Update()
 	setPosition(getPosition() + ray.direction * speed);
 }
 
-void Bullet::updateTransformMatrix()//座標変換行列を計算する
+void Bullet::updateTransformMatrix()//座標変換行列を更新
 {
 	transformMatrix = glm::translate(glm::mat4(1.0), position)
 		* rotate.getRotateMatrix() * glm::scale(glm::mat4(1.0f), initScale * scale);
 
-	//AABBの更新
+	//AABBを更新
 	min = transformMatrix * glm::vec4(initMin, 1.0f);
 	max = transformMatrix * glm::vec4(initMax, 1.0f);
 
-	//MBRの更新
+	//MBRを更新
 	calcMBR();
 
 	pivot = (mbrMin + mbrMax) / 2.0f;
 
-	//レイの始点の更新
+	//レイの始点を更新
 	ray.origin = pivot - ray.direction * (ray.length / 2.0f);
-	//レイの情報の更新
+	//gpuにレイのデータをコピーする
 	ray.copyToGpuBuffer();
 
 	if (colider)
@@ -146,7 +142,7 @@ void Bullet::updateTransformMatrix()//座標変換行列を計算する
 
 	if (rNode)
 	{
-		//Rツリー上のオブジェクトの位置を更新する
+		//R木を更新
 		scene->updateObjectPos(std::dynamic_pointer_cast<Model>(shared_from_this()), rNode);
 	}
 }
@@ -158,7 +154,8 @@ void Bullet::collision(std::shared_ptr<Model> model)
 		return;
 	}
 
-	//レイキャスト時に衝突するメッシュまでの距離とメッシュが所属するノードへのポインタ
+	//レイキャスト時に、レイがポリゴンにヒットした場合
+	//以下の変数に、衝突したポリゴンとレイの距離と当たったポリゴンのGltfNodeが返ってくる
 	float distance;
 	GltfNode* node;
 
@@ -166,7 +163,7 @@ void Bullet::collision(std::shared_ptr<Model> model)
 
 	if (node)
 	{
-		//衝突した二つのモデルを消す
+		//このインスタンスを削除予定にする
 		model->notExist();
 		this->notExist();
 	}

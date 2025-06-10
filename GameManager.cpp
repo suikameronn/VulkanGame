@@ -2,31 +2,31 @@
 
 GameManager* GameManager::gameManager = nullptr;
 
-void GameManager::initGame()//初期化設定
+void GameManager::initGame()//ゲーム全体の初期化処理
 {
     VulkanBase* vulkan = VulkanBase::GetInstance();
 
-    frameDuration = (1.0f / (fps + 1)) * 1000.0f;//設定されたフレームレートから、1フレームでの最低の処理時間を設定
+    frameDuration = (1.0f / (fps + 1)) * 1000.0f;//指定したfpsから、一フレームにかけられる時間を計算する
 
     glfwGetWindowSize(window, &window_width, &window_height);
 
     uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
 
-    vulkan->initVulkan();//Vulkanのデータの一部をあらかじめ用意しておく
+    vulkan->initVulkan();//Vulkanの初期化
 
-    FontManager* fontmanager = FontManager::GeInstance();
+    FontManager* fontmanager = FontManager::GetInstance();
 
-    //setLoadUI();//ロードUIの設定
+    //setLoadUI();//ロードUIを設定
 
     bool load = false;
     //drawLoading(load);
 
-    load = createScene();//ステージの読み込み
+    load = createScene();//luaスクリプトを読み取り、シーンの作成
 
-    //ロード画面描画の終了を待つ
+    //シーンの作成が終わるまで、待機する
     //ThreadPool::GetInstance()->stopMainThreadSingle();
 
-    mainGameLoop();//ゲームループ
+    mainGameLoop();//ゲームのメインループを開始
 }
 
 //ロードUIの設定
@@ -42,14 +42,14 @@ void GameManager::setLoadUI()
     ui->updateTransformMatrix();
     Storage::GetInstance()->setLoadUI(ui);
 
-    //gpu上に頂点バッファなどを作成
+    //gpu上にロードUIのテクスチャなどを展開する
     vulkan->setUI(ui);
 }
 
-//ロードUIの表示
+//ロードUIを描画する
 void GameManager::drawLoading(bool& loadFinish)
 {
-    //ロード画面の描画(別スレッドで実行)
+    //非同期で描画させる
     std::function<void()> function = [this,&loadFinish]()
         {
             ThreadPool* pool = ThreadPool::GetInstance();
@@ -57,7 +57,7 @@ void GameManager::drawLoading(bool& loadFinish)
             VulkanBase* vulkan = VulkanBase::GetInstance();
             Storage* storage = Storage::GetInstance();
 
-            auto start = std::chrono::system_clock::now();//フレーム開始時間
+            auto start = std::chrono::system_clock::now();//フレームの開始時間を計測
 
             Rotate2D rot2D;
             rot2D.z = 0.0f;
@@ -66,63 +66,63 @@ void GameManager::drawLoading(bool& loadFinish)
 
             while (!loadFinish)
             {
-                //UIの回転行列を計算
+                //UIを回転させる
                 loadUI->setRotate(rot2D);
                 loadUI->updateTransformMatrix();
 
-                //UIの描画
+                //UIを描画する
                 //vulkan->drawLoading();
 
-                //UIの回転
+                //UIの角度を調整する
                 rot2D.z++;
 
                 loadUI->frameEnd();
 
-                //fps調整
-                auto end = std::chrono::system_clock::now();//フレーム終了時間
-                float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());//フレーム間時間計測
+                //fps制限を掛ける
+                auto end = std::chrono::system_clock::now();//フレーム時間の終了時間を計測
+                float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());//フレーム間の時間を計算
                 if (elapsed < this->frameDuration)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(this->frameDuration - elapsed)));//処理を停止する
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(this->frameDuration - elapsed)));//fpsを制限する
                 }
                 start = std::chrono::system_clock::now();
             }
 
-            //ロード画面レンダリングの後始末をする
+            //ロード画面の描画をやめる
             vulkan->stopLoading();
         };
 
-    //別スレッドで実行開始
+    //ロードUIの開始
     ThreadPool::GetInstance()->runSingle(function);
 }
 
-bool GameManager::createScene()//luaからステージの様子を読み込む
+bool GameManager::createScene()//シーンを作成する
 {
-    scene = Scene::GetInstance();//luaから読み取ったデータからステージの様子を持つクラス
-    scene->init("LuaScripts/scene.lua");//ステージの読み込み
+    scene = Scene::GetInstance();
+    scene->init("LuaScripts/scene.lua");//luaスクリプトを読み取りシーンを作成する
 
     return true;
 }
 
 void GameManager::mainGameLoop()//メインゲームループ
 {
-    start = std::chrono::system_clock::now();//フレーム開始時間
+    start = std::chrono::system_clock::now();//フレーム時間を計測
 
     while (true)
     {
 
-        exit = scene->UpdateScene();//ゲームを終了する場合、trueが返る
+        exit = scene->UpdateScene();//シーン全体を更新する
 
-        if (exit == GAME_FINISH || exit == GAME_RESTART || glfwWindowShouldClose(window))//メインゲームループの終了処理
+        if (exit == GAME_FINISH || exit == GAME_RESTART || glfwWindowShouldClose(window))//シーンを終了するかどうか
         {
             break;
         }
 
-        end = std::chrono::system_clock::now();//フレーム終了時間
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間計測
+        end = std::chrono::system_clock::now();//フレーム終了時間を計測
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間を計算する
         if (elapsed < frameDuration)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//処理を停止する
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//fpsを制限する
         }
         else
         {
@@ -130,33 +130,29 @@ void GameManager::mainGameLoop()//メインゲームループ
         }
         start = std::chrono::system_clock::now();
 
-        Controller::GetInstance()->initInput();//キーボードから入力を初期化
-        glfwPollEvents();//キーボードから入力を取得
+        Controller::GetInstance()->initInput();//キー入力を初期化
+        glfwPollEvents();//キー入力などを受け取る
     }
 
     exitScene();
 }
 
-//ステージを出る
+//シーンを狩猟させる処理
 void GameManager::exitScene()
 {
-    //ステージを破棄
+    //シーンを破棄する
     if (scene)
     {
         scene->Destroy();
     }
 
-    //破棄予定のバッファをすべて破棄する
+    //遅延させて破棄する予定のバッファをすべて破棄する
     VulkanBase::GetInstance()->allCleanupDefferedBuffer();
 
     if (exit == GAME_FINISH || glfwWindowShouldClose(window))
     {
-        //ゲーム全体を終了
+        //ゲームを終了させる
         FinishGame();
-    }
-    else if(exit == GAME_RESTART)
-    {
-        RestartGame();
     }
 }
 
@@ -164,12 +160,4 @@ void GameManager::exitScene()
 void GameManager::FinishGame()
 {
     FinishInstance();
-}
-
-//ゲームのリスタート処理 読み取ったリソースは解放しない
-void GameManager::RestartGame()
-{
-    VulkanBase::GetInstance()->FinishVulkanBase();
-
-    initGame();
 }

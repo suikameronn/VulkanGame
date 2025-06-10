@@ -1,11 +1,13 @@
 #include"MaxRectPacking.h"
 
-MaxRectPacking::MaxRectPacking(int width, int height)
+#include<assert.h>
+
+MaxRectPacking::MaxRectPacking(float width, float height)
 {
 	binWidth = width;
 	binHeight = height;
 
-	Rect n;
+	Rect n{};
 	n.x = 0;
 	n.y = 0;
 	n.width = width;
@@ -43,14 +45,14 @@ void MaxRectPacking::placeRect(const Rect& node)
 	usedRects.push_back(node);
 }
 
-Rect MaxRectPacking::findPositionNewBAF(int width, int height
-	, int& bestAreaFit, int& bestShortSideFit)
+Rect MaxRectPacking::findPositionNewBAF(float width, float height
+	, float& bestAreaFit, float& bestShortSideFit)
 {
 	Rect bestNode = {};
 
 	//面積と辺の長さを最大値で初期化する
-	bestAreaFit = std::numeric_limits<int>::max();
-	bestShortSideFit = std::numeric_limits<int>::max();
+	bestAreaFit = FLT_MAX;
+	bestShortSideFit = FLT_MAX;
 
 	//すべての空き領域を探索する
 	for (size_t i = 0; i < freeRects.size(); i++)
@@ -81,6 +83,7 @@ Rect MaxRectPacking::findPositionNewBAF(int width, int height
 				bestNode.height = height;
 				bestShortSideFit = shortSideFit;
 				bestAreaFit = areaFit;
+				bestNode.rotated = false;
 			}
 		}
 
@@ -178,6 +181,7 @@ bool MaxRectPacking::splitFreeNode(const Rect& freeNode, const Rect& usedNode)
 
 			//新しいノードの高さを空きノードとこのノードの隙間分にする
 			Rect newNode = freeNode;
+			newNode.rotated = false;
 			newNode.height = usedNode.y - newNode.y;
 			insertNewFreeRect(newNode);
 		}
@@ -188,6 +192,7 @@ bool MaxRectPacking::splitFreeNode(const Rect& freeNode, const Rect& usedNode)
 
 			//新しいノードの高さをノードとこのノードの隙間分だけにする
 			Rect newNode = freeNode;
+			newNode.rotated = false;
 			newNode.y = usedNode.y + usedNode.height;
 			newNode.height = freeNode.y + freeNode.height - (usedNode.y + usedNode.height);
 			insertNewFreeRect(newNode);
@@ -204,6 +209,7 @@ bool MaxRectPacking::splitFreeNode(const Rect& freeNode, const Rect& usedNode)
 
 			//新しいノードの幅を空きノードとこのノードの隙間分だけにする
 			Rect newNode = freeNode;
+			newNode.rotated = false;
 			newNode.width = usedNode.x - newNode.x;
 			insertNewFreeRect(newNode);
 		}
@@ -214,6 +220,7 @@ bool MaxRectPacking::splitFreeNode(const Rect& freeNode, const Rect& usedNode)
 
 			//新しいノードの幅を空きノードとこのノードの隙間分だけにする
 			Rect newNode = freeNode;
+			newNode.rotated = false;
 			newNode.x = usedNode.x + usedNode.width;
 			newNode.width = freeNode.x + freeNode.width - (usedNode.x + usedNode.width);
 			insertNewFreeRect(newNode);
@@ -254,16 +261,17 @@ void MaxRectPacking::pruneFreeList()
 }
 
 //ビンを挿入する
-Rect& MaxRectPacking::insert(bool& packingSuccess,int width, int height)
+Rect MaxRectPacking::insert(bool& packingSuccess,float width, float height)
 {
-	int maxArea = std::numeric_limits<int>::max();
-	int maxLength = std::numeric_limits<int>::max();
+	float maxArea = FLT_MAX;
+	float maxLength = FLT_MAX;
 
 	//最適な空き領域を選択
 	Rect newNode = findPositionNewBAF(width, height, maxArea, maxLength);
 
-	if (newNode.height == 0)
+	if (newNode.height < 1.0)
 	{
+		std::cerr << "not success" << std::endl;
 		packingSuccess = false;
 	}
 

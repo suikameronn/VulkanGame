@@ -10,41 +10,25 @@
 #include FT_FREETYPE_H
 #include"utf8.h"
 
-#include "unicode/utypes.h"
-#include "unicode/ucnv.h"
-#include "unicode/utrans.h"
-#include "unicode/unum.h"
-#include "unicode/localpointer.h"
-
 #include"MaxRectPacking.h"
-
-
 
 #define PADDING_PIXEL 2
 
 struct CharFont
 {
-	glm::ivec2 size;//ビットマップのサイズ
+	glm::vec2 size;//ビットマップのサイズ
 	glm::vec2 bearing;//ベースラインからのオフセット
-	uint32_t advance;//次の文字までの進み幅
+	float advance;//次の文字までの進み幅
 	glm::vec2 uvMin;//アトラス内のuv座標
 	glm::vec2 uvMax;//アトラス内のuv座標
+	float fontHeight;//改行時に下げるべきピクセル値
 
 	Rect rect;//アトラステクスチャ内のビットマップがある領域
 
-	void uvSet(int width, int height)
+	void uvSet(float width, float height)
 	{
-		float texWidth = static_cast<float>(width);
-		float texHeight = static_cast<float>(height);
-
-		uvMin = glm::vec2(rect.x / texWidth, rect.y / texHeight);
-		uvMax = glm::vec2((rect.x + rect.width) / texWidth, (rect.y + rect.height) / texHeight);
-
-		if (rect.rotated)
-		{
-			uvMin = glm::vec2(rect.x / texWidth, (rect.y + rect.height) / texHeight);
-			uvMax = glm::vec2((rect.x + rect.width) / texWidth, rect.y / texHeight);
-		}
+		uvMin = glm::vec2(rect.x / width, rect.y / height);
+		uvMax = glm::vec2((rect.x + rect.width) / width, (rect.y + rect.height) / height);
 	}
 };
 
@@ -89,7 +73,7 @@ private:
 
 public:
 
-	static FontManager* GeInstance()
+	static FontManager* GetInstance()
 	{
 		if (!instance)
 		{
@@ -105,9 +89,12 @@ public:
 		instance = nullptr;
 	}
 
+	//フォント全体の高さを取得
+	const float getFontHeight();
+
 	std::shared_ptr<ImageData> getTexture() { return atlasTexture; }
 	VkDescriptorSet& getDescriptorSet() { return atlasTexDescriptorSet; }
 
 	//一つの文字のフォント画像を取得
-	std::vector<CharFont>& getCharFont(const std::string str);
+	void getCharFont(const std::vector<uint32_t>& utf8Codes, std::vector<CharFont>& charFonts);
 };

@@ -96,8 +96,6 @@ public:
 	void exitScene();
 	//ゲーム全体の終了処理
 	void FinishGame();
-	//読み取ったデータはそのままにゲームリスタートさせる
-	void RestartGame();
 
 	//ロードUIを表示
 	void drawLoading(bool& loadFinish);

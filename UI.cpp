@@ -5,9 +5,11 @@
 
 UI::UI(std::shared_ptr<ImageData> image)
 {
-	uiNum = UINum::UI;
+	uiNum = UINum::IMAGE;
 
 	exist = true;
+
+	uiImage = image;
 
 	GameManager* manager = GameManager::GetInstance();
 
@@ -23,30 +25,28 @@ UI::UI(std::shared_ptr<ImageData> image)
 
 	isVisible = true;
 
-	vertices = { glm::vec2(0.0f) };
+	vertices.resize(UIVertexCount);
 
-	//長方形の頂点のuvを設定する
+	//UIの画像を張り付けるためのポリゴンの頂点の座標を設定
 	vertices[0].uv = glm::vec2(0.0f);
 	vertices[1].uv = glm::vec2(1.0f, 0.0f);
 	vertices[2].uv = glm::vec2(0.0f, 1.0f);
 	vertices[3].uv = glm::vec2(1.0f);
 
-	indices = { 0, 1, 2, // 最初の三角形
-				2, 3, 1 };  // 2番目の三角形
+	indices.resize(UIIndexCount);
+	indices = { 0, 1, 2, 
+				2, 3, 1 };
 
 	aspect = glm::vec2(1.0f);
 
 	uiWidth = 1.0f;
 	uiHeight = 1.0f;
 
-	//座標変換行列用のバッファの作成
+	//UIを表示するための行列を記録するためのバッファを作成
 	VulkanBase::GetInstance()->uiCreateUniformBuffer(mappedBuffer);
-
-	//テクスチャの設定
-	createTexture(image);
 }
 
-//座標の設定
+//2D上の座標を設定
 void UI::setPosition(glm::vec2 pos)
 {
 	position = pos;
@@ -54,14 +54,14 @@ void UI::setPosition(glm::vec2 pos)
 	isUpdateTransformMatrix = true;
 }
 
-//回転の設定
+//2D上の回転を設定
 void UI::setRotate(Rotate2D rot)
 {
 	rotate = rot;
 	isUpdateTransformMatrix = true;
 }
 
-//伸縮の設定
+//2D上のスケールを設定
 void UI::setScale(float scale)
 {
 	this->scale = scale;
@@ -71,56 +71,50 @@ void UI::setScale(float scale)
 	uiHeight = aspect[1] * scale;
 }
 
-//表示非表示の設定 引数によって設定
+//UIの表示・非表示を設定
 void UI::setVisible(bool visible)
 {
 	isVisible = visible;
 }
 
-//頂点配列の取得
+//頂点配列を返す
 Vertex2D* UI::getVertices()
 {
 	return vertices.data();
 }
 
-//インデックス配列の取得
+//インデックス配列を返す
 uint32_t* UI::getIndices()
 {
 	return indices.data();
 }
 
-//gpu上の頂点に関するバッファを取得
-BufferObject& UI::getPointBuffer()
+//gpu上の頂点バッファを返す
+BufferObject* UI::getPointBuffer()
 {
-	return pointBuffer;
+	return pointBuffers.data();
 }
 
-//uiとして見られるテクスチャの取得
+//uiの画像のテクスチャを返す
 TextureData* UI::getUITexture()
 {
 	return uiImage->getTexture();
 }
 
-//ui画像を返す
+//uiの画像を返す
 std::shared_ptr<ImageData> UI::getImageData()
 {
 	return uiImage;
 }
 
-//テクスチャ画像の設定とテクスチャの作成
+//uiの画像をgpu上に展開し、テクスチャを作成
 void UI::createTexture(std::shared_ptr<ImageData> image) 
 {
 	uiImage = image;
 
 	VulkanBase* vulkan = VulkanBase::GetInstance();
 
-	//VkDescriptorSetの用意が出来ているなら、結び付けを更新する
-	if (descriptorSet)
-	{
-		VulkanBase::GetInstance()->createUIDescriptorSet(uiImage->getTexture(), mappedBuffer, descriptorSet);
-	}
-
-	//画像のアスペクト比を計算する
+	//ui画像の縦横比を計算
 	float commonDivide = static_cast<float>(std::gcd(uiImage->getWidth(), uiImage->getHeight()));
 
 	aspect[0] = uiImage->getWidth() / commonDivide;
@@ -129,19 +123,19 @@ void UI::createTexture(std::shared_ptr<ImageData> image)
 	uiWidth = aspect[0] * scale;
 	uiHeight = aspect[1] * scale;
 
-	//頂点をアスペクト比に合わせて更新する
+	//uiの縦横比からポリゴンの座標を設定
 	vertices[0].pos = glm::vec2(0.0f,0.0f);
 	vertices[1].pos = glm::vec2(aspect[0], 0.0f);
 	vertices[2].pos = glm::vec2(0.0f, aspect[1]);
 	vertices[3].pos = glm::vec2(aspect[0], aspect[1]);
 }
 
-//座標変換行列の更新
+//uiを表示する座標変換行列を更新
 void UI::updateTransformMatrix()
 {
 	transformMatrix = glm::mat4(1.0f);
 
-	//画像を中心に回転させる
+	//2D用の行列を作成
 	transformMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.0f))
 		* rotate.getRotateMatrix()
 		* glm::translate(glm::mat4(1.0f), glm::vec3(-uiWidth / 2.0f, -uiHeight / 2.0f, 0.0f))
@@ -150,27 +144,27 @@ void UI::updateTransformMatrix()
 	isUpdateTransformMatrix = false;
 }
 
-//初期フレームの時に実行する
+//uiの座標変換行列を更新
 void UI::initFrameSettings()
 {
+	//UIの画像をgpu上に展開
+	createTexture(uiImage);
+
 	updateTransformMatrix();
 }
 
+//gpu上のバッファを破棄
 void UI::cleanupVulkan()
 {
-	VkDevice device = VulkanBase::GetInstance()->GetDevice();
+	VulkanBase* vulkan = VulkanBase::GetInstance();
 
-	vkDestroyBuffer(device, pointBuffer.vertBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.vertHandler, nullptr);
-
-	vkDestroyBuffer(device, pointBuffer.indeBuffer, nullptr);
-	vkFreeMemory(device, pointBuffer.indeHandler, nullptr);
-
-	//uniform bufferの解放
-	mappedBuffer.destroy(device);
+	for (BufferObject& pointBuffer : pointBuffers)
+	{
+		vulkan->addDefferedDestructBuffer(pointBuffer);
+	}
+	vulkan->addDefferedDestructBuffer(mappedBuffer);
 }
 
-//ユニフォームバッファの更新
 void UI::updateUniformBuffer()
 {
 	MatricesUBO2D ubo{};
@@ -180,7 +174,6 @@ void UI::updateUniformBuffer()
 	memcpy(mappedBuffer.uniformBufferMapped, &ubo, sizeof(ubo));
 }
 
-//フレーム終了時に実行
 void UI::frameEnd()
 {
 	updateUniformBuffer();

@@ -29,6 +29,12 @@ FontManager::FontManager()
     createAtlasTexture();
 }
 
+//フォント全体の高さを取得
+const float FontManager::getFontHeight()
+{
+    return face->height / 64.0;
+}
+
 FontManager::~FontManager()
 {
     VkDevice device = VulkanBase::GetInstance()->getDevice();
@@ -115,7 +121,7 @@ void FontManager::loadJapaneseFile()
 
         while (begin < end)
         {
-            uint32_t code = utf8::next(begin, end);
+            uint32_t code = utf8::next(begin, end);//12360 12362
 
             createBitmap(code);
         }
@@ -136,10 +142,20 @@ void FontManager::createBitmap(const uint32_t c)
     FT_GlyphSlot& glyph = face->glyph;
 
     //フォントのオフセットなどを設定
-    CharFont font;
-    font.size = glm::vec2(glyph->bitmap.width + 2 * PADDING_PIXEL, glyph->bitmap.rows + 2 * PADDING_PIXEL);
-    font.bearing = glm::vec2(glyph->bitmap_left, glyph->bitmap_top);
-    font.advance = static_cast<uint32_t>(glyph->advance.x);
+    CharFont font{};
+    
+    //パディングを含んだ、文字のビットマップのサイズ
+    font.size = glm::vec2(glyph->bitmap.width + (2.0 * PADDING_PIXEL), glyph->bitmap.rows + (2.0 * PADDING_PIXEL));
+    
+    //文字をベースラインからどれくらいずらしてレンダリングすべきの値、y軸を反転させておく
+    font.bearing = glm::vec2(glyph->metrics.horiBearingX / 64.0, -glyph->metrics.horiBearingY / 64.0);
+    
+    //次の文字への隙間
+    font.advance = glyph->metrics.horiAdvance / 64.0;
+
+    //改行時に下げるべきピクセル値
+    font.fontHeight = face->size->metrics.height / 64.0;
+
     fontMap[c] = font;
 
     bitmaps[c] = std::make_shared<ImageData>(glyph->bitmap);
@@ -160,33 +176,38 @@ void FontManager::packBitmapsToAtlas(int atlasWidth, int atlasHeight)
         {
             //左から右に、一行ずつ読み取っていく
 
-            for (int i = rect.y + PADDING_PIXEL; i < rect.height - PADDING_PIXEL; i++)
+            for (int i = rect.y + PADDING_PIXEL; i < rect.y + rect.height - PADDING_PIXEL; i++)
             {
-                for (int j = rect.x + PADDING_PIXEL; j < rect.width - PADDING_PIXEL; j++)
+                for (int j = rect.x + PADDING_PIXEL; j < rect.x + rect.width - PADDING_PIXEL; j++)
                 {
-                    const int location = (j - rect.x - 1) + (i - rect.y - 1) * rect.height;
+                    const int location = (j - rect.x - PADDING_PIXEL) + (i - rect.y - PADDING_PIXEL) * (rect.width - 2 * PADDING_PIXEL);
 
-                    const unsigned char black =
-                        static_cast<unsigned char*>(bitmaps[c]->getPixelsData())[location];
+                    const unsigned char black = bitmaps[c]->getAt(location);
 
-                    pixels[i * atlasHeight + j] = black;
+                    pixels.at(i * atlasWidth + j) = black;
                 }
             }
         }
         else
         {
-            //左から右に、一行ずつ読み取っていく
+            //元のビットマップを反時計回りに90度回転して
+            //アトラステクスチャにコピーする
 
-            for (int i = rect.y + PADDING_PIXEL; i < rect.height - PADDING_PIXEL; i++)
+            const std::shared_ptr<ImageData>& bitmap = bitmaps[c];
+            for (int i = 0; i < bitmap->getHeight(); i++)
             {
-                for (int j = rect.x + PADDING_PIXEL; j < rect.width - PADDING_PIXEL; j++)
+                for (int j = 0; j < bitmap->getWidth(); j++)
                 {
-                    const int location = (j - rect.x - 1) + (i - rect.y - 1) * rect.height;
+                    const unsigned char black = static_cast<unsigned char*>(bitmap->getPixelsData())[i * bitmap->getWidth() + j];
 
-                    const unsigned char black =
-                        static_cast<unsigned char*>(bitmaps[c]->getPixelsData())[location];
+                    int rotateX = i;
+                    int rotateY = bitmap->getWidth() - 1 - j;
 
-                    pixels[i * atlasHeight + j] = black;
+                    int atlasRotateX = rect.x + PADDING_PIXEL + rotateX;
+                    int atlasRotateY = rect.y + PADDING_PIXEL + rotateY;
+
+                    const int location = atlasRotateY * atlasWidth + atlasRotateX;
+                    pixels.at(location) = black;
                 }
             }
         }
@@ -200,18 +221,16 @@ void FontManager::packBitmapsToAtlas(int atlasWidth, int atlasHeight)
     VulkanBase::GetInstance()->createFontDescriptorSet(atlasTexture, atlasTexDescriptorSet);
 }
 
-std::vector<CharFont>& FontManager::getCharFont(const std::string str)
+
+
+void FontManager::getCharFont(const std::vector<uint32_t>& utf8Codes, std::vector<CharFont>& charFonts)
 {
-    std::vector<CharFont> charFont;
+    charFonts.clear();
+    charFonts.resize(utf8Codes.size());
 
-    const char* begin = str.c_str();
-    const char* end = begin + strlen(str.c_str());
-    while (begin < end)
+    //utf8Codesのunicodeから、対応する文字のグリフの情報をcharFontsに入れていく
+    for (int i = 0; i < utf8Codes.size(); i++)
     {
-        uint32_t code = utf8::next(begin, end);
-
-        charFont.push_back(fontMap[code]);
+        charFonts[i] = fontMap[utf8Codes[i]];
     }
-
-    return charFont;
 }

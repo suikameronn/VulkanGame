@@ -19,6 +19,7 @@
 #include"EnumList.h"
 #include"Light.h"
 #include"UI.h"
+#include"Text.h"
 #include"Cubemap.h"
 
 #include<chrono>
@@ -313,6 +314,22 @@ namespace glueSceneFunction//Sceneクラスの用のglue関数
 		scene->player = std::make_shared<Player>();
 
 		lua_pushlightuserdata(lua, scene->player.get());
+
+		return 1;
+	}
+
+	//テキストUIの作成
+	static int glueCreateText(lua_State* lua)
+	{
+		std::string str = lua_tostring(lua, -1);
+
+		lua_getglobal(lua, "Scene");
+
+		Scene* scene = static_cast<Scene*>(lua_touserdata(lua, -1));
+
+		std::shared_ptr<Text> text = std::make_shared<Text>(str);
+
+		scene->sceneUI.push_back(text);
 
 		return 1;
 	}

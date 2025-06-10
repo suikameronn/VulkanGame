@@ -20,36 +20,29 @@ private:
 	//スペースを除いた文字数
 	int textLengthNonSpace;
 
-	//文字のフォントを張り付けるポリゴンの頂点
-	//ポリゴン一つに文字を張り付ける
-	std::vector<Vertex2D> vertices;
-	std::vector<BufferObject> pointBuffers;
-
-	//文字ごとにポリゴンを移動させる行列を用意する
-	std::vector<glm::mat4> transformMatrices;
-	//文字ごとにポリゴンを移動させる行列を用意する
-	std::vector<MappedBuffer> mappedBuffers;
-	//文字ごとのポリゴン用のVkDescriptorSet
-	std::vector<VkDescriptorSet> descriptorSets;
+	//文字列のフォントのデータ
+	std::vector<CharFont> charFonts;
 
 	//utf8の文字が空白かそうでないか
 	//空白の場合true
 	bool isSpaceCharacter(const char32_t code);
+	
+	//改行記号かどうか
+	bool isStartNewLine(const char32_t code);
+
+	//文字列から必要なフォントを取得する
+	void loadFont();
+
+	//文字列から頂点データを設定する
+	void setVertIndices(std::vector<int>& startNewLinePoint);
+
+	void cleanupVulkan() override;
 
 public:
 
 	Text(std::string str);
 
-	//頂点配列を返す
-	const std::vector<Vertex2D>& getVertices() { return vertices; }
-	//頂点用のバッファの配列を返す
-	std::vector<BufferObject> getPointBuffer() { return pointBuffers; }
-	//行列記録用のバッファの配列を返す
-	std::vector<MappedBuffer>& getMappedBuffer() { return mappedBuffers; }
-	//VkDescriptorSetを返す
-	std::vector<VkDescriptorSet>& getDescriptorSet() { return descriptorSets; }
+	void initFrameSettings() override;
 
-	//テキストを描画する際のポリゴンのインデックスが記録されている
-	//BufferObjectの配列の添え字を返す
-	const int getIndexBufferNum() { return indexBufferNum; }
+	VkDescriptorSet& getImageDescriptorSet() override { return FontManager::GetInstance()->getDescriptorSet(); }
 };

@@ -94,7 +94,7 @@ public:
 		{
 			this->pixels.resize(width * height * channels);
 
-			std::copy(srcPixels, srcPixels + (width * height), pixels.data());
+			std::copy(srcPixels, srcPixels + ((width * height) - 1), pixels.data());
 		}
 	}
 
@@ -179,6 +179,11 @@ public:
 		{
 			return hdriPixels.data();
 		}
+	}
+
+	unsigned char getAt(const int location)
+	{
+		return pixels.at(location);
 	}
 
 	TextureData* getTexture()

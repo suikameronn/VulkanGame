@@ -82,4 +82,6 @@ setHDRIMap("textures/grass.hdr")
 --ゲーム内で使うリソースを読み込んでおく
 loadGltfModel("models/beamBullet.glb")
 
+createText("あいうえお\nあああ")
+
 print("lua finish")

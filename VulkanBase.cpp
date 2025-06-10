@@ -2054,50 +2054,28 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //UIクラス用の頂点バッファーを作成する
     void VulkanBase::createVertexBuffer(std::shared_ptr<UI> ui)
     {
-        VkDeviceSize bufferSize = sizeof(Vertex2D) * ui->vertexCount;
+        const int pointBufferNum = ui->getPointBufferSize();
+
+        VkDeviceSize bufferSize = sizeof(Vertex2D) * ui->getVerticesSize();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, ui->getVertices(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            ui->getPointBuffer().vertBuffer, ui->getPointBuffer().vertHandler);
-
-        //vertexBuffer配列にコピーしていく(vector型)
-        copyBuffer(stagingBuffer, ui->getPointBuffer().vertBuffer, bufferSize);
-
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
-
-    //テキストクラス用の頂点バッファーを作成する
-    void VulkanBase::createVertexBuffer(std::shared_ptr<Text> text)
-    {
-        VkDeviceSize bufferSize = sizeof(Vertex2D) * text->vertexCount;
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-        
-        const std::vector<Vertex2D> vertices = text->getVertices();
-        std::vector<BufferObject> pointBuffers = text->getPointBuffer();
-        for (int i = 0; i < vertices.size(); i++)
+        for (int i = 0; i < pointBufferNum; i++)
         {
+            BufferObject& buffer = ui->getPointBuffer()[i];
+
             void* data;
             vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, &vertices[i], (size_t)bufferSize);
+            memcpy(data, ui->getVertices(), (size_t)bufferSize);
             vkUnmapMemory(device, stagingBufferMemory);
 
             createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                pointBuffers[i].vertBuffer, pointBuffers[i].vertHandler);
+                buffer.vertBuffer, buffer.vertHandler);
 
             //vertexBuffer配列にコピーしていく(vector型)
-            copyBuffer(stagingBuffer, pointBuffers[i].vertBuffer, bufferSize);
+            copyBuffer(stagingBuffer, buffer.vertBuffer, bufferSize);
         }
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -2161,44 +2139,27 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //UI用のインデックスバッファーの作成
     void VulkanBase::createIndexBuffer(std::shared_ptr<UI> ui) 
     {
-        VkDeviceSize bufferSize = sizeof(uint32_t) * ui->indexCount;
+        VkDeviceSize bufferSize = sizeof(uint32_t) * ui->getIndicesSize();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, ui->getIndices(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        const int pointBufferNum = ui->getPointBufferSize();
+        for (int i = 0; i < pointBufferNum; i++)
+        {
+            BufferObject& buffer = ui->getPointBuffer()[i];
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            ui->getPointBuffer().indeBuffer,ui->getPointBuffer().indeHandler);
+            void* data;
+            vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            memcpy(data, ui->getIndices(), (size_t)bufferSize);
+            vkUnmapMemory(device, stagingBufferMemory);
 
-        copyBuffer(stagingBuffer, ui->getPointBuffer().indeBuffer, bufferSize);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                buffer.indeBuffer, buffer.indeHandler);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
-
-    //テキスト用のインデックスバッファーの作成
-    void VulkanBase::createIndexBuffer(std::shared_ptr<Text> text)
-    {
-        VkDeviceSize bufferSize = sizeof(uint32_t) * text->indexCount;
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, text->getIndices(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            text->getPointBuffer()[text->getIndexBufferNum()].indeBuffer, text->getPointBuffer()[text->getIndexBufferNum()].indeHandler);
-
-        copyBuffer(stagingBuffer, text->getPointBuffer()[text->getIndexBufferNum()].indeBuffer, bufferSize);
+            copyBuffer(stagingBuffer, buffer.indeBuffer, bufferSize);
+        }
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -3140,14 +3101,64 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
 
         VkDeviceSize offsets[] = { 0 };
 
-        vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &ui->getPointBuffer().vertBuffer, offsets);
+        BufferObject& pointBuffer = ui->getPointBuffer()[currentFrame];
 
-        vkCmdBindIndexBuffer(commandBuffers[currentFrame], ui->getPointBuffer().indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &pointBuffer.vertBuffer, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffers[currentFrame], pointBuffer.indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        std::array<VkDescriptorSet, 2> descriptorSets;
+        descriptorSets = { ui->getTransformDescriptorSet(),ui->getImageDescriptorSet() };
 
         vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            uiRender.pLayout, 0, 1, &ui->getDescriptorSet(), 0, nullptr);
+            uiRender.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffers[currentFrame], ui->indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffers[currentFrame], ui->getIndicesSize(), 1, 0, 0, 0);
+    }
+
+    //テキストUIのレンダリング
+    void VulkanBase::renderText(std::shared_ptr<Text> text)
+    {
+        if (!text->getVisible())
+        {
+            return;
+        }
+
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, uiRender.fontPipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+
+        VkDeviceSize offsets[] = { 0 };
+
+        BufferObject& pointBuffer = text->getPointBuffer()[currentFrame];
+
+        vkCmdBindVertexBuffers(commandBuffers[currentFrame], 0, 1, &pointBuffer.vertBuffer, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffers[currentFrame], pointBuffer.indeBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        std::array<VkDescriptorSet, 2> descriptorSets =
+        {
+            text->getTransformDescriptorSet(),
+            text->getImageDescriptorSet()
+        };
+
+        //VkDescriptorSetにフォントのアトラステクスチャも含める
+        vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+            uiRender.pLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffers[currentFrame], text->getIndicesSize(), 1, 0, 0, 0);
     }
 
     //キューブマップのレンダリング
@@ -4234,28 +4245,41 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     {
         uiRender.vertPath = "shaders/ui.vert.spv";
         uiRender.fragPath = "shaders/ui.frag.spv";
+        uiRender.fragFontPath = "shaders/textUI.frag.spv";
 
         //VkDescriptorSetLayoutの作成
         {
-            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
-            layoutBindings[0].binding = 0;
-            layoutBindings[0].descriptorCount = 1;
-            layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            layoutBindings[0].pImmutableSamplers = nullptr;
-            layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-            layoutBindings[1].binding = 1;
-            layoutBindings[1].descriptorCount = 1;
-            layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            layoutBindings[1].pImmutableSamplers = nullptr;
-            layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            //トランスフォーム用のレイアウト
+            VkDescriptorSetLayoutBinding layoutBinding{};
+            layoutBinding.binding = 0;
+            layoutBinding.descriptorCount = 1;
+            layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            layoutBinding.pImmutableSamplers = nullptr;
+            layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
-            layoutInfo.pBindings = layoutBindings.data();
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &layoutBinding;
 
-            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &uiRender.layout) != VK_SUCCESS) {
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &uiRender.transformLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create descriptor set layout!");
+            }
+
+            //UI画像用のレイアウト
+            layoutBinding = VkDescriptorSetLayoutBinding{};
+            layoutBinding.binding = 0;
+            layoutBinding.descriptorCount = 1;
+            layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            layoutBinding.pImmutableSamplers = nullptr;
+            layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            layoutInfo = VkDescriptorSetLayoutCreateInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &layoutBinding;
+
+            if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &uiRender.imageLayout) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create descriptor set layout!");
             }
         }
@@ -4280,7 +4304,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             fragShaderStageInfo.module = fragShaderModule;
             fragShaderStageInfo.pName = "main";
 
-            VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+            std::array<VkPipelineShaderStageCreateInfo,2> shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
             vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -4376,11 +4400,18 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicState.pDynamicStates = dynamicStates.data();
 
+            std::array<VkDescriptorSetLayout, 2> layouts =
+            {
+                uiRender.transformLayout,
+                uiRender.imageLayout
+            };
+
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutInfo.setLayoutCount = 1;
-            pipelineLayoutInfo.pSetLayouts = &uiRender.layout;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
 
+            //画像などのレンダリング用のパイプラインレイアウトを作る
             if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &uiRender.pLayout) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create pipeline layout!");
             }
@@ -4388,7 +4419,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             VkGraphicsPipelineCreateInfo pipelineInfo{};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount = 2;
-            pipelineInfo.pStages = shaderStages;
+            pipelineInfo.pStages = shaderStages.data();
             pipelineInfo.pVertexInputState = &vertexInputInfo;
             pipelineInfo.pInputAssemblyState = &inputAssembly;
             pipelineInfo.pViewportState = &viewportState;
@@ -4402,7 +4433,29 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo.pDepthStencilState = &depthStencil;
 
+            //画像などのレンダリング用のパイプラインを作る
             if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &uiRender.pipeline) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create graphics pipeline!");
+            }
+
+            vkDestroyShaderModule(device, fragShaderModule, nullptr);
+
+            //フォントレンダリング用のパイプラインレイアウトを作る
+            fragShaderCode = readFile(uiRender.fragFontPath);
+            fragShaderModule = createShaderModule(fragShaderCode);
+
+            fragShaderStageInfo.module = fragShaderModule;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &uiRender.fontPLayout) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create pipeline layout!");
+            }
+
+            //フォントなどのレンダリング用のパイプラインを作る
+            pipelineInfo.layout = uiRender.fontPLayout;
+
+            shaderStages = { vertShaderStageInfo,fragShaderStageInfo };
+            
+            if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &uiRender.fontPipeline) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create graphics pipeline!");
             }
 
@@ -5770,10 +5823,11 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         createIndexBuffer(ui);
 
         //VkDescriptorSetのバッファーを用意
-        allocateUIDescriptorSet(uiRender.layout, ui->getDescriptorSet());
+        allocateUIDescriptorSet(ui);
 
         //バッファーを結び付ける
-        createUIDescriptorSet(ui->getUITexture(), ui->getMappedBuffer(), ui->getDescriptorSet());
+        createUIDescriptorSet(ui->getUITexture(), ui->getMappedBuffer()
+            , ui->getTransformDescriptorSet(),ui->getImageDescriptorSet());
     }
 
     //テキストの頂点バッファなどを用意する
@@ -5784,34 +5838,38 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         //インデックスバッファの作成
         createIndexBuffer(text);
 
-        std::vector<VkDescriptorSet> descriptorSets = text->getDescriptorSet();
-        for (int i = 0; i < descriptorSets.size(); i++)
-        {
-            //VkDescriptorSetのバッファーを用意
-            allocateUIDescriptorSet(textLayout, descriptorSets[i]);
-        }
+        //VkDescriptorSetのバッファーを用意
+        allocateUIDescriptorSet(text);
 
-        std::vector<MappedBuffer> mappedBuffers = text->getMappedBuffer();
+        MappedBuffer mappedBuffer = text->getMappedBuffer();
+
         //座標変換行列用のバッファの作成
-        for (int i = 0; i < mappedBuffers.size(); i++)
-        {
-            uiCreateUniformBuffer(mappedBuffers[i]);
-            createUIDescriptorSet(mappedBuffers[i], descriptorSets[i]);
-        }
+        createUIDescriptorSet(mappedBuffer, text->getTransformDescriptorSet());
     }
 
     //フォントレンダリング用のVkDescriptorSetを用意
-    void VulkanBase::allocateUIDescriptorSet(const VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet)
+    void VulkanBase::allocateUIDescriptorSet(std::shared_ptr<UI> ui)
     {
         //VkDescriptorSetのバッファを確保
         {
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
-            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &layout;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &uiRender.transformLayout;
 
-            if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+            if (vkAllocateDescriptorSets(device, &allocInfo, &ui->getTransformDescriptorSet()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
+
+            allocInfo = VkDescriptorSetAllocateInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = descriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &uiRender.imageLayout;
+
+            if (vkAllocateDescriptorSets(device, &allocInfo, &ui->getImageDescriptorSet()) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
@@ -5821,6 +5879,24 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 throw std::runtime_error("allocateDescriptorSets: DescriptorSet overflow");
             }
             descriptorSetCount++;
+        }
+    }
+
+    //フォントレンダリング用のVkDescriptorSetを用意
+    void VulkanBase::allocateUIDescriptorSet(std::shared_ptr<Text> text)
+    {
+        //VkDescriptorSetのバッファを確保
+        {
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = descriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &uiRender.transformLayout;
+
+            if (vkAllocateDescriptorSets(device, &allocInfo, &text->getTransformDescriptorSet()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to allocate descriptor sets!");
+            }
         }
     }
 
@@ -5842,8 +5918,8 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
-            allocInfo.descriptorSetCount = static_cast<uint32_t>(1);
-            allocInfo.pSetLayouts = &fontLayout;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &uiRender.imageLayout;
 
             if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
             {
@@ -5878,38 +5954,42 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //UIのテクスチャの変更を反映
-    void VulkanBase::createUIDescriptorSet(TextureData* textureData, MappedBuffer& mappedBuffer, VkDescriptorSet& descriptorSet)
+    void VulkanBase::createUIDescriptorSet(TextureData* textureData, MappedBuffer& mappedBuffer
+        , VkDescriptorSet& transformDescriptorSet, VkDescriptorSet& imageDescriptorSet)
     {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = mappedBuffer.uniformBuffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MatricesUBO2D);
 
+        VkWriteDescriptorSet descriptorWrite{};
+
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = transformDescriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = textureData->view;
         imageInfo.sampler = textureData->sampler;
 
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        descriptorWrites.resize(2);
+        descriptorWrite = VkWriteDescriptorSet{};
 
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = descriptorSet;
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = imageDescriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = descriptorSet;
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
 
     //UI用のテクスチャを張り付けるポリゴンのためのバッファのVkDescriptorSetを作る

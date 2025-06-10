@@ -150,9 +150,18 @@ struct UIRender
     std::string vertPath;
     std::string fragPath;
 
-    VkDescriptorSetLayout layout;
+    std::string fragFontPath;
+
+    //行列用のレイアウト
+    VkDescriptorSetLayout transformLayout;
+    //UIの画像用レイアウト
+    VkDescriptorSetLayout imageLayout;
     VkPipelineLayout pLayout;
     VkPipeline pipeline;
+
+    //フォント用のパイプラインレイアウト
+    VkPipelineLayout fontPLayout;
+    VkPipeline fontPipeline;
 
     //ロード中用のコマンドバッファ
     std::array<VkCommandBuffer,2> loadCommandBuffers;
@@ -160,8 +169,11 @@ struct UIRender
     void destroy(VkDevice& device,VkCommandPool& commandPool)
     {
         vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipeline(device, fontPipeline, nullptr);
         vkDestroyPipelineLayout(device, pLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+        vkDestroyPipelineLayout(device, fontPLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, transformLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, imageLayout, nullptr);
 
         vkFreeCommandBuffers(device, commandPool, 1, loadCommandBuffers.data());
     }
@@ -683,8 +695,6 @@ private:
     void createVertexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createVertexBuffer(std::shared_ptr<UI> ui);
-    //テキスト用
-    void createVertexBuffer(std::shared_ptr<Text> text);
     //コライダー用
     void createVertexBuffer(std::shared_ptr<Colider> colider);
     
@@ -692,8 +702,6 @@ private:
     void createIndexBuffer(GltfNode* node, std::shared_ptr<GltfModel> gltfModel);
     //UI用
     void createIndexBuffer(std::shared_ptr<UI> ui);
-    //テキスト用
-    void createIndexBuffer(std::shared_ptr<Text> text);
     //コライダー用
     void createIndexBuffer(std::shared_ptr<Colider> colider);
 
@@ -779,7 +787,9 @@ private:
     void createDescriptorSetLayout();
 
     //UIレンダリング用のVkDescriptorSetのバッファを用意
-    void allocateUIDescriptorSet(const VkDescriptorSetLayout& layout,VkDescriptorSet& descriptorSet);
+    void allocateUIDescriptorSet(std::shared_ptr<UI> ui);
+    //テキストUIレンダリング用のVkDescriptorSetのバッファを用意
+    void allocateUIDescriptorSet(std::shared_ptr<Text> text);
 
     //パイプラインをあらかじめ作成
     void createPipelines();
@@ -893,6 +903,19 @@ public:
         vkDeviceWaitIdle(device);
     }
 
+    //前回のフレームのフレームバッファの番号を返す
+    const uint32_t getLastFrameBufferNum()
+    {
+        if (currentFrame == 0)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
     //各種データに応じたuniform buffer用のバッファーの作成
     void createUniformBuffers(std::shared_ptr<Model> model);
     void createUniformBuffer(std::shared_ptr<UI> ui);
@@ -927,13 +950,15 @@ public:
     void setUI(std::shared_ptr<UI> ui);
     //テキストの頂点バッファなどを用意する
     void setText(std::shared_ptr<Text> text);
+
     //ロード画面の描画
     //void drawLoading();
     //ロード画面の終了
     void stopLoading();
 
     //UIのテクスチャ変更を反映する
-    void createUIDescriptorSet(TextureData* textureData,MappedBuffer& mappedBuffer,VkDescriptorSet& descriptorSet);
+    void createUIDescriptorSet(TextureData* textureData,MappedBuffer& mappedBuffer
+        ,VkDescriptorSet& transformDescriptorSet,VkDescriptorSet& imageDescriptorSet);
     //UI用のテクスチャを張り付けるポリゴンのためのバッファのVkDescriptorSetを作る
     void createUIDescriptorSet(MappedBuffer& mappedBuffer, VkDescriptorSet& descriptorSet);
     //uniform bufferのバッファの作成
@@ -965,6 +990,7 @@ public:
         , ShadowMapData& shadowMapData, PointLightBuffer& pointLightBuffer, DirectionalLightBuffer& dirLightBuffer);
     //uiのレンダリング
     void renderUI(std::shared_ptr<UI> ui);
+    void renderText(std::shared_ptr<Text> text);
     //キューブマップのレンダリング
     void renderCubemap(std::shared_ptr<Cubemap> cubemap);
     //3DモデルとUIのレンダリングを終了
