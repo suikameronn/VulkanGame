@@ -4319,7 +4319,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
             attributeDescriptions.resize(2);
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
-            attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[0].offset = offsetof(Vertex2D, pos);
 
             attributeDescriptions[1].binding = 0;
@@ -5817,6 +5817,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //UIの頂点バッファなどを用意する
     void VulkanBase::setUI(std::shared_ptr<UI> ui)
     {
+        for (int i = 0; i < ui->getPointBufferSize(); i++)
+        {
+            BufferObject& buffer = ui->getPointBuffer()[i];
+
+            if (buffer.vertHandler)
+            {
+                addDefferedDestructBuffer(buffer);
+            }
+        }
+
         //頂点バッファの作成
         createVertexBuffer(ui);
         //インデックスバッファの作成
@@ -5833,6 +5843,16 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     //テキストの頂点バッファなどを用意する
     void VulkanBase::setText(std::shared_ptr<Text> text)
     {
+        for (int i = 0;i < text->getPointBufferSize();i++)
+        {
+            BufferObject& buffer = text->getPointBuffer()[i];
+            
+            if (buffer.vertHandler)
+            {
+                addDefferedDestructBuffer(buffer);
+            }
+        }
+
         //頂点バッファの作成
         createVertexBuffer(text);
         //インデックスバッファの作成

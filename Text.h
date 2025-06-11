@@ -45,4 +45,7 @@ public:
 	void initFrameSettings() override;
 
 	VkDescriptorSet& getImageDescriptorSet() override { return FontManager::GetInstance()->getDescriptorSet(); }
+
+	//•¶Žš—ñ‚ð•Ï‚¦‚é
+	void changeText(std::string text);
 };

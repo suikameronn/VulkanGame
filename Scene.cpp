@@ -48,12 +48,10 @@ void Scene::initFrameSetting()
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end();itr++)//すべてのオブジェクトの初期化処理
 	{
 		(*itr)->initFrameSetting();//オブジェクトの初期化処理
-		vulkan->setModelData(*itr);
 	}
 
 	player->initFrameSetting();//プレイヤークラスのみ別枠
 	player->setPosition(startPoint);//プレイヤーを初期位置に
-	vulkan->setModelData(player);
 
 	vulkan->createCubemap(cubemap);
 
@@ -168,6 +166,11 @@ int Scene::UpdateScene()//ステージ上のオブジェクトなどの更新処理
 
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end();)//すべてのオブジェクトの更新処理
 	{
+		if ((*itr)->isInitFrame())
+		{
+			(*itr)->initFrameSetting();
+		}
+
 		//オブジェクトの更新処理
 		(*itr)->Update();
 
@@ -452,6 +455,11 @@ void Scene::frameEnd()
 	//ユニフォームバッファの更新
 	for (auto itr = sceneModels.begin(); itr != sceneModels.end();)
 	{
+		if ((*itr)->isInitFrame())
+		{
+			(*itr)->initFrameSetting();
+		}
+
 		(*itr)->frameEnd(sceneDirectionalLights, scenePointLights, shadowMapData);
 
 		if (!(*itr)->isExist())

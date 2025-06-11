@@ -61,9 +61,14 @@ struct MatricesUBO2D
 	glm::mat4 projection;
 };
 
-class UI
+class UI : public std::enable_shared_from_this<UI>
 {
 protected:
+
+	bool initFrame;
+
+	//UIを表示するレイヤー
+	UILayer layer;
 
 	//長方形のインデックス
 	std::vector<uint32_t> indices;
@@ -137,6 +142,11 @@ public:
 	UINum getUINum()
 	{
 		return uiNum;
+	}
+
+	bool isInitFrame()
+	{
+		return initFrame;
 	}
 
 	bool isExist()

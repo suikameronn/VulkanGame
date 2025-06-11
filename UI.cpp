@@ -5,6 +5,10 @@
 
 UI::UI(std::shared_ptr<ImageData> image)
 {
+	layer = UILayer::BACKGROUND;
+
+	initFrame = true;
+
 	uiNum = UINum::IMAGE;
 
 	exist = true;
@@ -124,10 +128,11 @@ void UI::createTexture(std::shared_ptr<ImageData> image)
 	uiHeight = aspect[1] * scale;
 
 	//uiの縦横比からポリゴンの座標を設定
-	vertices[0].pos = glm::vec2(0.0f,0.0f);
-	vertices[1].pos = glm::vec2(aspect[0], 0.0f);
-	vertices[2].pos = glm::vec2(0.0f, aspect[1]);
-	vertices[3].pos = glm::vec2(aspect[0], aspect[1]);
+	float zPos = (int)layer * 0.1f;
+	vertices[0].pos = glm::vec3(0.0f, 0.0f, zPos);
+	vertices[1].pos = glm::vec3(aspect[0], 0.0f, zPos);
+	vertices[2].pos = glm::vec3(0.0f, aspect[1], zPos);
+	vertices[3].pos = glm::vec3(aspect[0], aspect[1], zPos);
 }
 
 //uiを表示する座標変換行列を更新
@@ -147,6 +152,8 @@ void UI::updateTransformMatrix()
 //uiの座標変換行列を更新
 void UI::initFrameSettings()
 {
+	initFrame = false;
+
 	//UIの画像をgpu上に展開
 	createTexture(uiImage);
 

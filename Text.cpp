@@ -4,6 +4,8 @@
 
 Text::Text(std::string text)
 {
+	layer = UILayer::INGAME;
+
 	uiNum = UINum::TEXT;
 
 	exist = true;
@@ -23,44 +25,8 @@ Text::Text(std::string text)
 	isVisible = true;
 	transparent = true;
 
-	//文字列からスペースを除いた文字列の長さを数える
-	textLengthNonSpace = 0;
-	const char* begin = text.c_str();
-	const char* end = begin + strlen(text.c_str());
-
-	//改行の位置を示す
-	std::vector<int> startNewLinePoint;
-
-	int index = 0;
-	while (begin < end)
-	{
-		uint32_t code = utf8::next(begin, end);
-
-		if (isStartNewLine(code))
-		{
-			//改行の位置を記録する
-			startNewLinePoint.push_back(index);
-			index++;
-			continue;
-		}
-
-		if (!isSpaceCharacter(code))
-		{
-			//その文字が空白ではない場合
-			textLengthNonSpace++;
-		}
-
-		//utf8のコードを記録する
-		utf8Codes.push_back(code);
-
-		index++;
-	}
-
-	//文字列から必要なフォントのデータを取得する
-	loadFont();
-
-	//文字列から頂点データを設定する
-	setVertIndices(startNewLinePoint);
+	//文字列を設定する
+	changeText(text);
 
 	//UIを表示するための行列を記録するためのバッファを作成
 	VulkanBase::GetInstance()->uiCreateUniformBuffer(mappedBuffer);
@@ -141,16 +107,17 @@ void Text::setVertIndices(std::vector<int>& startNewLinePoint)
 		}
 
 		//頂点座標の設定
-		vertices[i * UIVertexCount + 0].pos = glm::vec2(charFonts[i].bearing.x, charFonts[i].bearing.y) + penPos;
+		float zPos = (int)layer * 0.1f;
+		vertices[i * UIVertexCount + 0].pos = glm::vec3(charFonts[i].bearing.x, charFonts[i].bearing.y, zPos) + glm::vec3(penPos, 0.0f);
 
-		vertices[i * UIVertexCount + 1].pos = glm::vec2(charFonts[i].bearing.x + charFonts[i].size.x
-			, charFonts[i].bearing.y) + penPos;
+		vertices[i * UIVertexCount + 1].pos = glm::vec3(charFonts[i].bearing.x + charFonts[i].size.x
+			, charFonts[i].bearing.y, zPos) + glm::vec3(penPos, 0.0f);
 
-		vertices[i * UIVertexCount + 2].pos = glm::vec2(charFonts[i].bearing.x
-			, charFonts[i].bearing.y + charFonts[i].size.y) + penPos;
+		vertices[i * UIVertexCount + 2].pos = glm::vec3(charFonts[i].bearing.x
+			, charFonts[i].bearing.y + charFonts[i].size.y, zPos) + glm::vec3(penPos, 0.0f);
 
-		vertices[i * UIVertexCount + 3].pos = glm::vec2(charFonts[i].bearing.x + charFonts[i].size.x
-			, charFonts[i].bearing.y + charFonts[i].size.y) + penPos;
+		vertices[i * UIVertexCount + 3].pos = glm::vec3(charFonts[i].bearing.x + charFonts[i].size.x
+			, charFonts[i].bearing.y + charFonts[i].size.y, zPos) + glm::vec3(penPos, 0.0f);
 
 		penPos.x += charFonts[i].advance;
 
@@ -186,6 +153,51 @@ void Text::setVertIndices(std::vector<int>& startNewLinePoint)
 void Text::initFrameSettings()
 {
 	updateTransformMatrix();
+}
+
+//文字列を変える
+void Text::changeText(std::string text)
+{
+	//文字列からスペースを除いた文字列の長さを数える
+	textLengthNonSpace = 0;
+	const char* begin = text.c_str();
+	const char* end = begin + strlen(text.c_str());
+
+	//改行の位置を示す
+	std::vector<int> startNewLinePoint;
+
+	int index = 0;
+	while (begin < end)
+	{
+		uint32_t code = utf8::next(begin, end);
+
+		if (isStartNewLine(code))
+		{
+			//改行の位置を記録する
+			startNewLinePoint.push_back(index);
+			index++;
+			continue;
+		}
+
+		if (!isSpaceCharacter(code))
+		{
+			//その文字が空白ではない場合
+			textLengthNonSpace++;
+		}
+
+		//utf8のコードを記録する
+		utf8Codes.push_back(code);
+
+		index++;
+	}
+
+	//文字列から必要なフォントのデータを取得する
+	loadFont();
+
+	//文字列から頂点データを設定する
+	setVertIndices(startNewLinePoint);
+
+
 }
 
 //gpu上のバッファを破棄

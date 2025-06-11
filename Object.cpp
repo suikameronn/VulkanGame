@@ -6,6 +6,7 @@ Object::Object()//ゲーム内に登場するオブジェクトのすべてが継承するクラス
 {
 	threadPool = ThreadPool::GetInstance();
 
+	initFrame = true;
 	exist = true;
 
 	objNum = ObjNum::OBJECT;
@@ -244,6 +245,8 @@ void Object::createTransformTable()
 
 void Object::initFrameSetting()//初回フレームのみ実行、luaスクリプトを実行する
 {
+	initFrame = false;
+
 	if (lua)
 	{
 		luaL_dofile(lua, luaPath.c_str());

@@ -93,6 +93,8 @@ class Object : public std::enable_shared_from_this<Object>
 protected:
 
 	ThreadPool* threadPool;
+	
+	bool initFrame;
 
 	//オブジェクトの存在のフラッグ
 	bool exist;
@@ -144,6 +146,11 @@ protected:
 
 public:
 	Object();
+
+	bool isInitFrame()
+	{
+		return initFrame;
+	}
 
 	//このオブジェクトが存在しているかどうかの確認
 	bool isExist()

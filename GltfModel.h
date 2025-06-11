@@ -406,6 +406,15 @@ struct BufferObject
 
 	VkBuffer indeBuffer;
 	VkDeviceMemory indeHandler;
+
+	BufferObject()
+	{
+		vertBuffer = nullptr;
+		vertHandler = nullptr;
+
+		indeBuffer = nullptr;
+		indeHandler = nullptr;
+	}
 };
 
 //読み込んだgltfモデル全体のクラス

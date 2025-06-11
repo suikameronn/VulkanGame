@@ -494,6 +494,8 @@ void Model::customUpdate()
 
 void Model::initFrameSetting()//初回フレームの処理
 {
+	initFrame = false;
+
 	if (lua)
 	{
 		luaL_dofile(lua, luaPath.c_str());
@@ -535,9 +537,10 @@ void Model::initFrameSetting()//初回フレームの処理
 	updateTransformMatrix();
 
 	//シーン全体のR-treeにこのオブジェクトを追加
+	scene->addModelToRTree(std::static_pointer_cast<Model>(shared_from_this()));
 
-	/////shared_from_thisでなぜかエラーがでる
-	scene->addModelToRTree(std::dynamic_pointer_cast<Model>(shared_from_this()));
+	//gpu上にバッファを作成
+	VulkanBase::GetInstance()->setModelData(std::static_pointer_cast<Model>(shared_from_this()));
 }
 
 //ボックスレイキャスト、引数のmaxLengthまで指定の方向に直方体を伸ばして、コライダーとの当たり判定を行う

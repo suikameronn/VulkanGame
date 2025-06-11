@@ -196,6 +196,9 @@ void Player::initFrameSetting()
 
 	//カメラの位置を調整
 	sendPosToCamera(((min + max) / 2.0f));
+
+	//gpu上にバッファを作成
+	VulkanBase::GetInstance()->setModelData(std::static_pointer_cast<Model>(shared_from_this()));
 }
 
 //キー入力の取得
@@ -371,11 +374,6 @@ void Player::shootBullet()
 
 	//コライダーを設定(トリガーの設定にする)
 	bullet->setColider(true);
-
-	bullet->initFrameSetting();
-
-	//モデル用のバッファを作成
-	vulkan->setModelData(bullet);
 
 	//レンダリングのリストに追加
 	scene->sceneModels.push_back(bullet);

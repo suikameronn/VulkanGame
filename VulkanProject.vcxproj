@@ -188,6 +188,7 @@
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Cubemap.h" />
     <ClInclude Include="EnumList.h" />
+    <ClInclude Include="Factory.h" />
     <ClInclude Include="FontManager.h" />
     <ClInclude Include="GltfModel.h" />
     <ClInclude Include="FileManager.h" />

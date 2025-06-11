@@ -47,6 +47,8 @@ Bullet::~Bullet()
 //初期フレームに、レイキャスト時のレイの長さなどを計算
 void Bullet::initFrameSetting()
 {
+	initFrame = false;
+
 	if (lua)
 	{
 		luaL_dofile(lua, luaPath.c_str());
@@ -99,6 +101,9 @@ void Bullet::initFrameSetting()
 
 	//gpuにレイのデータをコピーする
 	ray.copyToGpuBuffer();
+
+	//gpu上にバッファを作成
+	VulkanBase::GetInstance()->setModelData(std::static_pointer_cast<Model>(shared_from_this()));
 }
 
 void Bullet::Update()

@@ -11,4 +11,9 @@ void main()
 	outColor.r = texture(uiTexture,inUV).r;
 
 	outColor.a = outColor.r;
+
+	if(outColor.a == 0)
+	{
+		discard;
+	}
 }
