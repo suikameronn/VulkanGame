@@ -20,6 +20,13 @@ struct Ray
 
 	MappedBuffer mappedBuffer;
 
+	Ray()
+	{
+		length = 0.0f;
+		origin = glm::vec3(0.0f);
+		direction = glm::vec3(0.0f);
+	}
+
 	size_t getSize()
 	{
 		return sizeof(float) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(char) * 16;
@@ -232,6 +239,9 @@ protected:
 	//レイキャスト時使用
 	Scene* scene;
 
+	//レイキャスト用のレイ
+	Ray ray;
+
 	//物理挙動用
 	std::unique_ptr<PhysicBase> physicBase;
 
@@ -412,6 +422,7 @@ public:
 	void updateTransformMatrix() override;//座標変換行列の更新
 
 	void setPosition(glm::vec3 pos) override;//位置の設定
+	void setRotate(float x, float y, float z) override;
 
 	void Update() override;//更新処理
 	void customUpdate() override;//特殊な更新処理
@@ -433,8 +444,8 @@ public:
 	virtual void frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
 		, std::list<std::shared_ptr<PointLight>>& pointLights, ShadowMapData& shadowMapData);
 
-	//衝突時の処理(特に何もしない)
-	virtual void collision(std::shared_ptr<Model> model) {};
+	//衝突時の処理
+	virtual void collision(std::shared_ptr<Model> model);
 };
 
 /*以下の静的関数はluaスクリプト上から呼び出される*/

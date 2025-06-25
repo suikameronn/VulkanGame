@@ -331,7 +331,7 @@ void Scene::rtreeIntersect()
 			std::shared_ptr<Colider> playerColider = player->getColider();
 			std::shared_ptr<Colider> targetColider = target->getColider();
 
-			if (targetColider)
+			if (targetColider && player != target)
 			{
 				if (playerColider->Intersect(targetColider, collisionVector))
 				{
@@ -348,7 +348,7 @@ void Scene::rtreeIntersect()
 							target->addGroundingObject(player);
 						}
 
-						player->setPosition(player->getPosition() - collisionVector);
+						//player->setPosition(player->getPosition() - collisionVector);
 					}
 				}
 

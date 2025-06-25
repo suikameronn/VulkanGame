@@ -115,20 +115,8 @@ void Model::cleanupVulkan()//Vulkan‚Ì•Ï”‚ÌŒãˆ—
 		vulkan->addDefferedDestructBuffer(buffer);
 	}
 
-	/*
-	//uniform buffer‚Ì‰ğ•ú
-	vkDestroyBuffer(device, modelViewMappedBuffer.uniformBuffer, nullptr);
-	vkFreeMemory(device, modelViewMappedBuffer.uniformBufferMemory, nullptr);
-	modelViewMappedBuffer.uniformBufferMapped = nullptr;
-
-	//ƒAƒjƒ[ƒVƒ‡ƒ“‚Ìƒ†ƒjƒtƒH[ƒ€ƒoƒbƒtƒ@‚Ì‰ğ•ú
-	for (int i = 0; i < (int)animationMappedBuffers.size(); i++)
-	{
-		vkDestroyBuffer(device, animationMappedBuffers[i].uniformBuffer, nullptr);
-		vkFreeMemory(device, animationMappedBuffers[i].uniformBufferMemory, nullptr);
-		animationMappedBuffers[i].uniformBufferMapped = nullptr;
-	}
-	*/
+	VkDevice device = vulkan->GetDevice();
+	ray.destroy(device);
 }
 
 MappedBuffer* Model::getAnimationMappedBufferData()
@@ -140,6 +128,11 @@ void Model::setDefaultAnimationName(std::string name)//‰Šúó‘Ô‚ÅÄ¶‚·‚éƒAƒjƒ
 {
 	defaultAnimationName = name;
 	currentPlayAnimationName = name;
+}
+
+void Model::setBaseColor(glm::vec4 baseColor)//ƒ‚ƒfƒ‹‚ÌF‚ğã‘‚«
+{
+
 }
 
 void Model::setgltfModel(std::shared_ptr<GltfModel> model)//gltfƒ‚ƒfƒ‹‚ğİ’è‚·‚é
@@ -230,9 +223,14 @@ void Model::setPosition(glm::vec3 pos)
 	uniformBufferChange = true;
 }
 
-void Model::setBaseColor(glm::vec4 baseColor)
+//‰ñ“]‚Ìİ’è
+void Model::setRotate(float x, float y, float z)
 {
+	rotate.x = x;
+	rotate.y = y;
+	rotate.z = z;
 
+	uniformBufferChange = true;
 }
 
 void Model::updateTransformMatrix()//À•W•ÏŠ·s—ñ‚ğŒvZ‚·‚é
@@ -541,6 +539,9 @@ void Model::initFrameSetting()//‰‰ñƒtƒŒ[ƒ€‚Ìˆ—
 
 	//gpuã‚Éƒoƒbƒtƒ@‚ğì¬
 	VulkanBase::GetInstance()->setModelData(std::static_pointer_cast<Model>(shared_from_this()));
+
+	//gpuã‚ÉƒŒƒCƒLƒƒƒXƒgg—p‚Ìƒoƒbƒtƒ@‚ğì¬
+	VulkanBase::GetInstance()->createUniformBuffer(&ray.mappedBuffer,ray.getSize());
 }
 
 //ƒ{ƒbƒNƒXƒŒƒCƒLƒƒƒXƒgAˆø”‚ÌmaxLength‚Ü‚Åw’è‚Ì•ûŒü‚É’¼•û‘Ì‚ğL‚Î‚µ‚ÄAƒRƒ‰ƒCƒ_[‚Æ‚Ì“–‚½‚è”»’è‚ğs‚¤
@@ -564,10 +565,7 @@ bool Model::isGround(glm::vec3& normal)
 	std::weak_ptr<Model> model = rayCast(position + up * 1.0f, glm::vec3(0.0f, -1.0, 0.0f), 2.0f,normal);
 	if (!model.expired())
 	{
-		if (model.lock()->containTag(Tag::GROUND))
-		{
-			return true;
-		}
+		return true;
 	}
 
 	return false;
@@ -714,4 +712,42 @@ void Model::frameEnd(std::list<std::shared_ptr<DirectionalLight>>& dirLights
 	}
 
 	updateUniformBuffer(dirLights, pointLights, shadowMapData);
+}
+
+void Model::collision(std::shared_ptr<Model> model)
+{
+	if (!model->containTag(Tag::GROUND))
+	{
+		//‰º‚É‚ ‚éƒIƒuƒWƒFƒNƒg‚ª
+
+		float distance = 0.0f;
+		GltfNode* node = nullptr;
+		glm::vec3 normal;
+
+		ray.origin = getPivot();
+		ray.length = (getPivot().y - position.y) * 1.1f;
+		ray.direction = -up;
+		ray.copyToGpuBuffer();
+
+		VulkanBase::GetInstance()->startRaycast(ray, model, distance, normal, &node);
+
+		normal = glm::normalize(normal);
+
+		if (!node)
+		{
+			//’n–Ê‚Ìƒ|ƒŠƒSƒ“‚Ìã‚É‚Í—§‚Á‚Ä‚¢‚È‚¢‚©‚ç
+			//‚±‚Ìæ‚ÌÕ“Ë‚ğ‘O’ñ‚Æ‚µ‚½ˆ—‚Ís‚í‚È‚¢
+			return;
+		}
+
+		//’n–Ê‚Ìƒ|ƒŠƒSƒ“‚Ìã‚É—§‚Á‚Ä‚¢‚½ê‡
+		
+		//‘«‚ğ‚Â‚¯‚é‚×‚«yÀ•W
+		float destY;
+		destY = position.y + (distance - (position.y - ray.origin.y));
+		//yÀ•W‚Ì‚İ‚ğ•Ï‚¦‚ÄAƒ|ƒŠƒSƒ“‚É‘«‚ğ‚Â‚¯‚é
+		setPosition(glm::vec3(getPosition().x, destY, getPosition().z));
+
+		//–Ê–@ü‚©‚ç‰ñ“]‚ğæ“¾‚·‚é
+	}
 }

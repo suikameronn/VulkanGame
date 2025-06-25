@@ -197,12 +197,14 @@ struct alignas(16) RaycastReturn
 
     std::array<uintptr_t,10> pointer;
     std::array<float,10> distance;
+    std::array<glm::vec3, 10> faceNormal;
 
     void initilize()
     {
         hitCount = -1;
         std::fill(pointer.begin(), pointer.end(), 0);
         std::fill(distance.begin(), distance.end(), -1.0f);
+        std::fill(faceNormal.begin(), faceNormal.end(), glm::vec3(0.0f));
     }
 };
 
@@ -443,6 +445,80 @@ struct Raycast
         VkBufferCopy copyRegion{};
         copyRegion.size = sizeof(RaycastReturn);
         vkCmdCopyBuffer(commandBuffer, storage.uniformBuffer, stagingBuffer.uniformBuffer, 1, &copyRegion);
+    }
+};
+
+enum class LBVHPass
+{
+    PRIMITIVEAABB = 0,//プリミティブ単位のAABBを作成
+    CREATEMORTON,//モートンコードの作成
+    SORT,//モートンコードのソート
+    HIERARKY,//木構造の作成
+    BOUNDING_BOXES//中間ノードのAABBを作成
+};
+
+//プリミティブごとにAABBを計算する
+struct AABB
+{
+    glm::vec3 min;
+    alignas(16) glm::vec3 max;
+};
+
+//モートンコード作成時に使う
+struct PushConstantsMortonCodes {
+    uint32_t primitiveCount;
+    AABB aabb;
+};
+
+//それ以外のLBVH構築のフェーズで使う
+struct PushConstantsPrimitiveCount {
+    uint32_t primitiveCount;
+};
+
+struct LBVH
+{
+    //シェーダパス
+    std::array<std::string, 5> shaderPath;
+    //レイアウト
+    std::array<VkDescriptorSetLayout, 5> layout;
+    //実体のセット
+    std::array<VkDescriptorSet, 5> descriptorSet;
+    //パイプラインレイアウト
+    std::array<VkPipelineLayout, 5> pipelineLayout;
+    //パイプライン
+    std::array<VkPipeline, 5> pipeline;
+
+    //各種ストレージバッファ
+    //プリミティブ用のバッファ
+    MappedBuffer primitive;
+    //各ノードへのモートンコード用のバッファ
+    MappedBuffer mortonCode;
+    //すべてのノード用のバッファ
+    MappedBuffer lbvhNode;
+    //ノード構築時用のバッファ
+    MappedBuffer lbvhConstructioInfo;
+
+    void destroy(VkDevice& device)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            vkDestroyDescriptorSetLayout(device, layout[i], nullptr);
+            vkDestroyPipelineLayout(device, pipelineLayout[i], nullptr);
+            vkDestroyPipeline(device, pipeline[i], nullptr);
+        }
+
+        primitive.destroy(device);
+        mortonCode.destroy(device);
+        lbvhNode.destroy(device);
+        lbvhConstructioInfo.destroy(device);
+    }
+
+    void init(VkDevice& device)
+    {
+        if (primitive.uniformBufferMapped)
+        {
+            destroy(device);
+        }
     }
 };
 
@@ -1008,7 +1084,7 @@ public:
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
     //レイキャストの開始
-    void startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance, GltfNode** node);
+    void startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance, glm::vec3& faceNormal, GltfNode** node);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

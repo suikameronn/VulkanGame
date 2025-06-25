@@ -17,6 +17,8 @@
 
 #include"ThreadPool.h"
 
+#include"renderdoc_app.h"
+
 extern GLFWwindow* window;
 
 //fps§Œä‚È‚Ç‚ÌƒQ[ƒ€‘S‘Ì‚Ì§Œä‚ð’S“–‚·‚é
@@ -44,6 +46,9 @@ private:
 	Scene* scene;
 
 	GameManager() {};
+
+	pRENDERDOC_GetAPI getApi;
+	RENDERDOC_API_1_0_0* rdoc_api;
 
 	void setLoadUI();
 
@@ -103,4 +108,34 @@ public:
 	int getWindowWidth() { return window_width; }
 	int getWindowHeight() { return window_height; }
 	glm::mat4 getUIProjection() { return uiProjection; }
+
+	void renderDoc()
+	{
+		rdoc_api = nullptr;
+		HMODULE module = GetModuleHandleA("renderdoc.dll");
+		if (module)
+		{
+			getApi = (pRENDERDOC_GetAPI)GetProcAddress(module, "RENDERDOC_GetAPI");
+			if (getApi)
+			{
+				getApi(eRENDERDOC_API_Version_1_6_0, (void**)&rdoc_api);
+			}
+		}
+	}
+
+	void startCapture()
+	{
+		if (rdoc_api)
+		{
+			rdoc_api->StartFrameCapture(nullptr, nullptr);
+		}
+	}
+
+	void endCapture()
+	{
+		if (rdoc_api)
+		{
+			rdoc_api->EndFrameCapture(nullptr, nullptr);
+		}
+	}
 };

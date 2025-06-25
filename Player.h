@@ -75,7 +75,8 @@ public:
 	void Update() override;
 	void updateTransformMatrix() override;//座標変換行列の更新
 
-	void collision(std::shared_ptr<Model> model) override {};
+	//衝突時の処理
+	void collision(std::shared_ptr<Model> model) override;
 };
 
 /*以下の静的関数はluaから呼び出される*/

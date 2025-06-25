@@ -72,6 +72,19 @@ struct Rotate
 	float y;
 	float z;
 
+	glm::quat totalRotateQuat;
+
+	std::list<glm::quat> quatList;
+
+	Rotate()
+	{
+		x = 0.0f;
+		y = 0.0f;
+		z = 0.0f;
+
+		totalRotateQuat = glm::quat();
+	}
+
 	//ラジアンへ変換
 	float getRadian(float deg)
 	{
@@ -79,11 +92,30 @@ struct Rotate
 	}
 
 	//回転行列の取得
+	//オイラー角由来のクォータニオンは毎回計算し、
+	//それ以外のクォータニオンのリスト内のクォータニオンは
+	//totalRotateQuatに合成したら消去し、回転をtotalRotateQuatに蓄積していく
 	glm::mat4 getRotateMatrix()
 	{
-		return glm::rotate(glm::mat4(1.0f), getRadian(z), glm::vec3(0.0f, 0.0f, 1.0f))
-			* glm::rotate(glm::mat4(1.0f), getRadian(y), glm::vec3(0.0f, -1.0f, 0.0f))
-			* glm::rotate(glm::mat4(1.0f), getRadian(x), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::quat qPitch = glm::angleAxis(x, glm::vec3(1.0f, 0.0f, 0.0f)); // X軸周り
+		glm::quat qYaw = glm::angleAxis(y, glm::vec3(0.0f, 1.0f, 0.0f));   // Y軸周り
+		glm::quat qRoll = glm::angleAxis(z, glm::vec3(0.0f, 0.0f, 1.0f)); // Z軸周り
+
+		glm::quat eulerQuat = qYaw * qPitch * qRoll;
+
+		if (quatList.size() != 0)
+		{
+			auto itr = quatList.begin();
+			itr++;
+			for (; itr != quatList.end(); itr++)
+			{
+				totalRotateQuat = (*itr) * totalRotateQuat;
+			}
+			quatList.clear();
+			totalRotateQuat = glm::normalize(totalRotateQuat);
+		}
+
+		return glm::mat4_cast(eulerQuat);
 	}
 };
 
@@ -126,6 +158,8 @@ protected:
 
 	//回転速度
 	float rotateSpeed;
+	//回転の情報
+	Rotate rotate;
 
 	float length;
 
@@ -178,9 +212,6 @@ public:
 	//移動などにより座標変換行列を更新する必要があるかどうか
 	bool uniformBufferChange;
 
-	//回転の情報
-	Rotate rotate;
-
 	//親オブジェクトとの距離
 	float posOffSet;
 
@@ -203,6 +234,8 @@ public:
 
 	//座標の設定
 	virtual void setPosition(glm::vec3 pos);
+	//回転の設定
+	virtual void setRotate(float x, float y, float z);
 	//座標の取得
 	glm::vec3 getPosition();
 
@@ -271,10 +304,15 @@ namespace glueObjectFunction//Objectクラス用のglue関数
 		{
 		case 0:
 		case 1:
-			obj->rotate.x = static_cast<float>(lua_tonumber(lua, -4));
-			obj->rotate.y = static_cast<float>(lua_tonumber(lua, -3));
-			obj->rotate.z = static_cast<float>(lua_tonumber(lua, -2));
+		{
+			float x, y, z;
+			x = static_cast<float>(lua_tonumber(lua, -4));
+			y = static_cast<float>(lua_tonumber(lua, -3));
+			z = static_cast<float>(lua_tonumber(lua, -2));
+
+			obj->setRotate(x, y, z);
 			break;
+		}
 		}
 
 		return 0;

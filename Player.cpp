@@ -66,22 +66,22 @@ glm::vec3 Player::inputMove()
 		if (controller->getKey(GLFW_KEY_W))
 		{
 			moveDirec = forward;
-			rotate.y = cameraDirDeg;
+			setRotate(rotate.x, cameraDirDeg, rotate.z);
 		}
 		else if (controller->getKey(GLFW_KEY_A))
 		{
 			moveDirec = -right;
-			rotate.y = cameraDirDeg - 90.0f;
+			setRotate(rotate.x, cameraDirDeg - 90.0f, rotate.z);
 		}
 		else if (controller->getKey(GLFW_KEY_D))
 		{
 			moveDirec = right;
-			rotate.y = cameraDirDeg + 90.0f;
+			setRotate(rotate.x, cameraDirDeg + 90.0f, rotate.z);
 		}
 		else if (controller->getKey(GLFW_KEY_S))
 		{
 			moveDirec = -forward;
-			rotate.y = cameraDirDeg + 180.0f;
+			setRotate(rotate.x, cameraDirDeg + 180.0f, rotate.z);
 		}
 		else
 		{
@@ -199,6 +199,9 @@ void Player::initFrameSetting()
 
 	//gpu上にバッファを作成
 	VulkanBase::GetInstance()->setModelData(std::static_pointer_cast<Model>(shared_from_this()));
+
+	//gpu上にレイキャスト使用時のバッファを作成
+	VulkanBase::GetInstance()->createUniformBuffer(&ray.mappedBuffer, ray.getSize());
 }
 
 //キー入力の取得
@@ -250,9 +253,7 @@ void Player::restart(glm::vec3 startPoint)
 {
 	setZeroVelocity();
 
-	rotate.x = rotate.getRadian(0.0f);
-	rotate.y = rotate.getRadian(0.0f);
-	rotate.z = rotate.getRadian(0.0f);
+	setRotate(0.0f, 0.0f, 0.0f);
 
 	setPosition(startPoint);
 }
@@ -340,10 +341,10 @@ void Player::aim()
 		//z軸は回転させない
 		float roll = 0.0f;
 
+		float radToDeg = (180.0f / glm::pi<float>());
+
 		//度に変換しておく
-		rotate.x = pitch * (180.0f / glm::pi<float>());
-		rotate.y = yaw * (180.0f / glm::pi<float>());
-		rotate.z = roll * (180.0f / glm::pi<float>());
+		setRotate(pitch * radToDeg,yaw * radToDeg,roll * radToDeg);
 	}
 
 	//自分自身を半透明でレンダリングするようにする
@@ -377,4 +378,57 @@ void Player::shootBullet()
 
 	//レンダリングのリストに追加
 	scene->sceneModels.push_back(bullet);
+}
+
+void Player::collision(std::shared_ptr<Model> model)
+{
+	if (model->containTag(Tag::GROUND) && isMovable)
+	{
+		//下にあるオブジェクトが
+
+		float distance = 0.0f;
+		GltfNode* node = nullptr;
+		glm::vec3 normal;
+
+		ray.origin = getPivot();
+		ray.length = (getPivot().y - position.y) * 1.2f;
+		ray.direction = -up;
+		ray.copyToGpuBuffer();
+
+		if (position.y < 0.0f)
+		{
+			GameManager::GetInstance()->startCapture();
+		}
+
+		VulkanBase::GetInstance()->startRaycast(ray, model, distance, normal, &node);
+
+		if (position.y < 0.0f)
+		{
+			GameManager::GetInstance()->endCapture();
+		}
+
+		normal = glm::normalize(normal);
+
+		//足をつけるべきy座標
+		float destY;
+		destY = position.y - distance - (position.y - ray.origin.y);
+
+		std::cout << destY << std::endl;
+
+		if (!node)
+		{
+			//地面のポリゴンの上には立っていないから
+			//この先の衝突を前提とした処理は行わない
+
+			return;
+		}
+
+		//地面のポリゴンの上に立っていた場合
+
+		//y座標のみを変えて、ポリゴンに足をつける
+		setPosition(glm::vec3(getPosition().x, destY, getPosition().z));
+
+		//面法線から回転を取得する
+
+	}
 }

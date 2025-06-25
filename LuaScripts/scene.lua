@@ -5,7 +5,7 @@ setGltfModel(model,"models/concrete.glb")
 --初期座標の設定
 setPos(model,0.0,0.0,0.0)
 --スケールの設定
-setScale(model,300.0,10.0,300.0)
+setScale(model,30.0,30.0,30.0)
 --回転の設定
 setRotate(model,0.0,0.0,0.0)
 --コライダーを付与する
@@ -15,7 +15,7 @@ setAABBColider(model,false,false)
 setUVScale(model)
 
 
-local model2 = createModel()
+--[[local model2 = createModel()
 --Modelオブジェクトにgltfモデルをセット
 setGltfModel(model2,"models/robot.glb")
 --初期座標の設定
@@ -30,6 +30,7 @@ setScale(model2,30.0,30.0,30.0)
 setAABBColider(model2,false,false)
 setDefaultAnimationName(model2,"run")
 setColiderScale(model2,1.0,1.0,0.3)
+]]
 
 --プレイヤーの作成
 local player = createPlayer()

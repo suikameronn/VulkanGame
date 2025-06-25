@@ -162,9 +162,10 @@ void Bullet::collision(std::shared_ptr<Model> model)
 	//レイキャスト時に、レイがポリゴンにヒットした場合
 	//以下の変数に、衝突したポリゴンとレイの距離と当たったポリゴンのGltfNodeが返ってくる
 	float distance;
+	glm::vec3 faceNormal;
 	GltfNode* node;
 
-	VulkanBase::GetInstance()->startRaycast(ray, model, distance, &node);
+	VulkanBase::GetInstance()->startRaycast(ray, model, distance, faceNormal, &node);
 
 	if (node)
 	{

@@ -186,6 +186,16 @@ void Object::setPosition(glm::vec3 pos)//À•W‚Ìİ’è
 	uniformBufferChange = true;
 }
 
+//‰ñ“]‚Ìİ’è
+void Object::setRotate(float x, float y, float z)
+{
+	rotate.x = x;
+	rotate.y = y;
+	rotate.z = z;
+
+	uniformBufferChange = true;
+}
+
 glm::vec3 Object::getPosition()
 {
 	return position;

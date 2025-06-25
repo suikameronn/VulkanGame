@@ -396,9 +396,11 @@ namespace glueSceneFunction//SceneƒNƒ‰ƒX‚Ì—p‚ÌglueŠÖ”
 
 		if (num >= TYPEMODEL && num < TYPELIGHT)
 		{
-			obj->rotate.x = static_cast<float>(lua_tonumber(lua, -3));
-			obj->rotate.y = static_cast<float>(lua_tonumber(lua, -2));
-			obj->rotate.z = static_cast<float>(lua_tonumber(lua, -1));
+			float x = static_cast<float>(lua_tonumber(lua, -3));
+			float y = static_cast<float>(lua_tonumber(lua, -2));
+			float z = static_cast<float>(lua_tonumber(lua, -1));
+
+			obj->setRotate(x, y, z);
 		}
 
 		return 0;

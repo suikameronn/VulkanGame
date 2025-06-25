@@ -3882,7 +3882,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
     }
 
     //レイキャストの開始
-    void VulkanBase::startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance,GltfNode** node)
+    void VulkanBase::startRaycast(Ray& ray, std::shared_ptr<Model> model, float& distance,glm::vec3& faceNormal,GltfNode** node)
     {
         //先にレイキャスト時に帰ってくるデータを受け取るバッファを作成
         createBuffer(sizeof(RaycastReturn), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
@@ -3959,7 +3959,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
                 if (distance > obj.distance[i])
                 {
                     distance = obj.distance[i];
-
+                    faceNormal = obj.faceNormal[i];
                     (*node) = reinterpret_cast<GltfNode*>(obj.pointer[i]);
                 }
             }
