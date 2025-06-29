@@ -454,7 +454,8 @@ enum class LBVHPass
     CREATEMORTON,//モートンコードの作成
     SORT,//モートンコードのソート
     HIERARKY,//木構造の作成
-    BOUNDING_BOXES//中間ノードのAABBを作成
+    BOUNDING_BOXES,//中間ノードのAABBを作成
+    PASSLENGTH//パスの数
 };
 
 //プリミティブごとにAABBを計算する
@@ -464,18 +465,41 @@ struct AABB
     alignas(16) glm::vec3 max;
 };
 
-//モートンコード作成時に使う
-struct PushConstantsMortonCodes {
-    uint32_t primitiveCount;
+struct PrimitiveAABB
+{
+    uint32_t primitiveIndex;
+    alignas(16) AABB aabb;
+};
+
+//モートンコード
+struct MortonCode {
+    uint32_t primitiveIndex;
+    uint32_t mortonCode;
+};
+
+//LBVHノード
+struct LBVHNode
+{
+    uint32_t left;
+    uint32_t right;
+    uint32_t primitiveIndex;
     AABB aabb;
+};
+
+//LBVH構築時に使う
+struct LBVHNodeConstruction
+{
+    uint32_t parent;
+    uint32_t visitationCount;
 };
 
 //それ以外のLBVH構築のフェーズで使う
 struct PushConstantsPrimitiveCount {
     uint32_t primitiveCount;
+    AABB totalAABB;
 };
 
-struct LBVH
+struct LBVHConstruction
 {
     //シェーダパス
     std::array<std::string, 5> shaderPath;
@@ -496,7 +520,10 @@ struct LBVH
     //すべてのノード用のバッファ
     MappedBuffer lbvhNode;
     //ノード構築時用のバッファ
-    MappedBuffer lbvhConstructioInfo;
+    MappedBuffer lbvhConstruction;
+
+    //LBVHの構築の終了を知らせるフェンス
+    VkFence fence;
 
     void destroy(VkDevice& device)
     {
@@ -510,15 +537,457 @@ struct LBVH
         primitive.destroy(device);
         mortonCode.destroy(device);
         lbvhNode.destroy(device);
-        lbvhConstructioInfo.destroy(device);
+        lbvhConstruction.destroy(device);
     }
 
-    void init(VkDevice& device)
+    //レイアウトの作成
+    void setupLayout(VkDevice& device)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(3);
+
+        //プリミティブのAABBを計算するシェーダでは、
+        //プリミティブのAABBを記録するストレージバッファ一つのみを用意する
+
+        //頂点バッファ
+        bindings[0].binding = 0;
+        bindings[0].descriptorCount = 1;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //インデックスバッファ
+        bindings[1].binding = 1;
+        bindings[1].descriptorCount = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //プリミティブのAABBのバッファ
+        bindings[2].binding = 2;
+        bindings[2].descriptorCount = 1;
+        bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout[(int)LBVHPass::PRIMITIVEAABB]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+
+        bindings.resize(2);
+
+        //プリミティブのAABBのバッファ
+        bindings[0].binding = 0;
+        bindings[0].descriptorCount = 1;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //モートンコードのバッファ
+        bindings[1].binding = 1;
+        bindings[1].descriptorCount = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        //モートンコードを計算するバッファでは、モートンコードを記録するストレージバッファを使う
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout[(int)LBVHPass::CREATEMORTON]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+
+        //モートンコードのバッファ
+        bindings[0].binding = 0;
+        bindings[0].descriptorCount = 1;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        //モートンコードのソート
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout[(int)LBVHPass::SORT]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+
+        //LBVHの構築はノード用のストレージバッファと
+        //中間ノードのAABBの計算用のストレージバッファを利用する
+        bindings.resize(4);
+
+        //プリミティブのAABBのバッファ
+        bindings[0].binding = 0;
+        bindings[0].descriptorCount = 1;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //モートンコードのバッファ
+        bindings[1].binding = 1;
+        bindings[1].descriptorCount = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //LBVHのすべてのノードのバッファ
+        bindings[2].binding = 2;
+        bindings[2].descriptorCount = 1;
+        bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //LBVHのすべてのノードに付随されるデータのバッファ
+        bindings[3].binding = 3;
+        bindings[3].descriptorCount = 1;
+        bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout[(int)LBVHPass::HIERARKY]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+
+        //LBVHの中間ノードのAABBを計算
+        bindings.resize(2);
+
+        //LBVHのすべてのノードのバッファ
+        bindings[0].binding = 0;
+        bindings[0].descriptorCount = 1;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        //LBVHの各ノードの訪れた回数のバッファ
+        bindings[1].binding = 1;
+        bindings[1].descriptorCount = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout[(int)LBVHPass::BOUNDING_BOXES]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute descriptor set layout!");
+        }
+    }
+
+    //一部のVkDescriptorのみ作成(プリミティブのAABBの計算のVkDescriptorSetはここでは作成しない)
+    void setupPassDescriptorSet(VkDevice& device, VkDescriptorPool& descriptorPool)
+    {
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+        //プリミティブのAABBのバッファを示す
+        VkDescriptorBufferInfo primitiveAABBInfo{};
+        primitiveAABBInfo.buffer = primitive.uniformBuffer;
+        primitiveAABBInfo.offset = 0;
+        primitiveAABBInfo.range = sizeof(PrimitiveAABB);
+
+        //モートンコードのバッファを示す
+        VkDescriptorBufferInfo mortonCodeInfo{};
+        mortonCodeInfo.buffer = mortonCode.uniformBuffer;
+        mortonCodeInfo.offset = 0;
+        mortonCodeInfo.range = sizeof(MortonCode);
+
+        //LBVHのノードのバッファを示す
+        VkDescriptorBufferInfo lbvhNodeInfo{};
+        lbvhNodeInfo.buffer = lbvhNode.uniformBuffer;
+        lbvhNodeInfo.offset = 0;
+        lbvhNodeInfo.range = sizeof(LBVHNode);
+
+        //LBVH構築時のデータのバッファを示す
+        VkDescriptorBufferInfo lbvhConstructionInfo{};
+        lbvhConstructionInfo.buffer = lbvhConstruction.uniformBuffer;
+        lbvhConstructionInfo.offset = 0;
+        lbvhConstructionInfo.range = sizeof(LBVHNodeConstruction);
+
+        {
+            //モートンコードを作成
+            descriptorWrites.resize(2);
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSet[(int)LBVHPass::CREATEMORTON];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &primitiveAABBInfo;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = descriptorSet[(int)LBVHPass::CREATEMORTON];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pBufferInfo = &mortonCodeInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+        {
+            //モートンコードのソート
+            descriptorWrites.resize(1);
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSet[(int)LBVHPass::SORT];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &mortonCodeInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+        {
+            //LBVHの木構造の構築
+            descriptorWrites.resize(4);
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSet[(int)LBVHPass::HIERARKY];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &primitiveAABBInfo;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = descriptorSet[(int)LBVHPass::HIERARKY];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pBufferInfo = &mortonCodeInfo;
+
+            descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[2].dstSet = descriptorSet[(int)LBVHPass::HIERARKY];
+            descriptorWrites[2].dstBinding = 2;
+            descriptorWrites[2].dstArrayElement = 0;
+            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[2].descriptorCount = 1;
+            descriptorWrites[2].pBufferInfo = &lbvhNodeInfo;
+
+            descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[3].dstSet = descriptorSet[(int)LBVHPass::HIERARKY];
+            descriptorWrites[3].dstBinding = 3;
+            descriptorWrites[3].dstArrayElement = 0;
+            descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[3].descriptorCount = 1;
+            descriptorWrites[3].pBufferInfo = &lbvhConstructionInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+        {
+            //中間ノードのAABBを作成
+            descriptorWrites.resize(2);
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSet[(int)LBVHPass::BOUNDING_BOXES];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &lbvhNodeInfo;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = descriptorSet[(int)LBVHPass::BOUNDING_BOXES];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pBufferInfo = &lbvhConstructionInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+    }
+
+    //パイプラインレイアウトの作成
+    void setupPipelineLayout(VkDevice& device, ModelDescriptor& modelDescriptor)
+    {
+        VkDescriptorSetLayout passLayout;
+
+        std::vector<VkDescriptorSetLayout> layouts(3);
+
+        {
+            //プリミティブごとのAABBを計算するパイプラインレイアウト
+            layouts[0] = layout[(int)LBVHPass::PRIMITIVEAABB];
+            layouts[1] = modelDescriptor.layout;
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout[(int)LBVHPass::PRIMITIVEAABB]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline layout!");
+            }
+        }
+
+        {
+            //モートンコードを作成するパイプラインレイアウト
+            VkPushConstantRange pushConstant;
+            pushConstant.offset = 0;
+            pushConstant.size = sizeof(PushConstantsPrimitiveCount);
+            pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            layouts.resize(1);
+            layouts[0] = layout[(int)LBVHPass::CREATEMORTON];
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout[(int)LBVHPass::PRIMITIVEAABB]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline layout!");
+            }
+        }
+
+        {
+            //モートンコードをソートするパイプラインレイアウト
+            VkPushConstantRange pushConstant;
+            pushConstant.offset = 0;
+            pushConstant.size = sizeof(PushConstantsPrimitiveCount);
+            pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            layouts.resize(1);
+            layouts[0] = layout[(int)LBVHPass::CREATEMORTON];
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout[(int)LBVHPass::CREATEMORTON]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline layout!");
+            }
+        }
+
+        {
+            //木構造を構築するパイプラインレイアウト
+            VkPushConstantRange pushConstant;
+            pushConstant.offset = 0;
+            pushConstant.size = sizeof(PushConstantsPrimitiveCount);
+            pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            layouts.resize(1);
+            layouts[0] = layout[(int)LBVHPass::HIERARKY];
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout[(int)LBVHPass::HIERARKY]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline layout!");
+            }
+        }
+
+        {
+            //中間ノードのAABBを計算するパイプラインレイアウト
+            VkPushConstantRange pushConstant;
+            pushConstant.offset = 0;
+            pushConstant.size = sizeof(PushConstantsPrimitiveCount);
+            pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            layouts.resize(1);
+            layouts[0] = layout[(int)LBVHPass::BOUNDING_BOXES];
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout[(int)LBVHPass::BOUNDING_BOXES]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline layout!");
+            }
+        }
+    }
+
+    //パイプラインの作成
+    void setupPipeline(VkDevice& device)
+    {
+
+        for (int i = 0; i < (int)LBVHPass::PASSLENGTH; i++)
+        {
+            auto computeShaderCode = readFile(shaderPath[i]);
+
+            VkShaderModuleCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            createInfo.codeSize = computeShaderCode.size();
+            createInfo.pCode = reinterpret_cast<const uint32_t*>(computeShaderCode.data());
+
+            VkShaderModule computeShaderModule;
+            if (vkCreateShaderModule(device, &createInfo, nullptr, &computeShaderModule) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create shader module!");
+            }
+
+            VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+            computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+            computeShaderStageInfo.module = computeShaderModule;
+            computeShaderStageInfo.pName = "main";
+
+            VkComputePipelineCreateInfo pipelineInfo{};
+            pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+            pipelineInfo.layout = pipelineLayout[i];
+            pipelineInfo.stage = computeShaderStageInfo;
+
+            if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create compute pipeline!");
+            }
+
+            vkDestroyShaderModule(device, computeShaderModule, nullptr);
+        }
+    }
+
+    void setupFence(VkDevice& device)
+    {
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create compute synchronization objects for a frame!");
+        }
+    }
+
+    void init(VkDevice& device, VkDescriptorPool& descriptorPool, ModelDescriptor& modelDescriptor)
     {
         if (primitive.uniformBufferMapped)
         {
             destroy(device);
         }
+
+        //レイアウトを作成
+        setupLayout(device);
+
+        //一部のVkDescriptorSetのみを作成
+        setupPassDescriptorSet(device, descriptorPool);
+
+        //パイプラインレイアウトを作成
+        setupPipelineLayout(device, modelDescriptor);
+
+        //パイプラインの作成
+        setupPipeline(device);
+
+        //フェンスの作成
+        setupFence(device);
+    }
+
+    //LBVH構築時に実行
+    void setupConstruction()
+    {
+
     }
 };
 

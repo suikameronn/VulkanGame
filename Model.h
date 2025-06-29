@@ -209,6 +209,13 @@ struct ShadowMapData
 	}
 };
 
+//LBVH
+//レイキャスト時に使用
+struct LBVH
+{
+	MappedBuffer lbvh;
+};
+
 //3Dモデルを持つオブジェクトを担うクラス
 class Model:public Object
 {
