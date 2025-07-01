@@ -527,6 +527,11 @@ struct LBVHConstruction
 
     void destroy(VkDevice& device)
     {
+        if (!primitive.uniformBufferMapped)
+        {
+            return;
+        }
+
         for (int i = 0; i < 5; i++)
         {
             vkDestroyDescriptorSetLayout(device, layout[i], nullptr);
@@ -963,11 +968,6 @@ struct LBVHConstruction
 
     void init(VkDevice& device, VkDescriptorPool& descriptorPool, ModelDescriptor& modelDescriptor)
     {
-        if (primitive.uniformBufferMapped)
-        {
-            destroy(device);
-        }
-
         //レイアウトを作成
         setupLayout(device);
 
@@ -982,12 +982,6 @@ struct LBVHConstruction
 
         //フェンスの作成
         setupFence(device);
-    }
-
-    //LBVH構築時に実行
-    void setupConstruction()
-    {
-
     }
 };
 
@@ -1137,6 +1131,9 @@ private:
 
     //レイキャスト用のデータ
     Raycast raycast;
+
+    //LBVH構築用のデータ
+    LBVHConstruction lbvhConstruction;
 
     //ゲーム終了時にデータのgpu上のデータをすべて破棄する
     void cleanup();
@@ -1392,6 +1389,9 @@ private:
     //再帰的のレイキャストを開始
     void raycasting(VkCommandBuffer& commandBuffer, Ray& ray
         , GltfNode* node, std::shared_ptr<Model> model);
+
+    //LBVHの構築用の構造体の初期化
+    void setupLBVHConstruction();
 
 public:
 

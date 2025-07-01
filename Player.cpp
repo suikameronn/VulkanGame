@@ -395,17 +395,7 @@ void Player::collision(std::shared_ptr<Model> model)
 		ray.direction = -up;
 		ray.copyToGpuBuffer();
 
-		if (position.y < 0.0f)
-		{
-			GameManager::GetInstance()->startCapture();
-		}
-
 		VulkanBase::GetInstance()->startRaycast(ray, model, distance, normal, &node);
-
-		if (position.y < 0.0f)
-		{
-			GameManager::GetInstance()->endCapture();
-		}
 
 		normal = glm::normalize(normal);
 

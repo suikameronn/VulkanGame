@@ -3966,6 +3966,14 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         }
     }
 
+    //LBVHの構築用の構造体の初期化
+    void VulkanBase::setupLBVHConstruction()
+    {
+        lbvhConstruction.destroy(device);
+
+        lbvhConstruction.init(device, descriptorPool, modelDescriptor);
+    }
+
     //ライトのdescriptorSet関係のデータを作成
     void VulkanBase::createDescriptorData(MappedBuffer& mappedBuffer,VkDescriptorSetLayout& layout, VkDescriptorSet& descriptorSet, unsigned long long size,VkShaderStageFlags frag)
     {
