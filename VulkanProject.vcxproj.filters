@@ -43,6 +43,18 @@
     <Filter Include="ヘッダー ファイル\UI">
       <UniqueIdentifier>{4f8aa097-4077-4d98-b031-04d863ec83f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Vulkan\Builder">
+      <UniqueIdentifier>{64858630-b163-4def-a124-03a5704ed8fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Vulkan\Builder">
+      <UniqueIdentifier>{bcc60ca7-f21b-4c2f-bf28-de9b6e3b1344}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Vulkan\Factory">
+      <UniqueIdentifier>{47e0f8f5-28f8-44c4-aad9-5268c8d4014d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Vulkan\Factory">
+      <UniqueIdentifier>{0496e188-0d04-4701-aa6d-b84c90643af9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -107,6 +119,33 @@
     </ClCompile>
     <ClCompile Include="Text.cpp">
       <Filter>ソース ファイル\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuBufferBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuBufferFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanCore.cpp">
+      <Filter>ソース ファイル\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuDescriptorSetLayoutBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuDescriptorSetLayoutFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuPipelineLayoutFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuPipelineLayoutBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuPipelineFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuPipelineBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -188,8 +227,38 @@
     <ClInclude Include="Text.h">
       <Filter>ヘッダー ファイル\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Factory.h">
+    <ClInclude Include="GpuBufferBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanCore.h">
+      <Filter>ヘッダー ファイル\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuBufferFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuDescriptorSetLayoutBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuDescriptorSetLayoutFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuPipelineLayoutFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuPipelineLayoutBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="StructList.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuPipeline.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuPipelineFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuPipelineBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

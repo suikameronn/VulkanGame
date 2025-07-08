@@ -49,8 +49,6 @@ int main()
 
     GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
 
-    gameManager->renderDoc();
-
     gameManager->initGame();//ゲームループの開始
 
     std::cout << "Finish" << std::endl;
