@@ -142,6 +142,9 @@ public:
 		return device;
 	}
 
+	//画面の画像フォーマットを取得する
+	VkFormat getSwapChainFormat();
+
 	//使い捨てのコマンドバッファを作成
 	VkCommandBuffer& beginSingleTimeCommandBuffer();
 

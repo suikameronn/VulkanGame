@@ -1,7 +1,7 @@
 #pragma once
 
-#include"GpuPipelineLayoutFactory.h"
 #include"GpuPipelineBuilder.h"
+#include"GpuRenderPassFactory.h"
 
 struct Pipeline;
 
@@ -164,18 +164,24 @@ struct PipelineHash
 		}
 	}
 
+	void getHash(const std::shared_ptr<PipelineLayout>& pLayout, size_t& hash) const
+	{
+		getHash(static_cast<uint32_t>(pLayout->hashKey), hash);
+	}
+
+	void getHash(const std::shared_ptr<RenderPass>& renderPass, size_t& hash) const
+	{
+		getHash(static_cast<uint32_t>(renderPass->hashKey), hash);
+	}
+
 	size_t operator()(const PipelineProperty& a) const
 	{
 		size_t hash = FNV_OFFSET_BIAS;
-
-		getHash(static_cast<uint32_t>(a.isComputePipeline), hash);
-		getHash(static_cast<uint32_t>(a.stageCount), hash);
 		
 		std::hash<std::string> strHasher;
-		for (const auto str : a.shaderPaths)
-		{
-			hash ^= strHasher(str);
-		}
+		hash ^= strHasher(a.vertexShader->path);
+		hash ^= strHasher(a.fragmentShader->path);
+		hash ^= strHasher(a.computeShader->path);
 
 		for (const VkPipelineShaderStageCreateInfo& info : a.stages)
 		{
@@ -199,10 +205,25 @@ struct PipelineHash
 		getHash(a.colorBlendState, hash);
 
 		getHash(a.dynamicState, hash);
+
+		getHash(a.pLayout, hash);
+
+		getHash(a.renderPass, hash);
 	}
 };
 
-class GpuPipelineFactory
+enum PipelinePattern
+{
+	PBR,
+	UI,
+	CALC_CUBEMAP,
+	CALC_IBL_DIFFUSE,
+	CALC_IBL_SPECULAR,
+	CALC_IBL_BRDF,
+	RAYCAST
+};
+
+class GpuPipelineFactory : public std::enable_shared_from_this<GpuPipelineFactory>
 {
 private:
 	//論理デバイス
@@ -212,7 +233,7 @@ private:
 	//描画処理が行われるごとに値が更新される
 	uint32_t frameIndex;
 
-	PipelineLayoutHash pipelineLayoutHash;
+	PipelineHash pipelineHash;
 
 	//ビルダー
 	std::shared_ptr<GpuPipelineBuilder> builder;
@@ -220,18 +241,29 @@ private:
 	//レイアウトを取得する
 	std::shared_ptr<GpuPipelineLayoutFactory> pLayoutFactory;
 
+	//シェーダモジュールを取り出す
+	std::shared_ptr<Shader> shaderFactory;
+
 	//既に作成したパイプラインレイアウトを格納する
-	std::unordered_map<std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>, std::vector<VkPushConstantRange>>
-		, std::weak_ptr<Pipeline>, PipelineLayoutHash> pipelineLayoutStorage;
+	std::unordered_map<Pipeline, std::weak_ptr<Pipeline>, PipelineHash> pipelineStorage;
 
 	//破棄予定のリソースのリスト
 	std::array<std::list<VkPipeline>, 2> destructList;
 
+	PipelineProperty convertPattern(const PipelinePattern& pattern);
+
 public:
 
-	GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutFactory> f);
+	GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutFactory> f
+		, std::shared_ptr<Shader> sf, std::shared_ptr<GpuPipelineBuilder> b);
 
 	~GpuPipelineFactory();
+
+	//パイプラインを作成する
+	std::shared_ptr<Pipeline> Create(const PipelinePattern& pattern);
+
+	//パイプラインを作成する
+	std::shared_ptr<Pipeline> Create(const PipelineProperty& property);
 
 	//遅延破棄リストにリソースを追加する
 	void addDefferedDestruct(VkPipeline& pLayout);
@@ -246,12 +278,16 @@ struct Pipeline
 
 	VkPipeline pipeline;
 
+	std::shared_ptr<PipelineLayout> pLayout;
+
+	std::shared_ptr<Shader> shader;
 	std::shared_ptr<GpuPipelineFactory> factory;
 
 	Pipeline(std::shared_ptr<GpuPipelineFactory> f)
 	{
 		hashKey = 0;
 		pipeline = nullptr;
+		pLayout = nullptr;
 
 		factory = f;
 	}

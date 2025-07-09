@@ -147,6 +147,15 @@
     <ClCompile Include="GpuPipelineBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
+    <ClCompile Include="ShaderFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuRenderPassFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuRenderPassBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
@@ -258,6 +267,15 @@
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
     <ClInclude Include="GpuPipelineBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuRenderPassFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuRenderPassBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
   </ItemGroup>

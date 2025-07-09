@@ -175,6 +175,8 @@
     <ClCompile Include="GpuPipelineFactory.cpp" />
     <ClCompile Include="GpuPipelineLayoutBuilder.cpp" />
     <ClCompile Include="GpuPipelineLayoutFactory.cpp" />
+    <ClCompile Include="GpuRenderPassBuilder.cpp" />
+    <ClCompile Include="GpuRenderPassFactory.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MaxRectPacking.cpp" />
@@ -183,6 +185,7 @@
     <ClCompile Include="PhysicBase.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="ShaderFactory.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="Text.cpp" />
     <ClCompile Include="UI.cpp" />
@@ -210,6 +213,8 @@
     <ClInclude Include="GpuPipelineFactory.h" />
     <ClInclude Include="GpuPipelineLayoutBuilder.h" />
     <ClInclude Include="GpuPipelineLayoutFactory.h" />
+    <ClInclude Include="GpuRenderPassBuilder.h" />
+    <ClInclude Include="GpuRenderPassFactory.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="MaxRectPacking.h" />
@@ -220,6 +225,7 @@
     <ClInclude Include="resource1.h" />
     <ClInclude Include="RTree.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="ShaderFactory.h" />
     <ClInclude Include="Storage.h" />
     <ClInclude Include="StructList.h" />
     <ClInclude Include="Text.h" />

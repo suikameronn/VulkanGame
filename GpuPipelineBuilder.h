@@ -1,12 +1,15 @@
 #pragma once
 
 #include"VulkanCore.h"
+#include"ShaderFactory.h"
+#include"GpuPipelineLayoutFactory.h"
+#include"GpuRenderPassFactory.h"
 
 struct PipelineProperty
 {
-	std::string vertexShaderPath;
-	std::string fragmentShaderPath;
-	std::string computeShaderpath;
+	std::shared_ptr<Shader> vertexShader;
+	std::shared_ptr<Shader> fragmentShader;
+	std::shared_ptr<Shader> computeShader;
 
 	std::vector<VkPipelineShaderStageCreateInfo> stages;
 	VkVertexInputBindingDescription bindingDescription;
@@ -18,26 +21,61 @@ struct PipelineProperty
 	VkPipelineRasterizationStateCreateInfo rasterizationState;
 	VkPipelineMultisampleStateCreateInfo multisampleState;
 	VkPipelineDepthStencilStateCreateInfo depthStencilState;
+	std::vector<VkPipelineColorBlendAttachmentState> colorBlendStateArray;
 	VkPipelineColorBlendStateCreateInfo colorBlendState;
+	std::vector<VkDynamicState> dynamicStateArray;
 	VkPipelineDynamicStateCreateInfo dynamicState;
+
+	std::shared_ptr<PipelineLayout> pLayout;
+	std::shared_ptr<RenderPass> renderPass;
 
 	void initProperty()
 	{
-		vertexShaderPath = "";
-		fragmentShaderPath = "";
-		computeShaderpath = "";
+		vertexShader = nullptr;
+		fragmentShader = nullptr;
+		computeShader = nullptr;
+
+		pLayout = nullptr;
+
+		renderPass = nullptr;
+		
 		stages.clear();
+		
 		bindingDescription = VkVertexInputBindingDescription{};
+		
 		attributeDescriptions.clear();
+
 		vertexInputState = VkPipelineVertexInputStateCreateInfo{};
+		vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		
 		inputAssemblyState = VkPipelineInputAssemblyStateCreateInfo{};
+		inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssemblyState.primitiveRestartEnable = VK_FALSE;
+
 		tessellationState = VkPipelineTessellationStateCreateInfo{};
+		tessellationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+
 		viewportState = VkPipelineViewportStateCreateInfo{};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+
 		rasterizationState = VkPipelineRasterizationStateCreateInfo{};
+		rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizationState.depthClampEnable = VK_FALSE;
+		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
+
 		multisampleState = VkPipelineMultisampleStateCreateInfo{};
+		multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+
 		depthStencilState = VkPipelineDepthStencilStateCreateInfo{};
+		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+		colorBlendStateArray.clear();
 		colorBlendState = VkPipelineColorBlendStateCreateInfo{};
+		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+
+		dynamicStateArray.clear();
 		dynamicState = VkPipelineDynamicStateCreateInfo{};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	}
 };
 
@@ -47,17 +85,24 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	//パイプラインの設定
-	PipelineProperty property{};
+	PipelineProperty property;
+
+	std::shared_ptr<ShaderFactory> shaderFactory;
 
 public:
 
-	GpuPipelineBuilder(VkDevice& d, std::shared_ptr<VulkanCore> core);
+	GpuPipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactory> sf);
+
+	void Create(PipelineProperty& p);
 
 	//パイプラインの設定の初期化
 	void initProperty();
+
+	//パイプラインレイアウトを設定する
+	GpuPipelineBuilder withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout);
+	//レンダーパスを設定する
+	GpuPipelineBuilder withRenderPass(const RenderPass& renderPass);
 
 	//頂点シェーダパスを設定
 	GpuPipelineBuilder withVertexShader(const std::string& path);
@@ -86,13 +131,37 @@ public:
 	GpuPipelineBuilder withCulModel(const VkCullModeFlags& mode);
 	//ポリゴンの表裏判定を右回りか左回りに設定
 	GpuPipelineBuilder withFrontFace(const VkFrontFace& face);
+	//デプスバイアスを設定する
+	GpuPipelineBuilder enableDepthBias(const bool& isBias);
 
-	VkPipelineMultisampleStateCreateInfo multisampling{};
-	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_TRUE;
-	multisampling.minSampleShading = 0.2f;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-	//マルチサンプリングを有効にする
-	GpuPipeineBuilder with
+	//マルチサンプリングシェーディングを設定
+	GpuPipelineBuilder enableMultiSampleShading(const bool& mode);
+	//最低のサンプリングシェーディングポイントの数を設定
+	GpuPipelineBuilder withMinSampleShading(const float& min);
+	//マルチサンプリングを行う際のサンプル数を設定
+	GpuPipelineBuilder withRansterizationSamples(const VkSampleCountFlagBits& flag);
+
+
+	//デプステストを設定する
+	GpuPipelineBuilder enableDepthTest(const bool& isEnable);
+	//zバッファへの書き込みを設定する
+	GpuPipelineBuilder enableDepthWrite(const bool& isWrite);
+	//z値の比較の仕方を設定する
+	GpuPipelineBuilder withDepthCompare(const VkCompareOp& compare);
+	//z値の範囲を指定し、それに満たない頂点は破棄する
+	GpuPipelineBuilder enableDepthBoundsTest(const float& min, const float& max);
+	//ステンシルテストを設定する
+	GpuPipelineBuilder enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back);
+
+
+	//ロジック演算を設定
+	GpuPipelineBuilder withLogicOp(const VkLogicOp& logic);
+	//アタッチメントを追加
+	GpuPipelineBuilder addColoarAttachment(const VkPipelineColorBlendAttachmentState& attachment);
+	//ブレンド定数を設定
+	GpuPipelineBuilder withBlendConstant(const float& r, const float& g, const float& b, const float& a);
+
+	//動的に変更するステートを積み上げる
+	GpuPipelineBuilder addDynamicState(const VkDynamicState& state);
 };
