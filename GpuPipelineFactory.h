@@ -216,6 +216,8 @@ enum PipelinePattern
 {
 	PBR,
 	UI,
+	CUBEMAP,
+	CALC_SHADOWMAP,
 	CALC_CUBEMAP,
 	CALC_IBL_DIFFUSE,
 	CALC_IBL_SPECULAR,
@@ -243,6 +245,9 @@ private:
 
 	//シェーダモジュールを取り出す
 	std::shared_ptr<Shader> shaderFactory;
+	
+	//レンダーパスを取り出す
+	std::shared_ptr<GpuRenderPassFactory> renderPassFactory;
 
 	//既に作成したパイプラインレイアウトを格納する
 	std::unordered_map<Pipeline, std::weak_ptr<Pipeline>, PipelineHash> pipelineStorage;
@@ -255,7 +260,8 @@ private:
 public:
 
 	GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutFactory> f
-		, std::shared_ptr<Shader> sf, std::shared_ptr<GpuPipelineBuilder> b);
+		, std::shared_ptr<Shader> sf, std::shared_ptr<GpuPipelineBuilder> b
+		,std::shared_ptr<GpuRenderPassFactory> r);
 
 	~GpuPipelineFactory();
 

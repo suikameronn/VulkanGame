@@ -10,8 +10,8 @@ enum class PipelineLayoutPattern
 	PBR = 0,
 	UI,
 	CUBEMAP,
-	CALCSHADOWMAP,
-	CALCCUBEMAP,
+	CALC_SHADOWMAP,
+	CALC_CUBEMAP,
 	CALCIBL_DIFFUSE_SPECULAR,
 	CALCIBL_BRDF
 };
@@ -119,11 +119,11 @@ public:
 	~GpuPipelineLayoutFactory();
 
 	//パイプラインレイアウトの作成
-	std::shared_ptr<PipelineLayout> Create(PipelineLayoutPattern pattern, VkPipelineLayout& pLayout);
+	std::shared_ptr<PipelineLayout> Create(PipelineLayoutPattern pattern);
 
 	//パイプラインレイアウトの作成
 	std::shared_ptr<PipelineLayout> Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
-		, std::vector<VkPushConstantRange>& pushConstants, VkPipelineLayout& pLayout);
+		, std::vector<VkPushConstantRange>& pushConstants);
 
 	//遅延破棄リストにリソースを追加する
 	void addDefferedDestruct(VkPipelineLayout& pLayout);

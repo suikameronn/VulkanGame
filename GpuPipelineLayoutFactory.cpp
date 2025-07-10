@@ -64,7 +64,7 @@ void GpuPipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
 	}
-	else if (pattern == PipelineLayoutPattern::CALCSHADOWMAP)
+	else if (pattern == PipelineLayoutPattern::CALC_SHADOWMAP)
 	{
 		//シャドウマップの計算用
 
@@ -72,7 +72,7 @@ void GpuPipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MVPANIM));
 	}
-	else if (pattern == PipelineLayoutPattern::CALCCUBEMAP)
+	else if (pattern == PipelineLayoutPattern::CALC_CUBEMAP)
 	{
 		//キューブマップの計算用
 
@@ -135,7 +135,7 @@ std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::createLayout(std::vect
 
 //パイプラインレイアウトの作成
 std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
-	, std::vector<VkPushConstantRange>& pushConstants, VkPipelineLayout& pLayout)
+	, std::vector<VkPushConstantRange>& pushConstants)
 {
 	if (layouts.size() == 0)
 	{
@@ -162,7 +162,7 @@ std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(std::vector<std
 }
 
 //パイプラインレイアウトの作成
-std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(PipelineLayoutPattern pattern, VkPipelineLayout& pLayout)
+std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(PipelineLayoutPattern pattern)
 {
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts;
 	std::vector<VkPushConstantRange> pushConstants;

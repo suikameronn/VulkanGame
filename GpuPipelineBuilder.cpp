@@ -6,25 +6,39 @@ GpuPipelineBuilder::GpuPipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactor
 
 	shaderFactory = sf;
 
+	colorBlendAttachment = VkPipelineColorBlendAttachmentState{};
+
 	//プロパティの初期化
 	property.initProperty();
 }
 
-void GpuPipelineBuilder::Create(PipelineProperty& p)
+PipelineProperty GpuPipelineBuilder::Build()
 {
 	if (!property.computeShader)
 	{
-		property.stages.resize(2);
+		if (!property.fragmentShader)
+		{
+			property.stages.resize(2);
 
-		property.stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		property.stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		property.stages[0].module = property.vertexShader->module;
-		property.stages[0].pName = "main";
+			property.stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			property.stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+			property.stages[0].module = property.vertexShader->module;
+			property.stages[0].pName = "main";
 
-		property.stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		property.stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		property.stages[1].module = property.fragmentShader->module;
-		property.stages[1].pName = "main";
+			property.stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			property.stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			property.stages[1].module = property.fragmentShader->module;
+			property.stages[1].pName = "main";
+		}
+		else
+		{
+			property.stages.resize(1);
+
+			property.stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			property.stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+			property.stages[0].module = property.vertexShader->module;
+			property.stages[0].pName = "main";
+		}
 	}
 	else if(property.vertexShader && property.fragmentShader)
 	{
@@ -51,9 +65,36 @@ void GpuPipelineBuilder::Create(PipelineProperty& p)
 	property.dynamicState.dynamicStateCount = static_cast<uint32_t>(property.dynamicStateArray.size());
 	property.dynamicState.pDynamicStates = property.dynamicStateArray.data();
 
-	p = property;
+	PipelineProperty p = property;
 
 	initProperty();
+
+	return p;
+}
+
+//VkPipelineを作成
+void GpuPipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
+{
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = static_cast<uint32_t>(p.stages.size());
+	pipelineInfo.pStages = p.stages.data();
+	pipelineInfo.pVertexInputState = &p.vertexInputState;
+	pipelineInfo.pInputAssemblyState = &p.inputAssemblyState;
+	pipelineInfo.pViewportState = &p.viewportState;
+	pipelineInfo.pRasterizationState = &p.rasterizationState;
+	pipelineInfo.pMultisampleState = &p.multisampleState;
+	pipelineInfo.pColorBlendState = &p.colorBlendState;
+	pipelineInfo.pDynamicState = &p.dynamicState;
+	pipelineInfo.layout = p.pLayout->pLayout;
+	pipelineInfo.renderPass = p.renderPass->renderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.pDepthStencilState = &p.depthStencilState;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
 }
 
 //パイプラインの設定の初期化
@@ -71,7 +112,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withPipelineLayout(const std::shared_ptr<
 }
 
 //レンダーパスを設定する
-GpuPipeilneBuilder GpuPipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
+GpuPipelineBuilder GpuPipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
 {
 	property.renderPass = renderPass;
 
@@ -165,7 +206,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withLineWidth(const float& width)
 	return *this;
 }
 //カリングモードの設定
-GpuPipelineBuilder GpuPipelineBuilder::withCulModel(const VkCullModeFlags& mode)
+GpuPipelineBuilder GpuPipelineBuilder::withCullMode(const VkCullModeFlags& mode)
 {
 	property.rasterizationState.cullMode = mode;
 
@@ -259,10 +300,37 @@ GpuPipelineBuilder GpuPipelineBuilder::withLogicOp(const VkLogicOp& logic)
 
 	return *this;
 }
-//アタッチメントを追加
-GpuPipelineBuilder GpuPipelineBuilder::addColoarAttachment(const VkPipelineColorBlendAttachmentState& attachment)
+
+//カラーブレンドアタッチメントの書き込みできる色を設定する
+GpuPipelineBuilder GpuPipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
 {
-	property.colorBlendStateArray.push_back(attachment);
+	colorBlendAttachment.colorWriteMask = flag;
+}
+
+//色のブレンドの仕方を設定する
+GpuPipelineBuilder GpuPipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+{
+	colorBlendAttachment.blendEnable = VK_TRUE;
+
+	colorBlendAttachment.srcColorBlendFactor = src;
+	colorBlendAttachment.dstColorBlendFactor = dst;
+	colorBlendAttachment.colorBlendOp = op;
+}
+
+//透明度のブレンドの仕方を設定する
+GpuPipelineBuilder GpuPipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+{
+	colorBlendAttachment.srcAlphaBlendFactor = src;
+	colorBlendAttachment.dstAlphaBlendFactor = dst;
+	colorBlendAttachment.alphaBlendOp = op;
+}
+
+//アタッチメントを追加
+GpuPipelineBuilder GpuPipelineBuilder::addColoarAttachment()
+{
+	property.colorBlendStateArray.push_back(colorBlendAttachment);
+
+	colorBlendAttachment = VkPipelineColorBlendAttachmentState{};
 
 	return *this;
 }

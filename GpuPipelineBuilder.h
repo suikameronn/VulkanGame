@@ -90,15 +90,21 @@ private:
 
 	std::shared_ptr<ShaderFactory> shaderFactory;
 
+	VkPipelineColorBlendAttachmentState colorBlendAttachment;
+
 public:
 
 	GpuPipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactory> sf);
 
-	void Create(PipelineProperty& p);
+	PipelineProperty Build();
+
+	void Create(const PipelineProperty& property, VkPipeline& pipeline);
 
 	//パイプラインの設定の初期化
 	void initProperty();
 
+	//レンダーパスを設定する
+	GpuPipelineBuilder withRenderPass(const std::shared_ptr<RenderPass>& renderPass);
 	//パイプラインレイアウトを設定する
 	GpuPipelineBuilder withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout);
 	//レンダーパスを設定する
@@ -128,7 +134,7 @@ public:
 	//ラインの太さを設定
 	GpuPipelineBuilder withLineWidth(const float& width);
 	//カリングモードの設定
-	GpuPipelineBuilder withCulModel(const VkCullModeFlags& mode);
+	GpuPipelineBuilder withCullMode(const VkCullModeFlags& mode);
 	//ポリゴンの表裏判定を右回りか左回りに設定
 	GpuPipelineBuilder withFrontFace(const VkFrontFace& face);
 	//デプスバイアスを設定する
@@ -154,11 +160,17 @@ public:
 	//ステンシルテストを設定する
 	GpuPipelineBuilder enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back);
 
+	//アタッチメントの色の書き込みを設定
+	GpuPipelineBuilder withColorWriteMask(const VkColorComponentFlags& flag);
+	//色のブレンドの仕方を設定する
+	GpuPipelineBuilder withColorBlendFactorOp(const VkBlendFactor& src,const VkBlendFactor& dst,const VkBlendOp op);
+	//透明度のブレンドの仕方を設定する
+	GpuPipelineBuilder withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op);
+	//アタッチメントを追加
+	GpuPipelineBuilder addColoarAttachment();
 
 	//ロジック演算を設定
 	GpuPipelineBuilder withLogicOp(const VkLogicOp& logic);
-	//アタッチメントを追加
-	GpuPipelineBuilder addColoarAttachment(const VkPipelineColorBlendAttachmentState& attachment);
 	//ブレンド定数を設定
 	GpuPipelineBuilder withBlendConstant(const float& r, const float& g, const float& b, const float& a);
 
