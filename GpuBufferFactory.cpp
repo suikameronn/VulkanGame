@@ -8,6 +8,8 @@ GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core)
 	physicalDevice = core->getPhysicalDevice();
 	device = core->getLogicDevice();
 
+	commandPool = core->getCommandPool();
+
 	//初回のフレームインデックスを1に設定する
 	frameIndex = 1;
 
@@ -16,7 +18,8 @@ GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core)
 }
 
 //バッファの内容をコピー
-void GpuBufferFactory::copyBuffer(VkDeviceSize size,GpuBuffer& src, std::shared_ptr<GpuBuffer> dst)
+void GpuBufferFactory::copyBuffer(const VkDeviceSize size, const GpuBuffer& src
+	, std::shared_ptr<GpuBuffer> dst)
 {
 	VkCommandBuffer commandBuffer = vulkanCore->beginSingleTimeCommandBuffer(); //vulkanCoreからコマンドバッファを持ってくる
 
@@ -29,7 +32,8 @@ void GpuBufferFactory::copyBuffer(VkDeviceSize size,GpuBuffer& src, std::shared_
 }
 
 //メモリのデータをコピー
-void GpuBufferFactory::copyMemory(VkDeviceSize size, void* src, std::shared_ptr<GpuBuffer> dst, bool unmapped)
+void GpuBufferFactory::copyMemory(const VkDeviceSize size, const void* src
+	, std::shared_ptr<GpuBuffer> dst, const bool unmapped)
 {
 	vkMapMemory(device, dst->memory, 0, size, 0, &dst->mappedPtr);
 	memcpy(dst->mappedPtr, src, size);
@@ -41,7 +45,8 @@ void GpuBufferFactory::copyMemory(VkDeviceSize size, void* src, std::shared_ptr<
 }
 
 //ステージングバッファをコピー先として想定
-void GpuBufferFactory::copyMemory(VkDeviceSize size, void* src, GpuBuffer& dst, bool unmapped)
+void GpuBufferFactory::copyMemory(const VkDeviceSize size, const void* src
+	, GpuBuffer& dst, const bool unmapped)
 {
 	vkMapMemory(device, dst.memory, 0, size, 0, &dst.mappedPtr);
 	memcpy(dst.mappedPtr, src, size);
@@ -125,7 +130,7 @@ VkMemoryPropertyFlagBits GpuBufferFactory::convertMemoryPropertyFlagBits(BufferU
 //public////////////////////////////////////
 
 //バッファの設定を直接指定して、バッファを作成する
-std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, void* srcPtr
+std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, const void* srcPtr
 	, VkBufferUsageFlags usage, VkMemoryPropertyFlags property)
 {
 	//この構造体を返す
@@ -166,7 +171,7 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, voi
 }
 
 //あらかじめ設定されたバッファの設定でバッファを作成する
-std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, void* srcPtr
+std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, const void* srcPtr
 	, BufferUsage usage, BufferTransferType transferType)
 {
 	//この構造体を返す
@@ -210,10 +215,33 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, voi
 	return buffer;
 }
 
+//コマンドバッファーを作成する
+std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
+{
+	std::shared_ptr<CommandBuffer> commandBuffer = std::make_shared<CommandBuffer>(shared_from_this());
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer->commandBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+
+	return commandBuffer;
+}
+
 //遅延破棄リストにバッファを追加する
 void GpuBufferFactory::addDefferedDestruct(VkBuffer& buffer, VkDeviceMemory& memory)
 {
 	destructList[frameIndex].push_back({ buffer,memory });
+}
+
+void GpuBufferFactory::addDefferedDestruct(VkCommandBuffer& commandBuffer)
+{
+	destructListCommand[frameIndex].push_back(commandBuffer);
 }
 
 //バッファを破棄する
@@ -224,6 +252,11 @@ void GpuBufferFactory::resourceDestruct()
 	{
 		vkDestroyBuffer(device, bufferMemory.first, nullptr);
 		vkFreeMemory(device, bufferMemory.second, nullptr);
+	}
+
+	for (auto& command : destructListCommand[frameIndex])
+	{
+		vkFreeCommandBuffers(device, commandPool, 1, &command);
 	}
 
 	//フレームインデックスを更新する

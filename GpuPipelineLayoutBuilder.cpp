@@ -8,21 +8,27 @@ GpuPipelineLayoutBuilder::GpuPipelineLayoutBuilder(VkDevice& d, std::shared_ptr<
 }
 
 //レイアウトを初期化する
-void GpuPipelineLayoutBuilder::initProperty()
+GpuPipelineLayoutBuilder GpuPipelineLayoutBuilder::initProperty()
 {
     layoutArray.clear();
+
+	return *this;
 }
 
 //DescriptorSetLayoutからレイアウトを積み上げる
-void GpuPipelineLayoutBuilder::addLayout(const std::shared_ptr<DescriptorSetLayout> layout)
+GpuPipelineLayoutBuilder GpuPipelineLayoutBuilder::addLayout(const std::shared_ptr<DescriptorSetLayout> layout)
 {
 	layoutArray.push_back(layout);
+
+	return *this;
 }
 
 //パイプラインレイアウトを作成する
-void GpuPipelineLayoutBuilder::Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts)
+std::vector<std::shared_ptr<DescriptorSetLayout>> GpuPipelineLayoutBuilder::Build()
 {
-	layouts = layoutArray;
+	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts = layoutArray;
 
 	initProperty();
+
+	return layouts;
 }

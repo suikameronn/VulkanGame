@@ -101,6 +101,9 @@ private:
 	//Vulkanのデバッガの用意
 	void setupDebugMessenger();
 
+	//ウィンドウサイズ変更時のコールバックを登録する
+	void setupCallBack();
+
 	//レンダー先の出力先のウィンドウの用意
 	void createSurface();
 
@@ -109,9 +112,6 @@ private:
 
 	//適切なデバイスを選択する
 	bool isDeviceSuitable(const VkPhysicalDevice& device);
-
-	//デバイスの指定された機能を持つキューを調べる
-	QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device);
 
 	//そのデバイスが必要な拡張を持つかどうかを確認する
 	bool checkDeviceExtensionSupport(const VkPhysicalDevice& device);
@@ -130,6 +130,9 @@ private:
 
 public:
 
+	//ウィンドウサイズの変更のフラグ
+	bool windowSizeChanged;
+
 	VulkanCore();
 
 	VkPhysicalDevice& getPhysicalDevice()
@@ -142,12 +145,43 @@ public:
 		return device;
 	}
 
+	GLFWwindow* getWindow()
+	{
+		return window;
+	}
+
+	const VkSampleCountFlagBits & getMaxMsaaSamples() const
+	{
+		return maxMsaaSamples;
+	}
+
+	//コマンドプールを取得する
+	VkCommandPool getCommandPool() { return commandPool; }
+
+	//デバイスの指定された機能を持つキューを調べる
+	QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device);
+
 	//画面の画像フォーマットを取得する
 	VkFormat getSwapChainFormat();
+
+	//条件に合うメモリのインデックスを取得する
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	//使い捨てのコマンドバッファを作成
 	VkCommandBuffer& beginSingleTimeCommandBuffer();
 
 	//使い捨てのコマンドバッファを破棄
 	void endSingleTimeCommandBuffer(VkCommandBuffer& commandBuffer);
+
+	//GLFWからウィンドウのサイズ変更の通知を受け取る
+	void windowResizeCallback(GLFWwindow* window);
+
+	//ウィンドウのサイズ変更を通知する
+	bool isWindowSizeChanged();
 };
+
+//ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto app = reinterpret_cast<VulkanCore*>(glfwGetWindowUserPointer(window));
+	app->windowSizeChanged = true;
+}

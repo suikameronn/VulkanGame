@@ -2,11 +2,16 @@
 
 VulkanCore::VulkanCore()
 {
+    windowSizeChanged = false;
+
     //vulkanインスタンスの作成
     createInstance();
     
     //デバッガーの作成
     setupDebugMessenger();
+
+    //ウィンドウサイズ変更時のコールバックを登録する
+    setupCallBack();
     
     //実行ウィンドウの取得
     createSurface();
@@ -141,6 +146,13 @@ void VulkanCore::setupDebugMessenger()
     if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug messenger!");
     }
+}
+
+//ウィンドウサイズ変更時のコールバックを登録する
+void VulkanCore::setupCallBack()
+{
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
 //レンダー先の出力先のウィンドウの用意
@@ -348,6 +360,20 @@ void VulkanCore::createLogicalDevice()
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
+uint32_t VulkanCore::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("failed to find suitable memory type!");
+}
+
 //使い捨てのコマンドバッファを作成
 VkCommandBuffer& VulkanCore::beginSingleTimeCommandBuffer()
 {
@@ -409,4 +435,22 @@ void VulkanCore::createCommandPool()
     {
         throw std::runtime_error("failed to create graphics command pool!");
     }
+}
+
+//ウィンドウのサイズ変更を通知する
+bool VulkanCore::isWindowSizeChanged()
+{
+    int newWidth, newHeight;
+
+    bool b = windowSizeChanged;
+
+	windowSizeChanged = false;
+
+    glfwGetFramebufferSize(window, &newWidth, &newHeight);
+    while (newWidth == 0 || newHeight == 0) {
+        glfwGetFramebufferSize(window, &newWidth, &newHeight);
+        glfwWaitEvents();
+    }
+
+    return b;
 }

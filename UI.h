@@ -25,14 +25,6 @@ enum class UILayer
 	BACKGROUND
 };
 
-//2D用の頂点構造体
-struct Vertex2D
-{
-	//z値は、UIをレンダイングする際の優先順位に使用
-	glm::vec3 pos;
-	glm::vec2 uv;
-};
-
 //回転の構造体
 //各軸に度数法単位の回転角度を指定する
 struct Rotate2D

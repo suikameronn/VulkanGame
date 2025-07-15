@@ -19,12 +19,12 @@ public:
 	GpuDescriptorSetLayoutBuilder(VkDevice& d);
 
 	//プロパティの初期化
-	void initProperty();
+	GpuDescriptorSetLayoutBuilder initProperty();
 
 	//タイプと使うシェーダの設定
-	void setProperty(VkDescriptorType type, VkShaderStageFlagBits stage);
-	void setProperty(int type, int stage);
+	GpuDescriptorSetLayoutBuilder setProperty(VkDescriptorType type, VkShaderStageFlagBits stage);
+	GpuDescriptorSetLayoutBuilder setProperty(int type, int stage);
 
 	//バインディングの作成
-	void Create(std::vector<VkDescriptorSetLayoutBinding>& bindings);
+	std::vector<VkDescriptorSetLayoutBinding> Build();
 };

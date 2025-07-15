@@ -135,12 +135,16 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addDepthStencilAttachment()
 GpuRenderPassBuilder GpuRenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
 {
 	dependency.srcSubpass = index;
+
+	return *this;
 }
 
 //一つ後のサブパスを指定する
 GpuRenderPassBuilder GpuRenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
 {
 	dependency.dstSubpass = index;
+
+	return *this;
 }
 
 //一つ前のサブパスがどのステージまで行くまで待つかを設定する
@@ -179,6 +183,8 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withDstAccessMask(const VkAccessFlags
 GpuRenderPassBuilder GpuRenderPassBuilder::withFlag(const VkDependencyFlags& flag)
 {
 	dependency.dependencyFlags = flag;
+
+	return *this;
 }
 
 //サブパスの依存関係を追加する
@@ -188,6 +194,8 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addDependency()
 
 	//構造体を初期化しておく
 	dependency = VkSubpassDependency{};
+
+	return *this;
 }
 
 //サブパスを追加する

@@ -20,11 +20,11 @@ public:
 	GpuPipelineLayoutBuilder(VkDevice& d,std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutF);
 
 	//レイアウトを初期化する
-	void initProperty();
+	GpuPipelineLayoutBuilder initProperty();
 
 	//DescriptorSetLayoutからレイアウトを積み上げる
-	void addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
+	GpuPipelineLayoutBuilder addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
 
 	//パイプラインレイアウトを作成する
-	void Create(std::vector< std::shared_ptr<DescriptorSetLayout>>& layouts);
+	std::vector< std::shared_ptr<DescriptorSetLayout>> Build();
 };

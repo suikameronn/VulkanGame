@@ -61,7 +61,38 @@ PipelineProperty GpuPipelineFactory::convertPattern(const PipelinePattern& patte
     }
     else if (pattern == PipelinePattern::UI)
     {
+        builder->initProperty();
 
+        return builder->withVertexShader("ui.vert.spv")
+			.withFragmentShader("ui.frag.spv")
+            .withVertexInput(0,VK_VERTEX_INPUT_RATE_VERTEX,sizeof(Vertex2D))
+			.addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex2D, pos))
+			.addVertexInputAttrib(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex2D, uv))
+            .withTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .withPolygonMode(VK_POLYGON_MODE_FILL)
+            .withLineWidth(1.0f)
+            .withCullMode(VK_CULL_MODE_NONE)
+            .withFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+            .enableMultiSampleShading(VK_TRUE)
+            .withMinSampleShading(0.2f)
+            .withRansterizationSamples(VK_SAMPLE_COUNT_8_BIT)
+            .withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+            .withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+                , VK_BLEND_OP_ADD)
+            .withAlphaBlendFactorOp(VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO
+                , VK_BLEND_OP_ADD)
+            .addColoarAttachment()
+            .withBlendConstant(0.0f, 0.0f, 0.0f, 0.0f)
+            .addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+            .addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+            .enableDepthTest(VK_TRUE)
+            .enableDepthWrite(VK_TRUE)
+            .withDepthCompare(VK_COMPARE_OP_LESS)
+            .withRenderPass(renderPassFactory->Create(RenderPassPattern::UI))
+            .withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::UI))
+            .Build();
+            
     }
     else if (pattern == PipelinePattern::CUBEMAP)
     {
@@ -199,15 +230,78 @@ PipelineProperty GpuPipelineFactory::convertPattern(const PipelinePattern& patte
     }
     else if (pattern == PipelinePattern::CALC_IBL_SPECULAR)
     {
+        builder->initProperty();
 
+        return builder->withVertexShader("shaders/calcIBL.vert.spv")
+            .withFragmentShader("shaders/calcSpecularReflection.frag.spv")
+            .withVertexInput(0, VK_VERTEX_INPUT_RATE_VERTEX, sizeof(Vertex))
+            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos))
+            .withTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .withPolygonMode(VK_POLYGON_MODE_FILL)
+            .withLineWidth(1.0f)
+            .withCullMode(VK_CULL_MODE_BACK_BIT)
+            .withFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+            .enableMultiSampleShading(VK_TRUE)
+            .withMinSampleShading(0.2f)
+            .withRansterizationSamples(VK_SAMPLE_COUNT_1_BIT)
+            .withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+            .withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+                , VK_BLEND_OP_ADD)
+            .withAlphaBlendFactorOp(VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO
+                , VK_BLEND_OP_ADD)
+            .addColoarAttachment()
+            .withBlendConstant(0.0f, 0.0f, 0.0f, 0.0f)
+            .addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+            .addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+            .enableDepthTest(VK_TRUE)
+            .enableDepthWrite(VK_TRUE)
+            .withDepthCompare(VK_COMPARE_OP_LESS_OR_EQUAL)
+            .withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
+            .withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::CALC_CUBEMAP))
+            .Build();
     }
     else if (pattern == PipelinePattern::CALC_IBL_BRDF)
     {
+        builder->initProperty();
 
+        return builder->withVertexShader("shaders/calcBRDF.vert.spv")
+            .withFragmentShader("shaders/calcSpecularBRDF.frag.spv")
+            .withVertexInput(0, VK_VERTEX_INPUT_RATE_VERTEX, sizeof(Vertex))
+            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos))
+            .withTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .withPolygonMode(VK_POLYGON_MODE_FILL)
+            .withLineWidth(1.0f)
+            .withCullMode(VK_CULL_MODE_BACK_BIT)
+            .withFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+            .enableMultiSampleShading(VK_TRUE)
+            .withMinSampleShading(0.2f)
+            .withRansterizationSamples(VK_SAMPLE_COUNT_1_BIT)
+            .withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+            .withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+                , VK_BLEND_OP_ADD)
+            .withAlphaBlendFactorOp(VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO
+                , VK_BLEND_OP_ADD)
+            .addColoarAttachment()
+            .withBlendConstant(0.0f, 0.0f, 0.0f, 0.0f)
+            .addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+            .addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+            .enableDepthTest(VK_TRUE)
+            .enableDepthWrite(VK_TRUE)
+            .withDepthCompare(VK_COMPARE_OP_LESS_OR_EQUAL)
+            .withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
+            .withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::CALC_CUBEMAP))
+            .Build();
     }
     else if (pattern == PipelinePattern::RAYCAST)
     {
 
+        builder->initProperty();
+
+		return builder->withComputeShader("shaders/raycast.comp.spv")
+            .withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::RAYCAST))
+            .Build();
     }
 }
 
@@ -217,8 +311,6 @@ std::shared_ptr<Pipeline> GpuPipelineFactory::Create(const PipelinePattern& patt
     std::shared_ptr<Pipeline> pipeline = std::make_shared<Pipeline>(shared_from_this());
 
     PipelineProperty property = convertPattern(pattern);
-
-    std::shared_ptr<Pipeline> pipeline = std::make_shared<Pipeline>(shared_from_this());
 
     builder->Create(property, pipeline->pipeline);
 

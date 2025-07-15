@@ -13,8 +13,10 @@
 #include"ThreadPool.h"
 
 #include<limits>
+
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
+#include"StructList.h"
 
 enum IMAGE;
 

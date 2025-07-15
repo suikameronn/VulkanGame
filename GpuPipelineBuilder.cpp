@@ -75,25 +75,45 @@ PipelineProperty GpuPipelineBuilder::Build()
 //VkPipelineを作成
 void GpuPipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 {
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = static_cast<uint32_t>(p.stages.size());
-	pipelineInfo.pStages = p.stages.data();
-	pipelineInfo.pVertexInputState = &p.vertexInputState;
-	pipelineInfo.pInputAssemblyState = &p.inputAssemblyState;
-	pipelineInfo.pViewportState = &p.viewportState;
-	pipelineInfo.pRasterizationState = &p.rasterizationState;
-	pipelineInfo.pMultisampleState = &p.multisampleState;
-	pipelineInfo.pColorBlendState = &p.colorBlendState;
-	pipelineInfo.pDynamicState = &p.dynamicState;
-	pipelineInfo.layout = p.pLayout->pLayout;
-	pipelineInfo.renderPass = p.renderPass->renderPass;
-	pipelineInfo.subpass = 0;
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-	pipelineInfo.pDepthStencilState = &p.depthStencilState;
+	if (p.computeShader)
+	{
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = static_cast<uint32_t>(p.stages.size());
+		pipelineInfo.pStages = p.stages.data();
+		pipelineInfo.pVertexInputState = &p.vertexInputState;
+		pipelineInfo.pInputAssemblyState = &p.inputAssemblyState;
+		pipelineInfo.pViewportState = &p.viewportState;
+		pipelineInfo.pRasterizationState = &p.rasterizationState;
+		pipelineInfo.pMultisampleState = &p.multisampleState;
+		pipelineInfo.pColorBlendState = &p.colorBlendState;
+		pipelineInfo.pDynamicState = &p.dynamicState;
+		pipelineInfo.layout = p.pLayout->pLayout;
+		pipelineInfo.renderPass = p.renderPass->renderPass;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineInfo.pDepthStencilState = &p.depthStencilState;
 
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create graphics pipeline!");
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create graphics pipeline!");
+		}
+	}
+	else
+	{
+		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = p.computeShader->module;
+		computeShaderStageInfo.pName = "main";
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = p.pLayout->pLayout;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline!");
+		}
 	}
 }
 
@@ -305,6 +325,8 @@ GpuPipelineBuilder GpuPipelineBuilder::withLogicOp(const VkLogicOp& logic)
 GpuPipelineBuilder GpuPipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
 {
 	colorBlendAttachment.colorWriteMask = flag;
+
+	return *this;
 }
 
 //色のブレンドの仕方を設定する
@@ -315,6 +337,8 @@ GpuPipelineBuilder GpuPipelineBuilder::withColorBlendFactorOp(const VkBlendFacto
 	colorBlendAttachment.srcColorBlendFactor = src;
 	colorBlendAttachment.dstColorBlendFactor = dst;
 	colorBlendAttachment.colorBlendOp = op;
+
+	return *this;
 }
 
 //透明度のブレンドの仕方を設定する
@@ -323,6 +347,8 @@ GpuPipelineBuilder GpuPipelineBuilder::withAlphaBlendFactorOp(const VkBlendFacto
 	colorBlendAttachment.srcAlphaBlendFactor = src;
 	colorBlendAttachment.dstAlphaBlendFactor = dst;
 	colorBlendAttachment.alphaBlendOp = op;
+
+	return *this;
 }
 
 //アタッチメントを追加

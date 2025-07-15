@@ -1,0 +1,59 @@
+#pragma once
+
+#include"VulkanCore.h"
+#include"FrameBufferBuilder.h"
+
+struct FrameBuffer;
+
+class FrameBufferFactory : public std::enable_shared_from_this<FrameBufferFactory>
+{
+private:
+
+	uint32_t frameIndex;
+
+	VkDevice device;
+
+	std::shared_ptr<VulkanCore> vulkanCore;
+
+	std::shared_ptr<FrameBufferBuilder> builder;
+
+	std::array<std::list<VkFramebuffer>, 2> destructList;
+
+public:
+
+	FrameBufferFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<FrameBufferBuilder> b);
+
+	//フレームバッファビルダーを取得
+	std::shared_ptr<FrameBufferBuilder> getBuilder()
+	{
+		return builder;
+	}
+
+	std::shared_ptr<FrameBuffer> Create(const FrameBufferProperty& property);
+
+	void addDefferedDestruct(VkFramebuffer& frameBuffer);
+
+	void resourceDestruct();
+};
+
+struct FrameBuffer
+{
+	VkFramebuffer frameBuffer;
+
+	std::shared_ptr<RenderPass> renderPass;
+	std::vector<std::shared_ptr<Texture>> texture;
+
+	std::shared_ptr<FrameBufferFactory> factory;
+
+	FrameBuffer(std::shared_ptr<FrameBufferFactory> f)
+	{
+		frameBuffer = nullptr;
+
+		factory = f;
+	}
+
+	~FrameBuffer()
+	{
+		factory->addDefferedDestruct(frameBuffer);
+	}
+};

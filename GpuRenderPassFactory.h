@@ -12,6 +12,7 @@ struct RenderPass;
 enum class RenderPassPattern
 {
 	PBR,
+	UI,
 	CALC_SHADOWMAP,
 	CALC_CUBEMAP,
 	CALC_IBL
@@ -191,3 +192,19 @@ struct RenderPass
 		factory->addDefferedDestruct(renderPass);
 	}
 };
+
+inline bool operator==(const std::pair<RenderPassProperty, std::shared_ptr<RenderPass>> lhs
+	, const std::pair<RenderPassProperty, std::shared_ptr<RenderPass>> rhs)
+{
+	if (lhs.first != rhs.first)
+	{
+		return false;
+	}
+
+	if (lhs.second->hashKey != rhs.second->hashKey)
+	{
+		return false;
+	}
+
+	return true;
+}

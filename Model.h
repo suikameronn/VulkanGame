@@ -131,19 +131,6 @@ struct OffScreenPass {
 	}
 };
 
-struct FragmentParam
-{
-	//透明度を上書き
-	float alphaness;
-
-	FragmentParam()
-	{
-		//あり得ない値にして
-		//この値を使うか使わないかのフラグにする
-		alphaness = -1.0f;
-	}
-};
-
 //通常のレンダリング用のuniform buffer
 struct MatricesUBO {
 	glm::vec3 scale;//uv座標調整用

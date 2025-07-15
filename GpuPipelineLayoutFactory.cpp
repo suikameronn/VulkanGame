@@ -3,6 +3,8 @@
 GpuPipelineLayoutFactory::GpuPipelineLayoutFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutBuilder> b
 	, std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutF)
 {
+	frameIndex = 1;
+
 	device = d;
 
 	builder = b;
@@ -95,9 +97,30 @@ void GpuPipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		builder->initProperty();
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 	}
+	else if(pattern == PipelineLayoutPattern::RAYCAST)
+	{
+		std::shared_ptr<DescriptorSetLayout> raycastLayout = layoutFactory->Create(layoutFactory->getBuilder()
+			->initProperty()
+			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.setProperty(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build());
+
+		//レイキャスト用
+		builder->initProperty();
+		builder->addLayout(raycastLayout)
+			.addLayout(layoutFactory->Create(LayoutPattern::MVPANIM))
+			.addLayout(layoutFactory->Create(LayoutPattern::RAYCAST));
+
+		VkPushConstantRange p1{};
+		p1.offset = 0;
+		p1.size = sizeof(RaycastPushConstant);
+		p1.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		pushConstant.push_back(p1);
+	}
 
 	//レイアウトの構造体を取得する
-	builder->Create(layouts);
+	layouts = builder->Build();
 }
 
 //ビルダーでパイプラインレイアウトを作成する

@@ -123,7 +123,7 @@ void GpuDescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,
 	}
 
 	//バインディングを作成する
-	builder->Create(bindings);
+	bindings = builder->Build();
 }
 
 //レイアウトの作成

@@ -208,11 +208,7 @@ struct alignas(16) RaycastReturn
     }
 };
 
-struct RaycastPushConstant
-{
-    uint32_t indexCount;
-    uint64_t pointer;
-};
+
 
 struct Raycast
 {

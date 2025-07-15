@@ -1,3 +1,5 @@
+#pragma once
+
 #include<iostream>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -61,4 +63,18 @@ struct Vertex {
 			}
 		}
 	}
+};
+
+//2D用の頂点構造体
+struct Vertex2D
+{
+	//z値は、UIをレンダイングする際の優先順位に使用
+	glm::vec3 pos;
+	glm::vec2 uv;
+};
+
+struct RaycastPushConstant
+{
+	uint32_t indexCount;
+	uint64_t pointer;
 };

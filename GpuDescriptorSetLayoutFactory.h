@@ -109,6 +109,11 @@ public:
 
 	~GpuDescriptorSetLayoutFactory();
 
+	std::shared_ptr<GpuDescriptorSetLayoutBuilder> getBuilder()
+	{
+		return builder;
+	}
+
 	//レイアウトの作成
 	std::shared_ptr<DescriptorSetLayout> Create(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 	

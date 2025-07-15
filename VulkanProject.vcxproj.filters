@@ -55,6 +55,12 @@
     <Filter Include="ソース ファイル\Vulkan\Factory">
       <UniqueIdentifier>{0496e188-0d04-4701-aa6d-b84c90643af9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Material">
+      <UniqueIdentifier>{c361d68e-f3c2-4a91-b381-84e082ae880f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Material">
+      <UniqueIdentifier>{bd8b6443-0054-4369-bcaf-df0e8617d367}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -155,6 +161,27 @@
     </ClCompile>
     <ClCompile Include="GpuRenderPassBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureBuilder.cpp">
+      <Filter>ソース ファイル\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureFactory.cpp">
+      <Filter>ソース ファイル\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameBufferBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="SwapChain.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSetFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSetBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="Render.cpp">
+      <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -277,6 +304,39 @@
     </ClInclude>
     <ClInclude Include="GpuRenderPassBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureBuilder.h">
+      <Filter>ヘッダー ファイル\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureFactory.h">
+      <Filter>ヘッダー ファイル\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Library.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBufferFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBufferFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBufferBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="SwapChain.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSetFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSetBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="Render.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

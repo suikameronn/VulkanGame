@@ -13,7 +13,8 @@ enum class PipelineLayoutPattern
 	CALC_SHADOWMAP,
 	CALC_CUBEMAP,
 	CALCIBL_DIFFUSE_SPECULAR,
-	CALCIBL_BRDF
+	CALCIBL_BRDF,
+	RAYCAST
 };
 
 struct PipelineLayout;
