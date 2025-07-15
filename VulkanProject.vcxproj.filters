@@ -108,9 +108,6 @@
     <ClCompile Include="Storage.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Cubemap.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Bullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -180,7 +177,28 @@
     <ClCompile Include="DescriptorSetBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
+    <ClCompile Include="IRenderable.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="Render.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="EnviromentLightSetFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="EnviromentLightSetBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvironmentLightSet.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="OldCubemap.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Cubemap.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="IBL.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -243,9 +261,6 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Cubemap.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Bullet.h">
@@ -336,6 +351,27 @@
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
     <ClInclude Include="Render.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderable.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="EnviromentLightSetFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="EnviromentLightSetBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="EnvironmentLightSet.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="OldCubemap.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Cubemap.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="IBL.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

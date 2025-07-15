@@ -7,6 +7,8 @@
 #include"GpuBufferFactory.h"
 #include"VulkanCore.h"
 
+#include"IRenderable.h"
+
 #include<glm/glm.hpp>
 
 struct RenderProperty
@@ -81,8 +83,10 @@ public:
 	RenderProperty Build();
 
 	//レンダリング開始
-
 	void RenderStart(const RenderProperty& property);
+
+	//レンダリング
+	void Renderable(const std::shared_ptr<IRenderable> obj);
 
 	//レンダリング終了
 	void RenderEnd();

@@ -28,7 +28,7 @@
 #include "GLFW/glfw3native.h"
 
 #include"Storage.h"
-#include"Cubemap.h"
+#include"OldCubemap.h"
 #include"Scene.h"
 #include"Text.h"
 

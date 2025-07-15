@@ -6,11 +6,6 @@ Render::Render(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactor
 
 	device = core->getLogicDevice();
 
-	for (int i = 0; i < 2; i++)
-	{
-		commandBuffers[i] = bf->CommandBufferCreate();
-	}
-
 	initProperty();
 }
 
@@ -94,6 +89,13 @@ void Render::RenderStart(const RenderProperty& property)
 	vkCmdBeginRenderPass(property.commandBuffer->commandBuffer, &property.info
 		, VK_SUBPASS_CONTENTS_INLINE);
 }
+
+//レンダリング
+void Render::Renderable(const std::shared_ptr<IRenderable> obj)
+{
+	obj->Render();
+}
+
 
 //レンダリング終了
 void Render::RenderEnd()

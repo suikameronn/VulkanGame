@@ -155,6 +155,11 @@ public:
 		return maxMsaaSamples;
 	}
 
+	VkQueue geGraphicsQueue()
+	{
+		return graphicsQueue;
+	}
+
 	//コマンドプールを取得する
 	VkCommandPool getCommandPool() { return commandPool; }
 
