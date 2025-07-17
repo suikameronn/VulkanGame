@@ -11,6 +11,9 @@
 #include"Material.h"
 #include"StructList.h"
 
+#include"GpuBufferFactory.h"
+#include"DescriptorSetFactory.h"
+
 struct Vertex;
 struct Primitive;
 struct Mesh;
@@ -352,43 +355,46 @@ struct Animation {
 	float end = std::numeric_limits<float>::min();//終了時間
 };
 
-//頂点バッファーとインデックスバッファの構造体
-//Modelクラスが持つ
-struct BufferObject
-{
-	VkBuffer vertBuffer;
-	VkDeviceMemory vertHandler;
-
-	VkBuffer indeBuffer;
-	VkDeviceMemory indeHandler;
-
-	BufferObject()
-	{
-		vertBuffer = nullptr;
-		vertHandler = nullptr;
-
-		indeBuffer = nullptr;
-		indeHandler = nullptr;
-	}
-};
-
 //読み込んだgltfモデル全体のクラス
 class GltfModel
 {
 private:
 	GltfNode* root;
 
+	//gltfモデルの頂点関連用のバッファ
+	std::vector<std::shared_ptr<GpuBuffer>> vertBuffer;
+	std::vector<std::shared_ptr<GpuBuffer>> indeBuffer;
+
+	//ディスクリプタセット
+	std::vector<std::shared_ptr<DescriptorSet>> descriptorSet;
+
+	std::shared_ptr<GpuBufferFactory> bufferFactory;
+	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetFactory> descFactory;
+
+	void createBuffer(const GltfNode* node);
+	void createDescriptorSet(const GltfNode* node);
+
 public:
 
-	GltfModel(GltfNode* rootNode) 
+	GltfModel(GltfNode* rootNode 
+		,std::shared_ptr<GpuBufferFactory> bf
+		,std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+		,std::shared_ptr<DescriptorSetFactory> desc)
 	{
 		this->root = rootNode; 
 		this->meshCount = 0;
 		this->primitiveCount = 0;
 		this->setup = false;
 		this->jointNum = 0;
+
+		bufferFactory = bf;
+		layoutFactory = layout;
+		descFactory = desc;
 	}
 	~GltfModel();
+
+	void setPointBufferNum();
 
 	void deleteNodes(GltfNode* node,VkDevice& device);
 
@@ -403,9 +409,7 @@ public:
 
 	//ノードの個数
 	int nodeCount;
-
-	//gltfモデルの頂点関連用のバッファ
-	std::vector<BufferObject> pointBuffers;
+	// 
 	//頂点バッファ用のVkDescriptorSet
 	std::vector<VkDescriptorSet> raycastDescriptorSets;
 
@@ -426,12 +430,19 @@ public:
 	GltfNode* nodeFromIndex(int index);
 	GltfNode* findNode(GltfNode* parent,int index);
 
-	void setPointBufferNum() 
-	{ 
-		pointBuffers.resize(meshCount);
-		raycastDescriptorSets.resize(meshCount);
+	void createBuffer();
+	void createDescriptorSet();
+
+	std::shared_ptr<GpuBuffer> getVertBuffer(int idndex)
+	{
+		return vertBuffer[i];
 	}
-	BufferObject* getPointBuffer() { return pointBuffers.data(); }
+
+	std::shared_ptr<GpuBuffer> getIndeBuffer(int index)
+	{
+		return indeBuffer[i];
+	}
+
 	VkDescriptorSet* getRaycastDescriptorSet() { return raycastDescriptorSets.data(); }
 
 	//AABBの計算

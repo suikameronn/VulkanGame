@@ -145,15 +145,6 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 //gpu上のバッファなどの削除処理
 void GltfModel::cleanUpVulkan(VkDevice& device)
 {
-	for (size_t i = 0; i < pointBuffers.size(); i++)//頂点用バッファの解放
-	{
-		vkDestroyBuffer(device, pointBuffers[i].vertBuffer, nullptr);
-		vkFreeMemory(device, pointBuffers[i].vertHandler, nullptr);
-
-		vkDestroyBuffer(device, pointBuffers[i].indeBuffer, nullptr);
-		vkFreeMemory(device, pointBuffers[i].indeHandler, nullptr);
-	}
-
 	for (std::shared_ptr<Material> material:materials)
 	{
 		vkDestroyBuffer(device, material->sMaterialMappedBuffer.uniformBuffer, nullptr);
@@ -168,4 +159,47 @@ void GltfModel::cleanUpVulkan(VkDevice& device)
 	}
 
 	deleteNodes(root,device);
+}
+
+void GltfModel::setPointBufferNum()
+{
+	vertBuffer.resize(meshCount);
+	indeBuffer.resize(meshCount);
+	raycastDescriptorSets.resize(meshCount);
+
+	createBuffer();
+}
+
+void GltfModel::createBuffer()
+{
+	for (auto& mesh : root->meshArray)
+	{
+		vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+			, BufferUsage::VERTEX, BufferTransferType::DST);
+
+		indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+			, BufferUsage::INDEX, BufferTransferType::DST);
+	}
+
+	for (auto& child: root->children)
+	{
+		createBuffer(child);
+	}
+}
+
+void GltfModel::createBuffer(const GltfNode* node)
+{
+	for (auto& mesh : node->meshArray)
+	{
+		vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+			, BufferUsage::VERTEX, BufferTransferType::DST);
+
+		indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+			, BufferUsage::INDEX, BufferTransferType::DST);
+	}
+
+	for (auto& child : node->children)
+	{
+		createBuffer(child);
+	}
 }
