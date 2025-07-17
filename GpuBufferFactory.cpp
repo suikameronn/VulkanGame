@@ -215,6 +215,40 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 	return buffer;
 }
 
+std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, BufferUsage usage
+	, BufferTransferType transferType)
+{
+	//この構造体を返す
+	std::shared_ptr<GpuBuffer> buffer = std::make_shared<GpuBuffer>(shared_from_this());
+
+	if (usage == BufferUsage::VERTEX || usage == BufferUsage::INDEX ||
+		usage == BufferUsage::UIVERTEX || usage == BufferUsage::LOCALSTORAGE)
+	{
+		//ステージングバッファを用意する
+		GpuBuffer staging(shared_from_this());
+
+		builder->Create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			staging.buffer, staging.memory);
+
+		//ローカルのバッファを作成する
+		builder->Create(bufferSize, convertUsageFlagBits(usage, transferType)
+			, convertMemoryPropertyFlagBits(usage),
+			buffer->buffer, buffer->memory);
+	}
+	else
+	{
+		//ステージングバッファは必要ない
+
+		//バッファを用意する
+		builder->Create(bufferSize, convertUsageFlagBits(usage, transferType)
+			, convertMemoryPropertyFlagBits(usage),
+			buffer->buffer, buffer->memory);
+	}
+
+	return buffer;
+}
+
 //コマンドバッファーを作成する
 std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
 {

@@ -158,11 +158,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AnimationComponent.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Colider.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Cubemap.cpp" />
+    <ClCompile Include="GltfModelComponent.cpp" />
     <ClCompile Include="IBL.cpp" />
     <ClCompile Include="OldCubemap.cpp" />
     <ClCompile Include="DescriptorSetBuilder.cpp" />
@@ -201,18 +203,23 @@
     <ClCompile Include="Text.cpp" />
     <ClCompile Include="TextureBuilder.cpp" />
     <ClCompile Include="TextureFactory.cpp" />
+    <ClCompile Include="TransformComponent.cpp" />
     <ClCompile Include="UI.cpp" />
     <ClCompile Include="VulkanBase.cpp" />
     <ClCompile Include="VulkanCore.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AnimationComponent.h" />
     <ClInclude Include="AnimController.h" />
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Colider.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Cubemap.h" />
+    <ClInclude Include="Entity.h" />
+    <ClInclude Include="GltfModelComponent.h" />
     <ClInclude Include="IBL.h" />
+    <ClInclude Include="IComponent.h" />
     <ClInclude Include="OldCubemap.h" />
     <ClInclude Include="DescriptorSetBuilder.h" />
     <ClInclude Include="DescriptorSetFactory.h" />
@@ -260,6 +267,7 @@
     <ClInclude Include="TextureBuilder.h" />
     <ClInclude Include="TextureFactory.h" />
     <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="TransformComponent.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="VulkanBase.h" />
     <ClInclude Include="VulkanCore.h" />

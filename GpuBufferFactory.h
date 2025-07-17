@@ -68,6 +68,9 @@ public:
 	std::shared_ptr<GpuBuffer> Create(VkDeviceSize bufferSize, const void* srcPtr
 		, BufferUsage usage,BufferTransferType transferType);
 
+	std::shared_ptr<GpuBuffer> Create(VkDeviceSize bufferSize, BufferUsage usage
+		, BufferTransferType transferType);
+
 	//コマンドバッファーを作成する
 	std::shared_ptr<CommandBuffer> CommandBufferCreate();
 
