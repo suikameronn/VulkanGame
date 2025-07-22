@@ -1,7 +1,7 @@
-#include"GpuRenderPassFactory.h"
+#include"RenderPassFactory.h"
 
-GpuRenderPassFactory::GpuRenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
-	,std::shared_ptr<GpuRenderPassBuilder> b)
+RenderPassFactory::RenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
+	,std::shared_ptr<RenderPassBuilder> b)
 {
 	device = d;
 	
@@ -13,7 +13,7 @@ GpuRenderPassFactory::GpuRenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCo
 }
 
 //パターンからプロパティを作る
-RenderPassProperty GpuRenderPassFactory::convertPattern(const RenderPassPattern& pattern)
+RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pattern)
 {
 	if (pattern == RenderPassPattern::PBR)
 	{
@@ -224,7 +224,7 @@ RenderPassProperty GpuRenderPassFactory::convertPattern(const RenderPassPattern&
 }
 
 //レンダーパスを作成する
-std::shared_ptr<RenderPass> GpuRenderPassFactory::Create(const RenderPassProperty& property)
+std::shared_ptr<RenderPass> RenderPassFactory::Create(const RenderPassProperty& property)
 {
 	std::shared_ptr<RenderPass> renderPass = std::make_shared<RenderPass>(shared_from_this());
 
@@ -241,7 +241,7 @@ std::shared_ptr<RenderPass> GpuRenderPassFactory::Create(const RenderPassPropert
 }
 
 //レンダーパスを作成する
-std::shared_ptr<RenderPass> GpuRenderPassFactory::Create(const RenderPassPattern& pattern)
+std::shared_ptr<RenderPass> RenderPassFactory::Create(const RenderPassPattern& pattern)
 {
 	std::shared_ptr<RenderPass> renderPass = std::make_shared<RenderPass>(shared_from_this());
 
@@ -260,13 +260,13 @@ std::shared_ptr<RenderPass> GpuRenderPassFactory::Create(const RenderPassPattern
 }
 
 //遅延破棄リストにリソースを追加する
-void GpuRenderPassFactory::addDefferedDestruct(VkRenderPass& renderPass)
+void RenderPassFactory::addDefferedDestruct(VkRenderPass& renderPass)
 {
 	destructList[frameIndex].push_back(renderPass);
 }
 
 //リソースを破棄する
-void GpuRenderPassFactory::resourceDestruct()
+void RenderPassFactory::resourceDestruct()
 {
 	for (auto& pass : destructList[frameIndex])
 	{

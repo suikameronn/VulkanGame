@@ -2,8 +2,14 @@
 
 #include"VulkanBase.h"
 
-Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger)
+Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger
+	,std::shared_ptr<GpuBufferFactory> buffer,std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+	,std::shared_ptr<DescriptorSetFactory> desc)
 {
+	bufferFactory = buffer;
+	layoutFactory = layout;
+	descriptorSetFactory = desc;
+
 	trigger = isTrigger;
 
 	this->min = gltfModel->initPoseMin;
@@ -97,25 +103,37 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger)
 	satIndices.resize(3 * 6);
 	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
-
-	descSetData.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 }
 
-Colider::~Colider()
+//描画に必要なリソースを作成する
+void Colider::createBuffer()
 {
-	VulkanBase* vulkan = VulkanBase::GetInstance();
+	vertBuffer = bufferFactory->Create(sizeof(glm::vec3)
+		, BufferUsage::VERTEX, BufferTransferType::DST);
 
-	if (pointBuffer.vertBuffer)
-	{
-		//バッファが作成されていたら
-		vulkan->addDefferedDestructBuffer(pointBuffer);
-	}
+	indeBuffer = bufferFactory->Create(sizeof(uint32_t)
+		, BufferUsage::INDEX, BufferTransferType::DST);
 
-	if (mappedBuffer.uniformBuffer)
-	{
-		//バッファが作成されていたら
-		vulkan->addDefferedDestructBuffer(mappedBuffer);
-	}
+	matBuffer = bufferFactory->Create(sizeof(MatricesUBO)
+		, BufferUsage::UNIFORM, BufferTransferType::NONE);
+}
+
+void Colider::createDescriptorSet()
+{
+	const std::shared_ptr<DescriptorSetLayout> layout =
+		layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT);
+
+	descriptorSet = descriptorSetFactory->Create(descriptorSetFactory->getBuilder()
+		->initProperty()
+		.withBindingBuffer(0)
+		.withBuffer(matBuffer)
+		.withDescriptorSetCount(1)
+		.withDescriptorSetLayout(layout)
+		.withRange(sizeof(MatricesUBO))
+		.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.addBufferInfo()
+		.Build()
+	);
 }
 
 //Modelクラスの初期座標から座標変換を適用する
@@ -169,7 +187,7 @@ glm::mat4 Colider::getScaleMat()
 }
 
 //Modelクラスの移動などをコライダーにも反映
-void Colider::reflectMovement(glm::mat4& transform)
+void Colider::reflectMovement(const glm::mat4& transform)
 {
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
@@ -659,26 +677,6 @@ std::pair<std::vector<glm::vec4>, int> Colider::getFaceNormals(
 	}
 
 	return { normals, minTriangle };
-}
-
-void Colider::setDescriptorSet(VkDescriptorSet descriptorSet)
-{
-	descSetData.descriptorSet = descriptorSet;
-}
-
-BufferObject* Colider::getPointBufferData()
-{
-	return &pointBuffer;
-}
-
-MappedBuffer* Colider::getMappedBufferData()
-{
-	return &mappedBuffer;
-}
-
-DescriptorInfo& Colider::getDescInfo()
-{
-	return descInfo;
 }
 
 glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point)

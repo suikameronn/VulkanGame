@@ -1,7 +1,7 @@
 #include"SwapChain.h"
 
 SwapChain::SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFactory> tf
-    , std::shared_ptr<GpuRenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb)
+    , std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb)
 {
     frameIndex = 0;
 

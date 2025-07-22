@@ -189,7 +189,7 @@ std::shared_ptr<Texture> TextureFactory::Create(const std::string& filePath, con
 }
 
 //画像データを配列上で受け取る
-std::shared_ptr<Texture> TextureFactory::Create(uint32_t& texChannel, unsigned char* pixels
+std::shared_ptr<Texture> TextureFactory::Create(const uint32_t& texChannel, const unsigned char* pixels
 	, const uint32_t& width, const uint32_t& height, const TexturePattern& pattern)
 {
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());

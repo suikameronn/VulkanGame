@@ -1,6 +1,6 @@
-#include"GpuDescriptorSetLayoutFactory.h"
+#include"DescriptorSetLayoutFactory.h"
 
-GpuDescriptorSetLayoutFactory::GpuDescriptorSetLayoutFactory(VkDevice& d,std::shared_ptr<GpuDescriptorSetLayoutBuilder> b)
+DescriptorSetLayoutFactory::DescriptorSetLayoutFactory(VkDevice& d,std::shared_ptr<DescriptorSetLayoutBuilder> b)
 {
 	device = d;
 
@@ -9,7 +9,7 @@ GpuDescriptorSetLayoutFactory::GpuDescriptorSetLayoutFactory(VkDevice& d,std::sh
 	frameIndex = 1;
 }
 
-GpuDescriptorSetLayoutFactory::~GpuDescriptorSetLayoutFactory()
+DescriptorSetLayoutFactory::~DescriptorSetLayoutFactory()
 {
 	for (auto& itr : layoutStorage)
 	{
@@ -23,7 +23,7 @@ GpuDescriptorSetLayoutFactory::~GpuDescriptorSetLayoutFactory()
 }
 
 //レイアウトの作成
-std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::createLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings)
+std::shared_ptr<DescriptorSetLayout> DescriptorSetLayoutFactory::createLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings)
 {
 	//構造体のファクトリーを設定しておく
 	std::shared_ptr<DescriptorSetLayout> layout
@@ -43,10 +43,10 @@ std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::createLayout
 }
 
 //既定のレイアウトからビンディングを返す
-void GpuDescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std::vector<VkDescriptorSetLayoutBinding>& bindings)
+void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std::vector<VkDescriptorSetLayoutBinding>& bindings)
 {
 
-	if (pattern == LayoutPattern::MVPANIM)
+	if (pattern == LayoutPattern::VIEWPROJMAT)
 	{
 		//頂点シェーダとコンピュートシェーダ
 		//行列用のユニフォームバッファ
@@ -113,7 +113,7 @@ void GpuDescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,
 		builder->initProperty();
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 	}
-	else if (pattern == LayoutPattern::SINGLE_UNIFORM_FLAG)
+	else if (pattern == LayoutPattern::SINGLE_UNIFORM_FRAG)
 	{
 		//フラグメントシェーダ
 		//単一のユニフォームバッファを結び付ける
@@ -127,7 +127,7 @@ void GpuDescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,
 }
 
 //レイアウトの作成
-std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::Create(const std::vector<VkDescriptorSetLayoutBinding>& bindings)
+std::shared_ptr<DescriptorSetLayout> DescriptorSetLayoutFactory::Create(const std::vector<VkDescriptorSetLayoutBinding>& bindings)
 {
 	if (bindings.size() == 0)
 	{
@@ -154,7 +154,7 @@ std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::Create(const
 }
 
 //既定のレイアウトの作成
-std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::Create(const LayoutPattern& pattern)
+std::shared_ptr<DescriptorSetLayout> DescriptorSetLayoutFactory::Create(const LayoutPattern& pattern)
 {
 	//enum classからバインディングを作る
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -180,13 +180,13 @@ std::shared_ptr<DescriptorSetLayout> GpuDescriptorSetLayoutFactory::Create(const
 }
 
 //遅延破棄リストにリソースを追加する
-void GpuDescriptorSetLayoutFactory::addDefferedDestruct(VkDescriptorSetLayout& layout)
+void DescriptorSetLayoutFactory::addDefferedDestruct(VkDescriptorSetLayout& layout)
 {
 	destructList[frameIndex].push_back(layout);
 }
 
 //リソースを破棄する
-void GpuDescriptorSetLayoutFactory::resourceDestruct()
+void DescriptorSetLayoutFactory::resourceDestruct()
 {
 	//実際にリソースを破棄する
 	for (auto& layout : destructList[frameIndex])

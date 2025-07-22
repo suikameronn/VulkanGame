@@ -1,7 +1,7 @@
 #pragma once
 
-#include"GpuPipelineBuilder.h"
-#include"GpuRenderPassFactory.h"
+#include"PipelineBuilder.h"
+#include"RenderPassFactory.h"
 
 struct Pipeline;
 
@@ -225,7 +225,7 @@ enum PipelinePattern
 	RAYCAST
 };
 
-class GpuPipelineFactory : public std::enable_shared_from_this<GpuPipelineFactory>
+class PipelineFactory : public std::enable_shared_from_this<PipelineFactory>
 {
 private:
 	//論理デバイス
@@ -238,16 +238,16 @@ private:
 	PipelineHash pipelineHash;
 
 	//ビルダー
-	std::shared_ptr<GpuPipelineBuilder> builder;
+	std::shared_ptr<PipelineBuilder> builder;
 
 	//レイアウトを取得する
-	std::shared_ptr<GpuPipelineLayoutFactory> pLayoutFactory;
+	std::shared_ptr<PipelineLayoutFactory> pLayoutFactory;
 
 	//シェーダモジュールを取り出す
 	std::shared_ptr<Shader> shaderFactory;
 	
 	//レンダーパスを取り出す
-	std::shared_ptr<GpuRenderPassFactory> renderPassFactory;
+	std::shared_ptr<RenderPassFactory> renderPassFactory;
 
 	//既に作成したパイプラインレイアウトを格納する
 	std::unordered_map<Pipeline, std::weak_ptr<Pipeline>, PipelineHash> pipelineStorage;
@@ -259,11 +259,11 @@ private:
 
 public:
 
-	GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutFactory> f
-		, std::shared_ptr<Shader> sf, std::shared_ptr<GpuPipelineBuilder> b
-		,std::shared_ptr<GpuRenderPassFactory> r);
+	PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
+		, std::shared_ptr<Shader> sf, std::shared_ptr<PipelineBuilder> b
+		,std::shared_ptr<RenderPassFactory> r);
 
-	~GpuPipelineFactory();
+	~PipelineFactory();
 
 	//パイプラインを作成する
 	std::shared_ptr<Pipeline> Create(const PipelinePattern& pattern);
@@ -287,9 +287,9 @@ struct Pipeline
 	std::shared_ptr<PipelineLayout> pLayout;
 
 	std::shared_ptr<Shader> shader;
-	std::shared_ptr<GpuPipelineFactory> factory;
+	std::shared_ptr<PipelineFactory> factory;
 
-	Pipeline(std::shared_ptr<GpuPipelineFactory> f)
+	Pipeline(std::shared_ptr<PipelineFactory> f)
 	{
 		hashKey = 0;
 		pipeline = nullptr;

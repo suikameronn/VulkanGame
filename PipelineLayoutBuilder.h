@@ -1,8 +1,8 @@
 #pragma once
 
-#include"GpuDescriptorSetLayoutFactory.h"
+#include"DescriptorSetLayoutFactory.h"
 
-class GpuPipelineLayoutBuilder
+class PipelineLayoutBuilder
 {
 private:
 
@@ -13,17 +13,17 @@ private:
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layoutArray;
 
 	//VkDescriptorSetLayoutのファクトリ
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 
 public:
 
-	GpuPipelineLayoutBuilder(VkDevice& d,std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutF);
+	PipelineLayoutBuilder(VkDevice& d,std::shared_ptr<DescriptorSetLayoutFactory> layoutF);
 
 	//レイアウトを初期化する
-	GpuPipelineLayoutBuilder initProperty();
+	PipelineLayoutBuilder initProperty();
 
 	//DescriptorSetLayoutからレイアウトを積み上げる
-	GpuPipelineLayoutBuilder addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
+	PipelineLayoutBuilder addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
 
 	//パイプラインレイアウトを作成する
 	std::vector< std::shared_ptr<DescriptorSetLayout>> Build();

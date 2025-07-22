@@ -8,5 +8,5 @@ class EnviromentLightSetFactory
 {
 private:
 
-	std::unordered_map<EnviromentLightSet> 
+	//std::unordered_map<EnviromentLightSet> 
 };

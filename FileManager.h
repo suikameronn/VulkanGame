@@ -61,7 +61,7 @@ private:
 	//テクスチャを読み込む
 	void loadTextures(std::shared_ptr<GltfModel> model,const tinygltf::Model gltfModel);
 	//マテリアルをメッシュに設定する
-	void loadMaterial(std::shared_ptr<GltfModel> model,tinygltf::Model gltfModel);
+	void loadMaterial(std::shared_ptr<GltfModel> model, const tinygltf::Model gltfModel);
 	//埋め込まれたgltfモデルを取得する
 	void loadgltfModel(int id, void** ptr, int& size);
 

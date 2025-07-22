@@ -1,6 +1,6 @@
-#include"GpuRenderPassBuilder.h"
+#include"RenderPassBuilder.h"
 
-GpuRenderPassBuilder::GpuRenderPassBuilder(VkDevice& d)
+RenderPassBuilder::RenderPassBuilder(VkDevice& d)
 {
 	device = d;
 
@@ -8,7 +8,7 @@ GpuRenderPassBuilder::GpuRenderPassBuilder(VkDevice& d)
 }
 
 //プロパティを初期化する
-void GpuRenderPassBuilder::initProperty()
+void RenderPassBuilder::initProperty()
 {
 	property.initProperty();
 }
@@ -16,7 +16,7 @@ void GpuRenderPassBuilder::initProperty()
 //VkAttachmentDescriptionの作成
 
 //フォーマットの設定
-GpuRenderPassBuilder GpuRenderPassBuilder::withFormat(const VkFormat& format)
+RenderPassBuilder RenderPassBuilder::withFormat(const VkFormat& format)
 {
 	description.format = format;
 
@@ -24,7 +24,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withFormat(const VkFormat& format)
 }
 
 //マルチサンプリングのサンプル数を設定
-GpuRenderPassBuilder GpuRenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
+RenderPassBuilder RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
 {
 	description.samples = count;
 
@@ -32,7 +32,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withMultiSamples(const VkSampleCountF
 }
 
 //カラーアタッチメントを使用する前の処理を指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
+RenderPassBuilder RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.loadOp = op;
 
@@ -40,7 +40,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withColorLoadOp(const VkAttachmentLoa
 }
 
 //カラーアタッチメントを使用した後の処理を指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
+RenderPassBuilder RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.storeOp = op;
 
@@ -48,7 +48,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withColorStoreOp(const VkAttachmentSt
 }
 
 //ステンシルアタッチメントを使用する前の処理を指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
+RenderPassBuilder RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.stencilLoadOp = op;
 
@@ -56,7 +56,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withStencilLoadOp(const VkAttachmentL
 }
 
 //ステンシルアタッチメントを使用した後の処理を指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
+RenderPassBuilder RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.stencilStoreOp = op;
 
@@ -64,7 +64,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withStencilStoreOp(const VkAttachment
 }
 
 //サブパスに入る前のレイアウトを指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
+RenderPassBuilder RenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
 {
 	description.initialLayout = layout;
 
@@ -72,7 +72,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withInitialLayout(const VkImageLayout
 }
 
 //サブパスに出た後のレイアウトを指定
-GpuRenderPassBuilder GpuRenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
+RenderPassBuilder RenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
 {
 	description.finalLayout = layout;
 
@@ -82,7 +82,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withFinalLayout(const VkImageLayout& 
 //ディスクリプションを追加する
 
 //カラーアタッチメント
-GpuRenderPassBuilder GpuRenderPassBuilder::addColorAttachment()
+RenderPassBuilder RenderPassBuilder::addColorAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -98,7 +98,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addColorAttachment()
 }
 
 //リゾルブカラーアタッチメントを追加
-GpuRenderPassBuilder GpuRenderPassBuilder::addColorResolveAttachment()
+RenderPassBuilder RenderPassBuilder::addColorResolveAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -114,7 +114,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addColorResolveAttachment()
 }
 
 //デプスステンシルアタッチメントを追加
-GpuRenderPassBuilder GpuRenderPassBuilder::addDepthStencilAttachment()
+RenderPassBuilder RenderPassBuilder::addDepthStencilAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -132,7 +132,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addDepthStencilAttachment()
 //VkSubpassDependencyの作成
 
 	//一つ前のサブパスを指定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
+RenderPassBuilder RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
 {
 	dependency.srcSubpass = index;
 
@@ -140,7 +140,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withSrcSubpassIndex(const uint32_t& i
 }
 
 //一つ後のサブパスを指定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
+RenderPassBuilder RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
 {
 	dependency.dstSubpass = index;
 
@@ -148,7 +148,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withDstSubpassIndex(const uint32_t& i
 }
 
 //一つ前のサブパスがどのステージまで行くまで待つかを設定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
+RenderPassBuilder RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.srcStageMask = flag;
 
@@ -156,7 +156,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withSrcStageMask(const VkPipelineStag
 }
 
 //一つ前のサブパスのメモリアクセスを待つのか設定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
+RenderPassBuilder RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
 {
 	dependency.srcAccessMask = mask;
 
@@ -164,7 +164,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withSrcAccessMask(const VkAccessFlags
 }
 
 //このサブパスがどのステージで待つかを設定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
+RenderPassBuilder RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.dstStageMask = flag;
 
@@ -172,7 +172,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withDstStageMask(const VkPipelineStag
 }
 
 //このサブパスのメモリアクセスで待つのか設定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
+RenderPassBuilder RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
 {
 	dependency.dstAccessMask = mask;
 
@@ -180,7 +180,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withDstAccessMask(const VkAccessFlags
 }
 
 //このサブパスから遷移する範囲を設定する
-GpuRenderPassBuilder GpuRenderPassBuilder::withFlag(const VkDependencyFlags& flag)
+RenderPassBuilder RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
 {
 	dependency.dependencyFlags = flag;
 
@@ -188,7 +188,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::withFlag(const VkDependencyFlags& fla
 }
 
 //サブパスの依存関係を追加する
-GpuRenderPassBuilder GpuRenderPassBuilder::addDependency()
+RenderPassBuilder RenderPassBuilder::addDependency()
 {
 	property.dependency.push_back(dependency);
 
@@ -199,7 +199,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addDependency()
 }
 
 //サブパスを追加する
-GpuRenderPassBuilder GpuRenderPassBuilder::addSubpass()
+RenderPassBuilder RenderPassBuilder::addSubpass()
 {
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -230,7 +230,7 @@ GpuRenderPassBuilder GpuRenderPassBuilder::addSubpass()
 }
 
 //レンダーパスのプロパティを返す
-RenderPassProperty GpuRenderPassBuilder::Build()
+RenderPassProperty RenderPassBuilder::Build()
 {
 	RenderPassProperty p = property;
 
@@ -240,7 +240,7 @@ RenderPassProperty GpuRenderPassBuilder::Build()
 }
 
 //VkRenderPassの作成する
-void GpuRenderPassBuilder::Create(const RenderPassProperty& p,VkRenderPass& pass)
+void RenderPassBuilder::Create(const RenderPassProperty& p,VkRenderPass& pass)
 {
 	VkRenderPassCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -252,6 +252,6 @@ void GpuRenderPassBuilder::Create(const RenderPassProperty& p,VkRenderPass& pass
 	info.pDependencies = p.dependency.data();
 
 	if (vkCreateRenderPass(device, &info, nullptr, &pass) != VK_SUCCESS) {
-		throw std::runtime_error("GpuRenderPassBuilder :: Create() :: レンダーパスの作成に失敗");
+		throw std::runtime_error("RenderPassBuilder :: Create() :: レンダーパスの作成に失敗");
 	}
 }

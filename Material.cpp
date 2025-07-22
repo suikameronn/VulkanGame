@@ -1,72 +1,28 @@
 #include"Material.h"
 
-Material::Material()
+//シェーダー上のマテリアルデータを記録するバッファを作成
+void Material::createBuffer()
 {
-	this->diffuse = glm::vec3(1.0,1.0,1.0);
-	this->ambient = glm::vec3(1.0, 1.0, 1.0);
-	this->specular = glm::vec3(1.0, 1.0, 1.0);
-	this->emissive = glm::vec3(1.0, 1.0, 1.0);
-	this->shininess = 0.0f;
-	this->transmissive = 0.0f;
-
-	imageDataCount = 0;
+	shaderMaterialBuffer = bufferFactory->Create(sizeof(ShaderMaterial)
+		, &shaderMaterial, BufferUsage::UNIFORM, BufferTransferType::NONE);
 }
 
-Material::Material(glm::vec3* diffuse, glm::vec3* ambient, glm::vec3* specular
-	, glm::vec3* emissive, float* shininess, float* transmissive)
+//ディスクリプタセットを作成
+void Material::createDescriptorSet()
 {
-	this->diffuse = *diffuse;
-	this->ambient = *ambient;
-	this->specular = *specular;
-	this->emissive = *emissive;
-	this->shininess = *shininess;
-	this->transmissive = *transmissive;
-}
+	const std::shared_ptr<DescriptorSetLayout> layout =
+		layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_FRAG);
 
-Material::~Material()
-{
-
-}
-
-void Material::setImageData(int uvIndex,std::shared_ptr<ImageData> image)
-{
-	imageDataCount++;
-	this->uvIndex = uvIndex;
-	this->image = image;
-	textureData = new TextureData;
-}
-
-void Material::setMetallicRoughnessMap(int uvIndex, std::shared_ptr<ImageData> map)
-{
-	imageDataCount++;
-	//this->uv
-}
-
-std::shared_ptr<ImageData> Material::getImageData()
-{
-	return image;
-}
-
-bool Material::hasImageData()
-{
-	if (image != nullptr)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool Material::hasTextureData()
-{
-	if (textureData)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	descriptorSet = descriptorSetFactory->Create(
+		descriptorSetFactory->getBuilder()
+		->withBindingBuffer(0)
+		.withBuffer(shaderMaterialBuffer)
+		.withDescriptorSetCount(1)
+		.withDescriptorSetLayout(layout)
+		.withOffset(0)
+		.withRange(sizeof(ShaderMaterial))
+		.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.addBufferInfo()
+		.Build()
+	);
 }

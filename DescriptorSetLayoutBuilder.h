@@ -4,7 +4,7 @@
 
 #include"VulkanCore.h"
 
-class GpuDescriptorSetLayoutBuilder
+class DescriptorSetLayoutBuilder
 {
 private:
 
@@ -16,14 +16,14 @@ private:
 
 public:
 
-	GpuDescriptorSetLayoutBuilder(VkDevice& d);
+	DescriptorSetLayoutBuilder(VkDevice& d);
 
 	//プロパティの初期化
-	GpuDescriptorSetLayoutBuilder initProperty();
+	DescriptorSetLayoutBuilder initProperty();
 
 	//タイプと使うシェーダの設定
-	GpuDescriptorSetLayoutBuilder setProperty(VkDescriptorType type, VkShaderStageFlagBits stage);
-	GpuDescriptorSetLayoutBuilder setProperty(int type, int stage);
+	DescriptorSetLayoutBuilder setProperty(VkDescriptorType type, VkShaderStageFlagBits stage);
+	DescriptorSetLayoutBuilder setProperty(int type, int stage);
 
 	//バインディングの作成
 	std::vector<VkDescriptorSetLayoutBinding> Build();

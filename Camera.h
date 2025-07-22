@@ -6,8 +6,6 @@
 #include<glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include"Controller.h"
-
 //仮想的なカメラのクラス
 class Camera
 {

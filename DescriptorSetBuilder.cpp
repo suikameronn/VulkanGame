@@ -83,18 +83,24 @@ DescriptorSetBuilder DescriptorSetBuilder::initProperty()
 	imageProperty.initProperty();
 
 	property.initProperty(descriptorPool);
+
+	return *this;
 }
 
 //VkDescriptorSetLayoutÇÃê›íË
 DescriptorSetBuilder DescriptorSetBuilder::withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout)
 {
     property.layout = layout;
+
+	return *this;
 }
 
 //VkDescriptorSetÇÃå¬êîÇÃê›íË
 DescriptorSetBuilder DescriptorSetBuilder::withDescriptorSetCount(const uint32_t& count)
 {
 	property.allocateInfo.descriptorSetCount = count;
+
+	return *this;
 }
 
 //VkDescriptorBufferInfoÇÃê›íË///////
@@ -102,26 +108,36 @@ DescriptorSetBuilder DescriptorSetBuilder::withDescriptorSetCount(const uint32_t
 DescriptorSetBuilder DescriptorSetBuilder::withBindingBuffer(const uint32_t& binding)
 {
 	bufferProperty.binding = binding;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withTypeBuffer(const VkDescriptorType& type)
 {
 	bufferProperty.type = type;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withBuffer(const std::shared_ptr<GpuBuffer>& buffer)
 {
 	bufferProperty.buffer = buffer;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withOffset(const uint32_t& offset)
 {
 	bufferProperty.bufferInfo.offset = offset;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withRange(const uint32_t& range)
 {
 	bufferProperty.bufferInfo.range = range;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::addBufferInfo()
@@ -129,6 +145,8 @@ DescriptorSetBuilder DescriptorSetBuilder::addBufferInfo()
 	property.buffer.push_back(bufferProperty);
 
 	bufferProperty.initProperty();
+
+	return *this;
 }
 
 //VkDescriptorImageInfo/////////
@@ -136,25 +154,35 @@ DescriptorSetBuilder DescriptorSetBuilder::addBufferInfo()
 DescriptorSetBuilder DescriptorSetBuilder::withBindingImage(const uint32_t& binding)
 {
 	imageProperty.binding = binding;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withTypeImage(const VkDescriptorType& type)
 {
 	imageProperty.type = type;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withImageLayout(const VkImageLayout& layout)
 {
 	imageProperty.imageInfo.imageLayout = layout;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture)
 {
 	imageProperty.texture = texture;
+
+	return *this;
 }
 
 DescriptorSetBuilder DescriptorSetBuilder::addImageInfo()
 {
 	property.texture.push_back(imageProperty);
 	imageProperty.initProperty();
+
+	return *this;
 }

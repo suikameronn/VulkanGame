@@ -585,7 +585,7 @@ void TextureBuilder::Create(const std::string& filePath, TextureProperty& proper
 	delete[] pixels;
 }
 
-void TextureBuilder::Create(uint32_t& texChannel, unsigned char* pixels, TextureProperty& property
+void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pixels, TextureProperty& property
 	, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler)
 {
 	//ピクセルの配列からからテクスチャを作る

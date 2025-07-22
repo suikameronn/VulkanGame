@@ -1,7 +1,7 @@
 #pragma once
 
-#include"GpuPipelineLayoutBuilder.h"
-#include"GpuDescriptorSetLayoutFactory.h"
+#include"PipelineLayoutBuilder.h"
+#include"DescriptorSetLayoutFactory.h"
 
 #include"StructList.h"
 
@@ -78,7 +78,7 @@ inline bool operator==(const std::pair<std::vector<std::shared_ptr<DescriptorSet
 	return true;
 }
 
-class GpuPipelineLayoutFactory : public std::enable_shared_from_this<GpuPipelineLayoutFactory>
+class PipelineLayoutFactory : public std::enable_shared_from_this<PipelineLayoutFactory>
 {
 private:
 
@@ -92,10 +92,10 @@ private:
 	PipelineLayoutHash pipelineLayoutHash;
 
 	//ビルダー
-	std::shared_ptr<GpuPipelineLayoutBuilder> builder;
+	std::shared_ptr<PipelineLayoutBuilder> builder;
 
 	//レイアウトを取得する
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	
 	//既に作成したパイプラインレイアウトを格納する
 	std::unordered_map<std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>, std::vector<VkPushConstantRange>>
@@ -114,10 +114,10 @@ private:
 
 public:
 
-	GpuPipelineLayoutFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutBuilder> b
-		, std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutF);
+	PipelineLayoutFactory(VkDevice& d, std::shared_ptr<PipelineLayoutBuilder> b
+		, std::shared_ptr<DescriptorSetLayoutFactory> layoutF);
 
-	~GpuPipelineLayoutFactory();
+	~PipelineLayoutFactory();
 
 	//パイプラインレイアウトの作成
 	std::shared_ptr<PipelineLayout> Create(PipelineLayoutPattern pattern);
@@ -144,9 +144,9 @@ struct PipelineLayout
 	//パイプラインレイアウトで使ったレイアウト
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts;
 
-	std::shared_ptr<GpuPipelineLayoutFactory> factory;
+	std::shared_ptr<PipelineLayoutFactory> factory;
 
-	PipelineLayout(std::shared_ptr<GpuPipelineLayoutFactory> f)
+	PipelineLayout(std::shared_ptr<PipelineLayoutFactory> f)
 	{
 		pLayout = nullptr;
 		hashKey = 0;

@@ -133,7 +133,6 @@ struct NodeTransform
 
 struct GltfNode
 {
-	GltfNode* parent;
 	uint32_t index;
 	std::vector<GltfNode*> children;
 	glm::mat4 matrix;//ローカル空間へ変換用行列
@@ -152,7 +151,6 @@ struct GltfNode
 	GltfNode()
 	{
 		matrix = glm::mat4(1.0f);
-		parent = nullptr;
 		index = 0;
 		std::fill(meshArray.begin(),meshArray.end(),nullptr);
 		skin = nullptr;
@@ -369,17 +367,18 @@ private:
 	std::vector<std::shared_ptr<DescriptorSet>> descriptorSet;
 
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
-	std::shared_ptr<DescriptorSetFactory> descFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 
 	void createBuffer(const GltfNode* node);
-	void createDescriptorSet(const GltfNode* node);
+	void createDescriptorSet(const GltfNode* node
+		, std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet);
 
 public:
 
 	GltfModel(GltfNode* rootNode 
 		,std::shared_ptr<GpuBufferFactory> bf
-		,std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+		,std::shared_ptr<DescriptorSetLayoutFactory> layout
 		,std::shared_ptr<DescriptorSetFactory> desc)
 	{
 		this->root = rootNode; 
@@ -390,13 +389,13 @@ public:
 
 		bufferFactory = bf;
 		layoutFactory = layout;
-		descFactory = desc;
+		descriptorSetFactory = desc;
 	}
 	~GltfModel();
 
 	void setPointBufferNum();
 
-	void deleteNodes(GltfNode* node,VkDevice& device);
+	void deleteNodes(GltfNode* node);
 
 	bool setup;
 	
@@ -409,17 +408,12 @@ public:
 
 	//ノードの個数
 	int nodeCount;
-	// 
-	//頂点バッファ用のVkDescriptorSet
-	std::vector<VkDescriptorSet> raycastDescriptorSets;
 
 	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;
 	//スケルトン 通常は一つ
 	std::vector<Skin*> skins;
 
-	//gltfモデルで使われる画像データ
-	std::vector < std::shared_ptr<ImageData>> imageDatas;
 	//同じくマテリアルデータ Primitive構造体のmaterialIndexから指定される
 	std::vector<std::shared_ptr<Material>> materials;
 
@@ -431,19 +425,17 @@ public:
 	GltfNode* findNode(GltfNode* parent,int index);
 
 	void createBuffer();
-	void createDescriptorSet();
+	void createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet);
 
-	std::shared_ptr<GpuBuffer> getVertBuffer(int idndex)
+	std::shared_ptr<GpuBuffer> getVertBuffer(int index)
 	{
-		return vertBuffer[i];
+		return vertBuffer[index];
 	}
 
 	std::shared_ptr<GpuBuffer> getIndeBuffer(int index)
 	{
-		return indeBuffer[i];
+		return indeBuffer[index];
 	}
-
-	VkDescriptorSet* getRaycastDescriptorSet() { return raycastDescriptorSets.data(); }
 
 	//AABBの計算
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
@@ -459,6 +451,4 @@ public:
 	//指定したアニメーションの行列を取得
 	void updateAnimation(double animationTime, std::string animationName, NodeTransform& nodeTransform
 		, std::vector<std::array<glm::mat4, 128>>& jointMatrices);
-	//gpu上のバッファなどの削除処理
-	void cleanUpVulkan(VkDevice& device);
 };

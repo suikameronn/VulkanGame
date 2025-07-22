@@ -1,7 +1,9 @@
 #pragma once
 
 #include"DescriptorSetBuilder.h"
-#include"GpuDescriptorSetLayoutFactory.h"
+#include"DescriptorSetLayoutFactory.h"
+
+struct DescriptorSet;
 
 class DescriptorSetFactory : public std::enable_shared_from_this<DescriptorSetFactory>
 {
@@ -15,12 +17,12 @@ private:
 
 	std::shared_ptr<DescriptorSetBuilder> builder;
 
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 
 public:
 
 	DescriptorSetFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<DescriptorSetBuilder> b
-		, std::shared_ptr<GpuDescriptorSetLayoutFactory> lf);
+		, std::shared_ptr<DescriptorSetLayoutFactory> lf);
 
 	std::shared_ptr<DescriptorSetBuilder> getBuilder()
 	{

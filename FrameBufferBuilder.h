@@ -1,7 +1,7 @@
 #pragma once
 
 #include"VulkanCore.h"
-#include"GpuRenderPassFactory.h"
+#include"RenderPassFactory.h"
 #include"TextureFactory.h"
 
 #include"FrameBufferBuilder.h"

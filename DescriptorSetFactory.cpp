@@ -1,7 +1,7 @@
 #include"DescriptorSetFactory.h"
 
 DescriptorSetFactory::DescriptorSetFactory(std::shared_ptr<VulkanCore> core,std::shared_ptr<DescriptorSetBuilder> b
-	, std::shared_ptr<GpuDescriptorSetLayoutFactory> lf)
+	, std::shared_ptr<DescriptorSetLayoutFactory> lf)
 {
 	vulkanCore = core;
 
@@ -36,9 +36,4 @@ std::shared_ptr<DescriptorSet> DescriptorSetFactory::Create(const DescriptorSetP
 	}
 
 	return descriptorSet;
-}
-
-std::shared_ptr<DescriptorSetBuilder> DescriptorSetFactory::getBuilder()
-{
-	return builder;
 }

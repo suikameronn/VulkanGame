@@ -3,7 +3,7 @@
 #include"VulkanCore.h"
 #include"TextureFactory.h"
 #include"FrameBufferFactory.h"
-#include"GpuRenderPassFactory.h"
+#include"RenderPassFactory.h"
 
 class SwapChain
 {
@@ -13,7 +13,7 @@ private:
 
 	std::shared_ptr<VulkanCore> vulkanCore;
 	std::shared_ptr<TextureFactory> textureFactory;
-	std::shared_ptr<GpuRenderPassFactory> renderPassFactory;
+	std::shared_ptr<RenderPassFactory> renderPassFactory;
 	std::shared_ptr<FrameBufferFactory> frameBufferFactory;
 
 	VkPhysicalDevice physicalDevice;
@@ -81,7 +81,7 @@ private:
 public:
 
 	SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFactory> tf
-		, std::shared_ptr<GpuRenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb);
+		, std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb);
 	
 	~SwapChain()
 	{

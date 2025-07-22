@@ -1,7 +1,7 @@
-#include"GpuPipelineLayoutFactory.h"
+#include"PipelineLayoutFactory.h"
 
-GpuPipelineLayoutFactory::GpuPipelineLayoutFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutBuilder> b
-	, std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutF)
+PipelineLayoutFactory::PipelineLayoutFactory(VkDevice& d, std::shared_ptr<PipelineLayoutBuilder> b
+	, std::shared_ptr<DescriptorSetLayoutFactory> layoutF)
 {
 	frameIndex = 1;
 
@@ -12,7 +12,7 @@ GpuPipelineLayoutFactory::GpuPipelineLayoutFactory(VkDevice& d, std::shared_ptr<
 	this->layoutFactory = layoutF;
 }
 
-GpuPipelineLayoutFactory::~GpuPipelineLayoutFactory()
+PipelineLayoutFactory::~PipelineLayoutFactory()
 {
 	for (auto& itr : pipelineLayoutStorage)
 	{
@@ -26,7 +26,7 @@ GpuPipelineLayoutFactory::~GpuPipelineLayoutFactory()
 }
 
 //既定のレイアウトから構造体を設定する
-void GpuPipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
+void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 	, std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts, std::vector<VkPushConstantRange>& pushConstant)
 {
 	if (pattern == PipelineLayoutPattern::PBR)
@@ -124,7 +124,7 @@ void GpuPipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 }
 
 //ビルダーでパイプラインレイアウトを作成する
-std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::createLayout(std::vector<std::shared_ptr<DescriptorSetLayout>>& layoutStruct
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::createLayout(std::vector<std::shared_ptr<DescriptorSetLayout>>& layoutStruct
 	, std::vector<VkPushConstantRange>& pushConstants)
 {
 	//構造体からVkDescriptorSetLayoutの配列を取得する
@@ -157,7 +157,7 @@ std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::createLayout(std::vect
 }
 
 //パイプラインレイアウトの作成
-std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
 	, std::vector<VkPushConstantRange>& pushConstants)
 {
 	if (layouts.size() == 0)
@@ -185,7 +185,7 @@ std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(std::vector<std
 }
 
 //パイプラインレイアウトの作成
-std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(PipelineLayoutPattern pattern)
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(PipelineLayoutPattern pattern)
 {
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts;
 	std::vector<VkPushConstantRange> pushConstants;
@@ -212,13 +212,13 @@ std::shared_ptr<PipelineLayout> GpuPipelineLayoutFactory::Create(PipelineLayoutP
 }
 
 //遅延破棄リストにリソースを追加する
-void GpuPipelineLayoutFactory::addDefferedDestruct(VkPipelineLayout& pLayout)
+void PipelineLayoutFactory::addDefferedDestruct(VkPipelineLayout& pLayout)
 {
 	destructList[frameIndex].push_back(pLayout);
 }
 
 //リソースを破棄する
-void GpuPipelineLayoutFactory::resourceDestruct()
+void PipelineLayoutFactory::resourceDestruct()
 {
 	//実際にリソースを破棄する
 	for (auto& playout : destructList[frameIndex])

@@ -24,7 +24,7 @@ private:
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
 
 	//ディスクリプタセットのレイアウトを作成する
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 
 	//バッファを参照するためのディスクリプタを作成する
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
@@ -54,7 +54,7 @@ public:
 
 	TransformComponent(std::shared_ptr<GpuBufferFactory> buffer
 		,std::shared_ptr<DescriptorSetFactory> desc
-		, std::shared_ptr<GpuDescriptorSetLayoutFactory> layout);
+		, std::shared_ptr<DescriptorSetLayoutFactory> layout);
 
 	//平行移動行列
 	glm::mat4 tlanslateMat();

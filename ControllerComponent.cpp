@@ -1,8 +1,6 @@
-#include"Controller.h"
+#include"ControllerComponent.h"
 
-Controller* Controller::controller = nullptr;
-
-Controller::Controller()
+ControllerComponent::ControllerComponent()
 {
 	glfwSetWindowUserPointer(window, this);
 
@@ -14,7 +12,7 @@ Controller::Controller()
 	glfwSetKeyCallback(window, keyInputCB);
 }
 
-void Controller::initInput()
+void ControllerComponent::initInput()
 {
 	keyChar.charInfo = 128;
 
@@ -24,23 +22,23 @@ void Controller::initInput()
 	keyInput.mods = 0;
 }
 
-void Controller::mousePos(double x, double y)
+void ControllerComponent::mousePos(double x, double y)
 {
 	mPos.x = x;
 	mPos.y = y;
 }
 
-void Controller::mouseScroll(double x, double y)
+void ControllerComponent::mouseScroll(double x, double y)
 {
 	mScroll.y = y;
 }
 
-void Controller::charFun(unsigned int charInfo)
+void ControllerComponent::charFun(unsigned int charInfo)
 {
 	keyChar.charInfo = charInfo;
 }
 
-void Controller::keyFun(int key, int scancode, int action, int mods)
+void ControllerComponent::keyFun(int key, int scancode, int action, int mods)
 {
 	keyInput.key = key;
 	keyInput.scancode = scancode;
@@ -48,37 +46,37 @@ void Controller::keyFun(int key, int scancode, int action, int mods)
 	keyInput.mods = mods;
 }
 
-void Controller::setMousePos(double x, double y)
+void ControllerComponent::setMousePos(double x, double y)
 {
 	mousePos(x, y);
 }
 
-void Controller::setMouseScroll(double x, double y)
+void ControllerComponent::setMouseScroll(double x, double y)
 {
 	mouseScroll(x, y);
 }
 
-void Controller::setCharFun(unsigned int charInfo)
+void ControllerComponent::setCharFun(unsigned int charInfo)
 {
 	charFun(charInfo);
 }
 
-void Controller::setKeyFun(int key, int scancode, int action, int mods)
+void ControllerComponent::setKeyFun(int key, int scancode, int action, int mods)
 {
 	keyFun(key, scancode, action, mods);
 }
 
-bool Controller::getKey(int key)
+bool ControllerComponent::getKey(int key)
 {
 	return glfwGetKey(window,key);
 }
 
-void Controller::getMousePos(double& x, double& y)
+void ControllerComponent::getMousePos(double& x, double& y)
 {
 	glfwGetCursorPos(window, &x, &y);
 }
 
-bool Controller::getMouseButton(int mouseButton)
+bool ControllerComponent::getMouseButton(int mouseButton)
 {
 	return glfwGetMouseButton(window, mouseButton);
 }

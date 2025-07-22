@@ -3,6 +3,8 @@
 #include<iostream>
 #include"GLFW/glfw3.h"
 
+#include"IComponent.h"
+
 extern GLFWwindow* window;
 
 //キー入力用のenum
@@ -61,39 +63,17 @@ struct KeyChar
 };
 
 //コントローラの入力を受け取る
-class Controller
+class ControllerComponent : public IComponent
 {
-private:
-	static Controller* controller;
-
-	Controller();
-	~Controller() {};
-
 public:
 
 	KeyInput keyInput;
 	MPos mPos;
 	MScroll mScroll;
 	KeyChar keyChar;
-	
-	static Controller* GetInstance()
-	{
-		if (!controller)
-		{
-			controller = new Controller();
-		}
 
-		return controller;
-	}
-
-	static void FinishController()
-	{
-		if (controller)
-		{
-			delete controller;
-		}
-		controller = nullptr;
-	}
+	ControllerComponent();
+	~ControllerComponent() {};
 
 	void initInput();
 
@@ -113,9 +93,9 @@ protected:
 	void setCharFun(unsigned int charInfo);
 	void setKeyFun(int key, int scancode, int action, int mods);
 
-	static Controller* getThisPtr(GLFWwindow* window)
+	static ControllerComponent* getThisPtr(GLFWwindow* window)
 	{
-		return static_cast<Controller*>(glfwGetWindowUserPointer(window));
+		return static_cast<ControllerComponent*>(glfwGetWindowUserPointer(window));
 	}
 
 	static void mousePosCB(GLFWwindow* window, double x, double y)

@@ -22,6 +22,7 @@ enum class BufferTransferType
 };
 
 struct GpuBuffer;
+struct CommandBuffer;
 
 class GpuBufferFactory:public std::enable_shared_from_this<GpuBufferFactory>
 {

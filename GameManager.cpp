@@ -4,104 +4,50 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()//ゲーム全体の初期化処理
 {
-    VulkanBase* vulkan = VulkanBase::GetInstance();
+	vulkanCore = std::make_shared<VulkanCore>();
+
+	createBuilder();//ビルダーの用意
+	createFactory();//ファクトリーの用意
 
     frameDuration = (1.0f / (fps + 1)) * 1000.0f;//指定したfpsから、一フレームにかけられる時間を計算する
 
-    glfwGetWindowSize(window, &window_width, &window_height);
-
-    uiProjection = glm::ortho(0.0f, static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, -1.0f, 1.0f);
-
-    vulkan->initVulkan();//Vulkanの初期化
-
-    FontManager* fontmanager = FontManager::GetInstance();
-
-    //setLoadUI();//ロードUIを設定
-
     bool load = false;
-    //drawLoading(load);
 
-    load = createScene();//luaスクリプトを読み取り、シーンの作成
+	ecsManager = std::make_shared<ECSManager>();
 
-    //シーンの作成が終わるまで、待機する
-    //ThreadPool::GetInstance()->stopMainThreadSingle();
+	createScene();//シーンの作成
 
     mainGameLoop();//ゲームのメインループを開始
 }
 
-//ロードUIの設定
-void GameManager::setLoadUI()
+//ビルダーの用意
+void GameManager::createBuilder()
 {
-    VulkanBase* vulkan = VulkanBase::GetInstance();
-
-    std::shared_ptr<UI> ui = std::shared_ptr<UI>(new UI(FileManager::GetInstance()->loadImage("textures/loadUI.png")));
-
-    ui->setScale(100.0f);
-    ui->setPosition(glm::vec2(window_width - ui->getTexWidth(), window_height - ui->getTexHeight()));
-
-    ui->updateTransformMatrix();
-    Storage::GetInstance()->setLoadUI(ui);
-
-    //gpu上にロードUIのテクスチャなどを展開する
-    vulkan->setUI(ui);
+	descriptorSetBuilder = std::make_shared<DescriptorSetBuilder>(vulkanCore);
+	frameBufferBuilder = std::make_shared<FrameBufferBuilder>(vulkanCore);
+	bufferBuilder = std::make_shared<GpuBufferBuilder>(vulkanCore);
+	descriptorSetLayoutBuilder = std::make_shared<DescriptorSetLayoutBuilder>(vulkanCore);
+	pipelineLayoutBuilder = std::make_shared<PipelineLayoutBuilder>(vulkanCore);
+	pipelineBuilder = std::make_shared<PipelineBuilder>(vulkanCore);
+	renderPassBuilder = std::make_shared<RenderPassBuilder>(vulkanCore);
 }
 
-//ロードUIを描画する
-void GameManager::drawLoading(bool& loadFinish)
+//ファクトリーの用意
+void GameManager::createFactory()
 {
-    //非同期で描画させる
-    std::function<void()> function = [this,&loadFinish]()
-        {
-            ThreadPool* pool = ThreadPool::GetInstance();
-
-            VulkanBase* vulkan = VulkanBase::GetInstance();
-            Storage* storage = Storage::GetInstance();
-
-            auto start = std::chrono::system_clock::now();//フレームの開始時間を計測
-
-            Rotate2D rot2D;
-            rot2D.z = 0.0f;
-
-            std::shared_ptr<UI> loadUI = storage->getLoadUI();
-
-            while (!loadFinish)
-            {
-                //UIを回転させる
-                loadUI->setRotate(rot2D);
-                loadUI->updateTransformMatrix();
-
-                //UIを描画する
-                //vulkan->drawLoading();
-
-                //UIの角度を調整する
-                rot2D.z++;
-
-                loadUI->frameEnd();
-
-                //fps制限を掛ける
-                auto end = std::chrono::system_clock::now();//フレーム時間の終了時間を計測
-                float elapsed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());//フレーム間の時間を計算
-                if (elapsed < this->frameDuration)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(this->frameDuration - elapsed)));//fpsを制限する
-                }
-                start = std::chrono::system_clock::now();
-            }
-
-            //ロード画面の描画をやめる
-            vulkan->stopLoading();
-        };
-
-    //ロードUIの開始
-    ThreadPool::GetInstance()->runSingle(function);
+	descriptorSetFactory = std::make_shared<DescriptorSetFactory>(vulkanCore, descriptorSetBuilder);
+	frameBufferFactory = std::make_shared<FrameBufferFactory>(vulkanCore, frameBufferBuilder);
+	bufferFactory = std::make_shared<GpuBufferFactory>(vulkanCore, bufferBuilder);
+	descriptorSetLayoutFactory = std::make_shared<DescriptorSetLayoutFactory>(vulkanCore, descriptorSetLayoutBuilder);
+	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(vulkanCore, pipelineLayoutBuilder);
+	pipelineFactory = std::make_shared<PipelineFactory>(vulkanCore, pipelineBuilder);
+	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
 }
 
-bool GameManager::createScene()//シーンを作成する
+//シーンの作成
+void GameManager::createScene()
 {
-    scene = Scene::GetInstance();
-    scene->init("LuaScripts/scene.lua");//luaスクリプトを読み取りシーンを作成する
 
-    return true;
 }
 
 void GameManager::mainGameLoop()//メインゲームループ
@@ -111,9 +57,7 @@ void GameManager::mainGameLoop()//メインゲームループ
     while (true)
     {
 
-        exit = scene->UpdateScene();//シーン全体を更新する
-
-        if (exit == GAME_FINISH || exit == GAME_RESTART || glfwWindowShouldClose(window))//シーンを終了するかどうか
+        if (vulkanCore->isShouldCloseWindow())//シーンを終了するかどうか
         {
             break;
         }
@@ -129,9 +73,6 @@ void GameManager::mainGameLoop()//メインゲームループ
             std::cout << "fps down" << std::endl;
         }
         start = std::chrono::system_clock::now();
-
-        Controller::GetInstance()->initInput();//キー入力を初期化
-        glfwPollEvents();//キー入力などを受け取る
     }
 
     exitScene();
@@ -140,24 +81,12 @@ void GameManager::mainGameLoop()//メインゲームループ
 //シーンを狩猟させる処理
 void GameManager::exitScene()
 {
-    //シーンを破棄する
-    if (scene)
-    {
-        scene->Destroy();
-    }
-
-    //遅延させて破棄する予定のバッファをすべて破棄する
-    VulkanBase::GetInstance()->allCleanupDefferedBuffer();
-
-    if (exit == GAME_FINISH || glfwWindowShouldClose(window))
-    {
-        //ゲームを終了させる
-        FinishGame();
-    }
+    //ゲームを終了させる
+    FinishGame();
 }
 
 //ゲーム全体の終了処理
 void GameManager::FinishGame()
 {
-    FinishInstance();
+
 }

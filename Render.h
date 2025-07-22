@@ -1,13 +1,16 @@
 #pragma once
 
-#include"GpuRenderPassFactory.h"
-#include"GpuDescriptorSetLayoutFactory.h"
+#include"RenderPassFactory.h"
+#include"DescriptorSetLayoutFactory.h"
 #include"FrameBufferFactory.h"
 #include"SwapChain.h"
 #include"GpuBufferFactory.h"
 #include"VulkanCore.h"
 
-#include"IRenderable.h"
+#include"ECSManager.h"
+
+#include"GltfModelComp.h"
+#include"GltfModelFactory.h"
 
 #include<glm/glm.hpp>
 
@@ -52,11 +55,16 @@ private:
 
 	RenderProperty property;
 
+	std::shared_ptr<GltfModelFactory> modelFactory;
+
+	std::shared_ptr<ECSManager> ecsManager;
+
 public:
 
-	Render(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactory> bf);
+	Render(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactory> bf
+		, std::shared_ptr<GltfModelFactory> model, std::shared_ptr<ECSManager> ecs);
 
-	void initProperty();
+	Render initProperty();
 
 	//レンダーパスを設定
 	Render withRenderPass(const std::shared_ptr<RenderPass> pass);
@@ -86,7 +94,7 @@ public:
 	void RenderStart(const RenderProperty& property);
 
 	//レンダリング
-	void Renderable(const std::shared_ptr<IRenderable> obj);
+	void Rendering();
 
 	//レンダリング終了
 	void RenderEnd();

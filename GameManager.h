@@ -8,16 +8,16 @@
 #include "lua/include/lualib.h"
 #include "lua/include/lauxlib.h"
 
-#include"VulkanBase.h"
-#include"Controller.h"
-#include"Scene.h"
-#include"FileManager.h"
-#include"FontManager.h"
-#include"UI.h"
+#include"DescriptorSetFactory.h"
+#include"FrameBufferFactory.h"
+#include"GpuBufferFactory.h"
+#include"DescriptorSetLayoutFactory.h"
+#include"PipelineLayoutFactory.h"
+#include"PipelineFactory.h"
+#include"RenderPassFactory.h"
+#include"ShaderFactory.h"
 
-#include"ThreadPool.h"
-
-extern GLFWwindow* window;
+#include"ECSManager.h"
 
 //fps制御などのゲーム全体の制御を担当する
 class GameManager
@@ -26,8 +26,30 @@ private:
 
 	static GameManager* gameManager;
 
-	int window_width, window_height;
-	glm::mat4 uiProjection;
+	std::shared_ptr<VulkanCore> vulkanCore;
+
+	//ECSマネージャー
+	std::shared_ptr<ECSManager> ecsManager;
+
+	//ビルダー
+
+	std::shared_ptr<DescriptorSetBuilder> descriptorSetBuilder;
+	std::shared_ptr<FrameBufferBuilder> frameBufferBuilder;
+	std::shared_ptr<GpuBufferBuilder> bufferBuilder;
+	std::shared_ptr<DescriptorSetLayoutBuilder> descriptorSetLayoutBuilder;
+	std::shared_ptr<PipelineLayoutBuilder> pipelineLayoutBuilder;
+	std::shared_ptr<PipelineBuilder> pipelineBuilder;
+	std::shared_ptr<RenderPassBuilder> renderPassBuilder;
+	
+	//ファクトリー
+
+	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
+	std::shared_ptr<FrameBufferFactory> frameBufferFactory;
+	std::shared_ptr<GpuBufferFactory> bufferFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> descriptorSetLayoutFactory;
+	std::shared_ptr<PipelineLayoutFactory> pipelineLayoutFactory;
+	std::shared_ptr<PipelineFactory> pipelineFactory;
+	std::shared_ptr<RenderPassFactory> renderPassFactory;
 
 	//最大フレームレート
 	const int fps = 60;
@@ -38,12 +60,12 @@ private:
 	//計測したフレーム時間
 	long long elapsed;
 
-	//ゲームの終了フラッグ
-	int exit = GAME_CONTINUE;
-	//ステージのインスタンス
-	Scene* scene;
-
 	GameManager() {};
+
+	//ビルダーの用意
+	void createBuilder();
+	//ファクトリーの用意
+	void createFactory();
 
 	void setLoadUI();
 
@@ -54,53 +76,21 @@ public:
 		if (!gameManager)
 		{
 			gameManager = new GameManager();
-
-			glfwSetWindowUserPointer(window, gameManager);
-			glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 		}
 
 		return gameManager;
 	}
 
-	//各クラスの終了処理も行う
-	void FinishInstance()
-	{
-		FontManager::FinishInstance();
-		FileManager::FinishFileManger();
-		VulkanBase::FinishVulkanBase();
-		Storage::FinishStorage();
-		Controller::FinishController();
-		ThreadPool::FinishThreadPool();
-
-		if (gameManager)
-		{
-			delete gameManager;
-		}
-		gameManager = nullptr;
-	}
-
-	~GameManager()
-	{
-		glfwDestroyWindow(window);
-
-		glfwTerminate();
-	}
-
 	//ゲームのフレームレートの設定やステージの読み込みを行う
 	void initGame();
-	//luaからステージの様子を読み込む
-	bool createScene();
+
+	//シーンの作成
+	void createScene();
+
 	//メインループ
 	void mainGameLoop();
 	//ステージから出る
 	void exitScene();
 	//ゲーム全体の終了処理
 	void FinishGame();
-
-	//ロードUIを表示
-	void drawLoading(bool& loadFinish);
-
-	int getWindowWidth() { return window_width; }
-	int getWindowHeight() { return window_height; }
-	glm::mat4 getUIProjection() { return uiProjection; }
 };

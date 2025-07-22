@@ -22,7 +22,6 @@
 #include <lauxlib.h>
 
 #include"EnumList.h"
-#include"Controller.h"
 #include"Camera.h"
 #include"PhysicBase.h"
 #include"ThreadPool.h"

@@ -1,6 +1,6 @@
-#include"GpuPipelineBuilder.h"
+#include"PipelineBuilder.h"
 
-GpuPipelineBuilder::GpuPipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactory> sf)
+PipelineBuilder::PipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactory> sf)
 {
 	device = d;
 
@@ -12,7 +12,7 @@ GpuPipelineBuilder::GpuPipelineBuilder(VkDevice& d, std::shared_ptr<ShaderFactor
 	property.initProperty();
 }
 
-PipelineProperty GpuPipelineBuilder::Build()
+PipelineProperty PipelineBuilder::Build()
 {
 	if (!property.computeShader)
 	{
@@ -51,7 +51,7 @@ PipelineProperty GpuPipelineBuilder::Build()
 	}
 	else
 	{
-		throw std::runtime_error("GpuPipelineBuilder : Create() : 不正なシェーダパスの設定");
+		throw std::runtime_error("PipelineBuilder : Create() : 不正なシェーダパスの設定");
 	}
 
 	property.vertexInputState.vertexBindingDescriptionCount = 1;
@@ -73,7 +73,7 @@ PipelineProperty GpuPipelineBuilder::Build()
 }
 
 //VkPipelineを作成
-void GpuPipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
+void PipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 {
 	if (p.computeShader)
 	{
@@ -118,13 +118,13 @@ void GpuPipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 }
 
 //パイプラインの設定の初期化
-void GpuPipelineBuilder::initProperty()
+void PipelineBuilder::initProperty()
 {
 	property.initProperty();
 }
 
 //パイプラインレイアウトを設定する
-GpuPipelineBuilder GpuPipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
+PipelineBuilder PipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
 {
 	property.pLayout = pLayout;
 
@@ -132,7 +132,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withPipelineLayout(const std::shared_ptr<
 }
 
 //レンダーパスを設定する
-GpuPipelineBuilder GpuPipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
+PipelineBuilder PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
 {
 	property.renderPass = renderPass;
 
@@ -140,11 +140,11 @@ GpuPipelineBuilder GpuPipelineBuilder::withRenderPass(const std::shared_ptr<Rend
 }
 
 //頂点シェーダパスを設定
-GpuPipelineBuilder GpuPipelineBuilder::withVertexShader(const std::string& path)
+PipelineBuilder PipelineBuilder::withVertexShader(const std::string& path)
 {
 	if (!property.computeShader)
 	{
-		throw std::runtime_error("GpuPipelineBuilder : すでにコンピュートシェーダが登録されています");
+		throw std::runtime_error("PipelineBuilder : すでにコンピュートシェーダが登録されています");
 	}
 
 	property.vertexShader = shaderFactory->Create(path);
@@ -152,11 +152,11 @@ GpuPipelineBuilder GpuPipelineBuilder::withVertexShader(const std::string& path)
 	return *this;
 }
 //フラグメントシェーダパスを設定
-GpuPipelineBuilder GpuPipelineBuilder::withFragmentShader(const std::string& path)
+PipelineBuilder PipelineBuilder::withFragmentShader(const std::string& path)
 {
 	if (!property.computeShader)
 	{
-		throw std::runtime_error("GpuPipelineBuilder : すでにコンピュートシェーダが登録されています");
+		throw std::runtime_error("PipelineBuilder : すでにコンピュートシェーダが登録されています");
 	}
 
 	property.fragmentShader = shaderFactory->Create(path);
@@ -164,11 +164,11 @@ GpuPipelineBuilder GpuPipelineBuilder::withFragmentShader(const std::string& pat
 	return *this;
 }
 //コンピュートシェーダ
-GpuPipelineBuilder GpuPipelineBuilder::withComputeShader(const std::string& path)
+PipelineBuilder PipelineBuilder::withComputeShader(const std::string& path)
 {
 	if (!property.vertexShader || !property.fragmentShader)
 	{
-		throw std::runtime_error("GpuPipelineBuilder : すでに頂点かフラグメントシェーダが登録されています");
+		throw std::runtime_error("PipelineBuilder : すでに頂点かフラグメントシェーダが登録されています");
 	}
 
 	property.computeShader = shaderFactory->Create(path);
@@ -177,7 +177,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withComputeShader(const std::string& path
 }
 
 //頂点データの読み取り方を設定
-GpuPipelineBuilder GpuPipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
+PipelineBuilder PipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
 	, const uint32_t& stride)
 {
 	property.bindingDescription.binding = binding;
@@ -188,7 +188,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withVertexInput(const uint32_t& binding, 
 }
 
 //頂点アトリビュートの追加
-GpuPipelineBuilder GpuPipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
+PipelineBuilder PipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
 	const VkFormat& format, const uint32_t& offset)
 {
 	VkVertexInputAttributeDescription attribute{};
@@ -203,7 +203,7 @@ GpuPipelineBuilder GpuPipelineBuilder::addVertexInputAttrib(const uint32_t& loca
 }
 
 //プリミティブの設定
-GpuPipelineBuilder GpuPipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
+PipelineBuilder PipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
 {
 	property.inputAssemblyState.topology = topology;
 
@@ -212,35 +212,35 @@ GpuPipelineBuilder GpuPipelineBuilder::withTopology(const VkPrimitiveTopology& t
 
 
 //プリミティブの描画方法を設定
-GpuPipelineBuilder GpuPipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
+PipelineBuilder PipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
 {
 	property.rasterizationState.polygonMode = mode;
 
 	return *this;
 }
 //ラインの太さを設定
-GpuPipelineBuilder GpuPipelineBuilder::withLineWidth(const float& width)
+PipelineBuilder PipelineBuilder::withLineWidth(const float& width)
 {
 	property.rasterizationState.lineWidth = width;
 
 	return *this;
 }
 //カリングモードの設定
-GpuPipelineBuilder GpuPipelineBuilder::withCullMode(const VkCullModeFlags& mode)
+PipelineBuilder PipelineBuilder::withCullMode(const VkCullModeFlags& mode)
 {
 	property.rasterizationState.cullMode = mode;
 
 	return *this;
 }
 //ポリゴンの表裏判定を右回りか左回りに設定
-GpuPipelineBuilder GpuPipelineBuilder::withFrontFace(const VkFrontFace& face)
+PipelineBuilder PipelineBuilder::withFrontFace(const VkFrontFace& face)
 {
 	property.rasterizationState.frontFace = face;
 
 	return *this;
 }
 //デプスバイアスを設定する
-GpuPipelineBuilder GpuPipelineBuilder::enableDepthBias(const bool& isBias)
+PipelineBuilder PipelineBuilder::enableDepthBias(const bool& isBias)
 {
 	property.rasterizationState.depthBiasEnable = static_cast<VkBool32>(isBias);
 
@@ -249,21 +249,21 @@ GpuPipelineBuilder GpuPipelineBuilder::enableDepthBias(const bool& isBias)
 
 
 //マルチサンプリングシェーディングを設定
-GpuPipelineBuilder GpuPipelineBuilder::enableMultiSampleShading(const bool& mode)
+PipelineBuilder PipelineBuilder::enableMultiSampleShading(const bool& mode)
 {
 	property.multisampleState.sampleShadingEnable = static_cast<VkBool32>(mode);
 
 	return *this;
 }
 //最低のサンプリングシェーディングポイントの数を設定
-GpuPipelineBuilder GpuPipelineBuilder::withMinSampleShading(const float& min)
+PipelineBuilder PipelineBuilder::withMinSampleShading(const float& min)
 {
 	property.multisampleState.minSampleShading = min;
 
 	return *this;
 }
 //マルチサンプリングを行う際のサンプル数を設定
-GpuPipelineBuilder GpuPipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
+PipelineBuilder PipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
 {
 	property.multisampleState.rasterizationSamples = flag;
 
@@ -272,28 +272,28 @@ GpuPipelineBuilder GpuPipelineBuilder::withRansterizationSamples(const VkSampleC
 
 
 //デプステストを設定する
-GpuPipelineBuilder GpuPipelineBuilder::enableDepthTest(const bool& isEnable)
+PipelineBuilder PipelineBuilder::enableDepthTest(const bool& isEnable)
 {
 	property.depthStencilState.depthTestEnable = static_cast<VkBool32>(isEnable);
 
 	return *this;
 }
 //zバッファへの書き込みを設定する
-GpuPipelineBuilder GpuPipelineBuilder::enableDepthWrite(const bool& isWrite)
+PipelineBuilder PipelineBuilder::enableDepthWrite(const bool& isWrite)
 {
 	property.depthStencilState.depthWriteEnable = static_cast<VkBool32>(isWrite);
 
 	return *this;
 }
 //z値の比較の仕方を設定する
-GpuPipelineBuilder GpuPipelineBuilder::withDepthCompare(const VkCompareOp& compare)
+PipelineBuilder PipelineBuilder::withDepthCompare(const VkCompareOp& compare)
 {
 	property.depthStencilState.depthCompareOp = compare;
 
 	return *this;
 }
 //z値の範囲を指定し、それに満たない頂点は破棄する
-GpuPipelineBuilder GpuPipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
+PipelineBuilder PipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
 {
 	property.depthStencilState.depthBoundsTestEnable = VK_TRUE;
 	property.depthStencilState.minDepthBounds = min;
@@ -302,7 +302,7 @@ GpuPipelineBuilder GpuPipelineBuilder::enableDepthBoundsTest(const float& min, c
 	return *this;
 }
 //ステンシルテストを設定する
-GpuPipelineBuilder GpuPipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
+PipelineBuilder PipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
 {
 	property.depthStencilState.stencilTestEnable = VK_TRUE;
 	property.depthStencilState.front = front;
@@ -313,7 +313,7 @@ GpuPipelineBuilder GpuPipelineBuilder::enableStencilTest(const VkStencilOpState&
 
 
 //ロジック演算を設定
-GpuPipelineBuilder GpuPipelineBuilder::withLogicOp(const VkLogicOp& logic)
+PipelineBuilder PipelineBuilder::withLogicOp(const VkLogicOp& logic)
 {
 	property.colorBlendState.logicOpEnable = VK_TRUE;
 	property.colorBlendState.logicOp = logic;
@@ -322,7 +322,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withLogicOp(const VkLogicOp& logic)
 }
 
 //カラーブレンドアタッチメントの書き込みできる色を設定する
-GpuPipelineBuilder GpuPipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
+PipelineBuilder PipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
 {
 	colorBlendAttachment.colorWriteMask = flag;
 
@@ -330,7 +330,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withColorWriteMask(const VkColorComponent
 }
 
 //色のブレンドの仕方を設定する
-GpuPipelineBuilder GpuPipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+PipelineBuilder PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.blendEnable = VK_TRUE;
 
@@ -342,7 +342,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withColorBlendFactorOp(const VkBlendFacto
 }
 
 //透明度のブレンドの仕方を設定する
-GpuPipelineBuilder GpuPipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+PipelineBuilder PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.srcAlphaBlendFactor = src;
 	colorBlendAttachment.dstAlphaBlendFactor = dst;
@@ -352,7 +352,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withAlphaBlendFactorOp(const VkBlendFacto
 }
 
 //アタッチメントを追加
-GpuPipelineBuilder GpuPipelineBuilder::addColoarAttachment()
+PipelineBuilder PipelineBuilder::addColoarAttachment()
 {
 	property.colorBlendStateArray.push_back(colorBlendAttachment);
 
@@ -361,7 +361,7 @@ GpuPipelineBuilder GpuPipelineBuilder::addColoarAttachment()
 	return *this;
 }
 //ブレンド定数を設定
-GpuPipelineBuilder GpuPipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
+PipelineBuilder PipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
 {
 	property.colorBlendState.blendConstants[0] = r;
 	property.colorBlendState.blendConstants[1] = g;
@@ -372,7 +372,7 @@ GpuPipelineBuilder GpuPipelineBuilder::withBlendConstant(const float& r, const f
 }
 
 //動的に変更するステートを積み上げる
-GpuPipelineBuilder GpuPipelineBuilder::addDynamicState(const VkDynamicState& state)
+PipelineBuilder PipelineBuilder::addDynamicState(const VkDynamicState& state)
 {
 	property.dynamicStateArray.push_back(state);
 

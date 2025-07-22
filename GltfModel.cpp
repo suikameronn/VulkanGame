@@ -2,17 +2,19 @@
 
 GltfModel::~GltfModel()
 {
+	deleteNodes(root);
+
 	for (size_t i = 0; i < skins.size(); i++)
 	{
 		delete skins[i];
 	}
 }
 
-void GltfModel::deleteNodes(GltfNode* node,VkDevice& device)
+void GltfModel::deleteNodes(GltfNode* node)
 {
 	for (size_t i = 0; i < node->children.size(); i++)
 	{
-		deleteNodes(node->children[i],device);
+		deleteNodes(node->children[i]);
 	}
 
 	delete node;
@@ -142,44 +144,18 @@ void GltfModel::getVertexMinMax(GltfNode* node)
 	}
 }
 
-//gpu上のバッファなどの削除処理
-void GltfModel::cleanUpVulkan(VkDevice& device)
-{
-	for (std::shared_ptr<Material> material:materials)
-	{
-		vkDestroyBuffer(device, material->sMaterialMappedBuffer.uniformBuffer, nullptr);
-		vkFreeMemory(device, material->sMaterialMappedBuffer.uniformBufferMemory, nullptr);
-		material->sMaterialMappedBuffer.uniformBufferMapped = nullptr;
-	}
-
-	for (int i = 0; i < imageDatas.size(); i++)
-	{
-		//テクスチャのデータの破棄
-		imageDatas[i]->getTexture()->destroy(device);
-	}
-
-	deleteNodes(root,device);
-}
-
 void GltfModel::setPointBufferNum()
 {
 	vertBuffer.resize(meshCount);
 	indeBuffer.resize(meshCount);
-	raycastDescriptorSets.resize(meshCount);
+	descriptorSet.resize(meshCount);
 
 	createBuffer();
 }
 
 void GltfModel::createBuffer()
 {
-	for (auto& mesh : root->meshArray)
-	{
-		vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-			, BufferUsage::VERTEX, BufferTransferType::DST);
-
-		indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-			, BufferUsage::INDEX, BufferTransferType::DST);
-	}
+	createBuffer(root);
 
 	for (auto& child: root->children)
 	{
@@ -189,17 +165,68 @@ void GltfModel::createBuffer()
 
 void GltfModel::createBuffer(const GltfNode* node)
 {
-	for (auto& mesh : node->meshArray)
+	if (node->meshArray.size() != 0)
 	{
-		vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-			, BufferUsage::VERTEX, BufferTransferType::DST);
+		for (auto& mesh : node->meshArray)
+		{
+			vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+				, BufferUsage::VERTEX, BufferTransferType::DST);
 
-		indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-			, BufferUsage::INDEX, BufferTransferType::DST);
+			indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
+				, BufferUsage::INDEX, BufferTransferType::DST);
+		}
 	}
 
 	for (auto& child : node->children)
 	{
 		createBuffer(child);
+	}
+}
+
+void GltfModel::createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet)
+{
+	createDescriptorSet(root, descriptorSet);
+
+	for (auto& child : root->children)
+	{
+		createDescriptorSet(child, descriptorSet);
+	}
+}
+
+void GltfModel::createDescriptorSet(const GltfNode* node
+	, std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet)
+{
+	if (node->meshArray.size() != 0)
+	{
+		const std::shared_ptr<DescriptorSetLayout> layout =
+			layoutFactory->Create(LayoutPattern::RAYCAST);
+
+			for (auto& mesh : node->meshArray)
+			{
+				const DescriptorSetProperty descProperty = descriptorSetFactory->getBuilder()
+					->initProperty()
+					.withBindingBuffer(0)
+					.withDescriptorSetCount(1)
+					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+					.withBuffer(vertBuffer[mesh->meshIndex])
+					.withRange(sizeof(Vertex) * mesh->vertices.size())
+					.addBufferInfo()
+					.withBindingBuffer(1)
+					.withDescriptorSetCount(1)
+					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+					.addBufferInfo()
+					.withDescriptorSetLayout(layout)
+					.withBuffer(indeBuffer[mesh->meshIndex])
+					.withRange(sizeof(uint32_t) * mesh->indices.size())
+					.addBufferInfo()
+					.Build();
+
+				descriptorSet[mesh->meshIndex] = descriptorSetFactory->Create(descProperty);
+			}
+	}
+
+	for (auto& child : node->children)
+	{
+		createDescriptorSet(child, descriptorSet);
 	}
 }

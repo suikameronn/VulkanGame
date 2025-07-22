@@ -5,7 +5,7 @@
 #include<array>
 #include<list>
 
-#include"GpuRenderPassBuilder.h"
+#include"RenderPassBuilder.h"
 
 struct RenderPass;
 
@@ -130,7 +130,7 @@ struct RenderPassHash
 	}
 };
 
-class GpuRenderPassFactory : public std::enable_shared_from_this<GpuRenderPassFactory>
+class RenderPassFactory : public std::enable_shared_from_this<RenderPassFactory>
 {
 private:
 
@@ -143,7 +143,7 @@ private:
 
 	std::shared_ptr<VulkanCore> vulkanCore;
 
-	std::shared_ptr<GpuRenderPassBuilder> builder;
+	std::shared_ptr<RenderPassBuilder> builder;
 
 	//破棄予定リスト
 	std::array<std::list<VkRenderPass>, 2> destructList;
@@ -155,8 +155,8 @@ private:
 
 public:
 
-	GpuRenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
-		, std::shared_ptr<GpuRenderPassBuilder> b);
+	RenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
+		, std::shared_ptr<RenderPassBuilder> b);
 
 	//レンダーパスを作成する
 	std::shared_ptr<RenderPass> Create(const RenderPassProperty& property);
@@ -176,9 +176,9 @@ struct RenderPass
 
 	VkRenderPass renderPass;
 
-	std::shared_ptr<GpuRenderPassFactory> factory;
+	std::shared_ptr<RenderPassFactory> factory;
 
-	RenderPass(std::shared_ptr<GpuRenderPassFactory> f)
+	RenderPass(std::shared_ptr<RenderPassFactory> f)
 	{
 		hashKey = 0;
 

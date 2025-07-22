@@ -64,70 +64,31 @@
     <Filter Include="ソース ファイル\Component">
       <UniqueIdentifier>{c8a87ec3-71f0-4b89-9c57-7f4793836b8b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\Component">
+    <Filter Include="ソース ファイル\CompSystem">
+      <UniqueIdentifier>{a19d2831-7f63-4b1f-a973-2d9972299566}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\CompSystem">
+      <UniqueIdentifier>{8e4428d0-2ab3-48ea-8696-b9cd821a99ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\ECS">
+      <UniqueIdentifier>{550abbfd-acbe-4daa-a22c-f382b5d3dce0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\ECS\OldComponent">
       <UniqueIdentifier>{a16e01cb-e4de-415d-878c-b90f8ab83e51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\ECS\Component">
+      <UniqueIdentifier>{a145ed77-5ed9-40fb-ac81-ec14ff8c1283}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Object.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Controller.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="FileManager.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="GameManager.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanBase.cpp">
-      <Filter>ソース ファイル\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Player.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="GltfModel.cpp">
       <Filter>ソース ファイル\LoadModel</Filter>
-    </ClCompile>
-    <ClCompile Include="PhysicBase.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Light.cpp">
-      <Filter>ソース ファイル\Lights</Filter>
-    </ClCompile>
-    <ClCompile Include="Colider.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Storage.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Bullet.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="FontManager.cpp">
-      <Filter>ソース ファイル\Font</Filter>
-    </ClCompile>
-    <ClCompile Include="MaxRectPacking.cpp">
-      <Filter>ソース ファイル\Font</Filter>
-    </ClCompile>
-    <ClCompile Include="UI.cpp">
-      <Filter>ソース ファイル\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="Text.cpp">
-      <Filter>ソース ファイル\UI</Filter>
     </ClCompile>
     <ClCompile Include="GpuBufferBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
@@ -138,31 +99,31 @@
     <ClCompile Include="VulkanCore.cpp">
       <Filter>ソース ファイル\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="GpuDescriptorSetLayoutBuilder.cpp">
+    <ClCompile Include="DescriptorSetLayoutBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
-    <ClCompile Include="GpuDescriptorSetLayoutFactory.cpp">
+    <ClCompile Include="DescriptorSetLayoutFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="GpuPipelineLayoutFactory.cpp">
+    <ClCompile Include="PipelineLayoutFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="GpuPipelineLayoutBuilder.cpp">
+    <ClCompile Include="PipelineLayoutBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
-    <ClCompile Include="GpuPipelineFactory.cpp">
+    <ClCompile Include="PipelineFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="GpuPipelineBuilder.cpp">
+    <ClCompile Include="PipelineBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
     <ClCompile Include="ShaderFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="GpuRenderPassFactory.cpp">
+    <ClCompile Include="RenderPassFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="GpuRenderPassBuilder.cpp">
+    <ClCompile Include="RenderPassBuilder.cpp">
       <Filter>ソース ファイル\Vulkan\Builder</Filter>
     </ClCompile>
     <ClCompile Include="TextureBuilder.cpp">
@@ -198,15 +159,6 @@
     <ClCompile Include="EnvironmentLightSet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="OldCubemap.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Cubemap.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="IBL.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="TransformComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
@@ -216,34 +168,28 @@
     <ClCompile Include="AnimationComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="ColiderComponent.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>ソース ファイル\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialBuilder.cpp">
+      <Filter>ソース ファイル\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="GltfModelFactory.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="ControllerComponent.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="GltfModelSystem.cpp">
+      <Filter>ソース ファイル\CompSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
-    </ClInclude>
-    <ClInclude Include="Object.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Controller.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="FileManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="GameManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="VulkanBase.h">
-      <Filter>ヘッダー ファイル\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Player.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="GltfModel.h">
       <Filter>ヘッダー ファイル\LoadModel</Filter>
@@ -251,47 +197,8 @@
     <ClInclude Include="resource1.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="AnimController.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="EnumList.h">
       <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Colider.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="PhysicBase.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Light.h">
-      <Filter>ヘッダー ファイル\Lights</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Storage.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="RTree.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="ThreadPool.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Bullet.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="FontManager.h">
-      <Filter>ヘッダー ファイル\Font</Filter>
-    </ClInclude>
-    <ClInclude Include="MaxRectPacking.h">
-      <Filter>ヘッダー ファイル\Font</Filter>
-    </ClInclude>
-    <ClInclude Include="UI.h">
-      <Filter>ヘッダー ファイル\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Text.h">
-      <Filter>ヘッダー ファイル\UI</Filter>
     </ClInclude>
     <ClInclude Include="GpuBufferBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
@@ -302,16 +209,16 @@
     <ClInclude Include="GpuBufferFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuDescriptorSetLayoutBuilder.h">
+    <ClInclude Include="DescriptorSetLayoutBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
-    <ClInclude Include="GpuDescriptorSetLayoutFactory.h">
+    <ClInclude Include="DescriptorSetLayoutFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuPipelineLayoutFactory.h">
+    <ClInclude Include="PipelineLayoutFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuPipelineLayoutBuilder.h">
+    <ClInclude Include="PipelineLayoutBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
     <ClInclude Include="StructList.h">
@@ -320,19 +227,19 @@
     <ClInclude Include="GpuPipeline.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="GpuPipelineFactory.h">
+    <ClInclude Include="PipelineFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuPipelineBuilder.h">
+    <ClInclude Include="PipelineBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
     <ClInclude Include="ShaderFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuRenderPassFactory.h">
+    <ClInclude Include="RenderPassFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
-    <ClInclude Include="GpuRenderPassBuilder.h">
+    <ClInclude Include="RenderPassBuilder.h">
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
     <ClInclude Include="TextureBuilder.h">
@@ -368,9 +275,6 @@
     <ClInclude Include="Render.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="IRenderable.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="EnviromentLightSetFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
@@ -380,29 +284,59 @@
     <ClInclude Include="EnvironmentLightSet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="OldCubemap.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Cubemap.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="IBL.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="IComponent.h">
-      <Filter>ヘッダー ファイル\Component</Filter>
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
     </ClInclude>
     <ClInclude Include="Entity.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="TransformComponent.h">
-      <Filter>ヘッダー ファイル\Component</Filter>
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
     </ClInclude>
     <ClInclude Include="GltfModelComponent.h">
-      <Filter>ヘッダー ファイル\Component</Filter>
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
     </ClInclude>
     <ClInclude Include="AnimationComponent.h">
-      <Filter>ヘッダー ファイル\Component</Filter>
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="ColiderComponent.h">
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialBuilder.h">
+      <Filter>ヘッダー ファイル\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="GltfModelFactory.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerComponent.h">
+      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="GltfModelSystem.h">
+      <Filter>ヘッダー ファイル\CompSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="ECSManager.h">
+      <Filter>ヘッダー ファイル\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GltfModelComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ColiderComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderer.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

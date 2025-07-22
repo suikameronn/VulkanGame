@@ -7,6 +7,9 @@
 #include"GltfModel.h"
 #include"EnumList.h"
 
+#include"GpuBufferFactory.h"
+#include"DescriptorSetFactory.h"
+
 #include<random>
 
 //GJKの構造体
@@ -82,11 +85,16 @@ private:
 	//SAT利用時のインデックス
 	std::vector<uint32_t> satIndices;
 
+	//コライダー描画用のファクトリー
+	std::shared_ptr<GpuBufferFactory> bufferFactory;
+	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
+
 	//コライダー描画用の変数
-	BufferObject pointBuffer;
-	MappedBuffer mappedBuffer;
-	DescriptorInfo descInfo;
-	DescSetData descSetData;
+	std::shared_ptr<GpuBuffer> vertBuffer;
+	std::shared_ptr<GpuBuffer> indeBuffer;
+	std::shared_ptr<GpuBuffer> matBuffer;
+	std::shared_ptr<DescriptorSet> descriptorSet;
 
 	//引数の方向ベクトルのほうにその頂点があるかどうか
 	bool sameDirection(glm::vec3 dir, glm::vec3 point) { return glm::dot(dir, point) > 0.0f; }
@@ -125,13 +133,18 @@ private:
 
 public:
 
-	Colider(std::shared_ptr<GltfModel> model,bool isTrigger);
-	~Colider();
+	Colider(std::shared_ptr<GltfModel> model,bool isTrigger
+		, std::shared_ptr<GpuBufferFactory> buffer, std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+		, std::shared_ptr<DescriptorSetFactory> desc);
 
 	bool isTrigger()
 	{
 		return trigger;
 	}
+
+	//描画に必要なリソースを作成する
+	void createBuffer();
+	void createDescriptorSet();
 
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings(glm::vec3 initScale);
@@ -140,7 +153,7 @@ public:
 	//コライダーのスケール行列を取得
 	glm::mat4 getScaleMat();
 	//Modelクラスの移動などをコライダーにも反映
-	void reflectMovement(glm::mat4& transform);
+	void reflectMovement(const glm::mat4& transform);
 
 	//サポート写像を求める(SAT用)
 	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
@@ -148,10 +161,9 @@ public:
 	void setDescriptorSet(VkDescriptorSet descriptorSet);
 	
 	//コライダーのレンダリング用の変数
-	BufferObject* getPointBufferData();
-	MappedBuffer* getMappedBufferData();
-	DescriptorInfo& getDescInfo();
-	DescSetData& getDescSetData() { return descSetData; }
+	std::shared_ptr<GpuBuffer> getVertexBuffer() { return vertBuffer; }
+	std::shared_ptr<GpuBuffer> getIndexBuffer() { return indeBuffer; }
+	std::shared_ptr<DescriptorSet> getDescriptorSet() { return descriptorSet; }
 
 	//SAT用当たり判定の実行
 	virtual bool Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector);

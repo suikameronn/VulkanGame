@@ -5,7 +5,7 @@
 #include<memory>
 #include<unordered_map>
 
-#include"GpuDescriptorSetLayoutBuilder.h"
+#include"DescriptorSetLayoutBuilder.h"
 
 #define MAX_TEXTURE_COUNT 5
 
@@ -71,10 +71,10 @@ enum class LayoutPattern
 	UI,//UI用の変換行列とテクスチャ
 	SINGLE_TEX_FLAG,//単一のテクスチャ(フラグメントシェーダ用)
 	SINGLE_UNIFORM_VERT,//単一のユニフォームバッファ(頂点シェーダ用)
-	SINGLE_UNIFORM_FLAG//単一のユニフォームバッファ(フラグメントシェーダ用)
+	SINGLE_UNIFORM_FRAG//単一のユニフォームバッファ(フラグメントシェーダ用)
 };
 
-class GpuDescriptorSetLayoutFactory : public std::enable_shared_from_this<GpuDescriptorSetLayoutFactory>
+class DescriptorSetLayoutFactory : public std::enable_shared_from_this<DescriptorSetLayoutFactory>
 {
 private:
 
@@ -92,7 +92,7 @@ private:
 	uint32_t frameIndex;
 
 	//ビルダー
-	std::shared_ptr<GpuDescriptorSetLayoutBuilder> builder;
+	std::shared_ptr<DescriptorSetLayoutBuilder> builder;
 
 	//破棄予定のリソースのリスト
 	std::array<std::list<VkDescriptorSetLayout>, 2> destructList;
@@ -105,11 +105,11 @@ private:
 
 public:
 
-	GpuDescriptorSetLayoutFactory(VkDevice& d, std::shared_ptr<GpuDescriptorSetLayoutBuilder> b);
+	DescriptorSetLayoutFactory(VkDevice& d, std::shared_ptr<DescriptorSetLayoutBuilder> b);
 
-	~GpuDescriptorSetLayoutFactory();
+	~DescriptorSetLayoutFactory();
 
-	std::shared_ptr<GpuDescriptorSetLayoutBuilder> getBuilder()
+	std::shared_ptr<DescriptorSetLayoutBuilder> getBuilder()
 	{
 		return builder;
 	}
@@ -130,12 +130,12 @@ public:
 struct DescriptorSetLayout
 {
 	VkDescriptorSetLayout layout;
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> factory;
+	std::shared_ptr<DescriptorSetLayoutFactory> factory;
 
 	//unordered_mapに登録するときに使うハッシュ値
 	size_t hashKey;
 
-	DescriptorSetLayout(std::shared_ptr<GpuDescriptorSetLayoutFactory> f)
+	DescriptorSetLayout(std::shared_ptr<DescriptorSetLayoutFactory> f)
 	{
 		layout = nullptr;
 		factory = f;

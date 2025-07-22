@@ -118,7 +118,7 @@ public:
 	void Create(const std::string& filePath, TextureProperty& property
 		, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler);
 
-	void Create(uint32_t& texChannel, unsigned char* pixels, TextureProperty& property
+	void Create(const uint32_t& texChannel, const unsigned char* pixels, TextureProperty& property
 		, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler);
 	
 	void Create(TextureProperty& property

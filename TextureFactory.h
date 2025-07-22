@@ -60,7 +60,7 @@ public:
 		, const uint32_t& height, const TexturePattern& pattern);
 
 	//画像データを配列上で受け取る
-	std::shared_ptr<Texture> Create(uint32_t& texChannel, unsigned char* pixels
+	std::shared_ptr<Texture> Create(const uint32_t& texChannel, const unsigned char* pixels
 		, const uint32_t& width, const uint32_t& height, const TexturePattern& pattern);
 
 	//画像データは入れずに、テクスチャバッファのみを作る

@@ -1,12 +1,12 @@
-#include"GpuDescriptorSetLayoutBuilder.h"
+#include"DescriptorSetLayoutBuilder.h"
 
-GpuDescriptorSetLayoutBuilder::GpuDescriptorSetLayoutBuilder(VkDevice& d)
+DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(VkDevice& d)
 {
 	device = d;
 }
 
 //プロパティの初期化
-GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::initProperty()
+DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::initProperty()
 {
 	properties.clear();
 
@@ -14,7 +14,7 @@ GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::initProperty()
 }
 
 //タイプと使うシェーダの設定
-GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::setProperty(VkDescriptorType type, VkShaderStageFlagBits stage)
+DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::setProperty(VkDescriptorType type, VkShaderStageFlagBits stage)
 {
 	properties.push_back({ type,stage });
 
@@ -22,7 +22,7 @@ GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::setProperty(VkDescr
 }
 
 //フラグを複合させたとき用
-GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::setProperty(int type, int stage)
+DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::setProperty(int type, int stage)
 {
 	properties.push_back({ static_cast<VkDescriptorType>(type),static_cast<VkShaderStageFlagBits>(stage) });
 
@@ -30,11 +30,11 @@ GpuDescriptorSetLayoutBuilder GpuDescriptorSetLayoutBuilder::setProperty(int typ
 }
 
 //VkDescriptorSetLayoutの作成
-std::vector<VkDescriptorSetLayoutBinding> GpuDescriptorSetLayoutBuilder::Build()
+std::vector<VkDescriptorSetLayoutBinding> DescriptorSetLayoutBuilder::Build()
 {
 	if (properties.size() == 0)
 	{
-		throw std::runtime_error("GpuDescriptorSetLayoutBuilder : Build() : プロパティが設定されていません");
+		throw std::runtime_error("DescriptorSetLayoutBuilder : Build() : プロパティが設定されていません");
 	}
 
 	std::vector<VkDescriptorSetLayoutBinding> bindings(properties.size());

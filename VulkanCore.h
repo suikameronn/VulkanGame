@@ -160,6 +160,11 @@ public:
 		return graphicsQueue;
 	}
 
+	bool isShouldCloseWindow()
+	{
+		return glfwWindowShouldClose(window);
+	}
+
 	//コマンドプールを取得する
 	VkCommandPool getCommandPool() { return commandPool; }
 

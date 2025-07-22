@@ -1,8 +1,8 @@
-#include"GpuPipelineFactory.h"
+#include"PipelineFactory.h"
 
-GpuPipelineFactory::GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineLayoutFactory> f
-    , std::shared_ptr<Shader> sf, std::shared_ptr<GpuPipelineBuilder> b
-    , std::shared_ptr<GpuRenderPassFactory> r)
+PipelineFactory::PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
+    , std::shared_ptr<Shader> sf, std::shared_ptr<PipelineBuilder> b
+    , std::shared_ptr<RenderPassFactory> r)
 {
     device = d;
 
@@ -17,7 +17,7 @@ GpuPipelineFactory::GpuPipelineFactory(VkDevice& d, std::shared_ptr<GpuPipelineL
     frameIndex = 1;
 }
 
-PipelineProperty GpuPipelineFactory::convertPattern(const PipelinePattern& pattern)
+PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
 {
     if (pattern == PipelinePattern::PBR)
     {
@@ -306,7 +306,7 @@ PipelineProperty GpuPipelineFactory::convertPattern(const PipelinePattern& patte
 }
 
 //パイプラインを作成する
-std::shared_ptr<Pipeline> GpuPipelineFactory::Create(const PipelinePattern& pattern)
+std::shared_ptr<Pipeline> PipelineFactory::Create(const PipelinePattern& pattern)
 {
     std::shared_ptr<Pipeline> pipeline = std::make_shared<Pipeline>(shared_from_this());
 
@@ -318,7 +318,7 @@ std::shared_ptr<Pipeline> GpuPipelineFactory::Create(const PipelinePattern& patt
 }
 
 //パイプラインを作成する
-std::shared_ptr<Pipeline> GpuPipelineFactory::Create(const PipelineProperty& property)
+std::shared_ptr<Pipeline> PipelineFactory::Create(const PipelineProperty& property)
 {
     std::shared_ptr<Pipeline> pipeline = std::make_shared<Pipeline>(shared_from_this());
 
@@ -328,13 +328,13 @@ std::shared_ptr<Pipeline> GpuPipelineFactory::Create(const PipelineProperty& pro
 }
 
 //遅延破棄リストにリソースを追加する
-void GpuPipelineFactory::addDefferedDestruct(VkPipeline& pLayout)
+void PipelineFactory::addDefferedDestruct(VkPipeline& pLayout)
 {
 	destructList[frameIndex].push_back(pLayout);
 }
 
 //リソースを破棄する
-void GpuPipelineFactory::resourceDestruct()
+void PipelineFactory::resourceDestruct()
 {
 	for (auto& resource : destructList[frameIndex])
 	{

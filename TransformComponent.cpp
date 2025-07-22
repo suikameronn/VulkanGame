@@ -2,7 +2,7 @@
 
 TransformComponent::TransformComponent(std::shared_ptr<GpuBufferFactory> buffer
 	, std::shared_ptr<DescriptorSetFactory> desc
-	, std::shared_ptr<GpuDescriptorSetLayoutFactory> layout)
+	, std::shared_ptr<DescriptorSetLayoutFactory> layout)
 {
 	bufferFactory = buffer;
 

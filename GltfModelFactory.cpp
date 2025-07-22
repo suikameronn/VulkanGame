@@ -1,213 +1,66 @@
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_MSC_SECURE_CRT
+#include"GltfModelFactory.h"
 
-#include"VulkanBase.h"
-
-#include"FileManager.h"
-
-FileManager* FileManager::fileManager = nullptr;
-
-FileManager::FileManager()
+uint32_t GltfModelFactory::Load(const std::string& filePath)
 {
-}
+	uint32_t hash = hashFilePath(filePath);
 
-//埋め込まれたgltfモデルを取得する
-void FileManager::loadgltfModel(int id, void** ptr, int& size)
-{
-    HRESULT hr = S_OK;
-    HRSRC hrsrc = FindResource(NULL, MAKEINTRESOURCE(id), "MODEL");
-    hr = (hrsrc ? S_OK : E_FAIL);
-
-    HGLOBAL handle = NULL;
-    if (SUCCEEDED(hr)) {
-        handle = LoadResource(NULL, hrsrc);
-        hr = (handle ? S_OK : E_FAIL);
-    }
-
-    if (SUCCEEDED(hr)) {
-        *ptr = (void*)LockResource(handle);
-        hr = (*ptr ? S_OK : E_FAIL);
-    }
-
-    if (SUCCEEDED(hr)) {
-        size = SizeofResource(NULL, hrsrc);
-        hr = (size ? S_OK : E_FAIL);
-    }
-}
-
-//Modelクラスに付与するgltfファイルとModelクラスのリストを作る
-void FileManager::addLoadModelList(std::string filePath, Model* model)
-{
-    loadModelList[filePath].push_back(model);
-}
-
-//ModelクラスにgltfModelクラスを設定する
-void FileManager::setGltfModel()
-{
-    VulkanBase* vulkan = VulkanBase::GetInstance();
-
-    ThreadPool* pool = ThreadPool::GetInstance();
-
-
-    std::vector<std::shared_ptr<GltfModel>> gltfModels(loadModelList.size());
-    {
-        int index = 0;
-        for (auto itr = loadModelList.begin(); itr != loadModelList.end(); itr++)
-        {
-            std::function<void()> loadModelFunc = [this, itr,&gltfModels, index]()
-                {
-                    gltfModels[index] = loadModel(itr->first);
-                };
-
-            pool->run(loadModelFunc);
-
-            index++;
-        }
-    }
-
-    pool->waitUntilIdle();
-
-    {
-        int index = 0;
-        for (auto itr = loadModelList.begin(); itr != loadModelList.end(); itr++)
-        {
-            vulkan->setGltfModelData(gltfModels[index]);
-
-            for (int j = 0; j < itr->second.size(); j++)
-            {
-                if (itr->second[j])
-                {
-                    itr->second[j]->setgltfModel(gltfModels[index]);
-                }
-            }
-
-            index++;
-        }
-    }
-}
-
-//luaスクリプトからSceneクラスを介して呼び出される。新しいモデルを求められたときのみ、解析処理をする
-std::shared_ptr<GltfModel> FileManager::loadModel(std::string modelPath)//3Dモデルを返す
-{
-    Storage* storage = Storage::GetInstance();
-
-    std::string path = splitFileName(modelPath);
-
-    if (storage->containModel(path))//すでに3Dモデルをファイルから読み取り済みなら
-    {
-        return storage->getgltfModel(path);//ストレージクラスから渡す
-    }
+	if(modelStorage.find(hash) != modelStorage.end())
+	{
+		return hash;
+	}
 
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
     std::string error;
     std::string warning;
     bool binary = false;
-    binary = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, modelPath);
+    binary = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filePath);
     if (!binary)
     {
         throw std::runtime_error("faile load file");
     }
 
-    const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];//デフォルトシーンがあればそれを、なければ最初のシーン
+    const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
 
-    minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-    maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    std::shared_ptr<GltfModel> model = loadGLTFModel(scene, gltfModel);//ファイルからgltfモデルのデータを読み取る
-    model->initPoseMin = minPos;
-    model->initPoseMax = maxPos;
-    model->nodeCount = static_cast<int>(gltfModel.nodes.size());
-
-    model->setPointBufferNum();
-
-    storage->addModel(path, model);//ストレージにモデルを加える
-
-    return storage->getgltfModel(path);
-}
-
-//テクスチャを読み込む
-void FileManager::loadTextures(std::shared_ptr<GltfModel> model, const tinygltf::Model gltfModel)//画像データを読み取り、テクスチャデータを作成する
-{
-    model->imageDatas.resize(gltfModel.textures.size());
-    for (int i = 0;i < gltfModel.textures.size();i++)
-    {
-        tinygltf::Image source = gltfModel.images[gltfModel.textures[i].source];
-
-        std::shared_ptr<ImageData> image =
-            std::shared_ptr<ImageData>(new ImageData(source.width, source.height, source.component, source.image.data()));
-
-        model->imageDatas[i] = image;
-    }
-}
-
-//埋め込まれたgltfモデルを取得する
-std::shared_ptr<GltfModel> FileManager::loadGLTFModel(const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)//gltfモデルのデータを読み取る
-{
-    float scale = 1.0f;
-    GltfNode* root = new GltfNode();
-    std::shared_ptr<GltfModel> model = std::make_shared<GltfModel>(root);
-
-    minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-    maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+	minPos = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+	maxPos = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     vertexNum = 0;
     indexNum = 0;
 
-    for (size_t i = 0; i < scene.nodes.size(); i++)//gltfのノードの読み取り
+	std::shared_ptr<GltfModel> model = 
+        std::make_shared<GltfModel>(std::make_shared<GltfNode>());
+
+    for(int i = 0;i < scene.nodes.size(); i++)//gltfのノードの読み取り
     {
         const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
-        loadNode(nullptr, model->getRootNode(), model, gltfNode, scene.nodes[i], gltfModel, scale);
-    }
+        loadNode(model->getRootNode(), model, gltfNode, scene.nodes[i], gltfModel);
+	}
 
-    loadTextures(model, gltfModel);//テクスチャの読み取り
-
-    loadMaterial(model, gltfModel);//マテリアルデータの読み取り
-
-    model->vertexNum = vertexNum;
-    model->indexNum = indexNum;
+	loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
     if (gltfModel.animations.size() > 0)
     {
-        loadAnimations(model, scene, gltfModel);//アニメーションの取得
-    }
-    
-    loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
-    
-    for (size_t i = 0; i < model->skins.size(); i++)
-    {
-        setSkin(model->getRootNode(), model);//スキンの設定
+		loadAnimations(model, scene, gltfModel);//アニメーションの取得
     }
 
-    return model;
+	loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
+	setSkin(model->getRootNode(), model);//スキンの設定
+
+    modelStorage[hash] = model;//ストレージにモデルを加える
+
+    return hash;
 }
 
 //gltfモデルのノードを再帰的に読み込む
-void FileManager::loadNode(GltfNode* parent, GltfNode* current, std::shared_ptr<GltfModel> model
-    , const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel, float globalscale)
+void GltfModelFactory::loadNode(GltfNode* current, std::shared_ptr<GltfModel> model
+    , const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel)
 {
-    current->index = nodeIndex;
-    current->parent = parent;
-    current->name = gltfNode.name;
-    current->skinIndex = gltfNode.skin;
-    current->matrix = glm::mat4(1.0f);
+	current->index = nodeIndex;
+	current->name = gltfNode.name;
+	current->skinIndex = gltfNode.skin;
+	current->matrix = glm::mat4(1.0f);
 
-    glm::vec3 translation = glm::vec3(0.0f);//平行移動行列
-    if (gltfNode.translation.size() == 3) {
-        translation = glm::make_vec3(gltfNode.translation.data());
-        //current->translation = translation;
-    }
-    glm::mat4 rotation = glm::mat4(1.0f);//回転行列
-    if (gltfNode.rotation.size() == 4) {
-        glm::quat q = glm::make_quat(gltfNode.rotation.data());
-        //current->rotation = glm::mat4(q);
-    }
-    glm::vec3 scale = glm::vec3(1.0f);//拡大行列
-    if (gltfNode.scale.size() == 3) {
-        scale = glm::make_vec3(gltfNode.scale.data());
-        //current->scale = scale;
-    }
     if (gltfNode.matrix.size() == 16) {
         current->matrix = glm::make_mat4x4(gltfNode.matrix.data());
     };
@@ -216,7 +69,8 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, std::shared_ptr<
     {
         for (int i = 0; i <= gltfNode.mesh; i++)
         {
-            processMesh(gltfNode, gltfModel, current, model,i);//メッシュの読み取り
+            //メッシュの読み取り
+            loadMesh(gltfNode, gltfModel, current, model, i);
         }
     }
 
@@ -227,16 +81,16 @@ void FileManager::loadNode(GltfNode* parent, GltfNode* current, std::shared_ptr<
         for (size_t i = 0; i < gltfNode.children.size(); i++)
         {
             GltfNode* newNode = new GltfNode();
-            loadNode(current, newNode,model, gltfModel.nodes[gltfNode.children[i]], gltfNode.children[i], gltfModel, globalscale);
+            loadNode(newNode, model, gltfModel.nodes[gltfNode.children[i]], gltfNode.children[i], gltfModel);
 
             current->children[i] = newNode;
         }
     }
 }
 
-//メッシュの読み取り
-void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Model gltfModel
-    , GltfNode* currentNode, std::shared_ptr<GltfModel> model,int meshIndex)
+//gltfモデルのメッシュを読み込む
+void GltfModelFactory::loadMesh(const tinygltf::Node& gltfNode, const tinygltf::Model& gltfModel
+    , GltfNode* currentNode, std::shared_ptr<GltfModel> model, int meshIndex)
 {
     const tinygltf::Mesh gltfMesh = gltfModel.meshes[meshIndex];
     int indexStart = 0;
@@ -250,7 +104,7 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     {
         const tinygltf::Primitive glPrimitive = gltfMesh.primitives[i];
 
-        processPrimitive(mesh, indexStart, glPrimitive, gltfModel,model);//プリミティブの読み取り
+        loadPrimitive(mesh, indexStart, glPrimitive, gltfModel, model);//プリミティブの読み取り
     }
 
     model->primitiveCount += static_cast<uint32_t>(gltfMesh.primitives.size());
@@ -258,28 +112,8 @@ void FileManager::processMesh(const tinygltf::Node& gltfNode, const tinygltf::Mo
     currentNode->meshArray.push_back(mesh);
 }
 
-//aabb用の頂点座標の最小と最大を計算
-void FileManager::calcMinMaxVertexPos(glm::vec3 min,glm::vec3 max)
-{
-    for (int i = 0; i < 3; i++)
-    {
-        if (minPos[i] > min[i])
-        {
-            minPos[i] = min[i];
-        }
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        if (maxPos[i] < max[i])
-        {
-            maxPos[i] = max[i];
-        }
-    }
-}
-
 //プリミティブの読み取り
-void FileManager::processPrimitive(Mesh* mesh,int& indexStart
+void GltfModelFactory::loadPrimitive(Mesh* mesh, int& indexStart
     , tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model)
 {
     const float* bufferPos = nullptr;
@@ -312,7 +146,12 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart
     vertexCount = static_cast<uint32_t>(posAccessor.count);//このプリミティブの持つ頂点の数
     posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);//頂点を読み取る際の頂点のデータの幅を取得
 
-    calcMinMaxVertexPos(posMin, posMax);
+	//AABBのために頂点の最小値と最大値を求める
+    for (int i = 0; i < 3; i++)
+    {
+		std::min(minPos[i], posMin[i]);
+		std::max(maxPos[i], posMax[i]);
+    }
 
     //以下頂点座標と同じように、取得していく
 
@@ -448,10 +287,11 @@ void FileManager::processPrimitive(Mesh* mesh,int& indexStart
     indexNum += indexStart;
 }
 
-//gltfモデルのアニメーションを読み込む
-void FileManager::loadAnimations(std::shared_ptr<GltfModel> model, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
+//アニメーションを読み込む
+void GltfModelFactory::loadAnimations(std::shared_ptr<GltfModel> model
+    , const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
 {
-    for (tinygltf::Animation anim : gltfModel.animations) 
+    for (tinygltf::Animation anim : gltfModel.animations)
     {
         Animation animation{};
         animation.name = anim.name;
@@ -569,8 +409,8 @@ void FileManager::loadAnimations(std::shared_ptr<GltfModel> model, const tinyglt
     }
 }
 
-//gltfモデルのスケルトンを読み込む
-void FileManager::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel)
+//スケルトンを読み込む
+void GltfModelFactory::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel)
 {
     for (tinygltf::Skin& source : gltfModel.skins) {
         Skin* newSkin = new Skin{};
@@ -609,139 +449,145 @@ void FileManager::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model glt
 
         model->skins.push_back(newSkin);
     }
+
+	setSkin(model->getRootNode(), model);//スキンを設定する
 }
 
-//自前のModelクラスにスケルトンを設定する
-void FileManager::setSkin(GltfNode* node, std::shared_ptr<GltfModel> model)
+//スキンを設定する
+void GltfModelFactory::setSkin(GltfNode* node, std::shared_ptr<GltfModel> model)
 {
     if (node->skinIndex > -1)
     {
         node->skin = model->skins[node->skinIndex];
     }
 
-    for (size_t i = 0; i < node->children.size(); i++)
+    for (auto& child : node->children)
     {
-        setSkin(node->children[i], model);
+        setSkin(child, model);//子ノードにもスキンを設定する
     }
 }
 
-//与えられた文字列からファイルの名前のみを取得する
-std::string FileManager::splitFileName(std::string filePath)
+//マテリアルを読み込む
+void GltfModelFactory::loadMaterial(std::shared_ptr<GltfModel> model, tinygltf::Model& gltfModel)
 {
-    int pos = static_cast<int>(filePath.rfind('/'));
-    filePath = filePath.substr(pos + 1, filePath.length() - pos);
-
-    return filePath;
-}
-
-//マテリアルをメッシュに設定する
-void FileManager::loadMaterial(std::shared_ptr<GltfModel> model, const tinygltf::Model gltfModel)
-{
-    for (const tinygltf::Material& mat : gltfModel.materials)
+    for (tinygltf::Material& mat : gltfModel.materials)
     {
-        std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material());
+        materialBuilder->initProperty();
 
-        if (mat.values.find("baseColorTexture") != mat.values.end()) {
-            material->baseColorTextureIndex = mat.values["baseColorTexture"].TextureIndex();
-            material->texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+        if (mat.values.find("baseColorTexture") != mat.values.end()) 
+        {
+            tinygltf::Parameter param = mat.values["baseColorTexture"];
+
+			const tinygltf::Image image = 
+                gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
+            
+            std::shared_ptr<Texture> texture
+                = textureFactory->Create(
+                    image.component,
+                    image.image.data(),
+					image.width,
+					image.height,
+                    TexturePattern::NORMAL
+				);
+
+			materialBuilder->withBaseColorTexture(param.TextureTexCoord(), texture);
+
         }
-        if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-            material->metallicRoughnessTextureIndex = mat.values["metallicRoughnessTexture"].TextureIndex();
-            material->texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+        if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) 
+        {
+            tinygltf::Parameter param = mat.values["metallicRoughnessTexture"];
+
+            const tinygltf::Image image =
+                gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
+
+            std::shared_ptr<Texture> texture
+                = textureFactory->Create(
+                    image.component,
+                    image.image.data(),
+                    image.width,
+                    image.height,
+                    TexturePattern::NORMAL
+                );
+
+            materialBuilder->withMetallicRoughnessTexture(param.TextureTexCoord(), texture);
         }
-        if (mat.values.find("roughnessFactor") != mat.values.end()) {
-            material->roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+        if (mat.values.find("roughnessFactor") != mat.values.end()) 
+        {
+			materialBuilder->withRoughnessFactor(static_cast<float>(mat.values["roughnessFactor"].Factor()));
         }
-        if (mat.values.find("metallicFactor") != mat.values.end()) {
-            material->metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+        if (mat.values.find("metallicFactor") != mat.values.end()) 
+        {
+            materialBuilder->withRoughnessFactor(static_cast<float>(mat.values["metallicFactor"].Factor()));
         }
-        if (mat.values.find("baseColorFactor") != mat.values.end()) {
-            material->baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+        if (mat.values.find("baseColorFactor") != mat.values.end()) 
+        {
+            materialBuilder->withBaseColorFactor(glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data()));
         }
-        if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
-            material->normalTextureIndex = mat.additionalValues["normalTexture"].TextureIndex();
-            material->texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+        if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) 
+        {
+            tinygltf::Parameter param = mat.values["normalTexture"];
+
+            const tinygltf::Image image =
+                gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
+
+            std::shared_ptr<Texture> texture
+                = textureFactory->Create(
+                    image.component,
+                    image.image.data(),
+                    image.width,
+                    image.height,
+                    TexturePattern::NORMAL
+                );
+
+            materialBuilder->withNormalTexture(param.TextureTexCoord(), texture);
         }
-        if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
-            material->emissiveTextureIndex = mat.additionalValues["emissiveTexture"].TextureIndex();
-            material->texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+        if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) 
+        {
+            tinygltf::Parameter param = mat.values["emissiveTexture"];
+
+            const tinygltf::Image image =
+                gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
+
+            std::shared_ptr<Texture> texture
+                = textureFactory->Create(
+                    image.component,
+                    image.image.data(),
+                    image.width,
+                    image.height,
+                    TexturePattern::NORMAL
+                );
+
+            materialBuilder->withEmissiveTexture(param.TextureTexCoord(), texture);
         }
-        if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
-            material->occlusionTextureIndex = mat.additionalValues["occlusionTexture"].TextureIndex();
-            material->texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+        if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) 
+        {
+            tinygltf::Parameter param = mat.values["occlusionTexture"];
+
+            const tinygltf::Image image =
+                gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
+
+            std::shared_ptr<Texture> texture
+                = textureFactory->Create(
+                    image.component,
+                    image.image.data(),
+                    image.width,
+                    image.height,
+                    TexturePattern::NORMAL
+                );
+
+            materialBuilder->withOcclusionTexture(param.TextureTexCoord(), texture);
         }
-        if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
-            tinygltf::Parameter param = mat.additionalValues["alphaMode"];
-            if (param.string_value == "BLEND") {
-                material->alphaMode = Material::ALPHAMODE_BLEND;
-            }
-            if (param.string_value == "MASK") {
-                material->alphaCutoff = 0.5f;
-                material->alphaMode = Material::ALPHAMODE_MASK;
-            }
+        if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) 
+        {
+            materialBuilder->withAlphaMaskCutOff(static_cast<float>(mat.additionalValues["alphaCutoff"].Factor()));
         }
-        if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
-            material->alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
-        }
-        if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
-            material->emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+        if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) 
+        {
+            materialBuilder->withEmissiveFactor(glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0));
         }
 
-        material->index = static_cast<int>(model->materials.size());
+		std::shared_ptr<Material> material = materialBuilder->Create(materialBuilder->Build());
+
         model->materials.push_back(material);
     }
-}
-
-//画像の読み取り
-std::shared_ptr<ImageData> FileManager::loadImage(std::string filePath)
-{
-    std::string registerImageName = splitFileName(filePath);
-
-    Storage* storage = Storage::GetInstance();
-    if (storage->containImageData(registerImageName))
-    {
-        return storage->getImageData(registerImageName);
-    }
-
-    ImageData* imageData = nullptr;
-    VkFormat format;
-
-    if (stbi_is_hdr(filePath.c_str()))
-    {
-        //HDR画像だった場合
-        int width;
-        int height;
-        int texChannels;
-        float* pixels;
-
-        pixels = stbi_loadf(filePath.c_str(), &width, &height, &texChannels, 0);
-
-        imageData = new ImageData(width, height, texChannels, pixels);
-
-        stbi_image_free(pixels);
-
-        format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    }
-    else
-    {
-        //HDR以外の場合
-        int width;
-        int height;
-        int texChannels;
-        unsigned char* pixels;
-
-        pixels = stbi_load(filePath.c_str(), &width, &height, &texChannels, 0);
-
-        imageData = new ImageData(width, height, texChannels, pixels);
-
-        stbi_image_free(pixels);
-
-        format = VK_FORMAT_R8G8B8A8_UNORM;
-    }
-
-    storage->addImageData(registerImageName,imageData);
-
-    VulkanBase::GetInstance()->createTexture(storage->getImageData(registerImageName), format);
-
-    return storage->getImageData(registerImageName);
 }
