@@ -277,3 +277,12 @@ void SwapChain::recreateSwapChain()
         createSwapChain();
     }
 }
+
+//現在のフレームバッファを取得する
+std::shared_ptr<FrameBuffer> SwapChain::getCurrentFrameBuffer()
+{
+    frameIndex = (frameIndex == 0) ? 1 : 0;
+
+    return frameBuffers[frameIndex];
+}
+

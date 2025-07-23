@@ -1,11 +1,17 @@
 #include"TextureBuilder.h"
 
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
+#include "tiny_gltf.h"
+
 TextureBuilder::TextureBuilder(std::shared_ptr<VulkanCore> core,std::shared_ptr<GpuBufferFactory> buffer)
 {
-	device = vulkanCore->getLogicDevice();
-
 	vulkanCore = core;
 	bufferFactory = buffer;
+
+	device = vulkanCore->getLogicDevice();
 
 	initProperty();
 }
@@ -189,7 +195,7 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 		pixels = new unsigned char[width * height * 4];
 		memset(pixels, 255, width * height * 4);
 
-		for (int i = 0; i < width * height; i++)
+		for (uint32_t i = 0; i < width * height; i++)
 		{
 			pixels[i * 4] = srcPixels[i * 3];
 			pixels[i * 4 + 1] = srcPixels[i * 3 + 1];
@@ -201,7 +207,7 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 		pixels = new unsigned char[width * height * 4];
 		memset(pixels, 255, width * height * 4);
 
-		for (int i = 0; i < width * height; i++)
+		for (uint32_t i = 0; i < width * height; i++)
 		{
 			pixels[i * 4] = srcPixels[i];
 		}

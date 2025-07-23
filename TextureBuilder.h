@@ -6,8 +6,7 @@
 #include"VulkanCore.h"
 #include"GpuBufferFactory.h"
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "stb_image.h"
+#include "tiny_gltf.h"
 
 struct Texture;
 

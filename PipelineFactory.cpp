@@ -1,7 +1,7 @@
 #include"PipelineFactory.h"
 
 PipelineFactory::PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
-    , std::shared_ptr<Shader> sf, std::shared_ptr<PipelineBuilder> b
+    , std::shared_ptr<ShaderFactory> sf, std::shared_ptr<PipelineBuilder> b
     , std::shared_ptr<RenderPassFactory> r)
 {
     device = d;
@@ -15,6 +15,18 @@ PipelineFactory::PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFact
     builder = b;
 
     frameIndex = 1;
+}
+
+PipelineFactory::~PipelineFactory()
+{
+    for (auto& itr : pipelineStorage)
+    {
+        if (!itr.second.expired())
+        {
+            //–{—ˆ‚Í‚±‚±‚Å”jŠü‚³‚ê‚é‚à‚Ì‚Í‚È‚¢‚Í‚¸
+            itr.second.lock().reset();
+        }
+    }
 }
 
 PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)

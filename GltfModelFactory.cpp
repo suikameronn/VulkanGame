@@ -28,14 +28,14 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
     vertexNum = 0;
     indexNum = 0;
 
-	std::shared_ptr<GltfModel> model = 
-        std::make_shared<GltfModel>(std::make_shared<GltfNode>());
+    std::shared_ptr<GltfModel> model =
+        std::make_shared<GltfModel>(bufferFactory, layoutFactory, descriptorSetFactory);
 
-    for(int i = 0;i < scene.nodes.size(); i++)//gltfのノードの読み取り
-    {
-        const tinygltf::Node gltfNode = gltfModel.nodes[scene.nodes[i]];
-        loadNode(model->getRootNode(), model, gltfNode, scene.nodes[i], gltfModel);
-	}
+    //GltfNodeを確保する
+	model->nodes.resize(scene.nodes.size());
+
+    //gltfモデルのシーンは一つのみを前提とする
+    loadNode(model, scene.nodes[0], gltfModel);
 
 	loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
@@ -45,7 +45,7 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
     }
 
 	loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
-	setSkin(model->getRootNode(), model);//スキンの設定
+	setSkin(model);//スキンの設定
 
     modelStorage[hash] = model;//ストレージにモデルを加える
 
@@ -53,13 +53,13 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
 }
 
 //gltfモデルのノードを再帰的に読み込む
-void GltfModelFactory::loadNode(GltfNode* current, std::shared_ptr<GltfModel> model
-    , const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel)
+void GltfModelFactory::loadNode(std::shared_ptr<GltfModel> model, const int nodeIndex, const tinygltf::Model& gltfModel)
 {
-	current->index = nodeIndex;
-	current->name = gltfNode.name;
-	current->skinIndex = gltfNode.skin;
-	current->matrix = glm::mat4(1.0f);
+    /*
+    current->index = nodeIndex;
+    current->name = gltfNode.name;
+    current->skinIndex = gltfNode.skin;
+    current->matrix = glm::mat4(1.0f);
 
     if (gltfNode.matrix.size() == 16) {
         current->matrix = glm::make_mat4x4(gltfNode.matrix.data());
@@ -86,18 +86,101 @@ void GltfModelFactory::loadNode(GltfNode* current, std::shared_ptr<GltfModel> mo
             current->children[i] = newNode;
         }
     }
+    */
+
+    const tinygltf::Node& gltfNode = gltfModel.nodes[nodeIndex];
+
+    model->nodes[0].offset = 0;
+
+    //parentIndexは親ノードの配列上の番号
+    model->nodes[0].parentIndex = -1;
+
+    //indexはgltf上のノードの番号
+    model->nodes[0].index = nodeIndex;
+    
+    model->nodes[0].name = gltfNode.name;
+    model->nodes[0].skinIndex = gltfNode.skin;
+    model->nodes[0].matrix = glm::mat4(1.0f);
+
+    if (gltfNode.matrix.size() == 16) {
+        model->nodes[0].matrix = glm::make_mat4x4(gltfNode.matrix.data());
+    }
+
+    if (gltfNode.mesh > -1)
+    {
+		model->nodes[0].meshArray.resize(gltfModel.meshes.size());
+
+        for (int i = 0; i <= gltfNode.mesh; i++)
+        {
+            //メッシュの読み取り
+            loadMesh(gltfNode, gltfModel, model->nodes[0].meshArray[i], model, i);
+        }
+    }
+
+    if (gltfNode.children.size() > 0)
+    {
+        size_t offset = 1;
+        int parentIndex = 0;
+
+        for (size_t i = 0; i < gltfNode.children.size(); i++)
+        {
+            loadNode(offset, parentIndex, model, gltfNode.children[i], gltfModel);
+        }
+    }
+}
+
+//gltfモデルのノードを再帰的に読み込む
+void GltfModelFactory::loadNode(size_t& offset, int parentIndex, std::shared_ptr<GltfModel> model, const int nodeIndex
+    , const tinygltf::Model& gltfModel)
+{
+	const tinygltf::Node& gltfNode = gltfModel.nodes[nodeIndex];
+
+    model->nodes[offset].offset = offset;
+	model->nodes[offset].parentIndex = parentIndex;
+    model->nodes[offset].index = nodeIndex;
+    model->nodes[offset].name = gltfNode.name;
+    model->nodes[offset].skinIndex = gltfNode.skin;
+    model->nodes[offset].matrix = glm::mat4(1.0f);
+
+    if (gltfNode.matrix.size() == 16) {
+        model->nodes[offset].matrix = glm::make_mat4x4(gltfNode.matrix.data());
+    }
+
+    if (gltfNode.mesh > -1)
+    {
+        model->nodes[offset].meshArray.resize(gltfModel.meshes.size());
+
+        for (int i = 0; i <= gltfNode.mesh; i++)
+        {
+            //メッシュの読み取り
+            loadMesh(gltfNode, gltfModel, model->nodes[offset].meshArray[i], model, i);
+        }
+    }
+
+    if (gltfNode.children.size() > 0)
+    {
+        //ノードを配置する位置を一つ後ろにする
+        offset++;
+
+		//親ノードのインデックスを設定
+        parentIndex++;
+
+        for (size_t i = 0; i < gltfNode.children.size(); i++)
+        {
+            loadNode(offset, parentIndex, model, gltfNode.children[i], gltfModel);
+        }
+    }
 }
 
 //gltfモデルのメッシュを読み込む
 void GltfModelFactory::loadMesh(const tinygltf::Node& gltfNode, const tinygltf::Model& gltfModel
-    , GltfNode* currentNode, std::shared_ptr<GltfModel> model, int meshIndex)
+    , Mesh& mesh, std::shared_ptr<GltfModel> model, int meshIndex)
 {
     const tinygltf::Mesh gltfMesh = gltfModel.meshes[meshIndex];
     int indexStart = 0;
     int vertexNum = 0;;
 
-    Mesh* mesh = new Mesh();
-    mesh->meshIndex = model->meshCount;
+    mesh.meshIndex = model->meshCount;
     model->meshCount++;
 
     for (size_t i = 0; i < gltfMesh.primitives.size(); i++)
@@ -108,12 +191,10 @@ void GltfModelFactory::loadMesh(const tinygltf::Node& gltfNode, const tinygltf::
     }
 
     model->primitiveCount += static_cast<uint32_t>(gltfMesh.primitives.size());
-
-    currentNode->meshArray.push_back(mesh);
 }
 
 //プリミティブの読み取り
-void GltfModelFactory::loadPrimitive(Mesh* mesh, int& indexStart
+void GltfModelFactory::loadPrimitive(Mesh& mesh, int& indexStart
     , tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model)
 {
     const float* bufferPos = nullptr;
@@ -239,7 +320,7 @@ void GltfModelFactory::loadPrimitive(Mesh* mesh, int& indexStart
             vert.weight1 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
         }
 
-        mesh->vertices.push_back(vert);
+        mesh.vertices.push_back(vert);
     }
 
     int indexCount;
@@ -256,21 +337,21 @@ void GltfModelFactory::loadPrimitive(Mesh* mesh, int& indexStart
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
             const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                mesh->indices.push_back(buf[index] + indexStart);
+                mesh.indices.push_back(buf[index] + indexStart);
             }
             break;
         }
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
             const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                mesh->indices.push_back(buf[index] + indexStart);
+                mesh.indices.push_back(buf[index] + indexStart);
             }
             break;
         }
         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
             const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
             for (size_t index = 0; index < accessor.count; index++) {
-                mesh->indices.push_back(buf[index] + indexStart);
+                mesh.indices.push_back(buf[index] + indexStart);
             }
             break;
         }
@@ -280,7 +361,7 @@ void GltfModelFactory::loadPrimitive(Mesh* mesh, int& indexStart
     Primitive primitive = { model->primitiveCount,indexStart,indexCount,vertexCount,glPrimitive.material };
     primitive.setBoundingBox(posMin, posMax);
 
-    mesh->primitives.push_back(primitive);
+    mesh.primitives.push_back(primitive);
 
     indexStart += indexCount;
     vertexNum += vertexCount;
@@ -397,8 +478,8 @@ void GltfModelFactory::loadAnimations(std::shared_ptr<GltfModel> model
                 continue;
             }
             channel.samplerIndex = source.sampler;
-            channel.node = model->nodeFromIndex(source.target_node);
-            if (!channel.node) {
+            channel.nodeOffset = model->nodeFromIndex(source.target_node);
+            if (channel.nodeOffset > -1) {
                 continue;
             }
 
@@ -413,57 +494,61 @@ void GltfModelFactory::loadAnimations(std::shared_ptr<GltfModel> model
 void GltfModelFactory::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel)
 {
     for (tinygltf::Skin& source : gltfModel.skins) {
-        Skin* newSkin = new Skin{};
-        newSkin->name = source.name;
+        Skin newSkin = Skin();
+        newSkin.name = source.name;
 
         //ルートノードの設定
         if (source.skeleton > -1) {
-            newSkin->skeletonRoot = model->nodeFromIndex(source.skeleton);
+            newSkin.skinRootNodeOffset = model->nodeFromIndex(source.skeleton);
         }
         else
         {
-            newSkin->skeletonRoot = nullptr;
+            newSkin.skinRootNodeOffset = 0;
         }
 
 
         //スケルトンが番号で指定したノードを見つけ、Modelクラスのスケルトンにノードを設定していく
         int globalHasSkinNodeIndex = 1;
-        for (int jointIndex : source.joints) {
-            GltfNode* node = model->nodeFromIndex(jointIndex);
-            if (node) {
-                node->globalHasSkinNodeIndex = globalHasSkinNodeIndex;
-                newSkin->joints.push_back(node);
+        newSkin.jointNodeOffset.resize(source.joints.size());
+        for (int i = 0;i < source.joints.size();i++)
+        {
+
+            int nodeOffset = model->nodeFromIndex(source.joints[i]);
+            
+            if (nodeOffset > -1) 
+            {
+                model->nodes[nodeOffset].globalHasSkinNodeIndex = globalHasSkinNodeIndex;
+                newSkin.jointNodeOffset[i] = nodeOffset;
                 globalHasSkinNodeIndex++;
             }
         }
         model->jointNum = globalHasSkinNodeIndex;
 
         //ボーン空間に戻す行列を設定していく
-        if (source.inverseBindMatrices > -1) {
+        if (source.inverseBindMatrices > -1) 
+        {
             const tinygltf::Accessor& accessor = gltfModel.accessors[source.inverseBindMatrices];
             const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
             const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
-            newSkin->inverseBindMatrices.resize(accessor.count);
-            memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
+            newSkin.inverseBindMatrices.resize(accessor.count);
+            memcpy(newSkin.inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
         }
 
         model->skins.push_back(newSkin);
     }
 
-	setSkin(model->getRootNode(), model);//スキンを設定する
+	setSkin(model);//スキンを設定する
 }
 
 //スキンを設定する
-void GltfModelFactory::setSkin(GltfNode* node, std::shared_ptr<GltfModel> model)
+void GltfModelFactory::setSkin(std::shared_ptr<GltfModel> model)
 {
-    if (node->skinIndex > -1)
+    for (int i = 0; i < model->nodes.size(); i++)
     {
-        node->skin = model->skins[node->skinIndex];
-    }
-
-    for (auto& child : node->children)
-    {
-        setSkin(child, model);//子ノードにもスキンを設定する
+        if (model->nodes[i].skinIndex > -1)
+        {
+            model->nodes[i].skin = model->skins[model->nodes[i].skinIndex];
+        }
     }
 }
 

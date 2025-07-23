@@ -10,7 +10,7 @@ private:
 
 	//ファクトリークラス
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 	std::shared_ptr<TextureFactory> textureFactory;
 
@@ -23,7 +23,7 @@ private:
 public:
 
 	MaterialBuilder(std::shared_ptr<GpuBufferFactory> buffer,
-		std::shared_ptr<GpuDescriptorSetLayoutFactory> layout,
+		std::shared_ptr<DescriptorSetLayoutFactory> layout,
 		std::shared_ptr<DescriptorSetFactory> desc
 		, std::shared_ptr<TextureFactory> texture)
 	{

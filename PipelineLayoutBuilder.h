@@ -6,9 +6,6 @@ class PipelineLayoutBuilder
 {
 private:
 
-	//論理デバイス
-	VkDevice device;
-
 	//パイプラインに使うレイアウトのプロパティ
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layoutArray;
 
@@ -17,7 +14,7 @@ private:
 
 public:
 
-	PipelineLayoutBuilder(VkDevice& d,std::shared_ptr<DescriptorSetLayoutFactory> layoutF);
+	PipelineLayoutBuilder();
 
 	//レイアウトを初期化する
 	PipelineLayoutBuilder initProperty();
@@ -26,5 +23,5 @@ public:
 	PipelineLayoutBuilder addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
 
 	//パイプラインレイアウトを作成する
-	std::vector< std::shared_ptr<DescriptorSetLayout>> Build();
+	std::vector<std::shared_ptr<DescriptorSetLayout>> Build();
 };

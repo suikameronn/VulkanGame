@@ -1,10 +1,8 @@
 #include"DescriptorSetBuilder.h"
 
-DescriptorSetBuilder::DescriptorSetBuilder(std::shared_ptr<VulkanCore> core)
+DescriptorSetBuilder::DescriptorSetBuilder(VkDevice& d)
 {
-	vulkanCore = core;
-
-	device = vulkanCore->getLogicDevice();
+	device = d;
 
 	createDescriptorPool();
 }

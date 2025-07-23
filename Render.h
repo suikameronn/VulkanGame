@@ -1,16 +1,14 @@
 #pragma once
 
+#include<memory>
+#include<array>
+
 #include"RenderPassFactory.h"
 #include"DescriptorSetLayoutFactory.h"
 #include"FrameBufferFactory.h"
 #include"SwapChain.h"
 #include"GpuBufferFactory.h"
 #include"VulkanCore.h"
-
-#include"ECSManager.h"
-
-#include"GltfModelComp.h"
-#include"GltfModelFactory.h"
 
 #include<glm/glm.hpp>
 
@@ -43,26 +41,24 @@ struct RenderProperty
 
 		clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
 		clearValues[1].depthStencil = { 1.0f,0 };
-	}
+	};
 };
 
 class Render
 {
 private:
+
 	VkDevice device;
 
 	std::shared_ptr<VulkanCore> vulkanCore;
 
 	RenderProperty property;
 
-	std::shared_ptr<GltfModelFactory> modelFactory;
-
-	std::shared_ptr<ECSManager> ecsManager;
-
 public:
 
-	Render(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactory> bf
-		, std::shared_ptr<GltfModelFactory> model, std::shared_ptr<ECSManager> ecs);
+	Render(std::shared_ptr<VulkanCore> core);
+
+	~Render() = default;
 
 	Render initProperty();
 
@@ -93,8 +89,8 @@ public:
 	//レンダリング開始
 	void RenderStart(const RenderProperty& property);
 
-	//レンダリング
-	void Rendering();
+	//実際のレンダリングのコマンドの積み込みは
+	//ecsManagerのRunFunctionを使う
 
 	//レンダリング終了
 	void RenderEnd();

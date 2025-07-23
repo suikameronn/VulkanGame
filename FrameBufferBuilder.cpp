@@ -1,10 +1,8 @@
 #include"FrameBufferBuilder.h"
 
-FrameBufferBuilder::FrameBufferBuilder(std::shared_ptr<VulkanCore> core)
+FrameBufferBuilder::FrameBufferBuilder(VkDevice& d)
 {
-	vulkanCore = core;
-
-	device = vulkanCore->getLogicDevice();
+	device = d;
 
 	initProperty();
 }

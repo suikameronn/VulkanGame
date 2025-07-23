@@ -1,15 +1,13 @@
 #include"DescriptorSetFactory.h"
 
-DescriptorSetFactory::DescriptorSetFactory(std::shared_ptr<VulkanCore> core,std::shared_ptr<DescriptorSetBuilder> b
+DescriptorSetFactory::DescriptorSetFactory(VkDevice& d,std::shared_ptr<DescriptorSetBuilder> b
 	, std::shared_ptr<DescriptorSetLayoutFactory> lf)
 {
-	vulkanCore = core;
-
 	builder = b;
 
 	layoutFactory = lf;
 
-	device = vulkanCore->getLogicDevice();
+	device = d;
 
 	frameIndex = 0;
 }

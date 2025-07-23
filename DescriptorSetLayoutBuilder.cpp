@@ -1,8 +1,7 @@
 #include"DescriptorSetLayoutBuilder.h"
 
-DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(VkDevice& d)
+DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder()
 {
-	device = d;
 }
 
 //プロパティの初期化

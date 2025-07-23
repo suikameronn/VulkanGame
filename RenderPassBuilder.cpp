@@ -207,7 +207,7 @@ RenderPassBuilder RenderPassBuilder::addSubpass()
 	//サブパスに組み込み済み
 	if (property.colorCombinedOffset != property.colorReferences.size())
 	{
-		subpassDescription.colorAttachmentCount = property.colorReferences.size() - property.colorCombinedOffset;
+		subpassDescription.colorAttachmentCount = static_cast<uint32_t>(property.colorReferences.size()) - property.colorCombinedOffset;
 		subpassDescription.pColorAttachments = &property.colorReferences[property.colorCombinedOffset];
 	}
 

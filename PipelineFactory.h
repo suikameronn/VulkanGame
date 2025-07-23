@@ -38,7 +38,7 @@ struct PipelineHash
 		getHash(static_cast<uint32_t>(info.vertexBindingDescriptionCount), hash);
 		getHash(static_cast<uint32_t>(info.vertexAttributeDescriptionCount), hash);
 
-		for (int i = 0; i < info.vertexBindingDescriptionCount; i++)
+		for (uint32_t i = 0; i < info.vertexBindingDescriptionCount; i++)
 		{
 			VkVertexInputBindingDescription bindingDescription{};
 			bindingDescription = info.pVertexBindingDescriptions[i];
@@ -48,7 +48,7 @@ struct PipelineHash
 			getHash(static_cast<uint32_t>(bindingDescription.stride), hash);
 		}
 
-		for (int i = 0; i < info.vertexAttributeDescriptionCount; i++)
+		for (uint32_t i = 0; i < info.vertexAttributeDescriptionCount; i++)
 		{
 			VkVertexInputAttributeDescription attributeDescriptions{};
 			attributeDescriptions = info.pVertexAttributeDescriptions[i];
@@ -143,7 +143,7 @@ struct PipelineHash
 		getHash(static_cast<uint32_t>(info.logicOp), hash);
 		getHash(static_cast<uint32_t>(info.attachmentCount), hash);
 
-		for (int i = 0; i < info.attachmentCount; i++)
+		for (uint32_t i = 0; i < info.attachmentCount; i++)
 		{
 			getHash(info.pAttachments[i], hash);
 		}
@@ -158,7 +158,7 @@ struct PipelineHash
 	{
 		getHash(info.dynamicStateCount, hash);
 
-		for (int i = 0; i < info.dynamicStateCount; i++)
+		for (uint32_t i = 0; i < info.dynamicStateCount; i++)
 		{
 			getHash(static_cast<uint32_t>(info.pDynamicStates[i]), hash);
 		}
@@ -244,7 +244,7 @@ private:
 	std::shared_ptr<PipelineLayoutFactory> pLayoutFactory;
 
 	//シェーダモジュールを取り出す
-	std::shared_ptr<Shader> shaderFactory;
+	std::shared_ptr<ShaderFactory> shaderFactory;
 	
 	//レンダーパスを取り出す
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
@@ -260,7 +260,7 @@ private:
 public:
 
 	PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
-		, std::shared_ptr<Shader> sf, std::shared_ptr<PipelineBuilder> b
+		, std::shared_ptr<ShaderFactory> sf, std::shared_ptr<PipelineBuilder> b
 		,std::shared_ptr<RenderPassFactory> r);
 
 	~PipelineFactory();

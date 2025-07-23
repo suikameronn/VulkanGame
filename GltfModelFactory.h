@@ -6,12 +6,17 @@
 
 #include"MaterialBuilder.h"
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "tiny_gltf.h"
+#include"GpuBufferFactory.h"
+#include"DescriptorSetFactory.h"
+#include"DescriptorSetLayoutFactory.h"
 
 class GltfModelFactory
 {
 private:
+
+	std::shared_ptr<GpuBufferFactory> bufferFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 
 	//マテリアルを読み込みする
 	std::shared_ptr<MaterialBuilder> materialBuilder;
@@ -37,15 +42,16 @@ private:
 	}
 
 	//gltfモデルのノードを再帰的に読み込む
-	void loadNode(GltfNode* current, std::shared_ptr<GltfModel> model
-		, const tinygltf::Node& gltfNode, uint32_t nodeIndex, const tinygltf::Model& gltfModel);
+	void loadNode(std::shared_ptr<GltfModel> model, const int nodeIndex, const tinygltf::Model& gltfModel);
+	void loadNode(size_t& offset, int parentIndex, std::shared_ptr<GltfModel> model
+		, const int nodeIndex, const tinygltf::Model& gltfModel);
 
 	//gltfモデルのメッシュを読み込む
 	void loadMesh(const tinygltf::Node& gltfNode, const tinygltf::Model& gltfModel
-		, GltfNode* currentNode, std::shared_ptr<GltfModel> model, int meshIndex);
+		, Mesh& mesh, std::shared_ptr<GltfModel> model, int meshIndex);
 
 	//プリミティブの読み取り
-	void loadPrimitive(Mesh* mesh, int& indexStart
+	void loadPrimitive(Mesh& mesh, int& indexStart
 		, tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model);
 
 	//アニメーションを読み込む
@@ -56,7 +62,7 @@ private:
 	void loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel);
 
 	//スキンを設定する
-	void setSkin(GltfNode* node, std::shared_ptr<GltfModel> model);
+	void setSkin(std::shared_ptr<GltfModel> model);
 
 	//マテリアルを読み込む
 	void loadMaterial(std::shared_ptr<GltfModel> model, tinygltf::Model& gltfModel);
@@ -64,11 +70,18 @@ private:
 public:
 
 	GltfModelFactory(std::shared_ptr<MaterialBuilder> builder
-		,std::shared_ptr<TextureFactory> texture)
+		, std::shared_ptr<TextureFactory> texture, std::shared_ptr<GpuBufferFactory> bf
+		, std::shared_ptr<DescriptorSetLayoutFactory> layout, std::shared_ptr<DescriptorSetFactory> desc)
 	{
 		materialBuilder = builder;
 
 		textureFactory = texture;
+
+		bufferFactory = bf;
+
+		layoutFactory = layout;
+
+		descriptorSetFactory = desc;
 	}
 	
 	uint32_t Load(const std::string& filePath);

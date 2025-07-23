@@ -4,8 +4,6 @@
 #include"RenderPassFactory.h"
 #include"TextureFactory.h"
 
-#include"FrameBufferBuilder.h"
-
 struct FrameBufferProperty
 {
 	VkFramebufferCreateInfo info;
@@ -29,13 +27,11 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	FrameBufferProperty property;
 
 public:
 
-	FrameBufferBuilder(std::shared_ptr<VulkanCore> core);
+	FrameBufferBuilder(VkDevice& d);
 
 	FrameBufferBuilder initProperty();
 

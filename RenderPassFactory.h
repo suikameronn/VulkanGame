@@ -90,7 +90,7 @@ struct RenderPassHash
 			getHash(static_cast<uint32_t>(description.pipelineBindPoint), hash);
 			getHash(static_cast<uint32_t>(description.inputAttachmentCount), hash);
 
-			for (int i = 0; i < description.inputAttachmentCount; i++)
+			for (uint32_t i = 0; i < description.inputAttachmentCount; i++)
 			{
 				VkAttachmentReference ref = description.pInputAttachments[i];
 
@@ -99,7 +99,7 @@ struct RenderPassHash
 
 			getHash(static_cast<uint32_t>(description.colorAttachmentCount), hash);
 
-			for (int i = 0; i < description.colorAttachmentCount; i++)
+			for (uint32_t i = 0; i < description.colorAttachmentCount; i++)
 			{
 				VkAttachmentReference ref = description.pColorAttachments[i];
 
@@ -141,8 +141,6 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	std::shared_ptr<RenderPassBuilder> builder;
 
 	//破棄予定リスト
@@ -155,8 +153,7 @@ private:
 
 public:
 
-	RenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
-		, std::shared_ptr<RenderPassBuilder> b);
+	RenderPassFactory(VkDevice& d, std::shared_ptr<RenderPassBuilder> b);
 
 	//レンダーパスを作成する
 	std::shared_ptr<RenderPass> Create(const RenderPassProperty& property);

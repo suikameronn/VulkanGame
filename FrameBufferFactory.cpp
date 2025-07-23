@@ -1,12 +1,10 @@
 #include"FrameBufferFactory.h"
 
-FrameBufferFactory::FrameBufferFactory(std::shared_ptr<VulkanCore> core,std::shared_ptr<FrameBufferBuilder> b)
+FrameBufferFactory::FrameBufferFactory(VkDevice d, std::shared_ptr<FrameBufferBuilder> b)
 {
-	vulkanCore = core;
-
 	builder = b;
 
-	device = vulkanCore->getLogicDevice();
+	device = d;
 
 	frameIndex = 1;
 }

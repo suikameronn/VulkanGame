@@ -34,7 +34,7 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		//PBRシェーダ
 
 		builder->initProperty();
-		builder->addLayout(layoutFactory->Create(LayoutPattern::MVPANIM));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MATERIAL));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
@@ -72,7 +72,7 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 
 		builder->initProperty();
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::MVPANIM));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 	}
 	else if (pattern == PipelineLayoutPattern::CALC_CUBEMAP)
 	{
@@ -108,7 +108,8 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		//レイキャスト用
 		builder->initProperty();
 		builder->addLayout(raycastLayout)
-			.addLayout(layoutFactory->Create(LayoutPattern::MVPANIM))
+			.addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+			.addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
 			.addLayout(layoutFactory->Create(LayoutPattern::RAYCAST));
 
 		VkPushConstantRange p1{};

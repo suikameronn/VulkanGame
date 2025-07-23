@@ -1,11 +1,8 @@
 #include"RenderPassFactory.h"
 
-RenderPassFactory::RenderPassFactory(VkDevice& d, std::shared_ptr<VulkanCore> core
-	,std::shared_ptr<RenderPassBuilder> b)
+RenderPassFactory::RenderPassFactory(VkDevice& d, std::shared_ptr<RenderPassBuilder> b)
 {
 	device = d;
-	
-	vulkanCore = core;
 
 	builder = b;
 

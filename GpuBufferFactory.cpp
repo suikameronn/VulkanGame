@@ -1,6 +1,6 @@
 #include"GpuBufferFactory.h"
 
-GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core)
+GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferBuilder> b)
 {
 	vulkanCore = core;
 
@@ -14,7 +14,7 @@ GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core)
 	frameIndex = 1;
 
 	//ビルダーを作成する
-	builder = std::make_unique<GpuBufferBuilder>(physicalDevice, device);
+	builder = b;
 }
 
 //バッファの内容をコピー

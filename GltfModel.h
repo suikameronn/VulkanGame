@@ -87,9 +87,11 @@ struct Primitive
 struct Skin
 {
 	std::string name;
-	GltfNode* skeletonRoot = nullptr;
+
+	//スキンのルートノードの配列上の位置
+	int skinRootNodeOffset;
 	std::vector<glm::mat4> inverseBindMatrices;
-	std::vector<GltfNode*> joints;
+	std::vector<int> jointNodeOffset;
 };
 
 //プリミティブをひとまとめにしたもの
@@ -133,12 +135,16 @@ struct NodeTransform
 
 struct GltfNode
 {
+	//このノードが配置されている配列上の位置
+	size_t offset;
+	//このindexはtinygltf上の番号
 	uint32_t index;
-	std::vector<GltfNode*> children;
+	//parentIndex実際の配列上の親ノードの位置
+	size_t parentIndex;
 	glm::mat4 matrix;//ローカル空間へ変換用行列
 	std::string name;
-	std::vector<Mesh*> meshArray;
-	Skin* skin;
+	std::vector<Mesh> meshArray;
+	Skin skin;
 	int skinIndex = -1;
 	int globalHasSkinNodeIndex = 0;
 	int firstIndex;
@@ -150,50 +156,33 @@ struct GltfNode
 	
 	GltfNode()
 	{
+		offset = 0;
 		matrix = glm::mat4(1.0f);
 		index = 0;
-		std::fill(meshArray.begin(),meshArray.end(),nullptr);
-		skin = nullptr;
+		parentIndex = -1;
 	}
 
 	~GltfNode()
 	{
-		for (auto mesh : meshArray)
-		{
-			delete mesh;
-		}
-	}
-
-	void setLocalMatrix(NodeTransform& nodeTransform, glm::mat4 parentMatrix)
-	{
-		//このノード個別の行列
-		glm::mat4 localMatrix = glm::translate(glm::mat4(1.0f), nodeTransform.translation[index]) *
-			glm::mat4(nodeTransform.rotation[index]) * glm::scale(glm::mat4(1.0f), nodeTransform.scale[index]) * matrix;
-
-		nodeTransform.nodeTransform[index] = parentMatrix * localMatrix;
-
-		nodeTransform.matrix[index] = matrix;
-
-		for (auto& child : children)
-		{
-			child->setLocalMatrix(nodeTransform, nodeTransform.nodeTransform[index]);
-		}
+		meshArray.clear();
 	}
 
 	void setLocalMatrix(NodeTransform& nodeTransform)
 	{
 		//このノード個別の行列
-		glm::mat4 localMatrix = glm::translate(glm::mat4(1.0f), nodeTransform.translation[index]) *
-			glm::mat4(nodeTransform.rotation[index]) * glm::scale(glm::mat4(1.0f), nodeTransform.scale[index]) * matrix;
+		glm::mat4 localMatrix = glm::translate(glm::mat4(1.0f), nodeTransform.translation[offset]) *
+			glm::mat4(nodeTransform.rotation[offset]) * glm::scale(glm::mat4(1.0f), nodeTransform.scale[offset]) * matrix;
 
-		nodeTransform.nodeTransform[index] = localMatrix;
+		glm::mat4 parentMatrix = glm::mat4(1.0f);
 
-		nodeTransform.matrix[index] = matrix;
-
-		for (auto& child : children)
+		if (parentIndex > -1)
 		{
-			child->setLocalMatrix(nodeTransform, nodeTransform.nodeTransform[index]);
+			parentMatrix = nodeTransform.nodeTransform[parentIndex];
 		}
+
+		nodeTransform.nodeTransform[offset] = parentMatrix * localMatrix;
+
+		nodeTransform.matrix[offset] = matrix;
 	}
 
 	//このノードが所属するスケルトンのアニメーション行列を計算する
@@ -203,7 +192,7 @@ struct GltfNode
 
 		//ボーンの行列の更新
 		glm::mat4 inverseTransform = glm::inverse(m);
-		size_t numJoints = std::min((uint32_t)skin->joints.size(), 128u);
+		size_t numJoints = std::min((uint32_t)skin.jointNodeOffset.size(), 128u);
 		if (numJoints <= updatedIndex)
 		{
 			return;
@@ -211,9 +200,7 @@ struct GltfNode
 
 		for (size_t i = 0; i < numJoints; i++)
 		{
-			GltfNode* jointNode = skin->joints[i];
-
-			glm::mat4 jointMat = nodeTransform.nodeTransform[jointNode->index] * skin->inverseBindMatrices[i];
+			glm::mat4 jointMat = nodeTransform.nodeTransform[skin.jointNodeOffset[i]] * skin.inverseBindMatrices[i];
 			jointMat = inverseTransform * jointMat;
 			jointMatrices[i] = jointMat;
 		}
@@ -224,12 +211,12 @@ struct GltfNode
 
 	int getJointCount()
 	{
-		if (!skin)
+		if (skin.name.size() == 0)
 		{
 			return 0;
 		}
 
-		return std::min((uint32_t)skin->joints.size(), 128u);
+		return std::min((uint32_t)skin.jointNodeOffset.size(), 128u);
 	}
 };
 
@@ -237,7 +224,7 @@ struct GltfNode
 struct AnimationChannel {
 	enum PathType { TRANSLATION, ROTATION, SCALE };
 	PathType path;
-	GltfNode* node;
+	size_t nodeOffset;
 	uint32_t samplerIndex;
 };
 
@@ -272,7 +259,7 @@ struct AnimationSampler {
 	}
 
 	//平行移動の補間
-	glm::vec3 translate(size_t index, double time, GltfNode* node)
+	glm::vec3 translate(size_t index, double time)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
@@ -289,7 +276,7 @@ struct AnimationSampler {
 	}
 
 	//拡大の補間
-	glm::vec3 scale(size_t index, double time, GltfNode* node)
+	glm::vec3 scale(size_t index, double time)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
@@ -306,7 +293,7 @@ struct AnimationSampler {
 	}
 
 	//回転の補間
-	glm::quat rotate(size_t index, double time, GltfNode* node)
+	glm::quat rotate(size_t index, double time)
 	{
 		switch (interpolation) {
 		case AnimationSampler::InterpolationType::LINEAR: {
@@ -357,7 +344,6 @@ struct Animation {
 class GltfModel
 {
 private:
-	GltfNode* root;
 
 	//gltfモデルの頂点関連用のバッファ
 	std::vector<std::shared_ptr<GpuBuffer>> vertBuffer;
@@ -370,18 +356,12 @@ private:
 	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 
-	void createBuffer(const GltfNode* node);
-	void createDescriptorSet(const GltfNode* node
-		, std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet);
-
 public:
 
-	GltfModel(GltfNode* rootNode 
-		,std::shared_ptr<GpuBufferFactory> bf
+	GltfModel(std::shared_ptr<GpuBufferFactory> bf
 		,std::shared_ptr<DescriptorSetLayoutFactory> layout
 		,std::shared_ptr<DescriptorSetFactory> desc)
 	{
-		this->root = rootNode; 
 		this->meshCount = 0;
 		this->primitiveCount = 0;
 		this->setup = false;
@@ -393,9 +373,9 @@ public:
 	}
 	~GltfModel();
 
-	void setPointBufferNum();
+	std::vector<GltfNode> nodes;
 
-	void deleteNodes(GltfNode* node);
+	void setPointBufferNum();
 
 	bool setup;
 	
@@ -412,7 +392,7 @@ public:
 	//アニメーションの名前をキーとして、アニメーションを記録
 	std::unordered_map<std::string,Animation> animations;
 	//スケルトン 通常は一つ
-	std::vector<Skin*> skins;
+	std::vector<Skin> skins;
 
 	//同じくマテリアルデータ Primitive構造体のmaterialIndexから指定される
 	std::vector<std::shared_ptr<Material>> materials;
@@ -420,9 +400,8 @@ public:
 	BoundingBox boundingBox;
 	glm::vec3 initPoseMin, initPoseMax;
 
-	GltfNode* getRootNode() { return root; }
-	GltfNode* nodeFromIndex(int index);
-	GltfNode* findNode(GltfNode* parent,int index);
+	int nodeFromIndex(const int& index);
+	int findNode(const int& index);
 
 	void createBuffer();
 	void createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet);
@@ -439,11 +418,9 @@ public:
 
 	//AABBの計算
 	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
-	//gltfモデルの初期ポーズの頂点の座標の最小値最大値の取得
-	void getVertexMinMax(GltfNode* node);
-	
+
 	//アニメーションの各ノードの更新処理
-	void updateAllNodes(GltfNode* parent, NodeTransform& nodeTransform
+	void updateAllNodes(NodeTransform& nodeTransform
 		, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex);
 
 	//アニメーションの長さを取得

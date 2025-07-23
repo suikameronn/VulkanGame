@@ -1,10 +1,7 @@
 #include"PipelineLayoutBuilder.h"
 
-PipelineLayoutBuilder::PipelineLayoutBuilder(VkDevice& d, std::shared_ptr<DescriptorSetLayoutFactory> f)
+PipelineLayoutBuilder::PipelineLayoutBuilder()
 {
-	device = d;
-
-    layoutFactory = f;
 }
 
 //レイアウトを初期化する
@@ -26,9 +23,5 @@ PipelineLayoutBuilder PipelineLayoutBuilder::addLayout(const std::shared_ptr<Des
 //パイプラインレイアウトを作成する
 std::vector<std::shared_ptr<DescriptorSetLayout>> PipelineLayoutBuilder::Build()
 {
-	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts = layoutArray;
-
-	initProperty();
-
-	return layouts;
+	return layoutArray;
 }

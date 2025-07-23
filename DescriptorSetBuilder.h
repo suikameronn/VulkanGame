@@ -78,8 +78,6 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	VkDescriptorPool descriptorPool;
 
 	DescriptorSetBufferProperty bufferProperty;
@@ -92,7 +90,7 @@ private:
 
 public:
 
-	DescriptorSetBuilder(std::shared_ptr<VulkanCore> core);
+	DescriptorSetBuilder(VkDevice& d);
 
 	DescriptorSetProperty Build();
 

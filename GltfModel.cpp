@@ -2,57 +2,33 @@
 
 GltfModel::~GltfModel()
 {
-	deleteNodes(root);
+	nodes.clear();
 
-	for (size_t i = 0; i < skins.size(); i++)
-	{
-		delete skins[i];
-	}
+	skins.clear();
 }
 
-void GltfModel::deleteNodes(GltfNode* node)
+int GltfModel::findNode(const int& index)
 {
-	for (size_t i = 0; i < node->children.size(); i++)
+	for (int i = 0; i < nodes.size(); i++)
 	{
-		deleteNodes(node->children[i]);
-	}
-
-	delete node;
-}
-
-GltfNode* GltfModel::findNode(GltfNode* parent,int index)
-{
-	GltfNode* dstNode = nullptr;
-
-	if (parent->index == index)
-	{
-		return parent;
-	}
-
-	for (size_t i = 0; i < parent->children.size(); i++)
-	{
-		dstNode = findNode(parent->children[i], index);
-		if (dstNode)
+		if (nodes[i].index == index)
 		{
-			break;
+			return i;
 		}
 	}
 
-	return dstNode;
+	return -1;
 }
 
-GltfNode* GltfModel::nodeFromIndex(int index)
+int GltfModel::nodeFromIndex(const int& index)
 {
-	GltfNode* node = nullptr;
-
-	node = findNode(root,index);
-
-	return node;
+	return findNode(index);
 }
 
 //アニメーションの各ノードの更新処理
-void GltfModel::updateAllNodes(GltfNode* parent, NodeTransform& nodeTransform, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex)
+void GltfModel::updateAllNodes(NodeTransform& nodeTransform, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex)
 {
+	/*
 	if (parent->meshArray.size() != 0 && parent->skin)
 	{
 		//このノードの所属するジョイントのアニメーション行列を計算
@@ -62,6 +38,15 @@ void GltfModel::updateAllNodes(GltfNode* parent, NodeTransform& nodeTransform, s
 	for (size_t i = 0; i < parent->children.size(); i++)
 	{
 		updateAllNodes(parent->children[i], nodeTransform, jointMatrices, updatedIndex);
+	}
+	*/
+
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i].meshArray.size() != 0 && nodes[i].skinIndex > -1)
+		{
+			nodes[i].update(nodeTransform, jointMatrices[nodes[i].globalHasSkinNodeIndex], updatedIndex);
+		}
 	}
 }
 
@@ -101,17 +86,18 @@ void GltfModel::updateAnimation(double animationTime, std::string animationName
 				float u = static_cast<float>(std::max(0.0, animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]));
 				if (u <= 1.0f) {
 
-					int nodeIndex = channel.node->index;
+					//GltfNodeの配列上のノードの番号を求める
+					size_t nodeIndex = channel.nodeOffset;
 
 					switch (channel.path) {
 					case AnimationChannel::PathType::TRANSLATION://平行移動
-						nodeTransform.translation[nodeIndex] = sampler.translate(i, animationTime, channel.node);
+						nodeTransform.translation[nodeIndex] = sampler.translate(i, animationTime);
 						break;
 					case AnimationChannel::PathType::SCALE://スケール
-						nodeTransform.scale[nodeIndex] = sampler.scale(i, animationTime, channel.node);
+						nodeTransform.scale[nodeIndex] = sampler.scale(i, animationTime);
 						break;
 					case AnimationChannel::PathType::ROTATION://回転
-						nodeTransform.rotation[nodeIndex] = sampler.rotate(i, animationTime, channel.node);
+						nodeTransform.rotation[nodeIndex] = sampler.rotate(i, animationTime);
 						break;
 					}
 					updated = true;
@@ -123,24 +109,12 @@ void GltfModel::updateAnimation(double animationTime, std::string animationName
 	if (updated) {
 		size_t updatedIndex = 0;
 
-		root->setLocalMatrix(nodeTransform);
+		for (int i = 0; i < nodes.size(); i++)
+		{
+			nodes[i].setLocalMatrix(nodeTransform);
+		}
 
-		updateAllNodes(root, nodeTransform, jointMatrices, updatedIndex);
-	}
-}
-
-//gltfモデルの初期ポーズの頂点の座標の最小値最大値の取得
-void GltfModel::getVertexMinMax(GltfNode* node)
-{
-	if (node->bvh.valid)
-	{
-		initPoseMin = glm::min(initPoseMin, node->bvh.min);
-		initPoseMax = glm::max(initPoseMax, node->bvh.max);
-	}
-
-	for (int i = 0; i < node->children.size(); i++)
-	{
-		getVertexMinMax(node->children[i]);
+		updateAllNodes(nodeTransform, jointMatrices, updatedIndex);
 	}
 }
 
@@ -155,78 +129,53 @@ void GltfModel::setPointBufferNum()
 
 void GltfModel::createBuffer()
 {
-	createBuffer(root);
-
-	for (auto& child: root->children)
+	for(int i = 0; i < nodes.size(); i++)
 	{
-		createBuffer(child);
-	}
-}
-
-void GltfModel::createBuffer(const GltfNode* node)
-{
-	if (node->meshArray.size() != 0)
-	{
-		for (auto& mesh : node->meshArray)
+		if (nodes[i].meshArray.size() != 0)
 		{
-			vertBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-				, BufferUsage::VERTEX, BufferTransferType::DST);
+			for (auto& mesh : nodes[i].meshArray)
+			{
+				vertBuffer[mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh.vertices.size()
+					, BufferUsage::VERTEX, BufferTransferType::DST);
 
-			indeBuffer[mesh->meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh->vertices.size()
-				, BufferUsage::INDEX, BufferTransferType::DST);
+				indeBuffer[mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh.vertices.size()
+					, BufferUsage::INDEX, BufferTransferType::DST);
+			}
 		}
-	}
-
-	for (auto& child : node->children)
-	{
-		createBuffer(child);
 	}
 }
 
 void GltfModel::createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet)
 {
-	createDescriptorSet(root, descriptorSet);
-
-	for (auto& child : root->children)
+	for (int i = 0; i < nodes.size(); i++)
 	{
-		createDescriptorSet(child, descriptorSet);
-	}
-}
+		if (nodes[i].meshArray.size() != 0)
+		{
+			const std::shared_ptr<DescriptorSetLayout> layout =
+				layoutFactory->Create(LayoutPattern::RAYCAST);
 
-void GltfModel::createDescriptorSet(const GltfNode* node
-	, std::vector<std::shared_ptr<DescriptorSet>>& descriptorSet)
-{
-	if (node->meshArray.size() != 0)
-	{
-		const std::shared_ptr<DescriptorSetLayout> layout =
-			layoutFactory->Create(LayoutPattern::RAYCAST);
-
-			for (auto& mesh : node->meshArray)
+			for (auto& mesh : nodes[i].meshArray)
 			{
 				const DescriptorSetProperty descProperty = descriptorSetFactory->getBuilder()
 					->initProperty()
 					.withBindingBuffer(0)
 					.withDescriptorSetCount(1)
 					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-					.withBuffer(vertBuffer[mesh->meshIndex])
-					.withRange(sizeof(Vertex) * mesh->vertices.size())
+					.withBuffer(vertBuffer[mesh.meshIndex])
+					.withRange(sizeof(Vertex) * static_cast<uint32_t>(mesh.vertices.size()))
 					.addBufferInfo()
 					.withBindingBuffer(1)
 					.withDescriptorSetCount(1)
 					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 					.addBufferInfo()
 					.withDescriptorSetLayout(layout)
-					.withBuffer(indeBuffer[mesh->meshIndex])
-					.withRange(sizeof(uint32_t) * mesh->indices.size())
+					.withBuffer(indeBuffer[mesh.meshIndex])
+					.withRange(sizeof(uint32_t) * static_cast<uint32_t>(mesh.indices.size()))
 					.addBufferInfo()
 					.Build();
 
-				descriptorSet[mesh->meshIndex] = descriptorSetFactory->Create(descProperty);
+				descriptorSet[mesh.meshIndex] = descriptorSetFactory->Create(descProperty);
 			}
-	}
-
-	for (auto& child : node->children)
-	{
-		createDescriptorSet(child, descriptorSet);
+		}
 	}
 }

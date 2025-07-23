@@ -38,45 +38,6 @@ struct TexCoordSets
 	};
 };
 
-//シェーダ上でアクセスるためのマテリアル
-//テクスチャに対する係数がメイン
-struct ShaderMaterial
-{
-	glm::vec4 baseColorFactor;
-	glm::vec4 emissiveFactor;
-	glm::vec4 diffuseFactor;
-	glm::vec4 specularFactor;
-	int colorTextureSet;
-	int PhysicalDescriptorTextureSet;
-	int normalTextureSet;
-	int occlusionTextureSet;
-	int emissiveTextureSet;
-	float metallicFactor;
-	float roughnessFactor;
-	float alphaMask;
-	float alphaMaskCutoff;
-	float emissiveStrength;
-
-	void init(const MaterialProperty& prop)
-	{
-		baseColorFactor = prop.baseColorFactor;
-		emissiveFactor = prop.emissiveFactor;
-		diffuseFactor = glm::vec4(1.0f);
-		specularFactor = glm::vec4(1.0f);
-		
-		colorTextureSet = prop.texCoordSet.baseColor;
-		PhysicalDescriptorTextureSet = prop.texCoordSet.metallicRoughness;
-		normalTextureSet = prop.texCoordSet.normal;
-		occlusionTextureSet = prop.texCoordSet.occlusion;
-		emissiveTextureSet = prop.texCoordSet.emissive;
-		metallicFactor = prop.metallicFactor;
-		roughnessFactor = prop.roughnessFactor;
-		alphaMaskCutoff = prop.alphaMaskCutoff;
-		alphaMask = 1.0f - alphaMaskCutoff; //透明度の最大値
-		emissiveStrength = prop.emissiveStrength;
-	}
-};
-
 struct MaterialProperty
 {
 	TexCoordSets texCoordSet;
@@ -148,11 +109,50 @@ struct MaterialProperty
 	}
 };
 
+//シェーダ上でアクセスるためのマテリアル
+//テクスチャに対する係数がメイン
+struct ShaderMaterial
+{
+	glm::vec4 baseColorFactor;
+	glm::vec4 emissiveFactor;
+	glm::vec4 diffuseFactor;
+	glm::vec4 specularFactor;
+	int colorTextureSet;
+	int PhysicalDescriptorTextureSet;
+	int normalTextureSet;
+	int occlusionTextureSet;
+	int emissiveTextureSet;
+	float metallicFactor;
+	float roughnessFactor;
+	float alphaMask;
+	float alphaMaskCutoff;
+	float emissiveStrength;
+
+	void init(const MaterialProperty& prop)
+	{
+		baseColorFactor = prop.baseColorFactor;
+		emissiveFactor = prop.emissiveFactor;
+		diffuseFactor = glm::vec4(1.0f);
+		specularFactor = glm::vec4(1.0f);
+		
+		colorTextureSet = prop.texCoordSet.baseColor;
+		PhysicalDescriptorTextureSet = prop.texCoordSet.metallicRoughness;
+		normalTextureSet = prop.texCoordSet.normal;
+		occlusionTextureSet = prop.texCoordSet.occlusion;
+		emissiveTextureSet = prop.texCoordSet.emissive;
+		metallicFactor = prop.metallicFactor;
+		roughnessFactor = prop.roughnessFactor;
+		alphaMaskCutoff = prop.alphaMaskCutoff;
+		alphaMask = 1.0f - alphaMaskCutoff; //透明度の最大値
+		emissiveStrength = prop.emissiveStrength;
+	}
+};
+
 //gltfモデルのマテリアル
 class Material
 {
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 
 	//gpu上のテクスチャに対する係数用のバッファ

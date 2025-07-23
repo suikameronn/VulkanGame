@@ -13,15 +13,13 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	std::shared_ptr<DescriptorSetBuilder> builder;
 
 	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 
 public:
 
-	DescriptorSetFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<DescriptorSetBuilder> b
+	DescriptorSetFactory(VkDevice& d, std::shared_ptr<DescriptorSetBuilder> b
 		, std::shared_ptr<DescriptorSetLayoutFactory> lf);
 
 	std::shared_ptr<DescriptorSetBuilder> getBuilder()

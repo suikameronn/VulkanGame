@@ -18,8 +18,6 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	//ビルダー
 	std::shared_ptr<TextureBuilder> builder;
 
@@ -40,7 +38,7 @@ private:
 
 public:
 
-	TextureFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureBuilder> b);
+	TextureFactory(VkDevice& d, std::shared_ptr<TextureBuilder> b);
 
 	//ビルダーを取得
 	std::shared_ptr<TextureBuilder> getBuilder()

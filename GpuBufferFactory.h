@@ -32,7 +32,7 @@ private:
 	std::shared_ptr<VulkanCore> vulkanCore;
 
 	//ビルダー
-	std::unique_ptr<GpuBufferBuilder> builder;
+	std::shared_ptr<GpuBufferBuilder> builder;
 
 	//物理デバイス
 	VkPhysicalDevice physicalDevice;
@@ -59,7 +59,7 @@ private:
 
 public:
 
-	GpuBufferFactory(std::shared_ptr<VulkanCore> vulkanCore);
+	GpuBufferFactory(std::shared_ptr<VulkanCore> vulkanCore, std::shared_ptr<GpuBufferBuilder> b);
 
 	//バッファの設定を直接指定して、バッファを作成する
 	std::shared_ptr<GpuBuffer> Create(VkDeviceSize bufferSize, const void* srcPtr
@@ -114,8 +114,6 @@ struct GpuBuffer
 
 struct CommandBuffer
 {
-
-
 	VkCommandBuffer commandBuffer;
 
 	std::shared_ptr<GpuBufferFactory> factory;

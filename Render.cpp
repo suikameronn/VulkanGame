@@ -1,13 +1,8 @@
 #include"Render.h"
 
-Render::Render(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactory> bf
-	, std::shared_ptr<GltfModelFactory> model, std::shared_ptr<ECSManager> ecs)
+Render::Render(std::shared_ptr<VulkanCore> core)
 {
 	vulkanCore = core;
-
-	modelFactory = model;
-
-	ecsManager = ecs;
 
 	device = core->getLogicDevice();
 
@@ -110,19 +105,6 @@ void Render::RenderStart(const RenderProperty& property)
 	vkCmdBeginRenderPass(property.commandBuffer->commandBuffer, &property.info
 		, VK_SUBPASS_CONTENTS_INLINE);
 }
-
-void Render::Rendering()  
-{
-	ecsManager->RunFunction<GltfModelComp>
-		(
-			{ [](GltfModelComp& Comp)
-			{
-
-			}
-			}
-		);
-}
-
 
 //ƒŒƒ“ƒ_ƒŠƒ“ƒOI—¹
 void Render::RenderEnd()

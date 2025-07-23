@@ -61,12 +61,6 @@
     <Filter Include="ソース ファイル\Material">
       <UniqueIdentifier>{bd8b6443-0054-4369-bcaf-df0e8617d367}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\Component">
-      <UniqueIdentifier>{c8a87ec3-71f0-4b89-9c57-7f4793836b8b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\CompSystem">
-      <UniqueIdentifier>{a19d2831-7f63-4b1f-a973-2d9972299566}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ヘッダー ファイル\CompSystem">
       <UniqueIdentifier>{8e4428d0-2ab3-48ea-8696-b9cd821a99ce}</UniqueIdentifier>
     </Filter>
@@ -78,6 +72,18 @@
     </Filter>
     <Filter Include="ヘッダー ファイル\ECS\Component">
       <UniqueIdentifier>{a145ed77-5ed9-40fb-ac81-ec14ff8c1283}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\ECS\System">
+      <UniqueIdentifier>{ee6a6bec-6aaf-48b3-9dca-241e75dfe628}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\ECS">
+      <UniqueIdentifier>{875cd865-6c77-4b1b-87e9-fc79b06ece9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\ECS\CompSystem">
+      <UniqueIdentifier>{a19d2831-7f63-4b1f-a973-2d9972299566}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\ECS\Component">
+      <UniqueIdentifier>{c8a87ec3-71f0-4b89-9c57-7f4793836b8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -159,18 +165,6 @@
     <ClCompile Include="EnvironmentLightSet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="TransformComponent.cpp">
-      <Filter>ソース ファイル\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GltfModelComponent.cpp">
-      <Filter>ソース ファイル\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="AnimationComponent.cpp">
-      <Filter>ソース ファイル\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="ColiderComponent.cpp">
-      <Filter>ソース ファイル\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Material.cpp">
       <Filter>ソース ファイル\Material</Filter>
     </ClCompile>
@@ -180,11 +174,8 @@
     <ClCompile Include="GltfModelFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ControllerComponent.cpp">
-      <Filter>ソース ファイル\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GltfModelSystem.cpp">
-      <Filter>ソース ファイル\CompSystem</Filter>
+    <ClCompile Include="ECSManager.cpp">
+      <Filter>ソース ファイル\ECS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -222,9 +213,6 @@
       <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
     </ClInclude>
     <ClInclude Include="StructList.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="GpuPipeline.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="PipelineFactory.h">
@@ -337,6 +325,9 @@
     </ClInclude>
     <ClInclude Include="GameManager.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="GltfModelLoadSystem.h">
+      <Filter>ヘッダー ファイル\ECS\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

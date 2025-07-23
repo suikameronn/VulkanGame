@@ -2,11 +2,8 @@
 
 #include<chrono>
 #include <thread>
-#include <any>
 
-#include "lua/include/lua.hpp"
-#include "lua/include/lualib.h"
-#include "lua/include/lauxlib.h"
+#include<memory>
 
 #include"DescriptorSetFactory.h"
 #include"FrameBufferFactory.h"
@@ -16,6 +13,13 @@
 #include"PipelineFactory.h"
 #include"RenderPassFactory.h"
 #include"ShaderFactory.h"
+#include"TextureFactory.h"
+
+#include"GltfModelFactory.h"
+#include"MaterialBuilder.h"
+
+#include"SwapChain.h"
+#include"Render.h"
 
 #include"ECSManager.h"
 
@@ -40,7 +44,8 @@ private:
 	std::shared_ptr<PipelineLayoutBuilder> pipelineLayoutBuilder;
 	std::shared_ptr<PipelineBuilder> pipelineBuilder;
 	std::shared_ptr<RenderPassBuilder> renderPassBuilder;
-	
+	std::shared_ptr<TextureBuilder> textureBuilder;
+
 	//ファクトリー
 
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
@@ -50,6 +55,20 @@ private:
 	std::shared_ptr<PipelineLayoutFactory> pipelineLayoutFactory;
 	std::shared_ptr<PipelineFactory> pipelineFactory;
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
+	std::shared_ptr<ShaderFactory> shaderFactory;
+	std::shared_ptr<TextureFactory> textureFactory;
+
+	//スワップチェーンのクラス
+	std::shared_ptr<SwapChain> swapChain;
+
+	//レンダークラス
+	std::shared_ptr<Render> render;
+
+	//マテリアルビルダー
+	std::shared_ptr<MaterialBuilder> materialBuilder;
+
+	//Gltfモデルファクトリー
+	std::shared_ptr<GltfModelFactory> modelFactory;
 
 	//最大フレームレート
 	const int fps = 60;
@@ -60,7 +79,8 @@ private:
 	//計測したフレーム時間
 	long long elapsed;
 
-	GameManager() {};
+	//インスタンスを作成する
+	void createInstance();
 
 	//ビルダーの用意
 	void createBuilder();
@@ -68,6 +88,21 @@ private:
 	void createFactory();
 
 	void setLoadUI();
+
+	//コンポーネントの初回処理
+	void OnStart();
+
+	//コンポーネントの更新処理
+	void OnUpdate();
+
+	//更新処理後の処理
+	void OnLateUpdate();
+
+	//オブジェクトのレンダリング
+	void Rendering();
+
+	//フレーム終了時の処理
+	void OnFrameEnd();
 
 public:
 

@@ -8,15 +8,12 @@ class DescriptorSetLayoutBuilder
 {
 private:
 
-	//論理デバイス
-	VkDevice device;
-
 	//プロパティを保存する配列
 	std::vector<std::pair<VkDescriptorType, VkShaderStageFlagBits>> properties;
 
 public:
 
-	DescriptorSetLayoutBuilder(VkDevice& d);
+	DescriptorSetLayoutBuilder();
 
 	//プロパティの初期化
 	DescriptorSetLayoutBuilder initProperty();

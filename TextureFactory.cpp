@@ -1,14 +1,10 @@
 #include"TextureFactory.h"
 
-TextureFactory::TextureFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureBuilder> b)
+TextureFactory::TextureFactory(VkDevice& d, std::shared_ptr<TextureBuilder> b)
 {
-	frameIndex = 1;
-
-	vulkanCore = core;
-
 	builder = b;
 
-	device = vulkanCore->getLogicDevice();
+	device = d;
 }
 
 //プリセットのプロパティを取得

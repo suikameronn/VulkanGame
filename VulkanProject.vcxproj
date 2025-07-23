@@ -158,12 +158,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AnimationComponent.cpp" />
-    <ClCompile Include="ColiderComponent.cpp" />
-    <ClCompile Include="ControllerComponent.cpp" />
-    <ClCompile Include="GltfModelComponent.cpp" />
+    <ClCompile Include="ECSManager.cpp" />
     <ClCompile Include="GltfModelFactory.cpp" />
-    <ClCompile Include="GltfModelSystem.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="MaterialBuilder.cpp" />
     <ClCompile Include="DescriptorSetBuilder.cpp" />
@@ -191,7 +187,6 @@
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TextureBuilder.cpp" />
     <ClCompile Include="TextureFactory.cpp" />
-    <ClCompile Include="TransformComponent.cpp" />
     <ClCompile Include="VulkanCore.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +200,7 @@
     <ClInclude Include="GltfModelComp.h" />
     <ClInclude Include="GltfModelComponent.h" />
     <ClInclude Include="GltfModelFactory.h" />
+    <ClInclude Include="GltfModelLoadSystem.h" />
     <ClInclude Include="GltfModelSystem.h" />
     <ClInclude Include="IBL.h" />
     <ClInclude Include="IComponent.h" />
@@ -223,7 +219,6 @@
     <ClInclude Include="GpuBufferFactory.h" />
     <ClInclude Include="DescriptorSetLayoutBuilder.h" />
     <ClInclude Include="DescriptorSetLayoutFactory.h" />
-    <ClInclude Include="GpuPipeline.h" />
     <ClInclude Include="PipelineBuilder.h" />
     <ClInclude Include="PipelineFactory.h" />
     <ClInclude Include="PipelineLayoutBuilder.h" />

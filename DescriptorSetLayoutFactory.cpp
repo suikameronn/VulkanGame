@@ -1,13 +1,15 @@
 #include"DescriptorSetLayoutFactory.h"
 
-DescriptorSetLayoutFactory::DescriptorSetLayoutFactory(VkDevice& d,std::shared_ptr<DescriptorSetLayoutBuilder> b)
+DescriptorSetLayoutFactory::DescriptorSetLayoutFactory(VkDevice& d, std::shared_ptr<DescriptorSetLayoutBuilder> b)
 {
+
 	device = d;
 
 	builder = b;
 
 	frameIndex = 1;
 }
+
 
 DescriptorSetLayoutFactory::~DescriptorSetLayoutFactory()
 {

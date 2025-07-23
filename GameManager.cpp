@@ -6,42 +6,70 @@ void GameManager::initGame()//ゲーム全体の初期化処理
 {
 	vulkanCore = std::make_shared<VulkanCore>();
 
-	createBuilder();//ビルダーの用意
-	createFactory();//ファクトリーの用意
-
     frameDuration = (1.0f / (fps + 1)) * 1000.0f;//指定したfpsから、一フレームにかけられる時間を計算する
 
     bool load = false;
 
 	ecsManager = std::make_shared<ECSManager>();
 
+	createInstance();//インスタンスの作成
+
 	createScene();//シーンの作成
 
     mainGameLoop();//ゲームのメインループを開始
 }
 
+//インスタンスを作成する
+void GameManager::createInstance()
+{
+    createBuilder();//ビルダーの用意
+    createFactory();//ファクトリーの用意
+
+	VkDevice& device = vulkanCore->getLogicDevice();
+
+	pipelineBuilder = std::make_shared<PipelineBuilder>(device, shaderFactory);
+
+	textureBuilder = std::make_shared<TextureBuilder>(vulkanCore, bufferFactory);
+	textureFactory = std::make_shared<TextureFactory>(device, textureBuilder);
+
+    materialBuilder = std::make_shared<MaterialBuilder>(bufferFactory, descriptorSetLayoutFactory
+        , descriptorSetFactory, textureFactory);
+
+	modelFactory = std::make_shared<GltfModelFactory>(materialBuilder, textureFactory
+		, bufferFactory, descriptorSetLayoutFactory, descriptorSetFactory);
+
+    swapChain = std::make_shared<SwapChain>(vulkanCore, textureFactory, renderPassFactory, frameBufferFactory);
+
+	render = std::shared_ptr<Render>(new Render(vulkanCore));
+}
+
 //ビルダーの用意
 void GameManager::createBuilder()
 {
-	descriptorSetBuilder = std::make_shared<DescriptorSetBuilder>(vulkanCore);
-	frameBufferBuilder = std::make_shared<FrameBufferBuilder>(vulkanCore);
-	bufferBuilder = std::make_shared<GpuBufferBuilder>(vulkanCore);
-	descriptorSetLayoutBuilder = std::make_shared<DescriptorSetLayoutBuilder>(vulkanCore);
-	pipelineLayoutBuilder = std::make_shared<PipelineLayoutBuilder>(vulkanCore);
-	pipelineBuilder = std::make_shared<PipelineBuilder>(vulkanCore);
-	renderPassBuilder = std::make_shared<RenderPassBuilder>(vulkanCore);
+	VkPhysicalDevice physicalDevice = vulkanCore->getPhysicalDevice();
+	VkDevice device = vulkanCore->getLogicDevice();
+
+	descriptorSetBuilder = std::make_shared<DescriptorSetBuilder>(device);
+	frameBufferBuilder = std::make_shared<FrameBufferBuilder>(device);
+	bufferBuilder = std::make_shared<GpuBufferBuilder>(physicalDevice, device);
+	descriptorSetLayoutBuilder = std::make_shared<DescriptorSetLayoutBuilder>();
+	pipelineLayoutBuilder = std::make_shared<PipelineLayoutBuilder>();
+	renderPassBuilder = std::make_shared<RenderPassBuilder>(device);
 }
 
 //ファクトリーの用意
 void GameManager::createFactory()
 {
-	descriptorSetFactory = std::make_shared<DescriptorSetFactory>(vulkanCore, descriptorSetBuilder);
-	frameBufferFactory = std::make_shared<FrameBufferFactory>(vulkanCore, frameBufferBuilder);
+	VkDevice device = vulkanCore->getLogicDevice();
+
+	descriptorSetLayoutFactory = std::make_shared<DescriptorSetLayoutFactory>(device, descriptorSetLayoutBuilder);
+	descriptorSetFactory = std::make_shared<DescriptorSetFactory>(device, descriptorSetBuilder, descriptorSetLayoutFactory);
+	frameBufferFactory = std::make_shared<FrameBufferFactory>(device, frameBufferBuilder);
 	bufferFactory = std::make_shared<GpuBufferFactory>(vulkanCore, bufferBuilder);
-	descriptorSetLayoutFactory = std::make_shared<DescriptorSetLayoutFactory>(vulkanCore, descriptorSetLayoutBuilder);
-	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(vulkanCore, pipelineLayoutBuilder);
-	pipelineFactory = std::make_shared<PipelineFactory>(vulkanCore, pipelineBuilder);
-	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
+	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(device, pipelineLayoutBuilder, descriptorSetLayoutFactory);
+	renderPassFactory = std::make_shared<RenderPassFactory>(device, renderPassBuilder);
+	shaderFactory = std::make_shared<ShaderFactory>(device);
+	pipelineFactory = std::make_shared<PipelineFactory>(device, pipelineLayoutFactory, shaderFactory, pipelineBuilder, renderPassFactory);
 }
 
 //シーンの作成
@@ -62,6 +90,14 @@ void GameManager::mainGameLoop()//メインゲームループ
             break;
         }
 
+		OnUpdate();//コンポーネントの更新処理
+
+		OnLateUpdate();//更新処理後の処理
+
+		Rendering();//オブジェクトのレンダリング
+
+		OnFrameEnd();//フレーム終了時の処理
+
         end = std::chrono::system_clock::now();//フレーム終了時間を計測
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間を計算する
         if (elapsed < frameDuration)
@@ -78,7 +114,47 @@ void GameManager::mainGameLoop()//メインゲームループ
     exitScene();
 }
 
-//シーンを狩猟させる処理
+//コンポーネントの初回処理
+void GameManager::OnStart()
+{
+	//ecsManager->RunFunction<
+}
+
+//コンポーネントの更新処理
+void GameManager::OnUpdate()
+{
+
+}
+
+//更新処理後の処理
+void GameManager::OnLateUpdate()
+{
+
+}
+
+//オブジェクトのレンダリング
+void GameManager::Rendering()
+{
+	//ecsManager->RunFunction<
+
+	//リソースの破棄
+	descriptorSetLayoutFactory->resourceDestruct();
+	bufferFactory->resourceDestruct();
+	frameBufferFactory->resourceDestruct();
+	pipelineLayoutFactory->resourceDestruct();
+	pipelineFactory->resourceDestruct();
+	renderPassFactory->resourceDestruct();
+	shaderFactory->resourceDestruct();
+	textureFactory->resourceDestruct();
+}
+
+//フレーム終了時の処理
+void GameManager::OnFrameEnd()
+{
+
+}
+
+//シーンを終了させる処理
 void GameManager::exitScene()
 {
     //ゲームを終了させる
