@@ -50,13 +50,11 @@ private:
 
 	VkDevice device;
 
-	std::shared_ptr<VulkanCore> vulkanCore;
-
 	RenderProperty property;
 
 public:
 
-	Render(std::shared_ptr<VulkanCore> core);
+	Render(VkDevice& d);
 
 	~Render() = default;
 

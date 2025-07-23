@@ -182,8 +182,7 @@ public:
 		bufferFactory->copyMemory(
 			sizeof(ShaderMaterial),
 			&shaderMaterial,
-			shaderMaterialBuffer,
-			false
+			shaderMaterialBuffer
 		);
 	}
 

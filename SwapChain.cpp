@@ -13,6 +13,7 @@ SwapChain::SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFa
     physicalDevice = vulkanCore->getPhysicalDevice();
     device = vulkanCore->getLogicDevice();
     window = vulkanCore->getWindow();
+    surface = vulkanCore->getSurface();
 
 	createSwapChain();
 }
@@ -191,18 +192,18 @@ void SwapChain::createColorAttachment()
 	const VkSampleCountFlagBits msaaSampleCount = vulkanCore->getMaxMsaaSamples();
 
     TextureProperty property = textureFactory->getBuilder()->initProperty()
-        .withWidthHeight(swapChainExtent.width, swapChainExtent.height)
+        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
         .withFormat(swapChainImageFormat)
         .withNumSamples(msaaSampleCount)
         .withTiling(VK_IMAGE_TILING_OPTIMAL)
         .withUsage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
         .withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         .withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-        .withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        .withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         .withViewType(VK_IMAGE_VIEW_TYPE_2D)
         .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
         .withLayerCount(1)
-		.Build();
+        .Build();
 
     colorAttachment = textureFactory->ImageViewCreate(property);
 }
@@ -213,8 +214,8 @@ void SwapChain::createDepthAttachment()
     const VkSampleCountFlagBits msaaSampleCount = vulkanCore->getMaxMsaaSamples();
 
     TextureProperty property = textureFactory->getBuilder()->initProperty()
-        .withWidthHeight(swapChainExtent.width, swapChainExtent.height)
-        .withFormat(swapChainImageFormat)
+        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        .withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
         .withNumSamples(msaaSampleCount)
         .withTiling(VK_IMAGE_TILING_OPTIMAL)
         .withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -222,7 +223,7 @@ void SwapChain::createDepthAttachment()
         .withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
         .withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         .withViewType(VK_IMAGE_VIEW_TYPE_2D)
-        .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+        .withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
         .withLayerCount(1)
         .Build();
 

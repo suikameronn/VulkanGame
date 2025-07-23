@@ -1,8 +1,10 @@
 #include"RenderPassFactory.h"
 
-RenderPassFactory::RenderPassFactory(VkDevice& d, std::shared_ptr<RenderPassBuilder> b)
+RenderPassFactory::RenderPassFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<RenderPassBuilder> b)
 {
-	device = d;
+	vulkanCore = core;
+
+	device = vulkanCore->getLogicDevice();
 
 	builder = b;
 
@@ -17,7 +19,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R8G8B8A8_UNORM)
-			.withMultiSamples(VK_SAMPLE_COUNT_8_BIT)
+			.withMultiSamples(vulkanCore->getMaxMsaaSamples())
 			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
@@ -26,8 +28,8 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 			.addColorAttachment();
 
-		builder->withFormat(VK_FORMAT_D32_SFLOAT)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+		builder->withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
+			.withMultiSamples(vulkanCore->getMaxMsaaSamples())
 			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)

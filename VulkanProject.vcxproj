@@ -159,6 +159,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ECSManager.cpp" />
+    <ClCompile Include="FrameBufferFactory.cpp" />
     <ClCompile Include="GltfModelFactory.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="MaterialBuilder.cpp" />
@@ -212,7 +213,6 @@
     <ClInclude Include="EnviromentLightSetFactory.h" />
     <ClInclude Include="EnvironmentLightSet.h" />
     <ClInclude Include="FrameBufferBuilder.h" />
-    <ClInclude Include="FrameBufferFactory.cpp" />
     <ClInclude Include="FrameBufferFactory.h" />
     <ClInclude Include="GltfModel.h" />
     <ClInclude Include="GpuBufferBuilder.h" />

@@ -5,6 +5,8 @@ TextureFactory::TextureFactory(VkDevice& d, std::shared_ptr<TextureBuilder> b)
 	builder = b;
 
 	device = d;
+
+	frameIndex = 1;
 }
 
 //プリセットのプロパティを取得

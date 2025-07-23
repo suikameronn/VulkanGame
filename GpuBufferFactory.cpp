@@ -33,28 +33,15 @@ void GpuBufferFactory::copyBuffer(const VkDeviceSize size, const GpuBuffer& src
 
 //メモリのデータをコピー
 void GpuBufferFactory::copyMemory(const VkDeviceSize size, const void* src
-	, std::shared_ptr<GpuBuffer> dst, const bool unmapped)
+	, std::shared_ptr<GpuBuffer> dst)
 {
-	vkMapMemory(device, dst->memory, 0, size, 0, &dst->mappedPtr);
 	memcpy(dst->mappedPtr, src, size);
-
-	if (unmapped)
-	{
-		vkUnmapMemory(device, dst->memory);
-	}
 }
 
 //ステージングバッファをコピー先として想定
-void GpuBufferFactory::copyMemory(const VkDeviceSize size, const void* src
-	, GpuBuffer& dst, const bool unmapped)
+void GpuBufferFactory::copyMemory(const VkDeviceSize size, const void* src, GpuBuffer& dst)
 {
-	vkMapMemory(device, dst.memory, 0, size, 0, &dst.mappedPtr);
 	memcpy(dst.mappedPtr, src, size);
-
-	if (unmapped)
-	{
-		vkUnmapMemory(device, dst.memory);
-	}
 }
 
 //引数として受けたenum classからVkBufferUsageFlagBitsに変換する
@@ -127,7 +114,29 @@ VkMemoryPropertyFlagBits GpuBufferFactory::convertMemoryPropertyFlagBits(BufferU
 	}
 }
 
+//ステージングバッファのメモリのマップとアンマップ
+void GpuBufferFactory::memoryMap(GpuBuffer& bufffer)
+{
+	vkMapMemory(device, bufffer.memory, 0, VK_WHOLE_SIZE, 0, &bufffer.mappedPtr);
+}
+
+void GpuBufferFactory::memoryUnMap(GpuBuffer& buffer)
+{
+	vkUnmapMemory(device, buffer.memory);
+}
+
 //public////////////////////////////////////
+
+//ステージングバッファのメモリのマップとアンマップ
+void GpuBufferFactory::memoryMap(std::shared_ptr<GpuBuffer> bufffer)
+{
+	vkMapMemory(device, bufffer->memory, 0, VK_WHOLE_SIZE, 0, &bufffer->mappedPtr);
+}
+
+void GpuBufferFactory::memoryUnMap(std::shared_ptr<GpuBuffer> buffer)
+{
+	vkUnmapMemory(device, buffer->memory);
+}
 
 //バッファの設定を直接指定して、バッファを作成する
 std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, const void* srcPtr
@@ -150,7 +159,9 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 		builder->Create(bufferSize, usage, property, buffer->buffer, buffer->memory);
 
 		//ステージングバッファにデータをコピーする
-		copyMemory(bufferSize, srcPtr, stagingBuffer,true);
+		memoryMap(buffer);
+		copyMemory(bufferSize, srcPtr, stagingBuffer);
+		memoryUnMap(buffer);
 		
 		//ステージングバッファのデータをローカルのバッファにコピーする
 		copyBuffer(bufferSize, stagingBuffer, buffer);
@@ -164,7 +175,8 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 		builder->Create(bufferSize, usage, property, buffer->buffer, buffer->memory);
 		
 		//メモリのデータをバッファにコピーする
-		copyMemory(bufferSize, srcPtr, buffer, false);
+		memoryMap(buffer);
+		copyMemory(bufferSize, srcPtr, buffer);
 	}
 
 	return buffer;
@@ -192,8 +204,10 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 			, convertMemoryPropertyFlagBits(usage),
 			buffer->buffer, buffer->memory);
 
+		memoryMap(staging); //ステージングバッファのメモリをマップする
 		//データをステージングバッファにデータをコピーする
-		copyMemory(bufferSize, srcPtr, staging, true);
+		copyMemory(bufferSize, srcPtr, staging);
+		memoryUnMap(staging); //ステージングバッファのメモリをアンマップする
 
 		//ステージングバッファのデータをローカルのバッファにコピーする
 		copyBuffer(bufferSize, staging, buffer);
@@ -209,7 +223,8 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 
 		//メモリのデータをバッファにコピーする
 		//バッファーはマップしたままで、cpu側からアクセスできるようにする
-		copyMemory(bufferSize, srcPtr, buffer, false);
+		memoryMap(buffer);
+		copyMemory(bufferSize, srcPtr, buffer);
 	}
 
 	return buffer;

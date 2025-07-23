@@ -1,8 +1,5 @@
 #pragma once
 
-#include"VulkanCore.h"
-#include"RenderPassFactory.h"
-#include"TextureFactory.h"
 #include"FrameBufferBuilder.h"
 
 struct FrameBuffer;
@@ -22,6 +19,10 @@ private:
 public:
 
 	FrameBufferFactory(VkDevice d, std::shared_ptr<FrameBufferBuilder> b);
+
+	~FrameBufferFactory()
+	{
+	}
 
 	//フレームバッファビルダーを取得
 	std::shared_ptr<FrameBufferBuilder> getBuilder()

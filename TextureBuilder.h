@@ -8,6 +8,8 @@
 
 #include "tiny_gltf.h"
 
+#define RGBA 4
+
 struct Texture;
 
 struct TextureImageProperty
@@ -18,8 +20,12 @@ struct TextureImageProperty
 
 	void initProperty()
 	{
+		info = VkImageCreateInfo{};
+
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		info.extent.depth = 1;
+		info.imageType = VK_IMAGE_TYPE_2D;
 	}
 };
 
@@ -29,6 +35,8 @@ struct TextureViewProperty
 
 	void initProperty()
 	{
+		info = VkImageViewCreateInfo{};
+
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	}
 };
@@ -39,6 +47,8 @@ struct TextureSamplerProperty
 
 	void initProperty()
 	{
+		info = VkSamplerCreateInfo{};
+
 		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		info.minLod = 0.0f;
 		info.maxLod = 1.0f;
@@ -137,6 +147,7 @@ public:
 
 	//テクスチャサイズの設定
 	TextureBuilder withWidthHeight(const uint32_t& width, const uint32_t& height);
+	TextureBuilder withWidthHeight(const uint32_t& width, const uint32_t& height,const uint32_t& mipmapLevel);
 
 	//フォーマットを設定
 	TextureBuilder withFormat(const VkFormat& format);
@@ -151,7 +162,7 @@ public:
 	TextureBuilder withUsage(const VkImageUsageFlags& usage);
 
 	//メモリ配置を設定
-	TextureBuilder withMemoryProperty(const VkMemoryPropertyFlags& property);
+	TextureBuilder withMemoryProperty(const VkMemoryPropertyFlags& prop);
 
 	//初期のテクスチャのレイアウト
 	TextureBuilder withInitialLayout(const VkImageLayout& layout);

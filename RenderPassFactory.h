@@ -141,6 +141,8 @@ private:
 
 	VkDevice device;
 
+	std::shared_ptr<VulkanCore> vulkanCore;
+
 	std::shared_ptr<RenderPassBuilder> builder;
 
 	//破棄予定リスト
@@ -153,7 +155,7 @@ private:
 
 public:
 
-	RenderPassFactory(VkDevice& d, std::shared_ptr<RenderPassBuilder> b);
+	RenderPassFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<RenderPassBuilder> b);
 
 	//レンダーパスを作成する
 	std::shared_ptr<RenderPass> Create(const RenderPassProperty& property);

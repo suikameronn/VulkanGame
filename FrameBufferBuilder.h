@@ -13,6 +13,8 @@ struct FrameBufferProperty
 
 	void initProperty()
 	{
+		info = VkFramebufferCreateInfo{};
+
 		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 
 		texture.clear();

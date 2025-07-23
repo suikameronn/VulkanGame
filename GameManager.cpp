@@ -4,7 +4,7 @@ GameManager* GameManager::gameManager = nullptr;
 
 void GameManager::initGame()//ゲーム全体の初期化処理
 {
-	vulkanCore = std::make_shared<VulkanCore>();
+	vulkanCore = std::make_shared<VulkanCore>(window);
 
     frameDuration = (1.0f / (fps + 1)) * 1000.0f;//指定したfpsから、一フレームにかけられる時間を計算する
 
@@ -40,7 +40,7 @@ void GameManager::createInstance()
 
     swapChain = std::make_shared<SwapChain>(vulkanCore, textureFactory, renderPassFactory, frameBufferFactory);
 
-	render = std::shared_ptr<Render>(new Render(vulkanCore));
+	render = std::make_shared<Render>(device);
 }
 
 //ビルダーの用意
@@ -62,12 +62,13 @@ void GameManager::createFactory()
 {
 	VkDevice device = vulkanCore->getLogicDevice();
 
+	frameBufferFactory = std::shared_ptr<FrameBufferFactory>(new FrameBufferFactory(device, frameBufferBuilder));
+
 	descriptorSetLayoutFactory = std::make_shared<DescriptorSetLayoutFactory>(device, descriptorSetLayoutBuilder);
 	descriptorSetFactory = std::make_shared<DescriptorSetFactory>(device, descriptorSetBuilder, descriptorSetLayoutFactory);
-	frameBufferFactory = std::make_shared<FrameBufferFactory>(device, frameBufferBuilder);
 	bufferFactory = std::make_shared<GpuBufferFactory>(vulkanCore, bufferBuilder);
 	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(device, pipelineLayoutBuilder, descriptorSetLayoutFactory);
-	renderPassFactory = std::make_shared<RenderPassFactory>(device, renderPassBuilder);
+	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
 	shaderFactory = std::make_shared<ShaderFactory>(device);
 	pipelineFactory = std::make_shared<PipelineFactory>(device, pipelineLayoutFactory, shaderFactory, pipelineBuilder, renderPassFactory);
 }
@@ -140,7 +141,7 @@ void GameManager::Rendering()
 	//リソースの破棄
 	descriptorSetLayoutFactory->resourceDestruct();
 	bufferFactory->resourceDestruct();
-	frameBufferFactory->resourceDestruct();
+	//frameBufferFactory->resourceDestruct();
 	pipelineLayoutFactory->resourceDestruct();
 	pipelineFactory->resourceDestruct();
 	renderPassFactory->resourceDestruct();

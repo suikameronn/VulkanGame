@@ -69,6 +69,10 @@ struct RenderPassProperty
 
 	void initProperty()
 	{
+		colorCombinedOffset = 0;
+		depthCombinedOffset = 0;
+		colorResolveCombinedOffset = 0;
+
 		descriptions.clear();
 		references.clear();
 		colorReferences.clear();
@@ -176,46 +180,46 @@ public:
 	//VkAttachmentDescriptionの作成
 
 	//フォーマットの設定
-	RenderPassBuilder withFormat(const VkFormat& format);
+	RenderPassBuilder& withFormat(const VkFormat& format);
 	//マルチサンプリングのサンプル数を設定
-	RenderPassBuilder withMultiSamples(const VkSampleCountFlagBits& count);
+	RenderPassBuilder& withMultiSamples(const VkSampleCountFlagBits& count);
 	//カラーアタッチメントを使用する前の処理を指定
-	RenderPassBuilder withColorLoadOp(const VkAttachmentLoadOp& op);
+	RenderPassBuilder& withColorLoadOp(const VkAttachmentLoadOp& op);
 	//カラーアタッチメントを使用した後の処理を指定
-	RenderPassBuilder withColorStoreOp(const VkAttachmentStoreOp& op);
+	RenderPassBuilder& withColorStoreOp(const VkAttachmentStoreOp& op);
 	//ステンシルアタッチメントを使用する前の処理を指定
-	RenderPassBuilder withStencilLoadOp(const VkAttachmentLoadOp& op);
+	RenderPassBuilder& withStencilLoadOp(const VkAttachmentLoadOp& op);
 	//ステンシルアタッチメントを使用した後の処理を指定
-	RenderPassBuilder withStencilStoreOp(const VkAttachmentStoreOp& op);
+	RenderPassBuilder& withStencilStoreOp(const VkAttachmentStoreOp& op);
 	//サブパスに入る前のレイアウトを指定
-	RenderPassBuilder withInitialLayout(const VkImageLayout& layout);
+	RenderPassBuilder& withInitialLayout(const VkImageLayout& layout);
 	//サブパスに出た後のレイアウトを指定
-	RenderPassBuilder withFinalLayout(const VkImageLayout& layout);
+	RenderPassBuilder& withFinalLayout(const VkImageLayout& layout);
 	//ディスクリプションを追加する
-	RenderPassBuilder addColorAttachment();
-	RenderPassBuilder addColorResolveAttachment();
-	RenderPassBuilder addDepthStencilAttachment();
+	RenderPassBuilder& addColorAttachment();
+	RenderPassBuilder& addColorResolveAttachment();
+	RenderPassBuilder& addDepthStencilAttachment();
 
 	//VkSubpassDependencyの作成
 
 	//一つ前のサブパスを指定する
-	RenderPassBuilder withSrcSubpassIndex(const uint32_t& index);
+	RenderPassBuilder& withSrcSubpassIndex(const uint32_t& index);
 	//一つ後のサブパスを指定する
-	RenderPassBuilder withDstSubpassIndex(const uint32_t& index);
+	RenderPassBuilder& withDstSubpassIndex(const uint32_t& index);
 	//一つ前のサブパスがどのステージまで行くまで待つかを設定する
-	RenderPassBuilder withSrcStageMask(const VkPipelineStageFlags& flag);
+	RenderPassBuilder& withSrcStageMask(const VkPipelineStageFlags& flag);
 	//一つ前のサブパスのメモリアクセスを待つのか設定する
-	RenderPassBuilder withSrcAccessMask(const VkAccessFlags& mask);
+	RenderPassBuilder& withSrcAccessMask(const VkAccessFlags& mask);
 	//このサブパスがどのステージで待つかを設定する
-	RenderPassBuilder withDstStageMask(const VkPipelineStageFlags& flag);
+	RenderPassBuilder& withDstStageMask(const VkPipelineStageFlags& flag);
 	//このサブパスのメモリアクセスで待つのか設定する
-	RenderPassBuilder withDstAccessMask(const VkAccessFlags& mask);
+	RenderPassBuilder& withDstAccessMask(const VkAccessFlags& mask);
 	//このサブパスから遷移する範囲を設定する
-	RenderPassBuilder withFlag(const VkDependencyFlags& flag);
+	RenderPassBuilder& withFlag(const VkDependencyFlags& flag);
 	//サブパスの依存関係を追加する
-	RenderPassBuilder addDependency();
+	RenderPassBuilder& addDependency();
 	//サブパスを追加する
-	RenderPassBuilder addSubpass();
+	RenderPassBuilder& addSubpass();
 
 	//プロパティからVkRenderPassCreateInfoを返す
 	RenderPassProperty Build();

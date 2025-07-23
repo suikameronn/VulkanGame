@@ -4552,7 +4552,7 @@ VulkanBase* VulkanBase::vulkanBase = nullptr;
         VkSubpassDescription subpass = {};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorReference;									
+        subpass.pColorAttachments = &colorReference;
 
         std::array<VkSubpassDependency, 2> dependencies;
 

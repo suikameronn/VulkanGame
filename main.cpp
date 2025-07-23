@@ -46,6 +46,7 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
+    gameManager->setWindow(window);
 
     gameManager->initGame();//ゲームループの開始
 
@@ -54,6 +55,9 @@ int main()
     return EXIT_SUCCESS;
 }
 #else
+
+#include<Windows.h>
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     glfwInit();//ライブラリの準備
@@ -86,6 +90,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
+    gameManager->setWindow(window);
 
     gameManager->initGame();//ゲームループの開始
 

@@ -1,7 +1,9 @@
 #include"VulkanCore.h"
 
-VulkanCore::VulkanCore()
+VulkanCore::VulkanCore(GLFWwindow* w)
 {
+    window = w;
+
     windowSizeChanged = false;
 
     //vulkanインスタンスの作成
@@ -290,6 +292,12 @@ SwapChainSupportDetails VulkanCore::querySwapChainSupport(const VkPhysicalDevice
     }
 
     return details;
+}
+
+//画面のサーフェスを取得する
+VkSurfaceKHR VulkanCore::getSurface()
+{
+    return surface;
 }
 
 //デバイスが扱える最大のマルチサンプリング数を調べる

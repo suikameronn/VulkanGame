@@ -2,9 +2,9 @@
 
 FrameBufferFactory::FrameBufferFactory(VkDevice d, std::shared_ptr<FrameBufferBuilder> b)
 {
-	builder = b;
-
 	device = d;
+
+	builder = b;
 
 	frameIndex = 1;
 }

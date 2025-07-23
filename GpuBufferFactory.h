@@ -57,6 +57,10 @@ private:
 	//引数として受けたenum classからVkMemoryPropertyFlagBitsに変換する
 	VkMemoryPropertyFlagBits convertMemoryPropertyFlagBits(BufferUsage usage);
 
+	//ステージングバッファのメモリのマップとアンマップ
+	void memoryMap(GpuBuffer& bufffer);
+	void memoryUnMap(GpuBuffer& buffer);
+
 public:
 
 	GpuBufferFactory(std::shared_ptr<VulkanCore> vulkanCore, std::shared_ptr<GpuBufferBuilder> b);
@@ -75,9 +79,13 @@ public:
 	//コマンドバッファーを作成する
 	std::shared_ptr<CommandBuffer> CommandBufferCreate();
 
+	//ステージングバッファのメモリのマップとアンマップ
+	void memoryMap(std::shared_ptr<GpuBuffer> bufffer);
+	void memoryUnMap(std::shared_ptr<GpuBuffer> buffer);
+
 	//メモリのデータをコピー
-	void copyMemory(const VkDeviceSize size, const void* src, std::shared_ptr<GpuBuffer> dst, const bool unmapped);
-	void copyMemory(const VkDeviceSize size, const void* src, GpuBuffer& dst, const bool unmapped);
+	void copyMemory(const VkDeviceSize size, const void* src, std::shared_ptr<GpuBuffer> dst);
+	void copyMemory(const VkDeviceSize size, const void* src, GpuBuffer& dst);
 
 	//バッファの内容をコピー
 	void copyBuffer(const VkDeviceSize size, const GpuBuffer& src, std::shared_ptr<GpuBuffer> dst);

@@ -177,6 +177,9 @@
     <ClCompile Include="ECSManager.cpp">
       <Filter>ソース ファイル\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="FrameBufferFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
@@ -241,9 +244,6 @@
     </ClInclude>
     <ClInclude Include="Library.h">
       <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameBufferFactory.cpp">
-      <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClInclude>
     <ClInclude Include="FrameBufferFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>

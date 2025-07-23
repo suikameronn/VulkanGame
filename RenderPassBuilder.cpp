@@ -10,13 +10,17 @@ RenderPassBuilder::RenderPassBuilder(VkDevice& d)
 //プロパティを初期化する
 void RenderPassBuilder::initProperty()
 {
+	description = VkAttachmentDescription{};
+	subpassDescription = VkSubpassDescription{};
+	dependency = VkSubpassDependency{};
+
 	property.initProperty();
 }
 
 //VkAttachmentDescriptionの作成
 
 //フォーマットの設定
-RenderPassBuilder RenderPassBuilder::withFormat(const VkFormat& format)
+RenderPassBuilder& RenderPassBuilder::withFormat(const VkFormat& format)
 {
 	description.format = format;
 
@@ -24,7 +28,7 @@ RenderPassBuilder RenderPassBuilder::withFormat(const VkFormat& format)
 }
 
 //マルチサンプリングのサンプル数を設定
-RenderPassBuilder RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
+RenderPassBuilder& RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
 {
 	description.samples = count;
 
@@ -32,7 +36,7 @@ RenderPassBuilder RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBit
 }
 
 //カラーアタッチメントを使用する前の処理を指定
-RenderPassBuilder RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
+RenderPassBuilder& RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.loadOp = op;
 
@@ -40,7 +44,7 @@ RenderPassBuilder RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& o
 }
 
 //カラーアタッチメントを使用した後の処理を指定
-RenderPassBuilder RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
+RenderPassBuilder& RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.storeOp = op;
 
@@ -48,7 +52,7 @@ RenderPassBuilder RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp&
 }
 
 //ステンシルアタッチメントを使用する前の処理を指定
-RenderPassBuilder RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
+RenderPassBuilder& RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.stencilLoadOp = op;
 
@@ -56,7 +60,7 @@ RenderPassBuilder RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp&
 }
 
 //ステンシルアタッチメントを使用した後の処理を指定
-RenderPassBuilder RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
+RenderPassBuilder& RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.stencilStoreOp = op;
 
@@ -64,7 +68,7 @@ RenderPassBuilder RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreO
 }
 
 //サブパスに入る前のレイアウトを指定
-RenderPassBuilder RenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
+RenderPassBuilder& RenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
 {
 	description.initialLayout = layout;
 
@@ -72,7 +76,7 @@ RenderPassBuilder RenderPassBuilder::withInitialLayout(const VkImageLayout& layo
 }
 
 //サブパスに出た後のレイアウトを指定
-RenderPassBuilder RenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
+RenderPassBuilder& RenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
 {
 	description.finalLayout = layout;
 
@@ -82,7 +86,7 @@ RenderPassBuilder RenderPassBuilder::withFinalLayout(const VkImageLayout& layout
 //ディスクリプションを追加する
 
 //カラーアタッチメント
-RenderPassBuilder RenderPassBuilder::addColorAttachment()
+RenderPassBuilder& RenderPassBuilder::addColorAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -98,7 +102,7 @@ RenderPassBuilder RenderPassBuilder::addColorAttachment()
 }
 
 //リゾルブカラーアタッチメントを追加
-RenderPassBuilder RenderPassBuilder::addColorResolveAttachment()
+RenderPassBuilder& RenderPassBuilder::addColorResolveAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -114,7 +118,7 @@ RenderPassBuilder RenderPassBuilder::addColorResolveAttachment()
 }
 
 //デプスステンシルアタッチメントを追加
-RenderPassBuilder RenderPassBuilder::addDepthStencilAttachment()
+RenderPassBuilder& RenderPassBuilder::addDepthStencilAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -132,7 +136,7 @@ RenderPassBuilder RenderPassBuilder::addDepthStencilAttachment()
 //VkSubpassDependencyの作成
 
 	//一つ前のサブパスを指定する
-RenderPassBuilder RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
+RenderPassBuilder& RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
 {
 	dependency.srcSubpass = index;
 
@@ -140,7 +144,7 @@ RenderPassBuilder RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
 }
 
 //一つ後のサブパスを指定する
-RenderPassBuilder RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
+RenderPassBuilder& RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
 {
 	dependency.dstSubpass = index;
 
@@ -148,7 +152,7 @@ RenderPassBuilder RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
 }
 
 //一つ前のサブパスがどのステージまで行くまで待つかを設定する
-RenderPassBuilder RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
+RenderPassBuilder& RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.srcStageMask = flag;
 
@@ -156,7 +160,7 @@ RenderPassBuilder RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags
 }
 
 //一つ前のサブパスのメモリアクセスを待つのか設定する
-RenderPassBuilder RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
+RenderPassBuilder& RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
 {
 	dependency.srcAccessMask = mask;
 
@@ -164,7 +168,7 @@ RenderPassBuilder RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask
 }
 
 //このサブパスがどのステージで待つかを設定する
-RenderPassBuilder RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
+RenderPassBuilder& RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.dstStageMask = flag;
 
@@ -172,7 +176,7 @@ RenderPassBuilder RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags
 }
 
 //このサブパスのメモリアクセスで待つのか設定する
-RenderPassBuilder RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
+RenderPassBuilder& RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
 {
 	dependency.dstAccessMask = mask;
 
@@ -180,7 +184,7 @@ RenderPassBuilder RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask
 }
 
 //このサブパスから遷移する範囲を設定する
-RenderPassBuilder RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
+RenderPassBuilder& RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
 {
 	dependency.dependencyFlags = flag;
 
@@ -188,7 +192,7 @@ RenderPassBuilder RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
 }
 
 //サブパスの依存関係を追加する
-RenderPassBuilder RenderPassBuilder::addDependency()
+RenderPassBuilder& RenderPassBuilder::addDependency()
 {
 	property.dependency.push_back(dependency);
 
@@ -199,7 +203,7 @@ RenderPassBuilder RenderPassBuilder::addDependency()
 }
 
 //サブパスを追加する
-RenderPassBuilder RenderPassBuilder::addSubpass()
+RenderPassBuilder& RenderPassBuilder::addSubpass()
 {
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 

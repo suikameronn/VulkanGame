@@ -26,12 +26,15 @@ FrameBufferProperty FrameBufferBuilder::Build()
 void FrameBufferBuilder::Create(VkFramebuffer& frameBuffer, const FrameBufferProperty& property)
 {
 	VkFramebufferCreateInfo info = property.info;
+
+	info.flags = 
+
 	info.attachmentCount = static_cast<uint32_t>(property.texture.size());
 
 	std::vector<VkImageView> attachments(property.texture.size());
 	for(int i = 0;i < property.texture.size(); i++)
 	{
-		attachments.push_back(property.texture[i]->view);
+		attachments[i] = property.texture[i]->view;
 	}
 
 	info.pAttachments = attachments.data();
@@ -55,6 +58,7 @@ FrameBufferBuilder FrameBufferBuilder::withWidthHeight(const uint32_t& width, co
 FrameBufferBuilder FrameBufferBuilder::withRenderPass(const std::shared_ptr<RenderPass> renderPass)
 {
 	property.renderPass = renderPass;
+	property.info.renderPass = renderPass->renderPass;
 
 	return *this;
 }

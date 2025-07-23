@@ -133,7 +133,7 @@ public:
 	//ウィンドウサイズの変更のフラグ
 	bool windowSizeChanged;
 
-	VulkanCore();
+	VulkanCore(GLFWwindow* w);
 
 	VkPhysicalDevice& getPhysicalDevice()
 	{
@@ -173,6 +173,9 @@ public:
 
 	//画面の画像フォーマットを取得する
 	VkFormat getSwapChainFormat();
+
+	//画面のサーフェスを取得する
+	VkSurfaceKHR getSurface();
 
 	//条件に合うメモリのインデックスを取得する
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);

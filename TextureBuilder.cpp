@@ -37,10 +37,23 @@ TextureBuilder TextureBuilder::setPreset(const TextureProperty& p)
 //テクスチャサイズの設定
 TextureBuilder TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height)
 {
-	image.info.extent.width = width;
-	image.info.extent.height = height;
+	property.image.info.extent.width = width;
+	property.image.info.extent.height = height;
 
-	image.info.mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
+	property.image.info.mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
+	property.view.info.subresourceRange.levelCount = property.image.info.mipLevels;
+
+	return *this;
+}
+
+//テクスチャサイズの設定
+TextureBuilder TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height, const uint32_t& mipmapLevel)
+{
+	property.image.info.extent.width = width;
+	property.image.info.extent.height = height;
+
+	property.image.info.mipLevels = mipmapLevel;
+	property.view.info.subresourceRange.levelCount = property.image.info.mipLevels;
 
 	return *this;
 }
@@ -48,7 +61,8 @@ TextureBuilder TextureBuilder::withWidthHeight(const uint32_t& width, const uint
 //フォーマットを設定
 TextureBuilder TextureBuilder::withFormat(const VkFormat& format)
 {
-	image.info.format = format;
+	property.image.info.format = format;
+	property.view.info.format = format;
 
 	return *this;
 }
@@ -56,7 +70,7 @@ TextureBuilder TextureBuilder::withFormat(const VkFormat& format)
 //マルチサンプリング数の設定
 TextureBuilder TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSamples)
 {
-	image.info.samples = numSamples;
+	property.image.info.samples = numSamples;
 
 	return *this;
 }
@@ -64,7 +78,7 @@ TextureBuilder TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSa
 //ピクセルの配置を設定
 TextureBuilder TextureBuilder::withTiling(const VkImageTiling& tiling)
 {
-	image.info.tiling = tiling;
+	property.image.info.tiling = tiling;
 
 	return *this;
 }
@@ -72,15 +86,15 @@ TextureBuilder TextureBuilder::withTiling(const VkImageTiling& tiling)
 //テクスチャのバッファの使い道を設定
 TextureBuilder TextureBuilder::withUsage(const VkImageUsageFlags& usage)
 {
-	image.info.usage = usage;
+	property.image.info.usage = usage;
 
 	return *this;
 }
 
 //メモリ配置を設定
-TextureBuilder TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& property)
+TextureBuilder TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& prop)
 {
-	image.memProperty = property;
+	property.image.memProperty = prop;
 
 	return *this;
 }
@@ -88,7 +102,7 @@ TextureBuilder TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& p
 //初期のテクスチャのレイアウト
 TextureBuilder TextureBuilder::withInitialLayout(const VkImageLayout& layout)
 {
-	image.info.initialLayout = layout;
+	property.image.info.initialLayout = layout;
 
 	return *this;
 }
@@ -96,7 +110,7 @@ TextureBuilder TextureBuilder::withInitialLayout(const VkImageLayout& layout)
 //最終的なテクスチャのレイアウト
 TextureBuilder TextureBuilder::withFinalLayout(const VkImageLayout& layout)
 {
-	image.finalLayout = layout;
+	property.image.finalLayout = layout;
 
 	return *this;
 }
@@ -105,7 +119,7 @@ TextureBuilder TextureBuilder::withFinalLayout(const VkImageLayout& layout)
 //ビューのタイプを設定する
 TextureBuilder TextureBuilder::withViewType(const VkImageViewType& type)
 {
-	view.info.viewType = type;
+	property.view.info.viewType = type;
 
 	return *this;
 }
@@ -113,7 +127,7 @@ TextureBuilder TextureBuilder::withViewType(const VkImageViewType& type)
 //ビューがアクセスできるデータを設定
 TextureBuilder TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
 {
-	view.info.subresourceRange.aspectMask = flag;
+	property.view.info.subresourceRange.aspectMask = flag;
 
 	return *this;
 }
@@ -121,8 +135,8 @@ TextureBuilder TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
 //テクスチャのレイヤー数を設定する
 TextureBuilder TextureBuilder::withLayerCount(const uint32_t& layerCount)
 {
-	image.info.arrayLayers = layerCount;
-	view.info.subresourceRange.layerCount = layerCount;
+	property.image.info.arrayLayers = layerCount;
+	property.view.info.subresourceRange.layerCount = layerCount;
 
 	return *this;
 }
@@ -131,7 +145,7 @@ TextureBuilder TextureBuilder::withLayerCount(const uint32_t& layerCount)
 //サンプラーのミップマップレベル間の補間方法を設定する
 TextureBuilder TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
 {
-	sampler.info.mipmapMode = mode;
+	property.sampler.info.mipmapMode = mode;
 
 	return *this;
 }
@@ -139,9 +153,9 @@ TextureBuilder TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
 //テクスチャの境界部分の処理を設定
 TextureBuilder TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
 {
-	sampler.info.addressModeU = mode;
-	sampler.info.addressModeV = mode;
-	sampler.info.addressModeW = mode;
+	property.sampler.info.addressModeU = mode;
+	property.sampler.info.addressModeV = mode;
+	property.sampler.info.addressModeW = mode;
 
 	return *this;
 }
@@ -149,7 +163,7 @@ TextureBuilder TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
 //テクスチャの拡大時の補間方法を設定する
 TextureBuilder TextureBuilder::withMagFilter(const VkFilter& filter)
 {
-	sampler.info.magFilter = filter;
+	property.sampler.info.magFilter = filter;
 
 	return *this;
 }
@@ -157,15 +171,13 @@ TextureBuilder TextureBuilder::withMagFilter(const VkFilter& filter)
 //テクスチャの縮小時の補間方法を設定する
 TextureBuilder TextureBuilder::withMinFilter(const VkFilter& filter)
 {
-	sampler.info.minFilter = filter;
+	property.sampler.info.minFilter = filter;
 
 	return *this;
 }
 
 TextureProperty TextureBuilder::Build()
 {
-	property = TextureProperty{ image, view, sampler };
-
 	return property;
 }
 
@@ -495,7 +507,7 @@ void TextureBuilder::generateMipmaps(VkImage image, const TextureImageProperty& 
 void TextureBuilder::createImage(const size_t& pixelSize, const void* pixels
 	,const TextureImageProperty& imageProperty, VkImage& image, VkDeviceMemory& memory)
 {
-	VkDeviceSize bufferSize = imageProperty.info.extent.width * imageProperty.info.extent.height * pixelSize;
+	VkDeviceSize bufferSize = imageProperty.info.extent.width * imageProperty.info.extent.height * pixelSize * RGBA;
 
 	//ステージングバッファを用意
 	std::shared_ptr<GpuBuffer> staging = bufferFactory->Create(bufferSize,pixels
@@ -506,7 +518,7 @@ void TextureBuilder::createImage(const size_t& pixelSize, const void* pixels
 	createVkImageAndMemory(imageProperty, image, memory);
 
 	//ステージングバッファに画像データを画像データをコピー
-	bufferFactory->copyMemory(bufferSize, pixels, staging, false);
+	bufferFactory->copyMemory(bufferSize, pixels, staging);
 
 	//コピー先のVkImageのレイアウトを変更
 	transitionImageLayout(image, imageProperty.info.format, imageProperty.info.initialLayout,
@@ -522,7 +534,7 @@ void TextureBuilder::createImage(const size_t& pixelSize, const void* pixels
 //gpu上に画像データを展開
 void TextureBuilder::createImage(const TextureImageProperty& imageProperty, VkImage& image, VkDeviceMemory& memory)
 {
-	VkDeviceSize bufferSize = imageProperty.info.extent.width * imageProperty.info.extent.height * sizeof(unsigned char);
+	VkDeviceSize bufferSize = imageProperty.info.extent.width * imageProperty.info.extent.height * sizeof(unsigned char) * RGBA;
 
 	//コピー先のVkImageを作成
 	createVkImageAndMemory(imageProperty, image, memory);
@@ -605,10 +617,6 @@ void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pix
 
 	//サンプラーの作成
 	createSampler(property.sampler, sampler);
-
-	//画像のレイアウトを指定のものに変更
-	transitionImageLayout(image, property.image.info.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		property.image.finalLayout, property.image.info.mipLevels, property.image.info.arrayLayers);
 }
 
 void TextureBuilder::Create(TextureProperty& property

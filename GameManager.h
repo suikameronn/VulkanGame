@@ -30,6 +30,8 @@ private:
 
 	static GameManager* gameManager;
 
+	GLFWwindow* window;
+
 	std::shared_ptr<VulkanCore> vulkanCore;
 
 	//ECSマネージャー
@@ -114,6 +116,11 @@ public:
 		}
 
 		return gameManager;
+	}
+
+	void setWindow(GLFWwindow* w)
+	{
+		window = w;
 	}
 
 	//ゲームのフレームレートの設定やステージの読み込みを行う

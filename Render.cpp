@@ -1,10 +1,8 @@
 #include"Render.h"
 
-Render::Render(std::shared_ptr<VulkanCore> core)
+Render::Render(VkDevice& d)
 {
-	vulkanCore = core;
-
-	device = core->getLogicDevice();
+	device = d;
 
 	initProperty();
 }
