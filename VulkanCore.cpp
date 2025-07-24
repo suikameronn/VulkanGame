@@ -250,6 +250,18 @@ QueueFamilyIndices VulkanCore::findQueueFamilies(const VkPhysicalDevice& device)
     return indices;
 }
 
+//画面の画像フォーマットを設定する
+void VulkanCore::setSwapChainFormat(VkFormat format)
+{
+    swapChainFormat = format;
+}
+
+//画面の画像フォーマットを取得する
+VkFormat VulkanCore::getSwapChainFormat()
+{
+    return swapChainFormat;
+}
+
 //必要な拡張をそのデバイスが持っているかを調べる
 bool VulkanCore::checkDeviceExtensionSupport(const VkPhysicalDevice& device) 
 {

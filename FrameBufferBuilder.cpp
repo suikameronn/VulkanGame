@@ -27,8 +27,6 @@ void FrameBufferBuilder::Create(VkFramebuffer& frameBuffer, const FrameBufferPro
 {
 	VkFramebufferCreateInfo info = property.info;
 
-	info.flags = 
-
 	info.attachmentCount = static_cast<uint32_t>(property.texture.size());
 
 	std::vector<VkImageView> attachments(property.texture.size());

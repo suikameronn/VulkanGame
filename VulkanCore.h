@@ -78,6 +78,9 @@ private:
 	//ウィンドウのデータ
 	VkSurfaceKHR surface;
 
+	//画面の画像のフォーマット
+	VkFormat swapChainFormat;
+
 	//扱っているデバイスの最大のマルチサンプリング数
 	VkSampleCountFlagBits maxMsaaSamples;
 
@@ -170,6 +173,9 @@ public:
 
 	//デバイスの指定された機能を持つキューを調べる
 	QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device);
+
+	//画面の画像フォーマットを設定する
+	void setSwapChainFormat(VkFormat format);
 
 	//画面の画像フォーマットを取得する
 	VkFormat getSwapChainFormat();

@@ -162,6 +162,8 @@ void SwapChain::createSwapChainObj()
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
 
+    vulkanCore->setSwapChainFormat(swapChainImageFormat);
+
     //スワップチェーンのVkImageのビューを作成
 
     TextureProperty property = textureFactory->getBuilder()
@@ -242,6 +244,7 @@ void SwapChain::createFrameBuffers()
         const FrameBufferProperty property = frameBufferFactory->getBuilder()->initProperty()
             .withWidthHeight(swapChainExtent.width, swapChainExtent.height)
             .withRenderPass(renderPass)
+            .withLayerCount(1)
 			.addViewAttachment(colorAttachment)
             .addViewAttachment(depthAttachment)
 			.addViewAttachment(swapChainImages[i])

@@ -141,7 +141,7 @@ void GameManager::Rendering()
 	//ƒŠƒ\[ƒX‚Ì”jŠü
 	descriptorSetLayoutFactory->resourceDestruct();
 	bufferFactory->resourceDestruct();
-	//frameBufferFactory->resourceDestruct();
+	frameBufferFactory->resourceDestruct();
 	pipelineLayoutFactory->resourceDestruct();
 	pipelineFactory->resourceDestruct();
 	renderPassFactory->resourceDestruct();

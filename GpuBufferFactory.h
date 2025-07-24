@@ -91,8 +91,8 @@ public:
 	void copyBuffer(const VkDeviceSize size, const GpuBuffer& src, std::shared_ptr<GpuBuffer> dst);
 
 	//遅延破棄リストにバッファを追加する
-	void addDefferedDestruct(VkBuffer& buffer, VkDeviceMemory& memory);
-	void addDefferedDestruct(VkCommandBuffer& commandBuffer);
+	void addDefferedDestruct(VkBuffer buffer, VkDeviceMemory memory);
+	void addDefferedDestruct(VkCommandBuffer commandBuffer);
 
 	//バッファを破棄する
 	void resourceDestruct();

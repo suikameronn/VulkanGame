@@ -283,12 +283,12 @@ std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
 }
 
 //遅延破棄リストにバッファを追加する
-void GpuBufferFactory::addDefferedDestruct(VkBuffer& buffer, VkDeviceMemory& memory)
+void GpuBufferFactory::addDefferedDestruct(VkBuffer buffer, VkDeviceMemory memory)
 {
 	destructList[frameIndex].push_back({ buffer,memory });
 }
 
-void GpuBufferFactory::addDefferedDestruct(VkCommandBuffer& commandBuffer)
+void GpuBufferFactory::addDefferedDestruct(VkCommandBuffer commandBuffer)
 {
 	destructListCommand[frameIndex].push_back(commandBuffer);
 }
@@ -307,6 +307,8 @@ void GpuBufferFactory::resourceDestruct()
 	{
 		vkFreeCommandBuffers(device, commandPool, 1, &command);
 	}
+
+	destructList[frameIndex].clear();
 
 	//フレームインデックスを更新する
 	frameIndex = (frameIndex == 0) ? 1 : 0;

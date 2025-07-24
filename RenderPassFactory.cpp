@@ -18,7 +18,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 	{
 		builder->initProperty();
 
-		builder->withFormat(VK_FORMAT_R8G8B8A8_UNORM)
+		builder->withFormat(vulkanCore->getSwapChainFormat())
 			.withMultiSamples(vulkanCore->getMaxMsaaSamples())
 			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
@@ -38,7 +38,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
 			.addDepthStencilAttachment();
 
-		builder->withFormat(VK_FORMAT_R8G8B8A8_UNORM)
+		builder->withFormat(vulkanCore->getSwapChainFormat())
 			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
 			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
