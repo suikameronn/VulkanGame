@@ -126,7 +126,7 @@ MaterialProperty MaterialBuilder::Build()
 //ƒ}ƒeƒŠƒAƒ‹‚ğì¬
 std::shared_ptr<Material> MaterialBuilder::Create(const MaterialProperty& property)
 {
-	std::shared_ptr<Material> material = std::make_shared<Material>(property);
+	std::shared_ptr<Material> material = std::make_shared<Material>(property, bufferFactory, layoutFactory, descriptorSetFactory);
 
 	return material;
 }

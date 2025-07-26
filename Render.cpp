@@ -90,11 +90,7 @@ RenderProperty Render::Build()
 		property.info.pClearValues = property.clearValues.data();
 	}
 
-	RenderProperty p = property;
-
-	property.initProperty();
-
-	return p;
+	return property;
 }
 
 //レンダリング開始

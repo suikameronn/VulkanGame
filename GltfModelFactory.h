@@ -55,8 +55,7 @@ private:
 		, tinygltf::Primitive glPrimitive, tinygltf::Model glModel, std::shared_ptr<GltfModel> model);
 
 	//アニメーションを読み込む
-	void loadAnimations(std::shared_ptr<GltfModel> model
-		, const tinygltf::Scene& scene, const tinygltf::Model& gltfModel);
+	void loadAnimations(std::shared_ptr<GltfModel> model, const tinygltf::Model& gltfModel);
 
 	//スキンを読み込む
 	void loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Model gltfModel);

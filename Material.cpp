@@ -15,7 +15,8 @@ void Material::createDescriptorSet()
 
 	descriptorSet = descriptorSetFactory->Create(
 		descriptorSetFactory->getBuilder()
-		->withBindingBuffer(0)
+		->initProperty()
+		.withBindingBuffer(0)
 		.withBuffer(shaderMaterialBuffer)
 		.withDescriptorSetCount(1)
 		.withDescriptorSetLayout(layout)

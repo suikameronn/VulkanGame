@@ -228,7 +228,7 @@
     <ClInclude Include="Library.cpp" />
     <ClInclude Include="Library.h" />
     <ClInclude Include="Material.h" />
-    <ClInclude Include="MeshRenderer.h" />
+    <ClInclude Include="MeshRendererComp.h" />
     <ClInclude Include="PhysicComp.h" />
     <ClInclude Include="Render.h" />
     <ClInclude Include="resource1.h" />

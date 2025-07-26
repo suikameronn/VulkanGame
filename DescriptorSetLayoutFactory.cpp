@@ -196,6 +196,8 @@ void DescriptorSetLayoutFactory::resourceDestruct()
 		vkDestroyDescriptorSetLayout(device, layout, nullptr);
 	}
 
+	destructList[frameIndex].clear();
+
 	//フレームインデックスを更新する
 	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

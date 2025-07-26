@@ -320,7 +320,7 @@
     <ClInclude Include="PhysicComp.h">
       <Filter>ヘッダー ファイル\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="MeshRenderer.h">
+    <ClInclude Include="MeshRendererComp.h">
       <Filter>ヘッダー ファイル\ECS\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameManager.h">

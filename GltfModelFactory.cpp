@@ -32,16 +32,16 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
         std::make_shared<GltfModel>(bufferFactory, layoutFactory, descriptorSetFactory);
 
     //GltfNodeを確保する
-	model->nodes.resize(scene.nodes.size());
+	model->nodes.resize(gltfModel.nodes.size());
 
     //gltfモデルのシーンは一つのみを前提とする
-    loadNode(model, scene.nodes[0], gltfModel);
+    loadNode(model, 0, gltfModel);
 
 	loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
     if (gltfModel.animations.size() > 0)
     {
-		loadAnimations(model, scene, gltfModel);//アニメーションの取得
+		loadAnimations(model, gltfModel);//アニメーションの取得
     }
 
 	loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
@@ -369,8 +369,7 @@ void GltfModelFactory::loadPrimitive(Mesh& mesh, int& indexStart
 }
 
 //アニメーションを読み込む
-void GltfModelFactory::loadAnimations(std::shared_ptr<GltfModel> model
-    , const tinygltf::Scene& scene, const tinygltf::Model& gltfModel)
+void GltfModelFactory::loadAnimations(std::shared_ptr<GltfModel> model, const tinygltf::Model& gltfModel)
 {
     for (tinygltf::Animation anim : gltfModel.animations)
     {
@@ -610,7 +609,7 @@ void GltfModelFactory::loadMaterial(std::shared_ptr<GltfModel> model, tinygltf::
         }
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) 
         {
-            tinygltf::Parameter param = mat.values["normalTexture"];
+            tinygltf::Parameter param = mat.additionalValues["normalTexture"];
 
             const tinygltf::Image image =
                 gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
@@ -628,7 +627,7 @@ void GltfModelFactory::loadMaterial(std::shared_ptr<GltfModel> model, tinygltf::
         }
         if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) 
         {
-            tinygltf::Parameter param = mat.values["emissiveTexture"];
+            tinygltf::Parameter param = mat.additionalValues["emissiveTexture"];
 
             const tinygltf::Image image =
                 gltfModel.images[gltfModel.textures[param.TextureIndex()].source];
@@ -646,7 +645,7 @@ void GltfModelFactory::loadMaterial(std::shared_ptr<GltfModel> model, tinygltf::
         }
         if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) 
         {
-            tinygltf::Parameter param = mat.values["occlusionTexture"];
+            tinygltf::Parameter param = mat.additionalValues["occlusionTexture"];
 
             const tinygltf::Image image =
                 gltfModel.images[gltfModel.textures[param.TextureIndex()].source];

@@ -21,6 +21,12 @@
 #include"SwapChain.h"
 #include"Render.h"
 
+#include"TransformComp.h"
+#include"ColiderComp.h"
+#include"GltfModelComp.h"
+#include"MeshRendererComp.h"
+#include"PhysicComp.h"
+
 #include"ECSManager.h"
 
 //fps§Œä‚È‚Ç‚ÌƒQ[ƒ€‘S‘Ì‚Ì§Œä‚ğ’S“–‚·‚é

@@ -169,8 +169,13 @@ class Material
 
 public:
 
-	Material(const MaterialProperty& prop)
+	Material(const MaterialProperty& prop, std::shared_ptr<GpuBufferFactory> bf,
+		std::shared_ptr<DescriptorSetLayoutFactory> lf, std::shared_ptr<DescriptorSetFactory> df)
 	{
+		bufferFactory = bf;
+		layoutFactory = lf;
+		descriptorSetFactory = df;
+
 		shaderMaterial.init(prop);
 		texCoordSets = prop.texCoordSet;
 

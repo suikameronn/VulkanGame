@@ -66,5 +66,7 @@ void ShaderFactory::resourceDestruct()
 		vkDestroyShaderModule(device, module, nullptr);
 	}
 
+	destructList[frameIndex].clear();
+
 	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

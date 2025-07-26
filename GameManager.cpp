@@ -76,12 +76,20 @@ void GameManager::createFactory()
 //シーンの作成
 void GameManager::createScene()
 {
+	size_t entity1 = ecsManager->GenerateEntity();
 
+	ecsManager->AddComponent<TransformComp>(entity1);
+	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
+	ecsManager->AddComponent<GltfModelAnimComp>(entity1);
+
+	comp->filePath = "models/PlayerModel.glb";
 }
 
 void GameManager::mainGameLoop()//メインゲームループ
 {
     start = std::chrono::system_clock::now();//フレーム時間を計測
+
+	OnStart();
 
     while (true)
     {
@@ -118,7 +126,66 @@ void GameManager::mainGameLoop()//メインゲームループ
 //コンポーネントの初回処理
 void GameManager::OnStart()
 {
-	//ecsManager->RunFunction<
+	ecsManager->RunFunction<GltfModelComp>
+		(
+			{
+				[&](GltfModelComp& comp)
+				{
+					comp.modelID = modelFactory->Load(comp.filePath);
+				}
+			}
+		);
+
+	ecsManager->RunFunction<GltfModelComp, MeshRendererComp>
+		(
+			{
+				[&](GltfModelComp& modelComp,MeshRendererComp& rendererComp)
+				{
+					const std::shared_ptr<GltfModel> gltfModel =
+						modelFactory->GetModel(modelComp.modelID);
+
+					rendererComp.modelMatBuffer =
+						bufferFactory->Create(sizeof(glm::mat4),BufferUsage::UNIFORM,BufferTransferType::NONE);
+
+					rendererComp.animMatBuffer.resize(gltfModel->nodeCount);
+					for (auto& buffer : rendererComp.animMatBuffer)
+					{
+						buffer = bufferFactory->Create(sizeof(glm::mat4)
+							, BufferUsage::UNIFORM, BufferTransferType::NONE);
+					}
+
+					const std::shared_ptr<DescriptorSetLayout> layout =
+						descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT);
+
+					rendererComp.modelMatDesc =
+						descriptorSetFactory->Create(
+							descriptorSetBuilder->withBindingBuffer(0)
+							.withBuffer(rendererComp.modelMatBuffer)
+							.withDescriptorSetCount(1)
+							.withDescriptorSetLayout(layout)
+							.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+							.withRange(sizeof(glm::mat4))
+							.Build()
+						);
+
+					rendererComp.animMatDesc.resize(gltfModel->nodeCount);
+					for (int i = 0; i < rendererComp.animMatDesc.size(); i++)
+					{
+						rendererComp.animMatDesc[i] =
+							descriptorSetFactory->Create(
+								descriptorSetBuilder->withBindingBuffer(0)
+								.withBuffer(rendererComp.animMatBuffer[i])
+								.withDescriptorSetCount(1)
+								.withDescriptorSetLayout(layout)
+								.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+								.withRange(sizeof(glm::mat4))
+								.Build()
+							);
+					}
+
+				}
+			}
+		);
 }
 
 //コンポーネントの更新処理
@@ -137,6 +204,61 @@ void GameManager::OnLateUpdate()
 void GameManager::Rendering()
 {
 	//ecsManager->RunFunction<
+
+	{
+		std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+		std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
+
+		const RenderProperty property = render->initProperty()
+			.withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
+			.withFrameBuffer(frameBuffer)
+			.withCommandBuffer(commandBuffer)
+			.withRenderArea(swapChain->getSwapChainExtent().width, swapChain->getSwapChainExtent().height)
+			.withClearColor({ 0.0, 0.0, 0.0, 1.0 })
+			.withClearDepth(1.0f)
+			.withClearStencil(0)
+			.Build();
+
+		std::function<void(GltfModelComp&, MeshRendererComp&, GltfModelAnimComp&)> renderModel =
+			[&](GltfModelComp& gltfComp, MeshRendererComp& meshRendererComp, GltfModelAnimComp& animationComp)
+			{
+				std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(gltfComp.modelID);
+				if (gltfModel)
+				{
+					throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+				}
+
+				vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					pipelineFactory->Create(PipelinePattern::PBR)->pipeline);
+
+				std::array<VkDescriptorSet, 2> descriptorSets;
+
+				for (const auto& node : gltfModel->nodes)
+				{
+					for (const auto& mesh : node.meshArray)
+					{
+						for (const auto& primitive : mesh.primitives)
+						{
+							std::shared_ptr<Material> material = gltfModel->materials[primitive.materialIndex];
+
+							descriptorSets[0] = meshRendererComp.modelMatDesc->descriptorSet;
+							descriptorSets[1] = meshRendererComp.animMatDesc[primitive.primitiveIndex]->descriptorSet;
+
+							vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+								pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout, 0
+								, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+							vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+						}
+					}
+				}
+			};
+		render->RenderStart(property);
+
+		ecsManager->RunFunction<GltfModelComp, MeshRendererComp, GltfModelAnimComp>(renderModel);
+
+		render->RenderEnd();
+	}
 
 	//リソースの破棄
 	descriptorSetLayoutFactory->resourceDestruct();

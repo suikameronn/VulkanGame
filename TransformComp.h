@@ -2,13 +2,13 @@
 
 #include"glm/glm.hpp"
 
-struct TransfromComp
+struct TransformComp
 {
 	glm::vec3 position; //位置
 	glm::vec3 rotation; //回転(オイラー角)
 	glm::vec3 scale; //スケール
 
-	TransfromComp()
+	TransformComp()
 	{
 		position = glm::vec3(0.0f, 0.0f, 0.0f);
 		rotation = glm::vec3(0.0f, 0.0f, 0.0f);

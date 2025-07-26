@@ -79,6 +79,11 @@ public:
 	//コマンドバッファーを作成する
 	std::shared_ptr<CommandBuffer> CommandBufferCreate();
 
+	//コマンドバッファにコマンドを積み上げ始める
+	void beginCommandBuffer(std::shared_ptr<CommandBuffer> command);
+	//コマンドバッファのコマンド積み上げを終了する
+	void endCommandBuffer(std::shared_ptr<CommandBuffer> command);
+
 	//ステージングバッファのメモリのマップとアンマップ
 	void memoryMap(std::shared_ptr<GpuBuffer> bufffer);
 	void memoryUnMap(std::shared_ptr<GpuBuffer> buffer);

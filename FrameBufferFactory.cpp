@@ -35,5 +35,7 @@ void FrameBufferFactory::resourceDestruct()
 		vkDestroyFramebuffer(device, frameBuffer, nullptr);
 	}
 
+	destructList[frameIndex].clear();
+
 	frameIndex = (frameIndex == 0) ? 1 : 0; //フレームインデックスを切り替える
 }

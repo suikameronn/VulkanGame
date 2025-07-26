@@ -26,10 +26,12 @@ public:
 		// 無ければ新規発行
 		else
 		{
-			nEntity = ++nextID;
+			nEntity = nextID;
+
+			nextID++;
 		}
 		// エンティティを有効にする
-		if (entityToActive.size() < nEntity)
+		if (entityToActive.size() <= nEntity)
 		{
 			entityToActive.resize(nEntity + 1, false);
 		}
@@ -65,20 +67,30 @@ public:
 		if (entityToArchetype.size() > a_entity)
 		{
 			arch = entityToArchetype[a_entity];
+
+			// 前アーキタイプのエンティティリストからエンティティを削除
+			archToEntities[arch].Remove(a_entity);
 		}
 		else
 		{
 			entityToArchetype.resize(a_entity + 1, Archetype());
-		}
 
-		// 前アーキタイプのエンティティリストからエンティティを削除
-		archToEntities[arch].Remove(a_entity);
+			//今回がコンポーネントを初めて追加するエンティティなら
+			//上記の削除処理はしない
+		}
 
 		// アーキタイプを編集
 		arch.set(type);
 
+		if(archToEntities.find(arch) == archToEntities.end())
+		{
+			// 新しいアーキタイプならエンティティリストを初期化
+			archToEntities[arch] = EntityContainer();
+		}
+
 		// 新しいアーキタイプをセット
 		archToEntities[arch].Add(a_entity);
+
 		entityToArchetype[a_entity] = arch;
 
 		// 追加したコンポーネントを返す
@@ -160,7 +172,7 @@ public:
 		{
 			entities.emplace_back(a_entity);
 
-			if (entityToIndex.size() < a_entity)
+			if (entityToIndex.size() <= a_entity)
 			{
 				entityToIndex.resize(a_entity + 1);
 			}
@@ -226,9 +238,9 @@ public:
 		// コンポーネントを追加
 		inline CompType* AddComponent(const size_t a_entity)
 		{
-			if (components.size() < a_entity)
+			if (components.size() <= a_entity)
 			{
-				components.resize(a_entity, CompType());
+				components.resize(a_entity + 1, CompType());
 			}
 			components[a_entity] = CompType();
 			return &components[a_entity];
@@ -311,3 +323,9 @@ private:
 	// 次に発行するCompTypeID
 	static size_t nextCcompTypeID;
 };
+
+// スタティック変数の初期化
+inline size_t ECSManager::nextCcompTypeID = 0;
+
+template<typename CompType>
+inline size_t ECSManager::ComponentPool<CompType>::compTypeID = 0;

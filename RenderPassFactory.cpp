@@ -272,5 +272,7 @@ void RenderPassFactory::resourceDestruct()
 		vkDestroyRenderPass(device, pass, nullptr);
 	}
 
+	destructList[frameIndex].clear();
+
 	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

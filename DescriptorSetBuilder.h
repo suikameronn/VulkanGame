@@ -97,37 +97,37 @@ public:
 	void Create(const DescriptorSetProperty& property, VkDescriptorSet& descriptorSet);
 
 	//プロパティの初期化
-	DescriptorSetBuilder initProperty();
+	DescriptorSetBuilder& initProperty();
 
 	//VkDescriptorSetLayoutの設定
-	DescriptorSetBuilder withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout);
+	DescriptorSetBuilder& withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout);
 
 	//VkDescriptorSetの個数の設定
-	DescriptorSetBuilder withDescriptorSetCount(const uint32_t& count);
+	DescriptorSetBuilder& withDescriptorSetCount(const uint32_t& count);
 
 	//VkDescriptorBufferInfoの設定///////
 
-	DescriptorSetBuilder withBindingBuffer(const uint32_t& binding);
+	DescriptorSetBuilder& withBindingBuffer(const uint32_t& binding);
 
-	DescriptorSetBuilder withTypeBuffer(const VkDescriptorType& type);
+	DescriptorSetBuilder& withTypeBuffer(const VkDescriptorType& type);
 
-	DescriptorSetBuilder withBuffer(const std::shared_ptr<GpuBuffer>& buffer);
+	DescriptorSetBuilder& withBuffer(const std::shared_ptr<GpuBuffer>& buffer);
 
-	DescriptorSetBuilder withOffset(const uint32_t& offset);
+	DescriptorSetBuilder& withOffset(const uint32_t& offset);
 
-	DescriptorSetBuilder withRange(const uint32_t& range);
+	DescriptorSetBuilder& withRange(const uint32_t& range);
 
-	DescriptorSetBuilder addBufferInfo();
+	DescriptorSetBuilder& addBufferInfo();
 
 	//VkDescriptorImageInfo/////////
 
-	DescriptorSetBuilder withBindingImage(const uint32_t& binding);
+	DescriptorSetBuilder& withBindingImage(const uint32_t& binding);
 
-	DescriptorSetBuilder withTypeImage(const VkDescriptorType& type);
+	DescriptorSetBuilder& withTypeImage(const VkDescriptorType& type);
 
-	DescriptorSetBuilder withImageLayout(const VkImageLayout& layout);
+	DescriptorSetBuilder& withImageLayout(const VkImageLayout& layout);
 
-	DescriptorSetBuilder withTexture(const std::shared_ptr<Texture> texture);
+	DescriptorSetBuilder& withTexture(const std::shared_ptr<Texture> texture);
 
-	DescriptorSetBuilder addImageInfo();
+	DescriptorSetBuilder& addImageInfo();
 };

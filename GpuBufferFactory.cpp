@@ -282,6 +282,18 @@ std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
 	return commandBuffer;
 }
 
+//コマンドバッファにコマンドを積み上げ始める
+void GpuBufferFactory::beginCommandBuffer(std::shared_ptr<CommandBuffer> command)
+{
+
+}
+
+//コマンドバッファのコマンド積み上げを終了する
+void GpuBufferFactory::endCommandBuffer(std::shared_ptr<CommandBuffer> command)
+{
+
+}
+
 //遅延破棄リストにバッファを追加する
 void GpuBufferFactory::addDefferedDestruct(VkBuffer buffer, VkDeviceMemory memory)
 {

@@ -227,6 +227,8 @@ void PipelineLayoutFactory::resourceDestruct()
 		vkDestroyPipelineLayout(device, playout, nullptr);
 	}
 
+	destructList[frameIndex].clear();
+
 	//フレームインデックスを更新する
 	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

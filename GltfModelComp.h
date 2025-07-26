@@ -7,9 +7,13 @@ struct GltfModelComp
 	//3Dƒ‚ƒfƒ‹‚Ö‚ÌID
 	uint32_t modelID;
 
+	std::string filePath;
+
 	GltfModelComp()
 	{
 		modelID = 0;
+
+		filePath = "";
 	}
 };
 

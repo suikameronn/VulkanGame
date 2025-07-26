@@ -353,5 +353,7 @@ void PipelineFactory::resourceDestruct()
 		vkDestroyPipeline(device, resource, nullptr);
 	}
 
+    destructList[frameIndex].clear();
+
 	frameIndex = (frameIndex == 0) ? 1 : 0;
 }
