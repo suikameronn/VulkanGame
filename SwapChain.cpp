@@ -254,6 +254,59 @@ void SwapChain::createFrameBuffers()
     }
 }
 
+//スワップチェーンの画像を切り替える(動機も行う)
+void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
+{
+    if (vkEndCommandBuffer(commandBuffer->commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+    std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask = waitStages.data();
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+
+    std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+    if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores.data();
+
+    std::vector<VkSwapchainKHR> swapChains = { swapChain };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains.data();
+
+    presentInfo.pImageIndices = &availableSwapChaneImageNumber;
+
+    VkResult result;
+    result = vkQueuePresentKHR(vulkanCore->getPresentQueue(), &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vulkanCore->isWindowSizeChanged()) 
+    {
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
+
+    currentFrame = (currentFrame == 1) ? 0 : 1;
+}
+
 //スワップチェーンの破棄
 void SwapChain::destroySwapChain()
 {
@@ -271,15 +324,11 @@ void SwapChain::destroySwapChain()
 //ウィンドウサイズ変更時のスワップチェーンの再作成
 void SwapChain::recreateSwapChain()
 {
+    //ウィンドウサイズが変更された場合、スワップチェーンを再作成する
 
-    if (vulkanCore->isWindowSizeChanged())
-    {
-		//ウィンドウサイズが変更された場合、スワップチェーンを再作成する
+    destroySwapChain();
 
-		destroySwapChain();
-
-        createSwapChain();
-    }
+    createSwapChain();
 }
 
 //現在のフレームバッファを取得する

@@ -158,9 +158,14 @@ public:
 		return maxMsaaSamples;
 	}
 
-	VkQueue geGraphicsQueue()
+	VkQueue getGraphicsQueue()
 	{
 		return graphicsQueue;
+	}
+
+	VkQueue getPresentQueue()
+	{
+		return presentQueue;
 	}
 
 	bool isShouldCloseWindow()

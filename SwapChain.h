@@ -75,6 +75,9 @@ private:
 	//ウィンドウサイズ変更時のスワップチェーンの再作成
 	void recreateSwapChain();
 
+	//スワップチェーンの画像を切り替える(動機も行う)
+	void flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer);
+
 	//スワップチェーンの破棄
 	void destroySwapChain();
 
