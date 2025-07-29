@@ -91,5 +91,5 @@ public:
 	//ecsManagerのRunFunctionを使う
 
 	//レンダリング終了
-	void RenderEnd();
+	void RenderEnd(const RenderProperty& property);
 };

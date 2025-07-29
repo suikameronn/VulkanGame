@@ -35,7 +35,7 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
 	model->nodes.resize(gltfModel.nodes.size());
 
     //gltfモデルのシーンは一つのみを前提とする
-    loadNode(model, 0, gltfModel);
+    loadNode(model, scene.nodes[0], gltfModel);
 
 	loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
@@ -46,6 +46,9 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
 
 	loadSkin(model, gltfModel);//スキンメッシュアニメーション用のスキンを読み取り
 	setSkin(model);//スキンの設定
+
+    //gpu上の頂点バッファなどを作成
+    model->setPointBufferNum();
 
     modelStorage[hash] = model;//ストレージにモデルを加える
 

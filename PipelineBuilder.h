@@ -101,79 +101,79 @@ public:
 	void Create(const PipelineProperty& property, VkPipeline& pipeline);
 
 	//パイプラインの設定の初期化
-	void initProperty();
+	PipelineBuilder& initProperty();
 
 	//レンダーパスを設定する
-	PipelineBuilder withRenderPass(const std::shared_ptr<RenderPass>& renderPass);
+	PipelineBuilder& withRenderPass(const std::shared_ptr<RenderPass>& renderPass);
 	//パイプラインレイアウトを設定する
-	PipelineBuilder withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout);
+	PipelineBuilder& withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout);
 	//レンダーパスを設定する
-	PipelineBuilder withRenderPass(const RenderPass& renderPass);
+	PipelineBuilder& withRenderPass(const RenderPass& renderPass);
 
 	//頂点シェーダパスを設定
-	PipelineBuilder withVertexShader(const std::string& path);
+	PipelineBuilder& withVertexShader(const std::string& path);
 	//フラグメントシェーダパスを設定
-	PipelineBuilder withFragmentShader(const std::string& path);
+	PipelineBuilder& withFragmentShader(const std::string& path);
 	//コンピュートシェーダ
-	PipelineBuilder withComputeShader(const std::string& path);
+	PipelineBuilder& withComputeShader(const std::string& path);
 
 	//頂点データの読み取り方を設定
-	PipelineBuilder withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
+	PipelineBuilder& withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
 		, const uint32_t& stride);
 
 	//頂点アトリビュートの追加
-	PipelineBuilder addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
+	PipelineBuilder& addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
 		const VkFormat& format, const uint32_t& offset);
 
 	//プリミティブの設定
-	PipelineBuilder withTopology(const VkPrimitiveTopology& topology);
+	PipelineBuilder& withTopology(const VkPrimitiveTopology& topology);
 
 
 	//プリミティブの描画方法を設定
-	PipelineBuilder withPolygonMode(const VkPolygonMode& mode);
+	PipelineBuilder& withPolygonMode(const VkPolygonMode& mode);
 	//ラインの太さを設定
-	PipelineBuilder withLineWidth(const float& width);
+	PipelineBuilder& withLineWidth(const float& width);
 	//カリングモードの設定
-	PipelineBuilder withCullMode(const VkCullModeFlags& mode);
+	PipelineBuilder& withCullMode(const VkCullModeFlags& mode);
 	//ポリゴンの表裏判定を右回りか左回りに設定
-	PipelineBuilder withFrontFace(const VkFrontFace& face);
+	PipelineBuilder& withFrontFace(const VkFrontFace& face);
 	//デプスバイアスを設定する
-	PipelineBuilder enableDepthBias(const bool& isBias);
+	PipelineBuilder& enableDepthBias(const bool& isBias);
 
 
 	//マルチサンプリングシェーディングを設定
-	PipelineBuilder enableMultiSampleShading(const bool& mode);
+	PipelineBuilder& enableMultiSampleShading(const bool& mode);
 	//最低のサンプリングシェーディングポイントの数を設定
-	PipelineBuilder withMinSampleShading(const float& min);
+	PipelineBuilder& withMinSampleShading(const float& min);
 	//マルチサンプリングを行う際のサンプル数を設定
-	PipelineBuilder withRansterizationSamples(const VkSampleCountFlagBits& flag);
+	PipelineBuilder& withRansterizationSamples(const VkSampleCountFlagBits& flag);
 
 
 	//デプステストを設定する
-	PipelineBuilder enableDepthTest(const bool& isEnable);
+	PipelineBuilder& enableDepthTest(const bool& isEnable);
 	//zバッファへの書き込みを設定する
-	PipelineBuilder enableDepthWrite(const bool& isWrite);
+	PipelineBuilder& enableDepthWrite(const bool& isWrite);
 	//z値の比較の仕方を設定する
-	PipelineBuilder withDepthCompare(const VkCompareOp& compare);
+	PipelineBuilder& withDepthCompare(const VkCompareOp& compare);
 	//z値の範囲を指定し、それに満たない頂点は破棄する
-	PipelineBuilder enableDepthBoundsTest(const float& min, const float& max);
+	PipelineBuilder& enableDepthBoundsTest(const float& min, const float& max);
 	//ステンシルテストを設定する
-	PipelineBuilder enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back);
+	PipelineBuilder& enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back);
 
 	//アタッチメントの色の書き込みを設定
-	PipelineBuilder withColorWriteMask(const VkColorComponentFlags& flag);
+	PipelineBuilder& withColorWriteMask(const VkColorComponentFlags& flag);
 	//色のブレンドの仕方を設定する
-	PipelineBuilder withColorBlendFactorOp(const VkBlendFactor& src,const VkBlendFactor& dst,const VkBlendOp op);
+	PipelineBuilder& withColorBlendFactorOp(const VkBlendFactor& src,const VkBlendFactor& dst,const VkBlendOp op);
 	//透明度のブレンドの仕方を設定する
-	PipelineBuilder withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op);
+	PipelineBuilder& withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op);
 	//アタッチメントを追加
-	PipelineBuilder addColoarAttachment();
+	PipelineBuilder& addColoarAttachment();
 
 	//ロジック演算を設定
-	PipelineBuilder withLogicOp(const VkLogicOp& logic);
+	PipelineBuilder& withLogicOp(const VkLogicOp& logic);
 	//ブレンド定数を設定
-	PipelineBuilder withBlendConstant(const float& r, const float& g, const float& b, const float& a);
+	PipelineBuilder& withBlendConstant(const float& r, const float& g, const float& b, const float& a);
 
 	//動的に変更するステートを積み上げる
-	PipelineBuilder addDynamicState(const VkDynamicState& state);
+	PipelineBuilder& addDynamicState(const VkDynamicState& state);
 };

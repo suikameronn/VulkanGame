@@ -39,12 +39,12 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
             .withFragmentShader("shaders/frag.spv")
             .withVertexInput(0, VK_VERTEX_INPUT_RATE_VERTEX, sizeof(Vertex))
             .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord0))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord1))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, boneID1))
-            .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, weight1))
+            .addVertexInputAttrib(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color))
+            .addVertexInputAttrib(2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord0))
+            .addVertexInputAttrib(3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord1))
+            .addVertexInputAttrib(4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal))
+            .addVertexInputAttrib(5, 0, VK_FORMAT_R32G32B32A32_SINT, offsetof(Vertex, boneID1))
+            .addVertexInputAttrib(6, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, weight1))
             .withTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .withLineWidth(1.0f)
             .withPolygonMode(VK_POLYGON_MODE_FILL)
@@ -348,12 +348,12 @@ void PipelineFactory::addDefferedDestruct(VkPipeline& pLayout)
 //ÉäÉ\Å[ÉXÇîjä¸Ç∑ÇÈ
 void PipelineFactory::resourceDestruct()
 {
+    frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	for (auto& resource : destructList[frameIndex])
 	{
 		vkDestroyPipeline(device, resource, nullptr);
 	}
 
     destructList[frameIndex].clear();
-
-	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

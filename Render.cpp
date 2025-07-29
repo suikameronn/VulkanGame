@@ -101,7 +101,7 @@ void Render::RenderStart(const RenderProperty& property)
 }
 
 //ƒŒƒ“ƒ_ƒŠƒ“ƒOI—¹
-void Render::RenderEnd()
+void Render::RenderEnd(const RenderProperty& property)
 {
 	vkCmdEndRenderPass(property.commandBuffer->commandBuffer);
 }

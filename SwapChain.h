@@ -33,6 +33,8 @@ private:
 
 	VkExtent2D swapChainExtent;
 
+	uint32_t availableSwapChaneImageNumber;
+
 	//スワップチェーンのカラーアタッチメント
 	std::shared_ptr<Texture> colorAttachment;
 
@@ -41,6 +43,15 @@ private:
 
 	//フレームバッファ
 	std::vector<std::shared_ptr<FrameBuffer>> frameBuffers;
+
+	//そのコマンドバッファが使用可能になるまで待つ
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+
+	//そのコマンドバッファでの処理が終わったら信号を送る
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+
+	//cpuにgpuからレンダリングの終了を知らせる
+	std::vector<VkFence> inFlightFences;
 
 	//スワップチェーンが使用するフォーマットの候補を取得する
 	SwapChainSupportDetails querySwapChainSupport();
@@ -75,8 +86,8 @@ private:
 	//ウィンドウサイズ変更時のスワップチェーンの再作成
 	void recreateSwapChain();
 
-	//スワップチェーンの画像を切り替える(動機も行う)
-	void flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer);
+	//同期用のリソースを作成
+	void createSync();
 
 	//スワップチェーンの破棄
 	void destroySwapChain();
@@ -108,4 +119,7 @@ public:
 
 	//現在のフレームバッファを取得する
 	std::shared_ptr<FrameBuffer> getCurrentFrameBuffer();
+
+	//スワップチェーンの画像を切り替える(動機も行う)
+	void flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer);
 };

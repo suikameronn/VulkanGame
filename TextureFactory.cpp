@@ -265,6 +265,8 @@ void TextureFactory::addDefferedDestruct(VkImage& image, VkDeviceMemory& memory
 //ÉäÉ\Å[ÉXÇîjä¸Ç∑ÇÈ
 void TextureFactory::resourceDestruct()
 {
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	for (VkImage& image : destructListImage[frameIndex])
 	{
 		vkDestroyImage(device, image, nullptr);
@@ -285,5 +287,8 @@ void TextureFactory::resourceDestruct()
 		vkDestroySampler(device, sampler, nullptr);
 	}
 
-	frameIndex = (frameIndex == 0) ? 1 : 0;
+	destructListImage[frameIndex].clear();
+	destructListMemory[frameIndex].clear();
+	destructListView[frameIndex].clear();
+	destructListSampler[frameIndex].clear();
 }

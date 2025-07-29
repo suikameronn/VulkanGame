@@ -30,12 +30,12 @@ void FrameBufferFactory::addDefferedDestruct(VkFramebuffer& frameBuffer)
 
 void FrameBufferFactory::resourceDestruct()
 {
+	frameIndex = (frameIndex == 0) ? 1 : 0; //フレームインデックスを切り替える
+
 	for(auto& frameBuffer : destructList[frameIndex])
 	{
 		vkDestroyFramebuffer(device, frameBuffer, nullptr);
 	}
 
 	destructList[frameIndex].clear();
-
-	frameIndex = (frameIndex == 0) ? 1 : 0; //フレームインデックスを切り替える
 }

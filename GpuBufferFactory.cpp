@@ -285,13 +285,22 @@ std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
 //コマンドバッファにコマンドを積み上げ始める
 void GpuBufferFactory::beginCommandBuffer(std::shared_ptr<CommandBuffer> command)
 {
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+	if (vkBeginCommandBuffer(command->commandBuffer, &beginInfo) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to begin recording command buffer!");
+	}
 }
 
 //コマンドバッファのコマンド積み上げを終了する
 void GpuBufferFactory::endCommandBuffer(std::shared_ptr<CommandBuffer> command)
 {
-
+	if (vkEndCommandBuffer(command->commandBuffer) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to record command buffer!");
+	}
 }
 
 //遅延破棄リストにバッファを追加する
@@ -308,6 +317,9 @@ void GpuBufferFactory::addDefferedDestruct(VkCommandBuffer commandBuffer)
 //バッファを破棄する
 void GpuBufferFactory::resourceDestruct()
 {
+	//フレームインデックスを更新する
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	//実際にバッファを破棄する
 	for (auto& bufferMemory : destructList[frameIndex])
 	{
@@ -321,7 +333,5 @@ void GpuBufferFactory::resourceDestruct()
 	}
 
 	destructList[frameIndex].clear();
-
-	//フレームインデックスを更新する
-	frameIndex = (frameIndex == 0) ? 1 : 0;
+	destructListCommand[frameIndex].clear();
 }

@@ -35,6 +35,7 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 
 		builder->initProperty();
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MATERIAL));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
@@ -221,6 +222,9 @@ void PipelineLayoutFactory::addDefferedDestruct(VkPipelineLayout& pLayout)
 //リソースを破棄する
 void PipelineLayoutFactory::resourceDestruct()
 {
+	//フレームインデックスを更新する
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	//実際にリソースを破棄する
 	for (auto& playout : destructList[frameIndex])
 	{
@@ -228,7 +232,4 @@ void PipelineLayoutFactory::resourceDestruct()
 	}
 
 	destructList[frameIndex].clear();
-
-	//フレームインデックスを更新する
-	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

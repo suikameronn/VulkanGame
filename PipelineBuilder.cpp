@@ -65,6 +65,10 @@ PipelineProperty PipelineBuilder::Build()
 	property.dynamicState.dynamicStateCount = static_cast<uint32_t>(property.dynamicStateArray.size());
 	property.dynamicState.pDynamicStates = property.dynamicStateArray.data();
 
+	property.viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	property.viewportState.viewportCount = 1;
+	property.viewportState.scissorCount = 1;
+
 	PipelineProperty p = property;
 
 	initProperty();
@@ -75,7 +79,7 @@ PipelineProperty PipelineBuilder::Build()
 //VkPipelineを作成
 void PipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 {
-	if (p.computeShader)
+	if (!p.computeShader)
 	{
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -118,13 +122,15 @@ void PipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 }
 
 //パイプラインの設定の初期化
-void PipelineBuilder::initProperty()
+PipelineBuilder& PipelineBuilder::initProperty()
 {
 	property.initProperty();
+
+	return *this;
 }
 
 //パイプラインレイアウトを設定する
-PipelineBuilder PipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
+PipelineBuilder& PipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
 {
 	property.pLayout = pLayout;
 
@@ -132,7 +138,7 @@ PipelineBuilder PipelineBuilder::withPipelineLayout(const std::shared_ptr<Pipeli
 }
 
 //レンダーパスを設定する
-PipelineBuilder PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
+PipelineBuilder& PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
 {
 	property.renderPass = renderPass;
 
@@ -140,9 +146,9 @@ PipelineBuilder PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass
 }
 
 //頂点シェーダパスを設定
-PipelineBuilder PipelineBuilder::withVertexShader(const std::string& path)
+PipelineBuilder& PipelineBuilder::withVertexShader(const std::string& path)
 {
-	if (!property.computeShader)
+	if (property.computeShader)
 	{
 		throw std::runtime_error("PipelineBuilder : すでにコンピュートシェーダが登録されています");
 	}
@@ -152,9 +158,9 @@ PipelineBuilder PipelineBuilder::withVertexShader(const std::string& path)
 	return *this;
 }
 //フラグメントシェーダパスを設定
-PipelineBuilder PipelineBuilder::withFragmentShader(const std::string& path)
+PipelineBuilder& PipelineBuilder::withFragmentShader(const std::string& path)
 {
-	if (!property.computeShader)
+	if (property.computeShader)
 	{
 		throw std::runtime_error("PipelineBuilder : すでにコンピュートシェーダが登録されています");
 	}
@@ -164,9 +170,9 @@ PipelineBuilder PipelineBuilder::withFragmentShader(const std::string& path)
 	return *this;
 }
 //コンピュートシェーダ
-PipelineBuilder PipelineBuilder::withComputeShader(const std::string& path)
+PipelineBuilder& PipelineBuilder::withComputeShader(const std::string& path)
 {
-	if (!property.vertexShader || !property.fragmentShader)
+	if (property.vertexShader || property.fragmentShader)
 	{
 		throw std::runtime_error("PipelineBuilder : すでに頂点かフラグメントシェーダが登録されています");
 	}
@@ -177,7 +183,7 @@ PipelineBuilder PipelineBuilder::withComputeShader(const std::string& path)
 }
 
 //頂点データの読み取り方を設定
-PipelineBuilder PipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
+PipelineBuilder& PipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
 	, const uint32_t& stride)
 {
 	property.bindingDescription.binding = binding;
@@ -188,7 +194,7 @@ PipelineBuilder PipelineBuilder::withVertexInput(const uint32_t& binding, const 
 }
 
 //頂点アトリビュートの追加
-PipelineBuilder PipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
+PipelineBuilder& PipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
 	const VkFormat& format, const uint32_t& offset)
 {
 	VkVertexInputAttributeDescription attribute{};
@@ -203,7 +209,7 @@ PipelineBuilder PipelineBuilder::addVertexInputAttrib(const uint32_t& location, 
 }
 
 //プリミティブの設定
-PipelineBuilder PipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
+PipelineBuilder& PipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
 {
 	property.inputAssemblyState.topology = topology;
 
@@ -212,35 +218,35 @@ PipelineBuilder PipelineBuilder::withTopology(const VkPrimitiveTopology& topolog
 
 
 //プリミティブの描画方法を設定
-PipelineBuilder PipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
+PipelineBuilder& PipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
 {
 	property.rasterizationState.polygonMode = mode;
 
 	return *this;
 }
 //ラインの太さを設定
-PipelineBuilder PipelineBuilder::withLineWidth(const float& width)
+PipelineBuilder& PipelineBuilder::withLineWidth(const float& width)
 {
 	property.rasterizationState.lineWidth = width;
 
 	return *this;
 }
 //カリングモードの設定
-PipelineBuilder PipelineBuilder::withCullMode(const VkCullModeFlags& mode)
+PipelineBuilder& PipelineBuilder::withCullMode(const VkCullModeFlags& mode)
 {
 	property.rasterizationState.cullMode = mode;
 
 	return *this;
 }
 //ポリゴンの表裏判定を右回りか左回りに設定
-PipelineBuilder PipelineBuilder::withFrontFace(const VkFrontFace& face)
+PipelineBuilder& PipelineBuilder::withFrontFace(const VkFrontFace& face)
 {
 	property.rasterizationState.frontFace = face;
 
 	return *this;
 }
 //デプスバイアスを設定する
-PipelineBuilder PipelineBuilder::enableDepthBias(const bool& isBias)
+PipelineBuilder& PipelineBuilder::enableDepthBias(const bool& isBias)
 {
 	property.rasterizationState.depthBiasEnable = static_cast<VkBool32>(isBias);
 
@@ -249,21 +255,21 @@ PipelineBuilder PipelineBuilder::enableDepthBias(const bool& isBias)
 
 
 //マルチサンプリングシェーディングを設定
-PipelineBuilder PipelineBuilder::enableMultiSampleShading(const bool& mode)
+PipelineBuilder& PipelineBuilder::enableMultiSampleShading(const bool& mode)
 {
 	property.multisampleState.sampleShadingEnable = static_cast<VkBool32>(mode);
 
 	return *this;
 }
 //最低のサンプリングシェーディングポイントの数を設定
-PipelineBuilder PipelineBuilder::withMinSampleShading(const float& min)
+PipelineBuilder& PipelineBuilder::withMinSampleShading(const float& min)
 {
 	property.multisampleState.minSampleShading = min;
 
 	return *this;
 }
 //マルチサンプリングを行う際のサンプル数を設定
-PipelineBuilder PipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
+PipelineBuilder& PipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
 {
 	property.multisampleState.rasterizationSamples = flag;
 
@@ -272,28 +278,28 @@ PipelineBuilder PipelineBuilder::withRansterizationSamples(const VkSampleCountFl
 
 
 //デプステストを設定する
-PipelineBuilder PipelineBuilder::enableDepthTest(const bool& isEnable)
+PipelineBuilder& PipelineBuilder::enableDepthTest(const bool& isEnable)
 {
 	property.depthStencilState.depthTestEnable = static_cast<VkBool32>(isEnable);
 
 	return *this;
 }
 //zバッファへの書き込みを設定する
-PipelineBuilder PipelineBuilder::enableDepthWrite(const bool& isWrite)
+PipelineBuilder& PipelineBuilder::enableDepthWrite(const bool& isWrite)
 {
 	property.depthStencilState.depthWriteEnable = static_cast<VkBool32>(isWrite);
 
 	return *this;
 }
 //z値の比較の仕方を設定する
-PipelineBuilder PipelineBuilder::withDepthCompare(const VkCompareOp& compare)
+PipelineBuilder& PipelineBuilder::withDepthCompare(const VkCompareOp& compare)
 {
 	property.depthStencilState.depthCompareOp = compare;
 
 	return *this;
 }
 //z値の範囲を指定し、それに満たない頂点は破棄する
-PipelineBuilder PipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
+PipelineBuilder& PipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
 {
 	property.depthStencilState.depthBoundsTestEnable = VK_TRUE;
 	property.depthStencilState.minDepthBounds = min;
@@ -302,7 +308,7 @@ PipelineBuilder PipelineBuilder::enableDepthBoundsTest(const float& min, const f
 	return *this;
 }
 //ステンシルテストを設定する
-PipelineBuilder PipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
+PipelineBuilder& PipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
 {
 	property.depthStencilState.stencilTestEnable = VK_TRUE;
 	property.depthStencilState.front = front;
@@ -313,7 +319,7 @@ PipelineBuilder PipelineBuilder::enableStencilTest(const VkStencilOpState& front
 
 
 //ロジック演算を設定
-PipelineBuilder PipelineBuilder::withLogicOp(const VkLogicOp& logic)
+PipelineBuilder& PipelineBuilder::withLogicOp(const VkLogicOp& logic)
 {
 	property.colorBlendState.logicOpEnable = VK_TRUE;
 	property.colorBlendState.logicOp = logic;
@@ -322,7 +328,7 @@ PipelineBuilder PipelineBuilder::withLogicOp(const VkLogicOp& logic)
 }
 
 //カラーブレンドアタッチメントの書き込みできる色を設定する
-PipelineBuilder PipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
+PipelineBuilder& PipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
 {
 	colorBlendAttachment.colorWriteMask = flag;
 
@@ -330,7 +336,7 @@ PipelineBuilder PipelineBuilder::withColorWriteMask(const VkColorComponentFlags&
 }
 
 //色のブレンドの仕方を設定する
-PipelineBuilder PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+PipelineBuilder& PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.blendEnable = VK_TRUE;
 
@@ -342,7 +348,7 @@ PipelineBuilder PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src
 }
 
 //透明度のブレンドの仕方を設定する
-PipelineBuilder PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+PipelineBuilder& PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.srcAlphaBlendFactor = src;
 	colorBlendAttachment.dstAlphaBlendFactor = dst;
@@ -352,7 +358,7 @@ PipelineBuilder PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src
 }
 
 //アタッチメントを追加
-PipelineBuilder PipelineBuilder::addColoarAttachment()
+PipelineBuilder& PipelineBuilder::addColoarAttachment()
 {
 	property.colorBlendStateArray.push_back(colorBlendAttachment);
 
@@ -361,7 +367,7 @@ PipelineBuilder PipelineBuilder::addColoarAttachment()
 	return *this;
 }
 //ブレンド定数を設定
-PipelineBuilder PipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
+PipelineBuilder& PipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
 {
 	property.colorBlendState.blendConstants[0] = r;
 	property.colorBlendState.blendConstants[1] = g;
@@ -372,7 +378,7 @@ PipelineBuilder PipelineBuilder::withBlendConstant(const float& r, const float& 
 }
 
 //動的に変更するステートを積み上げる
-PipelineBuilder PipelineBuilder::addDynamicState(const VkDynamicState& state)
+PipelineBuilder& PipelineBuilder::addDynamicState(const VkDynamicState& state)
 {
 	property.dynamicStateArray.push_back(state);
 

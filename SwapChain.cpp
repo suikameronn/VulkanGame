@@ -16,6 +16,8 @@ SwapChain::SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFa
     surface = vulkanCore->getSurface();
 
 	createSwapChain();
+
+    createSync();
 }
 
 //スワップチェーンを作成する
@@ -29,6 +31,30 @@ void SwapChain::createSwapChain()
 
     //フレームバッファを作成
     createFrameBuffers();
+}
+
+//同期用のリソースの作成
+void SwapChain::createSync()
+{
+    imageAvailableSemaphores.resize(swapChainImages.size());
+    renderFinishedSemaphores.resize(swapChainImages.size());
+    inFlightFences.resize(swapChainImages.size());
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
 }
 
 //サーフェスからスワップチェーンのサポート情報を取得
@@ -257,14 +283,17 @@ void SwapChain::createFrameBuffers()
 //スワップチェーンの画像を切り替える(動機も行う)
 void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
 {
-    if (vkEndCommandBuffer(commandBuffer->commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    uint32_t lastFrame = (frameIndex == 0) ? 1 : 0;
+
+    //前回のレンダリングの終了を待つ
+    vkWaitForFences(device, 1, &inFlightFences[lastFrame], VK_TRUE, UINT64_MAX);
+
+    vkResetFences(device, 1, &inFlightFences[frameIndex]);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+    std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[frameIndex] };
     std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores.data();
@@ -273,11 +302,11 @@ void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
 
-    std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+    std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[frameIndex] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-    if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, inFlightFences[frameIndex]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
@@ -304,7 +333,7 @@ void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    currentFrame = (currentFrame == 1) ? 0 : 1;
+    frameIndex = (frameIndex == 0) ? 1 : 0;
 }
 
 //スワップチェーンの破棄
@@ -334,8 +363,16 @@ void SwapChain::recreateSwapChain()
 //現在のフレームバッファを取得する
 std::shared_ptr<FrameBuffer> SwapChain::getCurrentFrameBuffer()
 {
-    frameIndex = (frameIndex == 0) ? 1 : 0;
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX
+        , imageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &availableSwapChaneImageNumber);
 
-    return frameBuffers[frameIndex];
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    return frameBuffers[availableSwapChaneImageNumber];
 }
 

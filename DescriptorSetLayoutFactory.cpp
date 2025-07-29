@@ -190,6 +190,9 @@ void DescriptorSetLayoutFactory::addDefferedDestruct(VkDescriptorSetLayout& layo
 //リソースを破棄する
 void DescriptorSetLayoutFactory::resourceDestruct()
 {
+	//フレームインデックスを更新する
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	//実際にリソースを破棄する
 	for (auto& layout : destructList[frameIndex])
 	{
@@ -197,7 +200,4 @@ void DescriptorSetLayoutFactory::resourceDestruct()
 	}
 
 	destructList[frameIndex].clear();
-
-	//フレームインデックスを更新する
-	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

@@ -28,6 +28,8 @@ void GameManager::createInstance()
 	VkDevice& device = vulkanCore->getLogicDevice();
 
 	pipelineBuilder = std::make_shared<PipelineBuilder>(device, shaderFactory);
+	pipelineFactory = std::make_shared<PipelineFactory>(device, pipelineLayoutFactory, shaderFactory
+		, pipelineBuilder, renderPassFactory);
 
 	textureBuilder = std::make_shared<TextureBuilder>(vulkanCore, bufferFactory);
 	textureFactory = std::make_shared<TextureFactory>(device, textureBuilder);
@@ -81,6 +83,7 @@ void GameManager::createScene()
 	ecsManager->AddComponent<TransformComp>(entity1);
 	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 	ecsManager->AddComponent<GltfModelAnimComp>(entity1);
+	ecsManager->AddComponent<MeshRendererComp>(entity1);
 
 	comp->filePath = "models/PlayerModel.glb";
 }
@@ -147,7 +150,7 @@ void GameManager::OnStart()
 					rendererComp.modelMatBuffer =
 						bufferFactory->Create(sizeof(glm::mat4),BufferUsage::UNIFORM,BufferTransferType::NONE);
 
-					rendererComp.animMatBuffer.resize(gltfModel->nodeCount);
+					rendererComp.animMatBuffer.resize(gltfModel->nodes.size());
 					for (auto& buffer : rendererComp.animMatBuffer)
 					{
 						buffer = bufferFactory->Create(sizeof(glm::mat4)
@@ -168,7 +171,7 @@ void GameManager::OnStart()
 							.Build()
 						);
 
-					rendererComp.animMatDesc.resize(gltfModel->nodeCount);
+					rendererComp.animMatDesc.resize(gltfModel->nodes.size());
 					for (int i = 0; i < rendererComp.animMatDesc.size(); i++)
 					{
 						rendererComp.animMatDesc[i] =
@@ -209,6 +212,8 @@ void GameManager::Rendering()
 		std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
 		std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
 
+		bufferFactory->beginCommandBuffer(commandBuffer);
+
 		const RenderProperty property = render->initProperty()
 			.withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
 			.withFrameBuffer(frameBuffer)
@@ -219,11 +224,11 @@ void GameManager::Rendering()
 			.withClearStencil(0)
 			.Build();
 
-		std::function<void(GltfModelComp&, MeshRendererComp&, GltfModelAnimComp&)> renderModel =
-			[&](GltfModelComp& gltfComp, MeshRendererComp& meshRendererComp, GltfModelAnimComp& animationComp)
+		std::function<void(GltfModelComp&, MeshRendererComp&)> renderModel =
+			[&](GltfModelComp& gltfComp, MeshRendererComp& meshRendererComp)
 			{
 				std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(gltfComp.modelID);
-				if (gltfModel)
+				if (!gltfModel)
 				{
 					throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
 				}
@@ -231,18 +236,24 @@ void GameManager::Rendering()
 				vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 					pipelineFactory->Create(PipelinePattern::PBR)->pipeline);
 
-				std::array<VkDescriptorSet, 2> descriptorSets;
+				std::array<VkDescriptorSet, 1> descriptorSets;
+
+				VkDeviceSize offsets[] = { 0 };
 
 				for (const auto& node : gltfModel->nodes)
 				{
 					for (const auto& mesh : node.meshArray)
 					{
+						vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(node.offset)->buffer, offsets);
+
+						vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(node.offset)->buffer, 0, VK_INDEX_TYPE_UINT32);
+
 						for (const auto& primitive : mesh.primitives)
 						{
 							std::shared_ptr<Material> material = gltfModel->materials[primitive.materialIndex];
 
 							descriptorSets[0] = meshRendererComp.modelMatDesc->descriptorSet;
-							descriptorSets[1] = meshRendererComp.animMatDesc[primitive.primitiveIndex]->descriptorSet;
+							//descriptorSets[1] = meshRendererComp.animMatDesc[primitive.primitiveIndex]->descriptorSet;
 
 							vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 								pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout, 0
@@ -255,9 +266,13 @@ void GameManager::Rendering()
 			};
 		render->RenderStart(property);
 
-		ecsManager->RunFunction<GltfModelComp, MeshRendererComp, GltfModelAnimComp>(renderModel);
+		ecsManager->RunFunction<GltfModelComp, MeshRendererComp>(renderModel);
 
-		render->RenderEnd();
+		render->RenderEnd(property);
+
+		bufferFactory->endCommandBuffer(commandBuffer);
+
+		swapChain->flipSwapChainImage(commandBuffer);
 	}
 
 	//ÉäÉ\Å[ÉXÇÃîjä¸

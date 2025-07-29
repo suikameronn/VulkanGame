@@ -10,7 +10,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4[20] lightMVP;
 } matricesUBO;
 
-layout(binding = 1) uniform animationUniformBufferObject
+layout(set = 1,binding = 0) uniform animationUniformBufferObject
 {
     mat4 nodeMatrix;
     mat4 matrix;

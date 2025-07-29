@@ -61,12 +61,12 @@ void ShaderFactory::addDefferedDestruct(VkShaderModule& module)
 //ÉäÉ\Å[ÉXÇîjä¸Ç∑ÇÈ
 void ShaderFactory::resourceDestruct()
 {
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	for (auto& module : destructList[frameIndex])
 	{
 		vkDestroyShaderModule(device, module, nullptr);
 	}
 
 	destructList[frameIndex].clear();
-
-	frameIndex = (frameIndex == 0) ? 1 : 0;
 }

@@ -267,12 +267,12 @@ void RenderPassFactory::addDefferedDestruct(VkRenderPass& renderPass)
 //ƒŠƒ\[ƒX‚ğ”jŠü‚·‚é
 void RenderPassFactory::resourceDestruct()
 {
+	frameIndex = (frameIndex == 0) ? 1 : 0;
+
 	for (auto& pass : destructList[frameIndex])
 	{
 		vkDestroyRenderPass(device, pass, nullptr);
 	}
 
 	destructList[frameIndex].clear();
-
-	frameIndex = (frameIndex == 0) ? 1 : 0;
 }
