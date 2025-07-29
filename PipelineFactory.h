@@ -231,6 +231,8 @@ private:
 	//論理デバイス
 	VkDevice device;
 
+	std::shared_ptr<VulkanCore> vulkanCore;
+
 	//現在の破棄予定のリストのインデックス
 	//描画処理が行われるごとに値が更新される
 	uint32_t frameIndex;
@@ -259,7 +261,7 @@ private:
 
 public:
 
-	PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
+	PipelineFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<PipelineLayoutFactory> f
 		, std::shared_ptr<ShaderFactory> sf, std::shared_ptr<PipelineBuilder> b
 		,std::shared_ptr<RenderPassFactory> r);
 

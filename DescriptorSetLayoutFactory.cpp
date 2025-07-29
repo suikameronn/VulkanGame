@@ -47,13 +47,23 @@ std::shared_ptr<DescriptorSetLayout> DescriptorSetLayoutFactory::createLayout(co
 //既定のレイアウトからビンディングを返す
 void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std::vector<VkDescriptorSetLayoutBinding>& bindings)
 {
-
-	if (pattern == LayoutPattern::VIEWPROJMAT)
+	if (pattern == LayoutPattern::MODELANIMMAT)
 	{
 		//頂点シェーダとコンピュートシェーダ
 		//行列用のユニフォームバッファ
 		//このセットを二つ
 		//それぞれmvp行列とアニメーション行列を入れる
+
+		builder->initProperty();
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+	}
+	else if (pattern == LayoutPattern::VIEWPROJMAT)
+	{
+		//頂点シェーダとコンピュートシェーダ
+		//行列用のユニフォームバッファ
+		//このセットを二つ
+		//それぞれビュー行列とプロジェクション行列を入れる
 
 		builder->initProperty();
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
@@ -79,6 +89,16 @@ void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std
 
 		builder->initProperty();
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+	else if (pattern == LayoutPattern::IBL)
+	{
+		//フラグメントシェーダ
+		//IBLのディヒューズ、スペキュラー、BRDFを含む三つのテクスチャ
+		
+		builder->initProperty();
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 	else if (pattern == LayoutPattern::RAYCAST)
 	{

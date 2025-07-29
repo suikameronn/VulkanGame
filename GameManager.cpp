@@ -28,7 +28,7 @@ void GameManager::createInstance()
 	VkDevice& device = vulkanCore->getLogicDevice();
 
 	pipelineBuilder = std::make_shared<PipelineBuilder>(device, shaderFactory);
-	pipelineFactory = std::make_shared<PipelineFactory>(device, pipelineLayoutFactory, shaderFactory
+	pipelineFactory = std::make_shared<PipelineFactory>(vulkanCore, pipelineLayoutFactory, shaderFactory
 		, pipelineBuilder, renderPassFactory);
 
 	textureBuilder = std::make_shared<TextureBuilder>(vulkanCore, bufferFactory);
@@ -72,7 +72,6 @@ void GameManager::createFactory()
 	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(device, pipelineLayoutBuilder, descriptorSetLayoutFactory);
 	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
 	shaderFactory = std::make_shared<ShaderFactory>(device);
-	pipelineFactory = std::make_shared<PipelineFactory>(device, pipelineLayoutFactory, shaderFactory, pipelineBuilder, renderPassFactory);
 }
 
 //ƒV[ƒ“‚Ìì¬
@@ -244,9 +243,9 @@ void GameManager::Rendering()
 				{
 					for (const auto& mesh : node.meshArray)
 					{
-						vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(node.offset)->buffer, offsets);
+						vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-						vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(node.offset)->buffer, 0, VK_INDEX_TYPE_UINT32);
+						vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 						for (const auto& primitive : mesh.primitives)
 						{

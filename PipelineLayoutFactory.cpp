@@ -34,15 +34,13 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		//PBRシェーダ
 
 		builder->initProperty();
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::MODELANIMMAT));//モデル行列
+		builder->addLayout(layoutFactory->Create(LayoutPattern::VIEWPROJMAT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MATERIAL));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::IBL));
 
 		VkPushConstantRange p1{};
 		p1.offset = 0;

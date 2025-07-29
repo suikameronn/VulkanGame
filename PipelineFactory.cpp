@@ -1,10 +1,12 @@
 #include"PipelineFactory.h"
 
-PipelineFactory::PipelineFactory(VkDevice& d, std::shared_ptr<PipelineLayoutFactory> f
+PipelineFactory::PipelineFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<PipelineLayoutFactory> f
     , std::shared_ptr<ShaderFactory> sf, std::shared_ptr<PipelineBuilder> b
     , std::shared_ptr<RenderPassFactory> r)
 {
-    device = d;
+    vulkanCore = core;
+
+    device = vulkanCore->getLogicDevice();
 
     pLayoutFactory = f;
 
@@ -53,7 +55,7 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
             .enableDepthBias(VK_FALSE)
             .enableMultiSampleShading(VK_TRUE)
             .withMinSampleShading(0.2f)
-            .withRansterizationSamples(VK_SAMPLE_COUNT_8_BIT)
+            .withRansterizationSamples(vulkanCore->getMaxMsaaSamples())
             .withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                 | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
             .withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
