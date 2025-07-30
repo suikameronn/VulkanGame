@@ -43,7 +43,7 @@ void GltfModel::updateAllNodes(NodeTransform& nodeTransform, std::vector<std::ar
 
 	for (int i = 0; i < nodes.size(); i++)
 	{
-		if (nodes[i].meshArray.size() != 0 && nodes[i].skinIndex > -1)
+		if (nodes[i].mesh.vertices.size() != 0 && nodes[i].skinIndex > -1)
 		{
 			nodes[i].update(nodeTransform, jointMatrices[nodes[i].globalHasSkinNodeIndex], updatedIndex);
 		}
@@ -129,18 +129,15 @@ void GltfModel::setPointBufferNum()
 
 void GltfModel::createBuffer()
 {
-	for(int i = 0; i < nodes.size(); i++)
+	for (int i = 0; i < nodes.size(); i++)
 	{
-		if (nodes[i].meshArray.size() != 0)
+		if (nodes[i].mesh.vertices.size() != 0)
 		{
-			for (auto& mesh : nodes[i].meshArray)
-			{
-				vertBuffer[mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh.vertices.size()
-					, BufferUsage::VERTEX, BufferTransferType::DST);
+			vertBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * nodes[i].mesh.vertices.size()
+				, BufferUsage::VERTEX, BufferTransferType::DST);
 
-				indeBuffer[mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * mesh.vertices.size()
-					, BufferUsage::INDEX, BufferTransferType::DST);
-			}
+			indeBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * nodes[i].mesh.indices.size()
+				, BufferUsage::INDEX, BufferTransferType::DST);
 		}
 	}
 }
@@ -149,33 +146,30 @@ void GltfModel::createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>&
 {
 	for (int i = 0; i < nodes.size(); i++)
 	{
-		if (nodes[i].meshArray.size() != 0)
+		if (nodes[i].mesh.vertices.size() != 0)
 		{
 			const std::shared_ptr<DescriptorSetLayout> layout =
 				layoutFactory->Create(LayoutPattern::RAYCAST);
 
-			for (auto& mesh : nodes[i].meshArray)
-			{
 				const DescriptorSetProperty descProperty = descriptorSetFactory->getBuilder()
 					->initProperty()
 					.withBindingBuffer(0)
 					.withDescriptorSetCount(1)
 					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-					.withBuffer(vertBuffer[mesh.meshIndex])
-					.withRange(sizeof(Vertex) * static_cast<uint32_t>(mesh.vertices.size()))
+					.withBuffer(vertBuffer[nodes[i].mesh.meshIndex])
+					.withRange(sizeof(Vertex) * static_cast<uint32_t>(nodes[i].mesh.vertices.size()))
 					.addBufferInfo()
 					.withBindingBuffer(1)
 					.withDescriptorSetCount(1)
 					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 					.addBufferInfo()
 					.withDescriptorSetLayout(layout)
-					.withBuffer(indeBuffer[mesh.meshIndex])
-					.withRange(sizeof(uint32_t) * static_cast<uint32_t>(mesh.indices.size()))
+					.withBuffer(indeBuffer[nodes[i].mesh.meshIndex])
+					.withRange(sizeof(uint32_t) * static_cast<uint32_t>(nodes[i].mesh.indices.size()))
 					.addBufferInfo()
 					.Build();
 
-				descriptorSet[mesh.meshIndex] = descriptorSetFactory->Create(descProperty);
-			}
+				descriptorSet[nodes[i].mesh.meshIndex] = descriptorSetFactory->Create(descProperty);
 		}
 	}
 }

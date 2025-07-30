@@ -143,7 +143,7 @@ struct GltfNode
 	size_t parentIndex;
 	glm::mat4 matrix;//ローカル空間へ変換用行列
 	std::string name;
-	std::vector<Mesh> meshArray;
+	Mesh mesh;
 	Skin skin;
 	int skinIndex = -1;
 	int globalHasSkinNodeIndex = 0;
@@ -164,7 +164,6 @@ struct GltfNode
 
 	~GltfNode()
 	{
-		meshArray.clear();
 	}
 
 	void setLocalMatrix(NodeTransform& nodeTransform)

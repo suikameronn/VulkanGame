@@ -111,10 +111,8 @@ void GltfModelFactory::loadNode(std::shared_ptr<GltfModel> model, const int node
 
     if (gltfNode.mesh > -1)
     {
-        model->nodes[0].meshArray.resize(1);
-
         //メッシュの読み取り
-        loadMesh(gltfNode, gltfModel, model->nodes[0].meshArray[0], model, gltfNode.mesh);
+        loadMesh(gltfNode, gltfModel, model->nodes[0].mesh, model, gltfNode.mesh);
     }
 
     if (gltfNode.children.size() > 0)
@@ -148,10 +146,8 @@ void GltfModelFactory::loadNode(size_t& offset, int parentIndex, std::shared_ptr
 
     if (gltfNode.mesh > -1)
     {
-        model->nodes[offset].meshArray.resize(1);
-
         //メッシュの読み取り
-        loadMesh(gltfNode, gltfModel, model->nodes[offset].meshArray[0], model, gltfNode.mesh);
+        loadMesh(gltfNode, gltfModel, model->nodes[offset].mesh, model, gltfNode.mesh);
     }
 
     //ノードを配置する位置を一つ後ろにする

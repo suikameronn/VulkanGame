@@ -235,13 +235,29 @@ void GameManager::Rendering()
 				vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 					pipelineFactory->Create(PipelinePattern::PBR)->pipeline);
 
+				VkViewport viewport{};
+				viewport.x = 0.0f;
+				viewport.y = 0.0f;
+				viewport.width = (float)swapChain->getSwapChainExtent().width;
+				viewport.height = (float)swapChain->getSwapChainExtent().height;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+				vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+
+				VkRect2D scissor{};
+				scissor.offset = { 0, 0 };
+				scissor.extent = swapChain->getSwapChainExtent();
+				vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+
 				std::array<VkDescriptorSet, 1> descriptorSets;
 
 				VkDeviceSize offsets[] = { 0 };
 
 				for (const auto& node : gltfModel->nodes)
 				{
-					for (const auto& mesh : node.meshArray)
+					const Mesh& mesh = node.mesh;
+
+					if (mesh.vertices.size() != 0)
 					{
 						vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
@@ -263,6 +279,7 @@ void GameManager::Rendering()
 					}
 				}
 			};
+
 		render->RenderStart(property);
 
 		ecsManager->RunFunction<GltfModelComp, MeshRendererComp>(renderModel);
