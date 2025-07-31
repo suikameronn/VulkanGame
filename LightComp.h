@@ -13,15 +13,19 @@ struct PointLightUniform
 	glm::vec4 color;
 };
 
-struct PointLight
+struct PointLightComp
 {
 	PointLightUniform uniform;
 
 	std::shared_ptr<GpuBuffer> uniformBuffer;
 
+	std::shared_ptr<DescriptorSet> uniformDescriptorSet;
+
+	std::shared_ptr<FrameBuffer> frameBuffer;
+
 	std::shared_ptr<Texture> shadowMap;
 
-	std::shared_ptr<DescriptorSet> descriptorSet;
+	std::shared_ptr<DescriptorSet> texDescriptorSet;
 };
 
 struct DirectionLightUniform
@@ -30,13 +34,17 @@ struct DirectionLightUniform
 	glm::vec4 color;
 };
 
-struct DirectionLight
+struct DirectionLightComp
 {
 	DirectionLightUniform uniform;
 
 	std::shared_ptr<GpuBuffer> uniformBuffer;
 
+	std::shared_ptr<DescriptorSet> uniformDescriptorSet;
+
+	std::shared_ptr<FrameBuffer> frameBuffer;
+
 	std::shared_ptr<Texture> shadowMap;
 
-	std::shared_ptr<DescriptorSet> descriptorSet;
+	std::shared_ptr<DescriptorSet> texDescriptorSet;
 };

@@ -26,6 +26,7 @@
 #include"GltfModelComp.h"
 #include"MeshRendererComp.h"
 #include"PhysicComp.h"
+#include"LightComp.h"
 
 #include"ECSManager.h"
 

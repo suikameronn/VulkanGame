@@ -109,7 +109,7 @@ private:
 	void createImage(const TextureImageProperty& imageProperty, VkImage& image, VkDeviceMemory& memory);
 
 	//このテクスチャのビューを作成
-	void createImageView(TextureViewProperty& viewProperty, VkImage& image, VkImageView& view);
+	void createImageView(const TextureViewProperty& viewProperty, VkImage& image, VkImageView& view);
 
 	//サンプラーの作成
 	void createSampler(const TextureSamplerProperty& samplerProperty,VkSampler& sampler);
@@ -124,17 +124,17 @@ public:
 	//プロパティを取得する
 	TextureProperty Build();
 
-	void Create(const std::string& filePath, TextureProperty& property
+	void Create(const std::string& filePath, const TextureProperty& property
 		, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler);
 
-	void Create(const uint32_t& texChannel, const unsigned char* pixels, TextureProperty& property
+	void Create(const uint32_t& texChannel, const unsigned char* pixels, const TextureProperty& property
 		, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler);
 	
-	void Create(TextureProperty& property
+	void Create(const TextureProperty& property
 		, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler);
 
 	//スワップチェーン用
-	void Create(TextureProperty& property, VkImage& image, VkDeviceMemory& memory, VkImageView& view);
+	void Create(const TextureProperty& property, VkImage& image, VkDeviceMemory& memory, VkImageView& view);
 
 	//外部の画像を読み込む
 	void loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height

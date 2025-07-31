@@ -545,11 +545,13 @@ void TextureBuilder::createImage(const TextureImageProperty& imageProperty, VkIm
 }
 
 //このテクスチャのビューを作成
-void TextureBuilder::createImageView(TextureViewProperty& viewProperty, VkImage& image,VkImageView& view)
+void TextureBuilder::createImageView(const TextureViewProperty& viewProperty, VkImage& image,VkImageView& view)
 {
-	viewProperty.info.image = image;
+	VkImageViewCreateInfo info = viewProperty.info;
 
-	if (vkCreateImageView(device, &viewProperty.info, nullptr, &view) != VK_SUCCESS) {
+	info.image = image;
+
+	if (vkCreateImageView(device, &info, nullptr, &view) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create texture image view!");
 	}
 }
@@ -563,7 +565,7 @@ void TextureBuilder::createSampler(const TextureSamplerProperty& samplerProperty
 	}
 }
 
-void TextureBuilder::Create(const std::string& filePath, TextureProperty& property
+void TextureBuilder::Create(const std::string& filePath, const TextureProperty& property
 	, VkImage& image,VkDeviceMemory& memory,VkImageView& view,VkSampler& sampler)
 {
 	//外部の画像ファイルからテクスチャを作る
@@ -603,7 +605,7 @@ void TextureBuilder::Create(const std::string& filePath, TextureProperty& proper
 	delete[] pixels;
 }
 
-void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pixels, TextureProperty& property
+void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pixels, const TextureProperty& property
 	, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler)
 {
 	//ピクセルの配列からからテクスチャを作る
@@ -619,7 +621,7 @@ void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pix
 	createSampler(property.sampler, sampler);
 }
 
-void TextureBuilder::Create(TextureProperty& property
+void TextureBuilder::Create(const TextureProperty& property
 	, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler)
 {
 	//gpu上に画像データを展開
@@ -633,11 +635,9 @@ void TextureBuilder::Create(TextureProperty& property
 }
 
 //スワップチェーン用
-void TextureBuilder::Create(TextureProperty& property, VkImage& image
+void TextureBuilder::Create(const TextureProperty& property, VkImage& image
 	,VkDeviceMemory& memory, VkImageView& view)
 {
-	property.view.info.subresourceRange.levelCount = 1;
-
 	if(image == VK_NULL_HANDLE && memory == VK_NULL_HANDLE)
 	{
 		createImage(property.image, image, memory);

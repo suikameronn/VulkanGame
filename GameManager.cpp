@@ -188,6 +188,50 @@ void GameManager::OnStart()
 				}
 			}
 		);
+
+	ecsManager->RunFunction<PointLightComp>
+		(
+			{
+			[&](PointLightComp& comp)
+			{
+				comp.uniformBuffer =
+					bufferFactory->Create(sizeof(comp.uniform),BufferUsage::UNIFORM,BufferTransferType::NONE);
+
+				comp.uniformDescriptorSet = descriptorSetFactory->Create
+				(
+					descriptorSetFactory->getBuilder()
+					->initProperty()
+					.withBindingBuffer(0)
+					.withBuffer(comp.uniformBuffer)
+					.withDescriptorSetCount(1)
+					.withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+					.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+					.withRange(sizeof(comp.uniform))
+					.addBufferInfo()
+					.Build()
+				);
+
+				const VkExtent2D extent = swapChain->getSwapChainExtent();
+
+				comp.shadowMap = textureFactory->ImageViewCreate
+				(
+					textureBuilder->initProperty()
+					.withWidthHeight(extent.width, extent.height)
+					.withViewType(VK_IMAGE_VIEW_TYPE_2D)
+					.withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
+					.withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+					.withTiling(VK_IMAGE_TILING_OPTIMAL)
+					.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+					.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+					.withLayerCount(1)
+					.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+					.withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+					.withFormat(VK_FORMAT_D16_UNORM)
+					.Build()
+				);
+			}
+			}
+		);
 }
 
 //コンポーネントの更新処理
