@@ -19,6 +19,11 @@ struct FragmentParam
 	}
 };
 
+struct SpecularPushConstant
+{
+	float roughness;
+};
+
 //頂点データ
 struct Vertex {
 	glm::vec3 pos;//座標

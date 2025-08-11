@@ -16,7 +16,7 @@ PipelineProperty PipelineBuilder::Build()
 {
 	if (!property.computeShader)
 	{
-		if (!property.fragmentShader)
+		if (property.fragmentShader)
 		{
 			property.stages.resize(2);
 

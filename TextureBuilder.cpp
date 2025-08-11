@@ -17,58 +17,117 @@ TextureBuilder::TextureBuilder(std::shared_ptr<VulkanCore> core,std::shared_ptr<
 }
 
 //プロパティの初期化
-TextureBuilder TextureBuilder::initProperty()
+TextureBuilder& TextureBuilder::initProperty()
 {
 	property.initProperty();
 
-	return *this;
-}
-
-//プリセットからプロパティを設定する
-TextureBuilder TextureBuilder::setPreset(const TextureProperty& p)
-{
-	initProperty();
-
-	property = p;
+	image.initProperty();
+	view.initProperty();
+	sampler.initProperty();
 
 	return *this;
 }
 
 //テクスチャサイズの設定
-TextureBuilder TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height)
+TextureBuilder& TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height)
 {
 	property.image.info.extent.width = width;
 	property.image.info.extent.height = height;
 
 	property.image.info.mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
-	property.view.info.subresourceRange.levelCount = property.image.info.mipLevels;
 
 	return *this;
 }
 
 //テクスチャサイズの設定
-TextureBuilder TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height, const uint32_t& mipmapLevel)
+TextureBuilder& TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height, const uint32_t& mipmapLevel)
 {
 	property.image.info.extent.width = width;
 	property.image.info.extent.height = height;
 
 	property.image.info.mipLevels = mipmapLevel;
-	property.view.info.subresourceRange.levelCount = property.image.info.mipLevels;
+
+	return *this;
+}
+
+//画像ファイルからピクセルを読み取る
+TextureBuilder& TextureBuilder::withImageFile(const std::string filePath)
+{
+	//外部の画像ファイルからテクスチャを作る
+
+	if (!stbi_is_hdr(filePath.c_str()))
+	{
+		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
+			static_cast<unsigned char*>(property.image.pixels));
+
+		property.image.pixelSize = sizeof(unsigned char);
+	}
+	else
+	{
+		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
+			static_cast<float*>(property.image.pixels));
+
+		property.image.pixelSize = sizeof(float);
+	}
+
+	const VkExtent3D extent = property.image.info.extent;
+
+	property.image.info.mipLevels = std::floor(std::log2(std::max(extent.width, extent.height))) + 1;
+
+	return *this;
+}
+
+//画像ファイルからピクセルを読み取る
+TextureBuilder& TextureBuilder::withImageFile(const std::string filePath, const uint32_t miplevels)
+{
+	//外部の画像ファイルからテクスチャを作る
+
+	if (!stbi_is_hdr(filePath.c_str()))
+	{
+		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
+			static_cast<unsigned char*>(property.image.pixels));
+
+		property.image.pixelSize = sizeof(unsigned char);
+	}
+	else
+	{
+		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
+			static_cast<float*>(property.image.pixels));
+
+		property.image.pixelSize = sizeof(float);
+	}
+
+	property.image.info.mipLevels = miplevels;
 
 	return *this;
 }
 
 //フォーマットを設定
-TextureBuilder TextureBuilder::withFormat(const VkFormat& format)
+TextureBuilder& TextureBuilder::withFormat(const VkFormat& format)
 {
 	property.image.info.format = format;
-	property.view.info.format = format;
+
+	return *this;
+}
+
+//VkImageTypeを設定
+TextureBuilder& TextureBuilder::withImageType(const VkImageType& type)
+{
+	property.image.info.imageType = type;
+
+	return *this;
+}
+
+//VkImageFlagを設定(SamplerCubeの作成時などに使用)
+TextureBuilder& TextureBuilder::withImageFlag(const VkImageCreateFlagBits& flag)
+{
+	property.image.info.flags = flag;
 
 	return *this;
 }
 
 //マルチサンプリング数の設定
-TextureBuilder TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSamples)
+TextureBuilder& TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSamples)
 {
 	property.image.info.samples = numSamples;
 
@@ -76,7 +135,7 @@ TextureBuilder TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSa
 }
 
 //ピクセルの配置を設定
-TextureBuilder TextureBuilder::withTiling(const VkImageTiling& tiling)
+TextureBuilder& TextureBuilder::withTiling(const VkImageTiling& tiling)
 {
 	property.image.info.tiling = tiling;
 
@@ -84,7 +143,7 @@ TextureBuilder TextureBuilder::withTiling(const VkImageTiling& tiling)
 }
 
 //テクスチャのバッファの使い道を設定
-TextureBuilder TextureBuilder::withUsage(const VkImageUsageFlags& usage)
+TextureBuilder& TextureBuilder::withUsage(const VkImageUsageFlags& usage)
 {
 	property.image.info.usage = usage;
 
@@ -92,7 +151,7 @@ TextureBuilder TextureBuilder::withUsage(const VkImageUsageFlags& usage)
 }
 
 //メモリ配置を設定
-TextureBuilder TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& prop)
+TextureBuilder& TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& prop)
 {
 	property.image.memProperty = prop;
 
@@ -100,7 +159,7 @@ TextureBuilder TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& p
 }
 
 //初期のテクスチャのレイアウト
-TextureBuilder TextureBuilder::withInitialLayout(const VkImageLayout& layout)
+TextureBuilder& TextureBuilder::withInitialLayout(const VkImageLayout& layout)
 {
 	property.image.info.initialLayout = layout;
 
@@ -108,7 +167,7 @@ TextureBuilder TextureBuilder::withInitialLayout(const VkImageLayout& layout)
 }
 
 //最終的なテクスチャのレイアウト
-TextureBuilder TextureBuilder::withFinalLayout(const VkImageLayout& layout)
+TextureBuilder& TextureBuilder::withFinalLayout(const VkImageLayout& layout)
 {
 	property.image.finalLayout = layout;
 
@@ -117,33 +176,60 @@ TextureBuilder TextureBuilder::withFinalLayout(const VkImageLayout& layout)
 
 
 //ビューのタイプを設定する
-TextureBuilder TextureBuilder::withViewType(const VkImageViewType& type)
+TextureBuilder& TextureBuilder::withViewType(const VkImageViewType& type)
 {
-	property.view.info.viewType = type;
+	view.info.viewType = type;
 
 	return *this;
 }
 
 //ビューがアクセスできるデータを設定
-TextureBuilder TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
+TextureBuilder& TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
 {
-	property.view.info.subresourceRange.aspectMask = flag;
+	view.info.subresourceRange.aspectMask = flag;
+
+	return *this;
+}
+
+//ビューがアクセスするレイヤーの範囲を指定する
+TextureBuilder& TextureBuilder::withTargetLayer(const uint32_t baseLayer, const uint32_t tagetLayerCount)
+{
+	view.info.subresourceRange.baseArrayLayer = baseLayer;
+	view.info.subresourceRange.layerCount = tagetLayerCount;
+
+	return *this;
+}
+
+//ビューがアクセスするミップマップレベルを指定する
+TextureBuilder& TextureBuilder::withTargetMipmapLevel(const uint32_t baseMipmapLevel, const uint32_t levelCount)
+{
+	view.info.subresourceRange.baseMipLevel = baseMipmapLevel;
+	view.info.subresourceRange.levelCount = levelCount;
+
+	return *this;
+}
+
+//ビューを積み上げる
+TextureBuilder& TextureBuilder::addView()
+{
+	property.viewArray.push_back(view);
+
+	view.initProperty();
 
 	return *this;
 }
 
 //テクスチャのレイヤー数を設定する
-TextureBuilder TextureBuilder::withLayerCount(const uint32_t& layerCount)
+TextureBuilder& TextureBuilder::withLayerCount(const uint32_t& layerCount)
 {
 	property.image.info.arrayLayers = layerCount;
-	property.view.info.subresourceRange.layerCount = layerCount;
 
 	return *this;
 }
 
 
 //サンプラーのミップマップレベル間の補間方法を設定する
-TextureBuilder TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
+TextureBuilder& TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
 {
 	property.sampler.info.mipmapMode = mode;
 
@@ -151,7 +237,7 @@ TextureBuilder TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
 }
 
 //テクスチャの境界部分の処理を設定
-TextureBuilder TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
+TextureBuilder& TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
 {
 	property.sampler.info.addressModeU = mode;
 	property.sampler.info.addressModeV = mode;
@@ -161,7 +247,7 @@ TextureBuilder TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
 }
 
 //テクスチャの拡大時の補間方法を設定する
-TextureBuilder TextureBuilder::withMagFilter(const VkFilter& filter)
+TextureBuilder& TextureBuilder::withMagFilter(const VkFilter& filter)
 {
 	property.sampler.info.magFilter = filter;
 
@@ -169,7 +255,7 @@ TextureBuilder TextureBuilder::withMagFilter(const VkFilter& filter)
 }
 
 //テクスチャの縮小時の補間方法を設定する
-TextureBuilder TextureBuilder::withMinFilter(const VkFilter& filter)
+TextureBuilder& TextureBuilder::withMinFilter(const VkFilter& filter)
 {
 	property.sampler.info.minFilter = filter;
 
@@ -178,12 +264,20 @@ TextureBuilder TextureBuilder::withMinFilter(const VkFilter& filter)
 
 TextureProperty TextureBuilder::Build()
 {
+	for (auto& view : property.viewArray)
+	{
+		view.info.format = property.image.info.format;
+
+		view.info.subresourceRange.levelCount = std::max(view.info.subresourceRange.levelCount, (uint32_t)1);
+		view.info.subresourceRange.layerCount = std::max(view.info.subresourceRange.layerCount, (uint32_t)1);
+	}
+
 	return property;
 }
 
 //外部の画像を読み込む
 void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-	, uint32_t& texChannel,unsigned char* pixels)
+	,unsigned char* pixels)
 {
 	//通常のテクスチャの画像を読み込む
 	int texWidth, texHeight, texChannels;
@@ -194,7 +288,6 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 	}
 	width = static_cast<uint32_t>(texWidth);
 	height = static_cast<uint32_t>(texHeight);
-	texChannel = 4;
 
 	if (texChannels == 4)//画像に透明度のチャンネルがある場合は、そのまま
 	{
@@ -229,7 +322,7 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 }
 
 void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-	, uint32_t& texChannel, float* pixels)
+	, float* pixels)
 {
 	//HDRのテクスチャの画像を読み込む
 	int texWidth, texHeight, texChannels;
@@ -240,7 +333,6 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 	}
 	width = static_cast<uint32_t>(texWidth);
 	height = static_cast<uint32_t>(texHeight);
-	texChannel = static_cast<uint32_t>(texChannels);
 }
 
 //vkCreateImageを呼び出す
@@ -288,7 +380,10 @@ void TextureBuilder::transitionImageLayout(VkImage image, VkFormat format, VkIma
 	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-		barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT)
+		{
+			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
 	}
 	else {
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -313,6 +408,15 @@ void TextureBuilder::transitionImageLayout(VkImage image, VkFormat format, VkIma
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	//レイアウトをシェーダから読み取るためのものにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
 	//出力されたテクスチャをシェーダ上で利用できるようにする
 	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -384,6 +488,132 @@ void TextureBuilder::transitionImageLayout(VkImage image, VkFormat format, VkIma
 	);
 
 	vulkanCore->endSingleTimeCommandBuffer(commandBuffer);
+}
+
+void TextureBuilder::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout
+	, uint32_t mipLevels, uint32_t layerCount, std::shared_ptr<CommandBuffer> commandBuffer)
+{
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = image;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = mipLevels;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = layerCount;
+
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT)
+		{
+			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+	}
+	else {
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+
+	//レイアウトを出力先に変更する
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	//レイアウトをレンダリングの出力先にする
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	//レイアウトをシェーダから読み取るためのものにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	//出力されたテクスチャをシェーダ上で利用できるようにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	//デプスイメージ用にする
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+	//カラーアタッチメント用のレイアウトを送信用のレイアウトに変更する
+	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	//カラーアタッチメント用のレイアウトをシェーダで使うためのレイアウトにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	//カラーアタッチメント用のレイアウトを表示用のレイアウトにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+	{
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = 0;
+
+		sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		//パイプラインの処理のすべてが終了したとき
+		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	}
+	//表示用のレイアウトをカラーアタッチメント用のレイアウトにする
+	else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	else {
+		throw std::invalid_argument("unsupported layout transition!");
+	}
+
+	vkCmdPipelineBarrier(
+		commandBuffer->commandBuffer,
+		sourceStage, destinationStage,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
 }
 
 //バッファからVkImageに画像データをコピー
@@ -488,7 +718,8 @@ void TextureBuilder::generateMipmaps(VkImage image, const TextureImageProperty& 
 		if (mipHeight > 1) mipHeight /= 2;
 	}
 
-	barrier.subresourceRange.baseMipLevel = imageProperty.info.mipLevels - 1;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = imageProperty.info.mipLevels;
 	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -527,6 +758,8 @@ void TextureBuilder::createImage(const size_t& pixelSize, const void* pixels
 	//ステージングバッファからVkImageに画像データをコピー
 	copyBufferToImage(staging, image, imageProperty);
 
+
+
 	//ミップマップレベルを作成
 	generateMipmaps(image, imageProperty);
 }
@@ -539,9 +772,12 @@ void TextureBuilder::createImage(const TextureImageProperty& imageProperty, VkIm
 	//コピー先のVkImageを作成
 	createVkImageAndMemory(imageProperty, image, memory);
 
-	//コピー先のVkImageのレイアウトを変更
-	transitionImageLayout(image, imageProperty.info.format, imageProperty.info.initialLayout,
-		imageProperty.finalLayout, imageProperty.info.mipLevels, imageProperty.info.arrayLayers);
+	if (imageProperty.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		//コピー先のVkImageのレイアウトを変更
+		transitionImageLayout(image, imageProperty.info.format, imageProperty.info.initialLayout,
+			imageProperty.finalLayout, imageProperty.info.mipLevels, imageProperty.info.arrayLayers);
+	}
 }
 
 //このテクスチャのビューを作成
@@ -565,48 +801,54 @@ void TextureBuilder::createSampler(const TextureSamplerProperty& samplerProperty
 	}
 }
 
-void TextureBuilder::Create(const std::string& filePath, const TextureProperty& property
-	, VkImage& image,VkDeviceMemory& memory,VkImageView& view,VkSampler& sampler)
+void TextureBuilder::Create(const TextureProperty& property
+	, VkImage& image,VkDeviceMemory& memory, std::vector<VkImageView>& viewArray,VkSampler& sampler)
 {
-	//外部の画像ファイルからテクスチャを作る
-	uint32_t texChannel;
-	void* pixels = nullptr;
-	size_t pixelSize = 0;
-
-	if (!stbi_is_hdr(filePath.c_str()))
+	if (property.image.pixels)
 	{
-		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			texChannel, static_cast<unsigned char*>(pixels));
+		//画像ファイルを読み込んでいる場合
 
-		pixelSize = sizeof(unsigned char);
+		//gpu上に画像データを展開
+		createImage(property.image.pixelSize, property.image.pixels, property.image, image, memory);
+
+		for (int i = 0; i < property.viewArray.size(); i++)
+		{
+			//このテクスチャのビューを作成
+			createImageView(property.viewArray[i], image, viewArray[i]);
+		}
+
+		//サンプラーの作成
+		createSampler(property.sampler, sampler);
+
+		if (property.image.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+		{
+			//画像のレイアウトを指定のものに変更
+			transitionImageLayout(image, property.image.info.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				property.image.finalLayout, property.image.info.mipLevels, property.image.info.arrayLayers);
+		}
+
+		//画像ファイルのピクセルデータを開放
+		delete[] property.image.pixels;
 	}
 	else
 	{
-		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			texChannel, static_cast<float*>(pixels));
+		//gpu上に画像データを展開
+		createImage(property.image, image, memory);
 
-		pixelSize = sizeof(float);
+		for (int i = 0; i < property.viewArray.size(); i++)
+		{
+			//このテクスチャのビューを作成
+			createImageView(property.viewArray[i], image, viewArray[i]);
+		}
+
+		//サンプラーの作成
+		createSampler(property.sampler, sampler);
 	}
 
-	//gpu上に画像データを展開
-	createImage(pixelSize, pixels, property.image, image, memory);
-
-	//このテクスチャのビューを作成
-	createImageView(property.view, image, view);
-
-	//サンプラーの作成
-	createSampler(property.sampler, sampler);
-
-	//画像のレイアウトを指定のものに変更
-	transitionImageLayout(image, property.image.info.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		property.image.finalLayout, property.image.info.mipLevels, property.image.info.arrayLayers);
-
-	//画像ファイルのピクセルデータを開放
-	delete[] pixels;
 }
 
 void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pixels, const TextureProperty& property
-	, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler)
+	, VkImage& image, VkDeviceMemory& memory, std::vector<VkImageView>& viewArray, VkSampler& sampler)
 {
 	//ピクセルの配列からからテクスチャを作る
 	size_t pixelSize = sizeof(unsigned char);
@@ -614,21 +856,11 @@ void TextureBuilder::Create(const uint32_t& texChannel, const unsigned char* pix
 	//gpu上に画像データを展開
 	createImage(pixelSize, pixels, property.image, image, memory);
 
-	//このテクスチャのビューを作成
-	createImageView(property.view, image, view);
-
-	//サンプラーの作成
-	createSampler(property.sampler, sampler);
-}
-
-void TextureBuilder::Create(const TextureProperty& property
-	, VkImage& image, VkDeviceMemory& memory, VkImageView& view, VkSampler& sampler)
-{
-	//gpu上に画像データを展開
-	createImage(property.image, image, memory);
-
-	//このテクスチャのビューを作成
-	createImageView(property.view, image, view);
+	for (int i = 0; i < property.viewArray.size(); i++)
+	{
+		//このテクスチャのビューを作成
+		createImageView(property.viewArray[i], image, viewArray[i]);
+	}
 
 	//サンプラーの作成
 	createSampler(property.sampler, sampler);
@@ -636,13 +868,16 @@ void TextureBuilder::Create(const TextureProperty& property
 
 //スワップチェーン用
 void TextureBuilder::Create(const TextureProperty& property, VkImage& image
-	,VkDeviceMemory& memory, VkImageView& view)
+	,VkDeviceMemory& memory, std::vector<VkImageView>& viewArray)
 {
 	if(image == VK_NULL_HANDLE && memory == VK_NULL_HANDLE)
 	{
 		createImage(property.image, image, memory);
 	}
 
-	//スワップチェーンのビューを作成
-	createImageView(property.view, image, view);
+	for (int i = 0; i < property.viewArray.size(); i++)
+	{
+		//このテクスチャのビューを作成
+		createImageView(property.viewArray[i], image, viewArray[i]);
+	}
 }

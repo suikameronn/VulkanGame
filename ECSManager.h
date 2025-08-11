@@ -97,6 +97,19 @@ public:
 		return pResultComp;
 	}
 
+	//コンポーネントを取得する
+	template<typename CompType>
+	CompType* GetComponent(const size_t entity)
+	{
+		// コンポーネントの型のIDを取得
+		size_t type = ComponentPool<CompType>::GetID();
+
+		// 追加するコンポーネントを格納するコンテナクラスを取得
+		std::shared_ptr<ComponentPool<CompType>> spCompPool = std::static_pointer_cast<ComponentPool<CompType>>(typeToComponents[type]);
+
+		return spCompPool->GetComponent(entity);
+	}
+
 	// コンポーネントを削除する
 	template<typename CompType>
 	void RemvoeComponent(const size_t a_entity)

@@ -29,10 +29,17 @@ void FrameBufferBuilder::Create(VkFramebuffer& frameBuffer, const FrameBufferPro
 
 	info.attachmentCount = static_cast<uint32_t>(property.texture.size());
 
-	std::vector<VkImageView> attachments(property.texture.size());
+	std::vector<VkImageView> attachments(property.getAttachmentSize());
+
+	int index = 0;
 	for(int i = 0;i < property.texture.size(); i++)
 	{
-		attachments[i] = property.texture[i]->view;
+		for (int j = 0; j < property.targetLayerIndex[i].size(); j++)
+		{
+			attachments[index] = property.texture[i]->viewArray[property.targetLayerIndex[i][j]];
+
+			index++;
+		}
 	}
 
 	info.pAttachments = attachments.data();
@@ -61,9 +68,24 @@ FrameBufferBuilder FrameBufferBuilder::withRenderPass(const std::shared_ptr<Rend
 	return *this;
 }
 
-//VkImageViewを積み上げる
+//VkImageViewを積み上げる、この時テクスチャのどのレイヤーのビューを対象にするかも設定する
 FrameBufferBuilder FrameBufferBuilder::addViewAttachment(const std::shared_ptr<Texture> texture)
 {
+	property.targetLayerIndex.push_back({ 0 });
+	property.texture.push_back(texture);
+
+	return *this;
+}
+
+FrameBufferBuilder FrameBufferBuilder::addViewAttachment(const std::shared_ptr<Texture> texture, const uint32_t baseViewIndex, const uint32_t viewCount)
+{
+	std::vector<uint32_t> indexArray(viewCount);
+	for (int i = 0; i < viewCount; i++)
+	{
+		indexArray[i] = baseViewIndex + i;
+	}
+
+	property.targetLayerIndex.push_back(indexArray);
 	property.texture.push_back(texture);
 
 	return *this;

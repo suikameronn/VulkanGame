@@ -57,17 +57,15 @@ void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std
 		builder->initProperty();
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
 	}
-	else if (pattern == LayoutPattern::VIEWPROJMAT)
+	else if (pattern == LayoutPattern::CAMERA)
 	{
-		//頂点シェーダとコンピュートシェーダ
-		//行列用のユニフォームバッファ
-		//このセットを二つ
-		//それぞれビュー行列とプロジェクション行列を入れる
+		//頂点シェーダとフラグメントシェーダ
+		//カメラの座標、ビュー行列、プロジェクション行列を入れる
 
 		builder->initProperty();
-		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
-		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 	else if (pattern == LayoutPattern::MATERIAL)
 	{
@@ -89,6 +87,19 @@ void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std
 
 		builder->initProperty();
 		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+	else if(pattern == LayoutPattern::SHADOWMAP)
+	{
+		//フラグメントシェーダ
+		//ライトの色や位置を記録したユニフォームバッファとシャドウマップの配列
+
+		builder->initProperty();
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 	else if (pattern == LayoutPattern::IBL)
 	{
@@ -96,6 +107,7 @@ void DescriptorSetLayoutFactory::convertBinding(const LayoutPattern& pattern,std
 		//IBLのディヒューズ、スペキュラー、BRDFを含む三つのテクスチャ
 		
 		builder->initProperty();
+		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 		builder->setProperty(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);

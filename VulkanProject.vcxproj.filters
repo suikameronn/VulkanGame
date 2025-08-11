@@ -180,6 +180,15 @@
     <ClCompile Include="FrameBufferFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="SkyDomeBuilder.cpp">
+      <Filter>ソース ファイル\Vulkan\Builder</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyDomeFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureCopy.cpp">
+      <Filter>ソース ファイル\Material</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
@@ -331,6 +340,24 @@
     </ClInclude>
     <ClInclude Include="LightComp.h">
       <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="TargetEntityComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyDomeComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyDomeFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyDomeBuilder.h">
+      <Filter>ヘッダー ファイル\Vulkan\Builder</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureCopy.h">
+      <Filter>ヘッダー ファイル\Material</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

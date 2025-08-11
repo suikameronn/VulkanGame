@@ -128,6 +128,7 @@ public:
 	DescriptorSetBuilder& withImageLayout(const VkImageLayout& layout);
 
 	DescriptorSetBuilder& withTexture(const std::shared_ptr<Texture> texture);
+	DescriptorSetBuilder& withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer);
 
 	DescriptorSetBuilder& addImageInfo();
 };

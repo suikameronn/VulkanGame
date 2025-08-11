@@ -185,13 +185,17 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Render.cpp" />
     <ClCompile Include="ShaderFactory.cpp" />
+    <ClCompile Include="SkyDomeBuilder.cpp" />
+    <ClCompile Include="SkyDomeFactory.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TextureBuilder.cpp" />
     <ClCompile Include="TextureFactory.cpp" />
+    <ClCompile Include="TextureCopy.cpp" />
     <ClCompile Include="VulkanCore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationComponent.h" />
+    <ClInclude Include="CameraComp.h" />
     <ClInclude Include="ColiderComp.h" />
     <ClInclude Include="ColiderComponent.h" />
     <ClInclude Include="ControllerComponent.h" />
@@ -234,9 +238,14 @@
     <ClInclude Include="Render.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="ShaderFactory.h" />
+    <ClInclude Include="SkyDomeBuilder.h" />
+    <ClInclude Include="SkyDomeComp.h" />
+    <ClInclude Include="SkyDomeFactory.h" />
     <ClInclude Include="StructList.h" />
     <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="TargetEntityComp.h" />
     <ClInclude Include="TextureBuilder.h" />
+    <ClInclude Include="TextureCopy.h" />
     <ClInclude Include="TextureFactory.h" />
     <ClInclude Include="TransformComp.h" />
     <ClInclude Include="TransformComponent.h" />

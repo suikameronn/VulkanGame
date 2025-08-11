@@ -7,6 +7,8 @@ TextureFactory::TextureFactory(VkDevice& d, std::shared_ptr<TextureBuilder> b)
 	device = d;
 
 	frameIndex = 1;
+
+	copy = std::make_shared<TextureCopy>();
 }
 
 //プリセットのプロパティを取得
@@ -32,6 +34,7 @@ TextureProperty TextureFactory::convertPattern(const uint32_t& width, const uint
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
 			.withViewType(VK_IMAGE_VIEW_TYPE_2D) //ビュータイプ
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT) //アスペクトフラグ
+			.addView()
 			.withLayerCount(1) //レイヤー数
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR) //ミップマップモード
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT) //アドレスモード
@@ -56,6 +59,7 @@ TextureProperty TextureFactory::convertPattern(const uint32_t& width, const uint
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
 			.withLayerCount(6) //キューブマップなので6面
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
@@ -77,6 +81,7 @@ TextureProperty TextureFactory::convertPattern(const uint32_t& width, const uint
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
 			.withLayerCount(1)
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) //計算用なのでエッジで切る
@@ -102,6 +107,7 @@ TextureProperty TextureFactory::convertPattern(const TexturePattern& pattern)
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
 			.withViewType(VK_IMAGE_VIEW_TYPE_2D) //ビュータイプ
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT) //アスペクトフラグ
+			.addView()
 			.withLayerCount(1) //レイヤー数
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR) //ミップマップモード
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT) //アドレスモード
@@ -125,6 +131,7 @@ TextureProperty TextureFactory::convertPattern(const TexturePattern& pattern)
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
 			.withLayerCount(6) //キューブマップなので6面
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
@@ -145,6 +152,82 @@ TextureProperty TextureFactory::convertPattern(const TexturePattern& pattern)
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
 			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
+			.withLayerCount(1)
+			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) //計算用なのでエッジで切る
+			.withMagFilter(VK_FILTER_LINEAR)
+			.withMinFilter(VK_FILTER_LINEAR)
+			.Build();
+	}
+}
+
+TextureProperty TextureFactory::convertPattern(const std::string imageFilePath, const TexturePattern& pattern)
+{
+	//画像サイズを指定されない場合は、外部から画像ファイルを
+	//読み込むことを前提とする
+
+	if (pattern == TexturePattern::NORMAL)
+	{
+		//通常の3Dモデルなどに使われるテクスチャ
+
+		return builder->initProperty()
+			.withImageFile(imageFilePath)
+			.withFormat(VK_FORMAT_R8G8B8A8_SRGB) //sRGBフォーマット
+			.withNumSamples(VK_SAMPLE_COUNT_1_BIT) //サンプリング数
+			.withTiling(VK_IMAGE_TILING_OPTIMAL) //タイル配置
+			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) //使用方法
+			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) //デバイスローカルメモリ
+			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED) //初期レイアウト
+			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
+			.withViewType(VK_IMAGE_VIEW_TYPE_2D) //ビュータイプ
+			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT) //アスペクトフラグ
+			.addView()
+			.withLayerCount(1) //レイヤー数
+			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR) //ミップマップモード
+			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT) //アドレスモード
+			.withMagFilter(VK_FILTER_LINEAR) //拡大時のフィルタ
+			.withMinFilter(VK_FILTER_LINEAR) //縮小時のフィルタ
+			.Build();
+
+	}
+	else if (pattern == TexturePattern::CUBEMAP)
+	{
+		//キューブマップやIBL用のテクスチャ
+
+		return builder->initProperty()
+			.withImageFile(imageFilePath)
+			.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+			.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+			.withTiling(VK_IMAGE_TILING_OPTIMAL)
+			.withUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+				| VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
+			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
+			.withLayerCount(6) //キューブマップなので6面
+			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+			.withMagFilter(VK_FILTER_LINEAR)
+			.withMinFilter(VK_FILTER_LINEAR)
+			.Build();
+	}
+	else if (pattern == TexturePattern::CALC_CUBEMAP)
+	{
+		//キューブマップの計算用のテクスチャ
+		return builder->initProperty()
+			.withImageFile(imageFilePath)
+			.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+			.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+			.withTiling(VK_IMAGE_TILING_OPTIMAL)
+			.withUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			.withViewType(VK_IMAGE_VIEW_TYPE_2D)
+			.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+			.addView()
 			.withLayerCount(1)
 			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) //計算用なのでエッジで切る
@@ -155,31 +238,19 @@ TextureProperty TextureFactory::convertPattern(const TexturePattern& pattern)
 }
 
 //外部の画像ファイルからテクスチャを作る場合を分ける
-std::shared_ptr<Texture> TextureFactory::Create(const std::string& filePath, TextureProperty& property)
-{
-	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
-
-	//ビルダーで画像ファイルからテクスチャを作成
-	builder->Create(filePath, property, texture->image
-		, texture->memory, texture->view, texture->sampler);
-
-	textureStorage[filePath] = texture;
-
-	return texture;
-}
-
-//外部の画像ファイルからテクスチャを作る場合を分ける
 //既定のプリセットからプロパティを設定する
-std::shared_ptr<Texture> TextureFactory::Create(const std::string& filePath, const uint32_t& width
-	, const uint32_t& height, const TexturePattern& pattern)
+std::shared_ptr<Texture> TextureFactory::Create(const std::string& filePath, const TexturePattern& pattern)
 {
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
 
-	TextureProperty property = convertPattern(width, height, pattern);
+	TextureProperty property = convertPattern(filePath, pattern);
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	//ビルダーで画像ファイルからテクスチャを作成
 	builder->Create(property, texture->image
-		, texture->memory, texture->view, texture->sampler);
+		, texture->memory, texture->viewArray, texture->sampler);
 
 	textureStorage[filePath] = texture;
 
@@ -193,22 +264,28 @@ std::shared_ptr<Texture> TextureFactory::Create(const uint32_t& texChannel, cons
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
 
 	TextureProperty property = convertPattern(width, height, pattern);
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	//ビルダーで画像ファイルからテクスチャを作成
 	builder->Create(texChannel, pixels, property
-		, texture->image, texture->memory, texture->view, texture->sampler);
+		, texture->image, texture->memory, texture->viewArray, texture->sampler);
 
 	return texture;
 }
 
 //画像データは入れずに、テクスチャバッファのみを作る
-std::shared_ptr<Texture> TextureFactory::Create(TextureProperty& property)
+std::shared_ptr<Texture> TextureFactory::Create(const TextureProperty& property)
 {
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	//ビルダーで画像ファイルからテクスチャを作成
 	builder->Create(property, texture->image
-		, texture->memory, texture->view, texture->sampler);
+		, texture->memory, texture->viewArray, texture->sampler);
 
 	return texture;
 }
@@ -220,46 +297,84 @@ std::shared_ptr<Texture> TextureFactory::Create(const uint32_t& width, const uin
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
 
 	TextureProperty property = convertPattern(width, height, pattern);
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	//ビルダーで画像ファイルからテクスチャを作成
 	builder->Create(property, texture->image
-		, texture->memory, texture->view, texture->sampler);
+		, texture->memory, texture->viewArray, texture->sampler);
 
 	return texture;
 }
 
 //スワップチェーン用の画像とビューを作成(サンプラーは作成しない)
-std::shared_ptr<Texture> TextureFactory::ImageViewCreate(TextureProperty& property)
+std::shared_ptr<Texture> TextureFactory::ImageViewCreate(const TextureProperty& property)
 {
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	//ビルダーで画像ファイルからテクスチャを作成
-	builder->Create(property, texture->image, texture->memory, texture->view);
+	builder->Create(property, texture->image, texture->memory, texture->viewArray);
+
+	return texture;
+}
+
+//VkImageのみを作成する、VkImageViewはのちに作成する
+std::shared_ptr<Texture> TextureFactory::ImageCreate(const TextureProperty& property)
+{
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
+	texture->property = property;
+
+	texture->viewArray.clear();
+
+	//VkImageのみを作成
+	builder->Create(property, texture->image, texture->memory, texture->viewArray);
 
 	return texture;
 }
 
 //画像データは入れずに、テクスチャバッファのみを作る
-std::shared_ptr<Texture> TextureFactory::ViewCreate(TextureProperty& property, VkImage& image)
+std::shared_ptr<Texture> TextureFactory::ViewCreate(const TextureProperty& property, VkImage& image)
 {
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(shared_from_this());
+	texture->property = property;
+
+	texture->viewArray.resize(property.viewArray.size());
 
 	texture->image = image;
 
 	//ビルダーで画像からテクスチャを作成
-	builder->Create(property, texture->image, texture->memory, texture->view);
+	builder->Create(property, texture->image, texture->memory, texture->viewArray);
 
 	return texture;
 }
 
 //遅延破棄リストにリソースを追加する
 void TextureFactory::addDefferedDestruct(VkImage& image, VkDeviceMemory& memory
-	, VkImageView& view, VkSampler& sampler)
+	, std::vector<VkImageView>& viewArray, VkSampler& sampler)
 {
-	destructListImage[frameIndex].push_back(image);
-	destructListMemory[frameIndex].push_back(memory);
-	destructListView[frameIndex].push_back(view);
-	destructListSampler[frameIndex].push_back(sampler);
+	if (image != VK_NULL_HANDLE)
+	{
+		destructListImage[frameIndex].push_back(image);
+	}
+
+	if (memory != VK_NULL_HANDLE)
+	{
+		destructListMemory[frameIndex].push_back(memory);
+	}
+
+	for (auto& view : viewArray)
+	{
+		destructListView[frameIndex].push_back(view);
+	}
+
+	if (sampler != VK_NULL_HANDLE)
+	{
+		destructListSampler[frameIndex].push_back(sampler);
+	}
 }
 
 //リソースを破棄する

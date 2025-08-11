@@ -15,7 +15,8 @@ enum class RenderPassPattern
 	UI,
 	CALC_SHADOWMAP,
 	CALC_CUBEMAP,
-	CALC_IBL
+	CALC_IBL_DIFFUSE_SPECULAR,
+	CALC_IBL_BRDF
 };
 
 struct RenderPassHash

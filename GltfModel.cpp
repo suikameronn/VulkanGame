@@ -70,7 +70,7 @@ void GltfModel::updateAnimation(double animationTime, std::string animationName
 	Animation& animation = animations[animationName];
 
 	//アニメーション行列の初期化
-	nodeTransform.setNodeCount(nodeCount);
+	nodeTransform.resetMat();
 
 	bool updated = false;
 	for (auto& channel : animation.channels) {
@@ -134,10 +134,12 @@ void GltfModel::createBuffer()
 		if (nodes[i].mesh.vertices.size() != 0)
 		{
 			vertBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * nodes[i].mesh.vertices.size()
-				, BufferUsage::VERTEX, BufferTransferType::DST);
+				, nodes[i].mesh.vertices.data(), BufferUsage::VERTEX, BufferTransferType::DST);
 
-			indeBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * nodes[i].mesh.indices.size()
-				, BufferUsage::INDEX, BufferTransferType::DST);
+			std::cout << nodes[i].mesh.meshIndex << std::endl;
+
+			indeBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(uint32_t) * nodes[i].mesh.indices.size()
+				, nodes[i].mesh.indices.data(), BufferUsage::INDEX, BufferTransferType::DST);
 		}
 	}
 }

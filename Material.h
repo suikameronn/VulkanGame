@@ -165,7 +165,7 @@ class Material
 	//シェーダー上のマテリアルデータを記録するバッファを作成
 	void createBuffer();
 	//ディスクリプタセットを作成
-	void createDescriptorSet();
+	void createDescriptorSet(const MaterialProperty& prop);
 
 public:
 
@@ -181,7 +181,7 @@ public:
 
 		//gpuリソースの作成
 		createBuffer();
-		createDescriptorSet();
+		createDescriptorSet(prop);
 
 		//更新した構造体の値をgpu上のバッファにコピー
 		bufferFactory->copyMemory(

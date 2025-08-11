@@ -2,6 +2,8 @@
 
 #include"TextureBuilder.h"
 
+#include"TextureCopy.h"
+
 enum class TexturePattern
 {
 	NORMAL,
@@ -21,6 +23,9 @@ private:
 	//ビルダー
 	std::shared_ptr<TextureBuilder> builder;
 
+	//コピー
+	std::shared_ptr<TextureCopy> copy;
+
 	//外部の画像ファイルを読み込んだ場合はここにTextureを記録する
 	std::unordered_map<std::string, std::weak_ptr<Texture>> textureStorage;
 
@@ -35,6 +40,7 @@ private:
 		, const TexturePattern& pattern);
 	//既定のパターンからプロパティに変換
 	TextureProperty convertPattern(const TexturePattern& pattern);
+	TextureProperty convertPattern(const std::string imageFilePath, const TexturePattern& pattern);
 
 public:
 
@@ -46,33 +52,35 @@ public:
 		return builder;
 	}
 
+	//コピーを取得
+	std::shared_ptr<TextureCopy> getCopy()
+	{
+		return copy;
+	}
+
 	//プリセットのプロパティを取得
 	TextureProperty getPreset(const TexturePattern& pattern);
 
 	//外部の画像ファイルからテクスチャを作る場合を分ける
-	std::shared_ptr<Texture> Create(const std::string& filePath, TextureProperty& property);
-
-	//外部の画像ファイルからテクスチャを作る場合を分ける
 	//既定のプロパティを使う
-	std::shared_ptr<Texture> Create(const std::string& filePath, const uint32_t& width
-		, const uint32_t& height, const TexturePattern& pattern);
+	std::shared_ptr<Texture> Create(const std::string& filePath, const TexturePattern& pattern);
 
 	//画像データを配列上で受け取る
 	std::shared_ptr<Texture> Create(const uint32_t& texChannel, const unsigned char* pixels
 		, const uint32_t& width, const uint32_t& height, const TexturePattern& pattern);
 
 	//画像データは入れずに、テクスチャバッファのみを作る
-	std::shared_ptr<Texture> Create(TextureProperty& property);
+	std::shared_ptr<Texture> Create(const TextureProperty& property);
 	std::shared_ptr<Texture> Create(const uint32_t& width, const uint32_t& height
 		, const TexturePattern& pattern);
 
-	//スワップチェーン用
-	std::shared_ptr<Texture> ImageViewCreate(TextureProperty& property);
-	std::shared_ptr<Texture> ViewCreate(TextureProperty& property, VkImage& image);
+	std::shared_ptr<Texture> ImageViewCreate(const TextureProperty& property);
+	std::shared_ptr<Texture> ImageCreate(const TextureProperty& property);
+	std::shared_ptr<Texture> ViewCreate(const TextureProperty& property, VkImage& image);
 
 	//遅延破棄リストにリソースを追加する
 	void addDefferedDestruct(VkImage& image, VkDeviceMemory& memory
-		, VkImageView& view, VkSampler& sampler);
+		, std::vector<VkImageView>& viewArray, VkSampler& sampler);
 
 	//リソースを破棄する
 	void resourceDestruct();
@@ -84,7 +92,7 @@ struct Texture
 	VkImage image;
 	VkDeviceMemory memory;
 	//画像のビュー
-	VkImageView view;
+	std::vector<VkImageView> viewArray;
 	//画像のサンプラー テクスチャの境界の設定など
 	VkSampler sampler;
 
@@ -97,7 +105,7 @@ struct Texture
 	{
 		image = nullptr;
 		memory = nullptr;
-		view = nullptr;
+		viewArray.clear();
 		sampler = nullptr;
 
 		property = TextureProperty{};
@@ -107,6 +115,6 @@ struct Texture
 
 	~Texture()
 	{
-		factory->addDefferedDestruct(image, memory, view, sampler);
+		factory->addDefferedDestruct(image, memory, viewArray, sampler);
 	}
 };

@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 inPos;
 
-layout(binding = 1) uniform sampler2D hdriTexture;
+layout(set = 1,binding = 0) uniform sampler2D hdriTexture;
 
 layout(location = 0) out vec4 outColor;
 

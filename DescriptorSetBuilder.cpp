@@ -59,15 +59,17 @@ void DescriptorSetBuilder::Create(const DescriptorSetProperty& property, VkDescr
 
 	for (int i = 0; i < property.texture.size(); ++i)
 	{
+		const int index = i + static_cast<int>(property.buffer.size());
+
 		const auto& imageProperty = property.texture[i];
 
-		descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[i].dstSet = descriptorSet;
-		descriptorWrites[i].dstBinding = imageProperty.binding;
-		descriptorWrites[i].dstArrayElement = 0;
-		descriptorWrites[i].descriptorType = imageProperty.type;
-		descriptorWrites[i].descriptorCount = 1;
-		descriptorWrites[i].pImageInfo = &imageProperty.imageInfo;
+		descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[index].dstSet = descriptorSet;
+		descriptorWrites[index].dstBinding = imageProperty.binding;
+		descriptorWrites[index].dstArrayElement = 0;
+		descriptorWrites[index].descriptorType = imageProperty.type;
+		descriptorWrites[index].descriptorCount = 1;
+		descriptorWrites[index].pImageInfo = &imageProperty.imageInfo;
 	}
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -175,7 +177,17 @@ DescriptorSetBuilder& DescriptorSetBuilder::withTexture(const std::shared_ptr<Te
 {
 	imageProperty.texture = texture;
 
-	imageProperty.imageInfo.imageView = texture->view;
+	imageProperty.imageInfo.imageView = texture->viewArray[0];
+	imageProperty.imageInfo.sampler = texture->sampler;
+
+	return *this;
+}
+
+DescriptorSetBuilder& DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer)
+{
+	imageProperty.texture = texture;
+
+	imageProperty.imageInfo.imageView = texture->viewArray[targetLayer];
 	imageProperty.imageInfo.sampler = texture->sampler;
 
 	return *this;

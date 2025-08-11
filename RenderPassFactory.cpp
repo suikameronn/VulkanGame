@@ -157,7 +157,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 			.addColorAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
@@ -182,10 +182,8 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 
 		return builder->Build();
 	}
-	else if (pattern == RenderPassPattern::CALC_IBL)
+	else if (pattern == RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR)
 	{
-		//CALC_CUBEMAPと同じ
-
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -195,7 +193,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 			.addColorAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
@@ -220,6 +218,42 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 
 		return builder->Build();
 	}
+	else if (pattern == RenderPassPattern::CALC_IBL_BRDF)
+	{
+		builder->initProperty();
+
+		builder->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			.addColorAttachment();
+
+		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
+			.withDstSubpassIndex(0)
+			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+			.withDstAccessMask(0)
+			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			.addDependency();
+
+		builder->withSrcSubpassIndex(0)
+			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
+			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			.withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
+			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			.addDependency();
+
+		builder->addSubpass();
+
+		return builder->Build();
+	};
 }
 
 //レンダーパスを作成する

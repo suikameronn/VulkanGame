@@ -1,22 +1,47 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject {
+layout (set = 0,binding = 0) uniform ModelRender 
+{
     vec3 scale;
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-    vec4 camPos;
-    int lightCount;
-    mat4[20] lightMVP;
-} matricesUBO;
+    mat4 matrix;
+} modelMatrix;
 
-layout(set = 1,binding = 0) uniform animationUniformBufferObject
+layout(set = 0,binding = 1) uniform NodeAnimMatrices
 {
     mat4 nodeMatrix;
     mat4 matrix;
-    mat4[128] boneMatrix;
     int boneCount;
-} animationUBO;
+} nodeAnimMatrices;
+
+layout(set = 0,binding = 2) uniform BoneMatrices
+{
+    mat4[128] matrices;
+} boneMatrices;
+
+layout(set = 1,binding = 0) uniform Camera
+{
+    vec3 pos;
+    mat4 view;
+    mat4 proj;
+} camera;
+
+const int LIGHT_MAX = 10;
+
+layout(set = 2, binding = 0) uniform PointLightUBO
+{
+	int lightCount;
+	vec4[LIGHT_MAX] pos;
+	vec4[LIGHT_MAX] color;
+    mat4[LIGHT_MAX] viewProj;
+}pointLight;
+
+layout(set = 2,binding = 1) uniform DirectionalLightUBO
+{
+	int lightCount;
+	vec4[LIGHT_MAX] dir;
+	vec4[LIGHT_MAX] color;
+    mat4[LIGHT_MAX] viewProj;
+}directionLight;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
@@ -32,7 +57,8 @@ layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
 layout(location = 5) out vec3 camPos;
-layout(location = 6) out vec4 outShadowCoords;
+layout(location = 6) out vec4 outPointLightShadowCoords[LIGHT_MAX];
+layout(location = 7 + LIGHT_MAX) out vec4 outDirectionLightShadowCoords[LIGHT_MAX];
 
 const mat4 biasMat = mat4( 
 	0.5, 0.0, 0.0, 0.0,
@@ -44,39 +70,43 @@ void main() {
     outColor0 = vec4(inColor,1.0);
 
     vec4 locPos;
-    if(animationUBO.boneCount > 0)
+    if(nodeAnimMatrices.boneCount > 0)
     {
         mat4 skinMat = 
-        weight1.x * animationUBO.boneMatrix[boneID1.x] +
-        weight1.y * animationUBO.boneMatrix[boneID1.y] +
-        weight1.z * animationUBO.boneMatrix[boneID1.z] +
-        weight1.w * animationUBO.boneMatrix[boneID1.w];
+        weight1.x * boneMatrices.matrices[boneID1.x] +
+        weight1.y * boneMatrices.matrices[boneID1.y] +
+        weight1.z * boneMatrices.matrices[boneID1.z] +
+        weight1.w * boneMatrices.matrices[boneID1.w];
 
-        locPos = matricesUBO.model * animationUBO.nodeMatrix * skinMat * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * animationUBO.nodeMatrix * skinMat))) * inNormal);
-
-        outShadowCoords = matricesUBO.lightMVP[0] * locPos;
-        outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
-        outShadowCoords = biasMat * outShadowCoords;
+        locPos = modelMatrix.matrix * nodeAnimMatrices.nodeMatrix * skinMat * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(modelMatrix.matrix * nodeAnimMatrices.matrix * nodeAnimMatrices.nodeMatrix * skinMat))) * inNormal);
     }
     else
     {
-        locPos = matricesUBO.model * animationUBO.nodeMatrix * vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(matricesUBO.model * animationUBO.matrix * animationUBO.nodeMatrix))) * inNormal);
+        locPos = modelMatrix.matrix * nodeAnimMatrices.nodeMatrix* vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(modelMatrix.matrix * nodeAnimMatrices.matrix * nodeAnimMatrices.nodeMatrix))) * inNormal);
+    }
+    
+    for(int i = 0;i < pointLight.lightCount;i++)
+    {
 
-        outShadowCoords = matricesUBO.lightMVP[0] * locPos;
-        outShadowCoords.z = (outShadowCoords.z + outShadowCoords.w) / 2.0;
-        outShadowCoords = biasMat * outShadowCoords;
+    }
+
+    for(int i = 0;i < directionLight.lightCount;i++)
+    {
+        outDirectionLightShadowCoords[i] = directionLight.viewProj[i] * locPos;
+        outDirectionLightShadowCoords[i].z = (outDirectionLightShadowCoords[i].z + outDirectionLightShadowCoords[i].w) / 2.0;
+        outDirectionLightShadowCoords[i] = biasMat * outDirectionLightShadowCoords[i];
     }
 
     outWorldPos = locPos.xyz / locPos.w;
 
-    outUV0 = inTexCoord1 * matricesUBO.scale.xy;
-    outUV1 = inTexCoord2 * matricesUBO.scale.xy;
+    outUV0 = inTexCoord1 * modelMatrix.scale.xy;
+    outUV1 = inTexCoord2 * modelMatrix.scale.xy;
 
-    camPos = vec3(matricesUBO.camPos);
+    camPos = vec3(camera.pos);
 
-    gl_Position = matricesUBO.proj * matricesUBO.view * locPos;
+    gl_Position = camera.proj * camera.view * locPos;
     gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }

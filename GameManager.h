@@ -21,12 +21,17 @@
 #include"SwapChain.h"
 #include"Render.h"
 
+#include"SkyDomeFactory.h"
+
 #include"TransformComp.h"
 #include"ColiderComp.h"
 #include"GltfModelComp.h"
 #include"MeshRendererComp.h"
 #include"PhysicComp.h"
 #include"LightComp.h"
+#include"CameraComp.h"
+#include"TargetEntityComp.h"
+#include"SkyDomeComp.h"
 
 #include"ECSManager.h"
 
@@ -54,6 +59,7 @@ private:
 	std::shared_ptr<PipelineBuilder> pipelineBuilder;
 	std::shared_ptr<RenderPassBuilder> renderPassBuilder;
 	std::shared_ptr<TextureBuilder> textureBuilder;
+	std::shared_ptr<SkyDomeBuilder> skydomeBuilder;
 
 	//ファクトリー
 
@@ -66,6 +72,7 @@ private:
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
 	std::shared_ptr<ShaderFactory> shaderFactory;
 	std::shared_ptr<TextureFactory> textureFactory;
+	std::shared_ptr<SkyDomeFactory> skydomeFactory;
 
 	//スワップチェーンのクラス
 	std::shared_ptr<SwapChain> swapChain;
@@ -78,6 +85,9 @@ private:
 
 	//Gltfモデルファクトリー
 	std::shared_ptr<GltfModelFactory> modelFactory;
+
+	//シーン全体のライト
+	std::shared_ptr<SceneLight> sceneLight;
 
 	//最大フレームレート
 	const int fps = 60;

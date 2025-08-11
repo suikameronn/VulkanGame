@@ -25,6 +25,9 @@ void GpuBufferFactory::copyBuffer(const VkDeviceSize size, const GpuBuffer& src
 
 	VkBufferCopy copyRegion{};
 	copyRegion.size = size;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+
 	vkCmdCopyBuffer(commandBuffer, src.buffer, dst->buffer, 1, &copyRegion);
 
 	//コマンドバッファの後処理

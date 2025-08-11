@@ -65,9 +65,10 @@ inline bool operator==(const VkDescriptorSetLayoutBinding& lhs, const VkDescript
 enum class LayoutPattern
 {
 	MODELANIMMAT = 0,//モデル行列とアニメーション行列
-	VIEWPROJMAT,//ビュー行列とプロジェクション行列
+	CAMERA,//カメラの座標、ビュー行列とプロジェクション行列
 	MATERIAL,//各種テクスチャを含む
 	LIGHT,//ライトの色
+	SHADOWMAP,//シャドウマップのライト視点の行列とデプスバッファのテクスチャ
 	IBL,//IBLのディフーズ、スペキュラー、BRDFを含む
 	RAYCAST,//二つのストレージバッファ
 	UI,//UI用の変換行列とテクスチャ

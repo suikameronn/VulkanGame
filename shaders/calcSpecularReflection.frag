@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 inPos;
 
-layout(binding = 1) uniform samplerCube hdriTextureMap;
+layout(set = 1,binding = 0) uniform sampler2D hdriTextureMap;
 
 layout(push_constant) uniform PushConstants
 {

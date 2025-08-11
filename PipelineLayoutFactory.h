@@ -12,8 +12,9 @@ enum class PipelineLayoutPattern
 	CUBEMAP,
 	CALC_SHADOWMAP,
 	CALC_CUBEMAP,
-	CALCIBL_DIFFUSE_SPECULAR,
-	CALCIBL_BRDF,
+	CALC_IBL_DIFFUSE,
+	CALC_IBL_SPECULAR,
+	CALC_IBL_BRDF,
 	RAYCAST
 };
 
@@ -21,62 +22,45 @@ struct PipelineLayout;
 
 struct PipelineLayoutHash
 {
-	size_t operator()(const std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>,std::vector<VkPushConstantRange>> a) const
+	const uint64_t FNV_PRIME = 1099511628211LLU; // 2^40 + 2^8 + 0xB3 = 0x100000001b3
+	const uint64_t FNV_OFFSET_BIAS = 14695981039346656037U; // 0xcbf29ce484222325
+
+	void getHash(const uint32_t& u, size_t& hash) const
 	{
-		size_t hash = a.first.size();
+		uint64_t u64 = u;
 
-		hash ^= a.second.size() + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= u64;
+		hash *= FNV_PRIME;
+	}
 
-		for (const auto& layout : a.first) {
-			hash ^= layout->hashKey + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	void getHash(const float f, size_t& hash) const
+	{
+		uint32_t u;
+		std::memcpy(&u, &f, sizeof(float));
+
+		getHash(u, hash);
+	}
+
+	size_t operator()(const PipelineLayoutProperty& p) const
+	{
+		size_t hash = FNV_OFFSET_BIAS;
+
+		getHash(static_cast<uint32_t>(p.layoutArray.size()), hash);
+		for (int i = 0; i < p.layoutArray.size(); i++)
+		{
+			getHash(static_cast<uint32_t>(p.layoutArray[i]->hashKey), hash);
 		}
 
-		for (const auto& pushConstant : a.second)
+		getHash(static_cast<uint32_t>(p.layoutArray.size()), hash);
+		for (int i = 0; i < p.pushconstantArray.size(); i++)
 		{
-			hash ^= pushConstant.offset + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-			hash ^= pushConstant.size + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-			hash ^= static_cast<uint32_t>(pushConstant.stageFlags) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+			getHash(static_cast<uint32_t>(p.pushconstantArray[i].size), hash);
+			getHash(static_cast<uint32_t>(p.pushconstantArray[i].stageFlags), hash);
 		}
 
 		return hash;
-	}
+	};
 };
-
-inline bool operator==(const std::shared_ptr<DescriptorSetLayout>& lhs, const std::shared_ptr<DescriptorSetLayout>& rhs) 
-{
-	// 両方が nullptr なら等しい
-	if (!lhs && !rhs) return true;
-
-	// 片方だけが nullptr なら等しくない
-	if (!lhs || !rhs) return false;
-	
-	// 両方が有効なら、指すオブジェクトの中身を比較する
-	return *lhs == *rhs; // 上で定義した DescriptorSetLayout の operator== を呼び出す
-}
-
-inline bool operator==(const std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>, std::vector<VkPushConstantRange>> lhs
-	, const std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>, std::vector<VkPushConstantRange>> rhs)
-{
-	for (int i = 0; i < lhs.first.size(); i++)
-	{
-		if (lhs.first[i] != rhs.first[i])
-		{
-			return false;
-		}
-	}
-
-	for (int i = 0; i < lhs.second.size(); i++)
-	{
-		if (lhs.second[i].offset != rhs.second[i].offset ||
-			lhs.second[i].size != rhs.second[i].size ||
-			lhs.second[i].stageFlags != rhs.second[i].stageFlags)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
 
 class PipelineLayoutFactory : public std::enable_shared_from_this<PipelineLayoutFactory>
 {
@@ -98,19 +82,16 @@ private:
 	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	
 	//既に作成したパイプラインレイアウトを格納する
-	std::unordered_map<std::pair<std::vector<std::shared_ptr<DescriptorSetLayout>>, std::vector<VkPushConstantRange>>
-		, std::weak_ptr<PipelineLayout>, PipelineLayoutHash> pipelineLayoutStorage;
+	std::unordered_map<PipelineLayoutProperty, std::weak_ptr<PipelineLayout>, PipelineLayoutHash> pipelineLayoutStorage;
 
 	//破棄予定のリソースのリスト
 	std::array<std::list<VkPipelineLayout>, 2> destructList;
 
 	//既定のレイアウトから構造体を設定する
-	void convertLayouts(PipelineLayoutPattern pattern
-		, std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts, std::vector<VkPushConstantRange>& pushConstant);
+	PipelineLayoutProperty convertLayouts(const PipelineLayoutPattern& pattern);
 
 	//ビルダーを使ってパイプラインレイアウトを作成する
-	std::shared_ptr<PipelineLayout> createLayout(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
-		, std::vector<VkPushConstantRange>& pushConstants);
+	std::shared_ptr<PipelineLayout> createLayout(const PipelineLayoutProperty& property);
 
 public:
 
@@ -120,11 +101,10 @@ public:
 	~PipelineLayoutFactory();
 
 	//パイプラインレイアウトの作成
-	std::shared_ptr<PipelineLayout> Create(PipelineLayoutPattern pattern);
+	std::shared_ptr<PipelineLayout> Create(const PipelineLayoutPattern& pattern);
 
 	//パイプラインレイアウトの作成
-	std::shared_ptr<PipelineLayout> Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
-		, std::vector<VkPushConstantRange>& pushConstants);
+	std::shared_ptr<PipelineLayout> Create(const PipelineLayoutProperty& property);
 
 	//遅延破棄リストにリソースを追加する
 	void addDefferedDestruct(VkPipelineLayout& pLayout);
@@ -143,6 +123,9 @@ struct PipelineLayout
 
 	//パイプラインレイアウトで使ったレイアウト
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts;
+
+	//VkPushconstantの配列
+	std::vector<VkPushConstantRange> pushconstants;
 
 	std::shared_ptr<PipelineLayoutFactory> factory;
 

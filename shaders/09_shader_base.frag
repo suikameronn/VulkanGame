@@ -1,14 +1,37 @@
 #version 450
 
+const int LIGHT_MAX = 10;
+
 layout (location = 0) in vec3 inPos;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inUV0;
 layout (location = 3) in vec2 inUV1;
 layout (location = 4) in vec4 inColor0;
 layout (location = 5) in vec3 camPos;
-layout(location = 6) in vec4 inShadowCoords;
+layout(location = 6) in vec4 inPointLightShadowCoords[LIGHT_MAX];
+layout(location = 7 + LIGHT_MAX) in vec4 inDirectionLightShadowCoords[LIGHT_MAX];
 
-layout (set = 1, binding = 0) uniform ShaderMaterial
+layout(set = 2, binding = 0) uniform PointLightUBO
+{
+	int lightCount;
+	vec4[LIGHT_MAX] pos;
+	vec4[LIGHT_MAX] color;
+    mat4[LIGHT_MAX] viewProj;
+}pointLight;
+
+layout(set = 2,binding = 1) uniform DirectionLightUBO
+{
+	int lightCount;
+	vec4[LIGHT_MAX] dir;
+	vec4[LIGHT_MAX] color;
+    mat4[LIGHT_MAX] viewProj;
+}directionLight;
+
+layout(set = 2, binding = 2) uniform sampler2DArray pointLightShadowMapArray;
+
+layout(set = 2, binding = 3) uniform sampler2DArray directionLightShadowMapArray;
+
+layout (set = 3, binding = 0) uniform ShaderMaterial
 {
 	vec4 baseColorFactor;
 	vec4 emissiveFactor;
@@ -27,32 +50,16 @@ layout (set = 1, binding = 0) uniform ShaderMaterial
 } shaderMaterial;
 
 //Textures
-layout (set = 1, binding = 1) uniform sampler2D colorMap;//色のテクスチャ
-layout (set = 1, binding = 2) uniform sampler2D physicalDescriptorMap;//荒さはg、メタリックはbに含まれている
-layout (set = 1, binding = 3) uniform sampler2D normalMap;//法線マップ
-layout (set = 1, binding = 4) uniform sampler2D aoMap;
-layout (set = 1, binding = 5) uniform sampler2D emissiveMap;//光のマップ
+layout (set = 3, binding = 1) uniform sampler2D colorMap;//色のテクスチャ
+layout (set = 3, binding = 2) uniform sampler2D physicalDescriptorMap;//荒さはg、メタリックはbに含まれている
+layout (set = 3, binding = 3) uniform sampler2D normalMap;//法線マップ
+layout (set = 3, binding = 4) uniform sampler2D aoMap;
+layout (set = 3, binding = 5) uniform sampler2D emissiveMap;//光のマップ
 
-layout(set = 2, binding = 0) uniform PointLightUBO
-{
-	int lightCount;
-	vec4[50] pos;
-	vec4[50] color;
-}pointLight;
-
-layout(set = 3,binding = 0) uniform DirectionalLightUBO
-{
-	int lightCount;
-	vec4[50] dir;
-	vec4[50] color;
-}directionalLight;
-
-layout(set = 4,binding = 0) uniform sampler2D shadowMap;
-
-layout(set = 5,binding = 0) uniform samplerCube diffuseMap;
-
-layout(set = 6,binding = 0) uniform samplerCube specularReflectionMap;
-layout(set = 7,binding = 0) uniform sampler2D specularBRDFMap;
+layout(set = 4,binding = 0) uniform samplerCube backGroundMap;
+layout(set = 4,binding = 1) uniform samplerCube diffuseMap;
+layout(set = 4,binding = 2) uniform samplerCube specularReflectionMap;
+layout(set = 4,binding = 3) uniform sampler2D specularBRDFMap;
 
 layout(location = 0) out vec4 outColor;
 
@@ -120,23 +127,38 @@ vec3 diffuse(vec3 diffuseColor)
     return diffuseColor / PI;
 }
 
-float shadowCalc(vec4 shadowCoord, vec2 off)
+float pointLightShadowCalc()
 {
-	float shadow = 1.0;
+	return 1.0;
+}
 
-	if(shadowCoord.s >= 0.0 && shadowCoord.s <= 1.0 
-	&& shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0)
+float directionLightShadowCalc()
+{
+	float minShadow = 1.0;
+
+	for(int i = 0;i < directionLight.lightCount;i++)
 	{
-		if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
+		vec4 shadowCoord = inDirectionLightShadowCoords[i];
+		shadowCoord = shadowCoord / shadowCoord.w;
+
+		float shadow = 1.0;
+
+		if(shadowCoord.s >= 0.0 && shadowCoord.s <= 1.0 
+		&& shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0)
 		{
-			float dist = texture( shadowMap, shadowCoord.st + off ).r;
-			if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+			if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
 			{
-				shadow = 0.1;
+				float dist = texture( directionLightShadowMapArray, vec3(shadowCoord.st,0) ).r;
+				if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+				{
+					shadow = 0.1;
+				}
 			}
+
+			minShadow = min(minShadow,shadow);
 		}
 	}
-	return shadow;
+	return minShadow;
 }
 
 vec3 Uncharted2Tonemap(vec3 color)
@@ -292,9 +314,9 @@ void main() {
 		outColor += vec4(color,0.0f);
 	}
 
-	for(int i = 0;i < directionalLight.lightCount;i++)
+	for(int i = 0;i < directionLight.lightCount;i++)
 	{
-		vec3 l = normalize(directionalLight.dir[i].xyz);//頂点からライトへのベクトル
+		vec3 l = normalize(directionLight.dir[i].xyz);//頂点からライトへのベクトル
 		vec3 h = normalize(l+v);//lとvの中間のベクトル
 
 		float NdotL = clamp(dot(n, l), 0.001, 1.0);
@@ -312,13 +334,18 @@ void main() {
 		vec3 diffuseReflect = (1.0 - F) * diffuse(diffuseColor);
 		vec3 specularReflect = F * G * D / (4.0 * NdotL * NdotV);
 		// 最終的な強度を、光のエネルギー（余弦則）でスケーリングされた反射率（BRDF）として取得する。
-		vec3 color = NdotL * (directionalLight.color[i].rgb) * (diffuseReflect + specularReflect);
+		vec3 color = NdotL * (directionLight.color[i].rgb) * (diffuseReflect + specularReflect);
 		outColor += vec4(color,0.0f);
 	}
 
 	outColor += getIBL(f0,n,v,baseColor.rgb,roughness,metallic);
 
-	float shadow = shadowCalc(inShadowCoords / inShadowCoords.w,vec2(0.0));
+	float pointLightShadow =  1.0;
+	pointLightShadow = pointLightShadowCalc();
+	float directionLightShadow = 1.0;
+	directionLightShadow = directionLightShadowCalc();
+	
+	float shadow = min(pointLightShadow,directionLightShadow);
 	outColor *= shadow;
 
 	outColor.a = 1.0;

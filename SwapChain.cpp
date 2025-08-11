@@ -193,9 +193,11 @@ void SwapChain::createSwapChainObj()
     //スワップチェーンのVkImageのビューを作成
 
     TextureProperty property = textureFactory->getBuilder()
-        ->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+        ->withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        .withViewType(VK_IMAGE_VIEW_TYPE_2D)
         .withFormat(swapChainImageFormat)
         .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+        .addView()
         .withLayerCount(1)
         .Build();
 
@@ -230,6 +232,7 @@ void SwapChain::createColorAttachment()
         .withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         .withViewType(VK_IMAGE_VIEW_TYPE_2D)
         .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+        .addView()
         .withLayerCount(1)
         .Build();
 
@@ -252,6 +255,7 @@ void SwapChain::createDepthAttachment()
         .withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         .withViewType(VK_IMAGE_VIEW_TYPE_2D)
         .withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
+        .addView()
         .withLayerCount(1)
         .Build();
 

@@ -117,6 +117,16 @@ struct NodeTransform
 	std::vector<glm::mat4> matrix;
 	std::vector<glm::mat4> nodeTransform;
 
+	void init()
+	{
+		translation.clear();
+		rotation.clear();
+		scale.clear();
+
+		matrix.clear();
+		nodeTransform.clear();
+	}
+
 	void setNodeCount(int nodeCount)
 	{
 		translation.resize(nodeCount);
@@ -124,7 +134,10 @@ struct NodeTransform
 		scale.resize(nodeCount);
 		matrix.resize(nodeCount);
 		nodeTransform.resize(nodeCount);
+	}
 
+	void resetMat()
+	{
 		std::fill(translation.begin(), translation.end(), glm::vec3(0.0f));
 		std::fill(rotation.begin(), rotation.end(), glm::quat());
 		std::fill(scale.begin(), scale.end(), glm::vec3(1.0f));
@@ -208,7 +221,7 @@ struct GltfNode
 		updatedIndex = numJoints;
 	}
 
-	int getJointCount()
+	int getJointCount() const
 	{
 		if (skin.name.size() == 0)
 		{

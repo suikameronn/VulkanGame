@@ -28,11 +28,16 @@ struct GltfModelAnimComp
 	//アニメーションの再生開始時間
 	float startTime;
 
+	//ノードごとのアニメーション行列
+	NodeTransform nodeTransform;
+
 	GltfModelAnimComp()
 	{
 		animationName = "";
 		speed = 1.0f;
 		loop = true;
 		startTime = 0.0f;
+
+		nodeTransform.init();
 	}
 };;

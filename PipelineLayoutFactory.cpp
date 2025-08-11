@@ -26,8 +26,7 @@ PipelineLayoutFactory::~PipelineLayoutFactory()
 }
 
 //既定のレイアウトから構造体を設定する
-void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
-	, std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts, std::vector<VkPushConstantRange>& pushConstant)
+PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayoutPattern& pattern)
 {
 	if (pattern == PipelineLayoutPattern::PBR)
 	{
@@ -35,19 +34,12 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 
 		builder->initProperty();
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MODELANIMMAT));//モデル行列
-		builder->addLayout(layoutFactory->Create(LayoutPattern::VIEWPROJMAT));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::CAMERA));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SHADOWMAP));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::MATERIAL));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::LIGHT));
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::IBL));
 
-		VkPushConstantRange p1{};
-		p1.offset = 0;
-		p1.size = sizeof(FragmentParam);
-		p1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		pushConstant.push_back(p1);
+		builder->addPushConstant(sizeof(FragmentParam), VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 	else if (pattern == PipelineLayoutPattern::UI)
 	{
@@ -70,7 +62,18 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		//シャドウマップの計算用
 
 		builder->initProperty();
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+
+		const std::shared_ptr<DescriptorSetLayout> layout = layoutFactory->Create
+		(
+			layoutFactory->getBuilder()
+			->initProperty()
+			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build()
+		);
+
+		builder->addLayout(layout);
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 	}
 	else if (pattern == PipelineLayoutPattern::CALC_CUBEMAP)
@@ -81,20 +84,29 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
 	}
-	else if (pattern == PipelineLayoutPattern::CALCIBL_DIFFUSE_SPECULAR)
+	else if (pattern == PipelineLayoutPattern::CALC_IBL_DIFFUSE)
 	{
-		//IBLのディフューズとスペキュラーの計算用
+		//IBLのディフューズの計算用
 
 		builder->initProperty();
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
 	}
-	else if (pattern == PipelineLayoutPattern::CALCIBL_BRDF)
+	else if (pattern == PipelineLayoutPattern::CALC_IBL_SPECULAR)
+	{
+		//IBLのスペキュラーの計算用
+
+		builder->initProperty();
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
+		
+		builder->addPushConstant(sizeof(SpecularPushConstant), VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+	else if (pattern == PipelineLayoutPattern::CALC_IBL_BRDF)
 	{
 		//IBLのBRDF計算用
 
 		builder->initProperty();
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
 	}
 	else if(pattern == PipelineLayoutPattern::RAYCAST)
 	{
@@ -111,27 +123,21 @@ void PipelineLayoutFactory::convertLayouts(PipelineLayoutPattern pattern
 			.addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
 			.addLayout(layoutFactory->Create(LayoutPattern::RAYCAST));
 
-		VkPushConstantRange p1{};
-		p1.offset = 0;
-		p1.size = sizeof(RaycastPushConstant);
-		p1.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		pushConstant.push_back(p1);
+		builder->addPushConstant(sizeof(RaycastPushConstant), VK_SHADER_STAGE_COMPUTE_BIT);
 	}
 
 	//レイアウトの構造体を取得する
-	layouts = builder->Build();
+	return builder->Build();
 }
 
 //ビルダーでパイプラインレイアウトを作成する
-std::shared_ptr<PipelineLayout> PipelineLayoutFactory::createLayout(std::vector<std::shared_ptr<DescriptorSetLayout>>& layoutStruct
-	, std::vector<VkPushConstantRange>& pushConstants)
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::createLayout(const PipelineLayoutProperty& property)
 {
 	//構造体からVkDescriptorSetLayoutの配列を取得する
-	std::vector<VkDescriptorSetLayout> layouts(layoutStruct.size());
+	std::vector<VkDescriptorSetLayout> layouts(property.layoutArray.size());
 	for (int i = 0; i < layouts.size(); i++)
 	{
-		layouts[i] = layoutStruct[i]->layout;
+		layouts[i] = property.layoutArray[i]->layout;
 	}
 
 	//構造体のファクトリーを設定しておく
@@ -143,70 +149,70 @@ std::shared_ptr<PipelineLayout> PipelineLayoutFactory::createLayout(std::vector<
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
 	pipelineLayoutInfo.pSetLayouts = layouts.data();
-	pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
-	pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+	pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(property.pushconstantArray.size());
+	pipelineLayoutInfo.pPushConstantRanges = property.pushconstantArray.data();
 
 	//パイプラインレイアウトを作成する
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pLayout->pLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	pLayout->layouts = layoutStruct;
+	pLayout->layouts = property.layoutArray;
+	pLayout->pushconstants = property.pushconstantArray;
 
 	return pLayout;
 }
 
 //パイプラインレイアウトの作成
-std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(std::vector<std::shared_ptr<DescriptorSetLayout>>& layouts
-	, std::vector<VkPushConstantRange>& pushConstants)
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(const PipelineLayoutProperty& property)
 {
-	if (layouts.size() == 0)
+	if (property.layoutArray.size() == 0)
 	{
 		return std::shared_ptr<PipelineLayout>();
 	}
 
 	//すでに作成されていないか調べる
-	std::weak_ptr<PipelineLayout> preCreate = pipelineLayoutStorage[{layouts, pushConstants}];
+	std::weak_ptr<PipelineLayout> preCreate = pipelineLayoutStorage[property];
 	if (!preCreate.expired())
 	{
 		return preCreate.lock();
 	}
 
 	//実際にパイプラインレイアウトを作成する
-	std::shared_ptr<PipelineLayout> layout = createLayout(layouts, pushConstants);
+	std::shared_ptr<PipelineLayout> layout = createLayout(property);
 
 	//ハッシュ値を持たせる
-	layout->hashKey = pipelineLayoutHash({ layouts, pushConstants });
+	layout->hashKey = pipelineLayoutHash(property);
 
 	//レイアウトを登録しておく
-	pipelineLayoutStorage[{layouts, pushConstants}] = layout;
+	pipelineLayoutStorage[property] = layout;
 
 	return layout;
 }
 
 //パイプラインレイアウトの作成
-std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(PipelineLayoutPattern pattern)
+std::shared_ptr<PipelineLayout> PipelineLayoutFactory::Create(const PipelineLayoutPattern& pattern)
 {
 	std::vector<std::shared_ptr<DescriptorSetLayout>> layouts;
 	std::vector<VkPushConstantRange> pushConstants;
 
-	convertLayouts(pattern, layouts, pushConstants);
+	const PipelineLayoutProperty& property = convertLayouts(pattern);
 
 	//すでに作成されていないか調べる
-	std::weak_ptr<PipelineLayout> preCreate = pipelineLayoutStorage[{layouts, pushConstants}];
+	std::weak_ptr<PipelineLayout> preCreate = pipelineLayoutStorage[property];
 	if (!preCreate.expired())
 	{
 		return preCreate.lock();
 	}
 
 	//実際にパイプラインレイアウトを作成する
-	std::shared_ptr<PipelineLayout> layout = createLayout(layouts, pushConstants);
+	std::shared_ptr<PipelineLayout> layout = createLayout(property);
 
 	//ハッシュ値を持たせる
-	layout->hashKey = pipelineLayoutHash({ layouts,pushConstants });
+	layout->hashKey = pipelineLayoutHash(property);
 
 	//レイアウトを登録しておく
-	pipelineLayoutStorage[{layouts, pushConstants}] = layout;
+	pipelineLayoutStorage[property] = layout;
 
 	return layout;
 }
