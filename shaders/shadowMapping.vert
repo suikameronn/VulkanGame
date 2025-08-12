@@ -6,6 +6,7 @@ layout(location = 2) in vec4 weight1;
 
 layout (set = 0,binding = 0) uniform ModelMatrix 
 {
+    vec3 scale;
     mat4 matrix;
 } modelMatrix;
 

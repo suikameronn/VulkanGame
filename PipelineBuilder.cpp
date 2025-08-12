@@ -69,11 +69,7 @@ PipelineProperty PipelineBuilder::Build()
 	property.viewportState.viewportCount = 1;
 	property.viewportState.scissorCount = 1;
 
-	PipelineProperty p = property;
-
-	initProperty();
-
-	return p;
+	return property;
 }
 
 //VkPipeline‚ğì¬

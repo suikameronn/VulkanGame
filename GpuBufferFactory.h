@@ -58,7 +58,7 @@ private:
 	VkMemoryPropertyFlagBits convertMemoryPropertyFlagBits(BufferUsage usage);
 
 	//ステージングバッファのメモリのマップとアンマップ
-	void memoryMap(GpuBuffer& bufffer);
+	void memoryMap(GpuBuffer& bufffer, size_t bufferSize);
 	void memoryUnMap(GpuBuffer& buffer);
 
 public:
@@ -85,7 +85,7 @@ public:
 	void endCommandBuffer(std::shared_ptr<CommandBuffer> command);
 
 	//ステージングバッファのメモリのマップとアンマップ
-	void memoryMap(std::shared_ptr<GpuBuffer> bufffer);
+	void memoryMap(std::shared_ptr<GpuBuffer> bufffer, size_t bufferSize);
 	void memoryUnMap(std::shared_ptr<GpuBuffer> buffer);
 
 	//メモリのデータをコピー

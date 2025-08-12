@@ -96,10 +96,11 @@ void GameManager::createScene()
 
 	ecsManager->AddComponent<MeshRendererComp>(entity1);
 
-	comp->filePath = "models/PlayerModel.glb";
+	comp->filePath = "models/robot.glb";
 
 	size_t entity2 = ecsManager->GenerateEntity();
 	ecsManager->AddComponent<DirectionLightComp>(entity2);
+	ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
 
 	size_t entity3 = ecsManager->GenerateEntity();
 	SkyDomeComp* skydomeComp = ecsManager->AddComponent<SkyDomeComp>(entity3);
@@ -111,6 +112,11 @@ void GameManager::createScene()
 	cameraComp->matrices.position = glm::vec3(-10.0f);
 	cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
+
+	size_t entity5 = ecsManager->GenerateEntity();
+	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity5);
+	dLight->color = glm::vec4(1.0f);
+	dLight->direction = glm::vec3(1.0f);
 }
 
 void GameManager::mainGameLoop()//メインゲームループ
@@ -143,7 +149,7 @@ void GameManager::mainGameLoop()//メインゲームループ
         }
         else
         {
-            std::cout << "fps down" << std::endl;
+            //std::cout << "fps down" << std::endl;
         }
         start = std::chrono::system_clock::now();
     }
@@ -195,7 +201,7 @@ void GameManager::OnStart()
 							bufferFactory->Create(sizeof(ModelMat), BufferUsage::UNIFORM, BufferTransferType::NONE);
 
 						//ユニフォームバッファのメモリをマップしておく
-						bufferFactory->memoryMap(rendererComp.modelMatBuffer);
+						bufferFactory->memoryMap(rendererComp.modelMatBuffer, sizeof(ModelMat));
 					}
 
 					{
@@ -211,7 +217,7 @@ void GameManager::OnStart()
 									, BufferUsage::UNIFORM, BufferTransferType::NONE);
 
 								//ユニフォームバッファのメモリをマップしておく
-								bufferFactory->memoryMap(rendererComp.nodeAnimBuffer[i]);
+								bufferFactory->memoryMap(rendererComp.nodeAnimBuffer[i], sizeof(NodeAnimMat));
 							}
 						}
 					}
@@ -223,7 +229,7 @@ void GameManager::OnStart()
 							, BufferUsage::UNIFORM, BufferTransferType::NONE);
 
 						//ユニフォームバッファのメモリをマップしておく
-						bufferFactory->memoryMap(rendererComp.boneMatBuffer);
+						bufferFactory->memoryMap(rendererComp.boneMatBuffer, sizeof(BoneMat));
 					}
 
 					const std::shared_ptr<DescriptorSetLayout> layout =
@@ -375,9 +381,7 @@ void GameManager::OnStart()
 			);
 
 			//ディレクションライトの用の複数のレイヤーを持つシャドウマップ用のテクスチャを作成する
-			sceneLight->shadowMap[1] = textureFactory->Create
-			(
-				textureBuilder->initProperty()
+			textureBuilder->initProperty()
 				.withWidthHeight(extent.width, extent.height, 1)
 				.withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 				.withTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -385,16 +389,25 @@ void GameManager::OnStart()
 				.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 				.withLayerCount(directionLightCount)
 				.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.withFormat(VK_FORMAT_D16_UNORM)
-				.withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
-				.withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
-				.withTargetLayer(0, directionLightCount)
-				.addView()
-				.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+				.withFormat(VK_FORMAT_D16_UNORM);
+
+			for (int i = 0; i < directionLightCount; i++)
+			{
+				textureBuilder->withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
+					.withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+					.withTargetLayer(i, 1)
+					.addView();
+			}
+
+			textureBuilder->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 				.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 				.withMagFilter(VK_FILTER_LINEAR)
 				.withMinFilter(VK_FILTER_LINEAR)
-				.Build()
+				.Build();
+
+			sceneLight->shadowMap[1] = textureFactory->Create
+			(
+				textureBuilder->Build()
 			);
 
 			//各ビューからフレームバッファを作成する
@@ -554,6 +567,24 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
+	ecsManager->RunFunction<DirectionLightComp, TransformComp>
+		(
+			{
+				[&](DirectionLightComp& dirLightComp,TransformComp& transComp)
+				{
+					sceneLight->dirUniform.lightCount
+						= static_cast<uint32_t>(ecsManager->GetEntitiesWithComponents<DirectionLightComp>().size());
+
+					sceneLight->dirUniform.color[dirLightComp.index] = dirLightComp.color;
+
+					sceneLight->dirUniform.direction[dirLightComp.index] = dirLightComp.direction;
+
+					sceneLight->dirUniform.viewProj[dirLightComp.index] = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, 0.1f, 1000.0f)
+						* glm::lookAt(transComp.position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				}
+			}
+		);
+
 	ecsManager->RunFunction<TransformComp, MeshRendererComp>
 		(
 			{
@@ -564,10 +595,14 @@ void GameManager::OnLateUpdate()
 				rotateMat *= glm::rotate(glm::radians(transComp.rotation[1]), glm::vec3(0, 1, 0));
 				rotateMat *= glm::rotate(glm::radians(transComp.rotation[2]), glm::vec3(0, 0, 1));
 
-				const glm::mat4 modelMat = glm::translate(glm::mat4(1.0f),transComp.position)
+				const glm::mat4 model = glm::translate(glm::mat4(1.0f),transComp.position)
 					* rotateMat * glm::scale(glm::mat4(1.0f),transComp.scale);
 
-				bufferFactory->copyMemory(sizeof(glm::mat4), &modelMat, rendererComp.modelMatBuffer);
+				ModelMat modelMat{};
+				modelMat.scale = transComp.scale;
+				modelMat.matrix = model;
+
+				bufferFactory->copyMemory(sizeof(ModelMat), &modelMat, rendererComp.modelMatBuffer);
 			}
 			}
 		);

@@ -143,6 +143,8 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
     }
     else if (pattern == PipelinePattern::CALC_SHADOWMAP)
     {
+        builder->initProperty();
+
         return builder->withVertexShader("shaders/shadowMapping.vert.spv")
             .withVertexInput(0, VK_VERTEX_INPUT_RATE_VERTEX, sizeof(Vertex))
             .addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos))

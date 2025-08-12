@@ -118,9 +118,9 @@ VkMemoryPropertyFlagBits GpuBufferFactory::convertMemoryPropertyFlagBits(BufferU
 }
 
 //ステージングバッファのメモリのマップとアンマップ
-void GpuBufferFactory::memoryMap(GpuBuffer& bufffer)
+void GpuBufferFactory::memoryMap(GpuBuffer& bufffer, size_t bufferSize)
 {
-	vkMapMemory(device, bufffer.memory, 0, VK_WHOLE_SIZE, 0, &bufffer.mappedPtr);
+	vkMapMemory(device, bufffer.memory, 0, bufferSize, 0, &bufffer.mappedPtr);
 }
 
 void GpuBufferFactory::memoryUnMap(GpuBuffer& buffer)
@@ -131,9 +131,9 @@ void GpuBufferFactory::memoryUnMap(GpuBuffer& buffer)
 //public////////////////////////////////////
 
 //ステージングバッファのメモリのマップとアンマップ
-void GpuBufferFactory::memoryMap(std::shared_ptr<GpuBuffer> bufffer)
+void GpuBufferFactory::memoryMap(std::shared_ptr<GpuBuffer> bufffer, size_t bufferSize)
 {
-	vkMapMemory(device, bufffer->memory, 0, VK_WHOLE_SIZE, 0, &bufffer->mappedPtr);
+	vkMapMemory(device, bufffer->memory, 0, bufferSize, 0, &bufffer->mappedPtr);
 }
 
 void GpuBufferFactory::memoryUnMap(std::shared_ptr<GpuBuffer> buffer)
@@ -162,7 +162,7 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 		builder->Create(bufferSize, usage, property, buffer->buffer, buffer->memory);
 
 		//ステージングバッファにデータをコピーする
-		memoryMap(buffer);
+		memoryMap(buffer, bufferSize);
 		copyMemory(bufferSize, srcPtr, stagingBuffer);
 		memoryUnMap(buffer);
 		
@@ -178,7 +178,7 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 		builder->Create(bufferSize, usage, property, buffer->buffer, buffer->memory);
 		
 		//メモリのデータをバッファにコピーする
-		memoryMap(buffer);
+		memoryMap(buffer, bufferSize);
 		copyMemory(bufferSize, srcPtr, buffer);
 	}
 
@@ -207,7 +207,7 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 			, convertMemoryPropertyFlagBits(usage),
 			buffer->buffer, buffer->memory);
 
-		memoryMap(staging); //ステージングバッファのメモリをマップする
+		memoryMap(staging, bufferSize); //ステージングバッファのメモリをマップする
 		//データをステージングバッファにデータをコピーする
 		copyMemory(bufferSize, srcPtr, staging);
 		memoryUnMap(staging); //ステージングバッファのメモリをアンマップする
@@ -226,7 +226,7 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, con
 
 		//メモリのデータをバッファにコピーする
 		//バッファーはマップしたままで、cpu側からアクセスできるようにする
-		memoryMap(buffer);
+		memoryMap(buffer, bufferSize);
 		copyMemory(bufferSize, srcPtr, buffer);
 	}
 

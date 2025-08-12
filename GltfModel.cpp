@@ -136,8 +136,6 @@ void GltfModel::createBuffer()
 			vertBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(Vertex) * nodes[i].mesh.vertices.size()
 				, nodes[i].mesh.vertices.data(), BufferUsage::VERTEX, BufferTransferType::DST);
 
-			std::cout << nodes[i].mesh.meshIndex << std::endl;
-
 			indeBuffer[nodes[i].mesh.meshIndex] = bufferFactory->Create(sizeof(uint32_t) * nodes[i].mesh.indices.size()
 				, nodes[i].mesh.indices.data(), BufferUsage::INDEX, BufferTransferType::DST);
 		}

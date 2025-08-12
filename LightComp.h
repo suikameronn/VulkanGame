@@ -32,14 +32,18 @@ struct DirectionLightComp
 
 struct PointLightUniform
 {
-	std::array<glm::vec3, LIGHT_MAX> position;
+	uint32_t lightCount;
+	alignas(16) std::array<glm::vec3, LIGHT_MAX> position;
 	alignas(16) std::array<glm::vec4, LIGHT_MAX> color;
+	alignas(16) std::array<glm::mat4, LIGHT_MAX> viewProj;
 };
 
 struct DirectionLightUniform
 {
-	std::array<glm::vec3, LIGHT_MAX> direction;
+	uint32_t lightCount;
+	alignas(16) std::array<glm::vec3, LIGHT_MAX> direction;
 	alignas(16) std::array<glm::vec4, LIGHT_MAX> color;
+	alignas(16) std::array<glm::mat4, LIGHT_MAX> viewProj;
 };
 
 struct SceneLight
