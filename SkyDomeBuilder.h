@@ -17,6 +17,16 @@
 
 #define CUBEMAP_LAYER 6
 
+enum class CUBEMAP_VIEW
+{
+	FRONT = 0,
+	BACK,
+	RIGHT,
+	LEFT,
+	TOP,
+	BOTTOM
+};
+
 struct BackGroundColor
 {
 	//レイヤーが6つのレンダリングで利用するテクスチャ
@@ -147,6 +157,8 @@ private:
 	
 	void createBRDF(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
 		, const std::shared_ptr<DescriptorSet> uniform);
+
+	void switchView(std::shared_ptr<DescriptorSet> uniform, const int index);
 
 public:
 

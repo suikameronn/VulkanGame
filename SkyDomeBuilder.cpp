@@ -39,6 +39,36 @@ SkyDomeBuilder SkyDomeBuilder::withImagePath(const std::string path)
 	return *this;
 }
 
+//キューブマップ作成時のビューの向きを切り替える
+void SkyDomeBuilder::switchView(std::shared_ptr<DescriptorSet> uniform, const int index)
+{
+	CameraUniform camera{};
+	camera.proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+	switch (CUBEMAP_VIEW(index))
+	{
+	case CUBEMAP_VIEW::FRONT:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		break;
+	case CUBEMAP_VIEW::BACK:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		break;
+	case CUBEMAP_VIEW::RIGHT:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		break;
+	case CUBEMAP_VIEW::LEFT:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		break;
+	case CUBEMAP_VIEW::TOP:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		break;
+	case CUBEMAP_VIEW::BOTTOM:
+		camera.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+		break;
+	}
+
+	memcpy(uniform->buffer[0]->mappedPtr, &camera, sizeof(CameraUniform));
+}
+
 //各種マップを作成する
 void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,const std::shared_ptr<Texture> srcTexture
 	, const std::shared_ptr<DescriptorSet> uniform, const std::shared_ptr<DescriptorSet> srcTex)
@@ -103,6 +133,8 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
+		switchView(uniform, i);
+
 		const RenderProperty renderProp = render->initProperty()
 			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
 			.withFrameBuffer(frameBufferArray[i])
@@ -370,6 +402,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
+		switchView(uniform, i);
+
 		const RenderProperty renderProp = render->initProperty()
 			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
 			.withFrameBuffer(frameBufferArray[i])
@@ -666,6 +700,8 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	{
 		for (int j = 0; j < CUBEMAP_LAYER; j++)
 		{
+			switchView(uniform, j);
+
 			const RenderProperty renderProp = render->initProperty()
 				.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
 				.withFrameBuffer(frameBufferArray[i * CUBEMAP_LAYER + j])
