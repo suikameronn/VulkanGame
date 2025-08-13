@@ -87,7 +87,7 @@ void GameManager::createScene()
 {
 	size_t entity1 = ecsManager->GenerateEntity();
 
-	ecsManager->AddComponent<TransformComp>(entity1);
+	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(10.0f);
 
 	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
@@ -496,7 +496,7 @@ void GameManager::OnStart()
 					comp.ID = skydomeFactory->Create
 					(
 						skydomeBuilder->initProperty()
-						.withImagePath("textures/hdri_map.hdr")
+						.withImagePath("textures\\hdri_map.hdr")
 						.Build()
 					);
 				}

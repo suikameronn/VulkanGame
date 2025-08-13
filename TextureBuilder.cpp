@@ -57,15 +57,21 @@ TextureBuilder& TextureBuilder::withImageFile(const std::string filePath)
 
 	if (!stbi_is_hdr(filePath.c_str()))
 	{
+		unsigned char* pixels;
+
 		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			static_cast<unsigned char*>(property.image.pixels));
+			pixels);
 
 		property.image.pixelSize = sizeof(unsigned char);
 	}
 	else
 	{
+		float* pixels;
+
 		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			static_cast<float*>(property.image.pixels));
+			pixels);
+
+		property.image.pixels = pixels;
 
 		property.image.pixelSize = sizeof(float);
 	}
@@ -85,14 +91,14 @@ TextureBuilder& TextureBuilder::withImageFile(const std::string filePath, const 
 	if (!stbi_is_hdr(filePath.c_str()))
 	{
 		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			static_cast<unsigned char*>(property.image.pixels));
+			*static_cast<unsigned char**>(property.image.pixels));
 
 		property.image.pixelSize = sizeof(unsigned char);
 	}
 	else
 	{
 		loadImageFile(filePath, property.image.info.extent.width, property.image.info.extent.height,
-			static_cast<float*>(property.image.pixels));
+			*static_cast<float**>(property.image.pixels));
 
 		property.image.pixelSize = sizeof(float);
 	}
@@ -268,7 +274,7 @@ TextureProperty TextureBuilder::Build()
 	{
 		view.info.format = property.image.info.format;
 
-		view.info.subresourceRange.levelCount = std::max(view.info.subresourceRange.levelCount, (uint32_t)1);
+		view.info.subresourceRange.levelCount = std::max(property.image.info.mipLevels, (uint32_t)1);
 		view.info.subresourceRange.layerCount = std::max(view.info.subresourceRange.layerCount, (uint32_t)1);
 	}
 
@@ -277,7 +283,7 @@ TextureProperty TextureBuilder::Build()
 
 //外部の画像を読み込む
 void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-	,unsigned char* pixels)
+	,unsigned char*& pixels)
 {
 	//通常のテクスチャの画像を読み込む
 	int texWidth, texHeight, texChannels;
@@ -322,17 +328,49 @@ void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width,
 }
 
 void TextureBuilder::loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-	, float* pixels)
+	, float*& pixels)
 {
 	//HDRのテクスチャの画像を読み込む
 	int texWidth, texHeight, texChannels;
-	pixels = stbi_loadf(filePath.c_str(), &texWidth, &texHeight, &texChannels, 0);
-	if (!pixels)
+	float* srcPixels = stbi_loadf(filePath.c_str(), &texWidth, &texHeight, &texChannels, 0);
+
+	if (!srcPixels)
 	{
 		throw std::runtime_error("画像の読み込みの失敗: " + filePath);
 	}
 	width = static_cast<uint32_t>(texWidth);
 	height = static_cast<uint32_t>(texHeight);
+
+	if (texChannels == 4)//画像に透明度のチャンネルがある場合は、そのまま
+	{
+		pixels = new float[width * height * texChannels];
+		memcpy(pixels, srcPixels, (width * height * texChannels) - 1);
+	}
+	else if (texChannels == 3)//画像に透明度のチャンネルが無い場合は、すべてのピクセルの透明度を255として
+		//強引にチャンネルを4つに gpuでのテクスチャ作成の都合上
+	{
+		pixels = new float[width * height * 4];
+		memset(pixels, 255.0f, width * height * 4);
+
+		for (uint32_t i = 0; i < width * height; i++)
+		{
+			pixels[i * 4] = srcPixels[i * 3];
+			pixels[i * 4 + 1] = srcPixels[i * 3 + 1];
+			pixels[i * 4 + 2] = srcPixels[i * 3 + 2];
+		}
+	}
+	else if (texChannels == 1)
+	{
+		pixels = new float[width * height * 4];
+		memset(pixels, 255.0f, width * height * 4);
+
+		for (uint32_t i = 0; i < width * height; i++)
+		{
+			pixels[i * 4] = srcPixels[i];
+		}
+	}
+
+	stbi_image_free(srcPixels);
 }
 
 //vkCreateImageを呼び出す
@@ -748,17 +786,12 @@ void TextureBuilder::createImage(const size_t& pixelSize, const void* pixels
 	//コピー先のVkImageを作成
 	createVkImageAndMemory(imageProperty, image, memory);
 
-	//ステージングバッファに画像データを画像データをコピー
-	bufferFactory->copyMemory(bufferSize, pixels, staging);
-
 	//コピー先のVkImageのレイアウトを変更
 	transitionImageLayout(image, imageProperty.info.format, imageProperty.info.initialLayout,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imageProperty.info.mipLevels, imageProperty.info.arrayLayers);
 
 	//ステージングバッファからVkImageに画像データをコピー
 	copyBufferToImage(staging, image, imageProperty);
-
-
 
 	//ミップマップレベルを作成
 	generateMipmaps(image, imageProperty);
@@ -823,7 +856,7 @@ void TextureBuilder::Create(const TextureProperty& property
 		if (property.image.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED)
 		{
 			//画像のレイアウトを指定のものに変更
-			transitionImageLayout(image, property.image.info.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			transitionImageLayout(image, property.image.info.format, property.image.finalLayout,
 				property.image.finalLayout, property.image.info.mipLevels, property.image.info.arrayLayers);
 		}
 

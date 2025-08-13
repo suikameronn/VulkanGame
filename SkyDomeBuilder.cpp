@@ -1039,16 +1039,6 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 		TexturePattern::CALC_CUBEMAP
 	);
 
-	textureFactory->getBuilder()->transitionImageLayout
-	(
-		srcTexture->image,
-		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		srcTexture->property.image.info.mipLevels,
-		1
-	);
-
 	//マップ計算用のバッファ
 	std::shared_ptr<GpuBuffer> uniform = bufferFactory->Create
 	(

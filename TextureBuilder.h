@@ -129,9 +129,9 @@ private:
 
 	//ŠO•”‚Ì‰æ‘œ‚ğ“Ç‚İ‚Ş
 	void loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-		, unsigned char* pixels);
+		, unsigned char*& pixels);
 	void loadImageFile(const std::string& filePath, uint32_t& width, uint32_t& height
-		, float* pixels);
+		, float*& pixels);
 
 public:
 
