@@ -12,27 +12,33 @@ TextureCopy& TextureCopy::withAspectMask(const VkImageAspectFlagBits& flag)
 }
 
 //ミップマップレベルを指定する
-TextureCopy& TextureCopy::withMipmapLevel(const uint32_t& mipmapLevel)
+TextureCopy& TextureCopy::withSrcMipmapLevel(const uint32_t& mipmapLevel)
 {
 	property.copyInfo.srcSubresource.mipLevel = mipmapLevel;
+
+	return *this;
+}
+
+TextureCopy& TextureCopy::withDstMipmapLevel(const uint32_t& mipmapLevel)
+{
 	property.copyInfo.dstSubresource.mipLevel = mipmapLevel;
 
 	return *this;
 }
 
 //ベースレイヤーを指定する
-TextureCopy& TextureCopy::withBaseLayer(const uint32_t& baseLayer)
+TextureCopy& TextureCopy::withSrcLayerRange(const uint32_t& baseLayer, const uint32_t& layerCount)
 {
 	property.copyInfo.srcSubresource.baseArrayLayer = baseLayer;
-	property.copyInfo.dstSubresource.baseArrayLayer = baseLayer;
+	property.copyInfo.srcSubresource.layerCount = layerCount;
 
 	return *this;
 }
 
 //レイヤー数を指定する
-TextureCopy& TextureCopy::withLayerCount(const uint32_t& layerCount)
+TextureCopy& TextureCopy::withDstLayerRange(const uint32_t& baseLayer, const uint32_t& layerCount)
 {
-	property.copyInfo.srcSubresource.layerCount = layerCount;
+	property.copyInfo.dstSubresource.baseArrayLayer = baseLayer;
 	property.copyInfo.dstSubresource.layerCount = layerCount;
 
 	return *this;
@@ -75,9 +81,5 @@ std::shared_ptr<Texture> TextureCopy::Copy(const TexCopyProperty& prop)
 	vkCmdCopyImage(prop.commandBuffer->commandBuffer, prop.src->image
 		, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, prop.dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &prop.copyInfo);
 
-	std::shared_ptr<Texture> dstTex = prop.dst;
-
-	initProperty();
-
-	return dstTex;
+	return prop.dst;
 }

@@ -49,13 +49,15 @@ public:
 	TextureCopy& withAspectMask(const VkImageAspectFlagBits& flag);
 
 	//ミップマップレベルを指定する
-	TextureCopy& withMipmapLevel(const uint32_t& mipmapLevel);
+	TextureCopy& withSrcMipmapLevel(const uint32_t& mipmapLevel);
+	
+	TextureCopy& withDstMipmapLevel(const uint32_t& mipmapLevel);
 
 	//ベースレイヤーを指定する
-	TextureCopy& withBaseLayer(const uint32_t& baseLayer);
+	TextureCopy& withSrcLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
 
 	//レイヤー数を指定する
-	TextureCopy& withLayerCount(const uint32_t& layerCount);
+	TextureCopy& withDstLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
 
 	//テクスチャサイズを指定する
 	TextureCopy& withSize(const uint32_t& width, const uint32_t& height);

@@ -193,7 +193,8 @@ void SwapChain::createSwapChainObj()
     //スワップチェーンのVkImageのビューを作成
 
     TextureProperty property = textureFactory->getBuilder()
-        ->withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        ->initProperty()
+        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
         .withViewType(VK_IMAGE_VIEW_TYPE_2D)
         .withFormat(swapChainImageFormat)
         .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)

@@ -236,11 +236,7 @@ RenderPassBuilder& RenderPassBuilder::addSubpass()
 //レンダーパスのプロパティを返す
 RenderPassProperty RenderPassBuilder::Build()
 {
-	RenderPassProperty p = property;
-
-	property.initProperty();
-
-	return p;
+	return property;
 }
 
 //VkRenderPassの作成する

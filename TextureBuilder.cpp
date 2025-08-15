@@ -274,8 +274,22 @@ TextureProperty TextureBuilder::Build()
 	{
 		view.info.format = property.image.info.format;
 
-		view.info.subresourceRange.levelCount = std::max(property.image.info.mipLevels, (uint32_t)1);
-		view.info.subresourceRange.layerCount = std::max(view.info.subresourceRange.layerCount, (uint32_t)1);
+		if (view.info.subresourceRange.levelCount == 0)
+		{
+			view.info.subresourceRange.levelCount = property.image.info.mipLevels;
+		}
+
+		if (view.info.subresourceRange.layerCount == 0)
+		{
+			view.info.subresourceRange.layerCount = property.image.info.arrayLayers;
+		}
+	}
+
+	if (property.image.info.mipLevels == 1)
+	{
+		property.sampler.info.minLod = 0.0f;
+		property.sampler.info.maxLod = 0.0f;
+		property.sampler.info.mipLodBias = 0.0f;
 	}
 
 	return property;

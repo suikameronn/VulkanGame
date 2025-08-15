@@ -154,31 +154,21 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
 			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 			.addColorAttachment();
 
-		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(0)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
-
 		builder->withSrcSubpassIndex(0)
 			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
-
-		builder->addSubpass();
+			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+			.withSrcAccessMask(0)
+			.withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
+			.withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+			.addDependency()
+			.addSubpass();
 
 		return builder->Build();
 	}
@@ -196,25 +186,15 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 			.addColorAttachment();
 
-		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(0)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
-
 		builder->withSrcSubpassIndex(0)
 			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
-
-		builder->addSubpass();
+			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+			.withSrcAccessMask(0)
+			.withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
+			.withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+			.addDependency()
+			.addSubpass();
 
 		return builder->Build();
 	}

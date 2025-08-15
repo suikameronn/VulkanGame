@@ -152,6 +152,8 @@ void GameManager::mainGameLoop()//メインゲームループ
             //std::cout << "fps down" << std::endl;
         }
         start = std::chrono::system_clock::now();
+
+		glfwPollEvents();
     }
 
     exitScene();
@@ -199,9 +201,6 @@ void GameManager::OnStart()
 
 						rendererComp.modelMatBuffer =
 							bufferFactory->Create(sizeof(ModelMat), BufferUsage::UNIFORM, BufferTransferType::NONE);
-
-						//ユニフォームバッファのメモリをマップしておく
-						bufferFactory->memoryMap(rendererComp.modelMatBuffer, sizeof(ModelMat));
 					}
 
 					{
@@ -215,9 +214,6 @@ void GameManager::OnStart()
 							{
 								rendererComp.nodeAnimBuffer[i] = bufferFactory->Create(sizeof(NodeAnimMat)
 									, BufferUsage::UNIFORM, BufferTransferType::NONE);
-
-								//ユニフォームバッファのメモリをマップしておく
-								bufferFactory->memoryMap(rendererComp.nodeAnimBuffer[i], sizeof(NodeAnimMat));
 							}
 						}
 					}
@@ -227,9 +223,6 @@ void GameManager::OnStart()
 
 						rendererComp.boneMatBuffer = bufferFactory->Create(sizeof(BoneMat)
 							, BufferUsage::UNIFORM, BufferTransferType::NONE);
-
-						//ユニフォームバッファのメモリをマップしておく
-						bufferFactory->memoryMap(rendererComp.boneMatBuffer, sizeof(BoneMat));
 					}
 
 					const std::shared_ptr<DescriptorSetLayout> layout =

@@ -16,11 +16,7 @@ FrameBufferBuilder FrameBufferBuilder::initProperty()
 
 FrameBufferProperty FrameBufferBuilder::Build()
 {
-	FrameBufferProperty p = property;
-
-	initProperty();
-
-	return p;
+	return property;
 }
 
 void FrameBufferBuilder::Create(VkFramebuffer& frameBuffer, const FrameBufferProperty& property)

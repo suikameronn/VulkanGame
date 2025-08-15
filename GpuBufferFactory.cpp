@@ -262,6 +262,8 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, Buf
 		builder->Create(bufferSize, convertUsageFlagBits(usage, transferType)
 			, convertMemoryPropertyFlagBits(usage),
 			buffer->buffer, buffer->memory);
+
+		memoryMap(buffer, bufferSize);
 	}
 
 	return buffer;

@@ -36,19 +36,22 @@ int main()
     }
 
     // ウィンドウヒントを設定 (ボーダレス)
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
-    window = glfwCreateWindow(mode->width, mode->height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+    //window = glfwCreateWindow(mode->width, mode->height, "Vulkan", nullptr, nullptr);//ウィンドウの作成
+    window = glfwCreateWindow(500,300, "Vulkan", nullptr, nullptr);//ウィンドウの作成
 
     // ウィンドウ位置を左上隅に設定
-    glfwSetWindowPos(window, 0, 0);
+    //glfwSetWindowPos(window, 0, 0);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     GameManager* gameManager = GameManager::GetInstance();//GameManager::fpsコントロールやゲームループ
     gameManager->setWindow(window);
 
     gameManager->initGame();//ゲームループの開始
+
+    delete gameManager;
 
     std::cout << "Finish" << std::endl;
 

@@ -147,16 +147,16 @@ private:
 	SkyDomeProperty property;
 
 	void createBackGround(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
-		, const std::shared_ptr<DescriptorSet> uniform, const std::shared_ptr<DescriptorSet> srcTex);
+		, const std::array<std::shared_ptr<DescriptorSet>, CUBEMAP_LAYER>& uniform, const std::shared_ptr<DescriptorSet> srcTex);
 	
 	void createDiffuse(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
-		, const std::shared_ptr<DescriptorSet> uniform, const std::shared_ptr<DescriptorSet> srcTex);
+		, const std::array<std::shared_ptr<DescriptorSet>, CUBEMAP_LAYER>& uniform, const std::shared_ptr<DescriptorSet> srcTex);
 	
 	void createReflection(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
-		, const std::shared_ptr<DescriptorSet> uniform, const std::shared_ptr<DescriptorSet> srcTex);
+		, const std::array<std::shared_ptr<DescriptorSet>, CUBEMAP_LAYER>& uniform, const std::shared_ptr<DescriptorSet> srcTex);
 	
 	void createBRDF(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
-		, const std::shared_ptr<DescriptorSet> uniform);
+		, const std::array<std::shared_ptr<DescriptorSet>, CUBEMAP_LAYER>& uniform);
 
 	void switchView(std::shared_ptr<DescriptorSet> uniform, const int index);
 
