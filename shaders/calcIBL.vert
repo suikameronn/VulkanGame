@@ -21,7 +21,6 @@ void main()
     gl_Position = camera.proj * viewMat * vec4(inPosition,1.0);
 
     localPos = inPosition;
-    localPos.y = 1.0 - localPos.y;
 
     outUV = inUV;
 }

@@ -28,7 +28,7 @@ TextureProperty TextureFactory::convertPattern(const uint32_t& width, const uint
 			.withFormat(VK_FORMAT_R8G8B8A8_SRGB) //sRGBフォーマット
 			.withNumSamples(VK_SAMPLE_COUNT_1_BIT) //サンプリング数
 			.withTiling(VK_IMAGE_TILING_OPTIMAL) //タイル配置
-			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) //使用方法
+			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) //使用方法
 			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) //デバイスローカルメモリ
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED) //初期レイアウト
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
@@ -101,7 +101,7 @@ TextureProperty TextureFactory::convertPattern(const TexturePattern& pattern)
 			.withFormat(VK_FORMAT_R8G8B8A8_SRGB) //sRGBフォーマット
 			.withNumSamples(VK_SAMPLE_COUNT_1_BIT) //サンプリング数
 			.withTiling(VK_IMAGE_TILING_OPTIMAL) //タイル配置
-			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) //使用方法
+			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT) //使用方法
 			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) //デバイスローカルメモリ
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED) //初期レイアウト
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
@@ -176,7 +176,7 @@ TextureProperty TextureFactory::convertPattern(const std::string imageFilePath, 
 			.withFormat(VK_FORMAT_R8G8B8A8_SRGB) //sRGBフォーマット
 			.withNumSamples(VK_SAMPLE_COUNT_1_BIT) //サンプリング数
 			.withTiling(VK_IMAGE_TILING_OPTIMAL) //タイル配置
-			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) //使用方法
+			.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT) //使用方法
 			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) //デバイスローカルメモリ
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED) //初期レイアウト
 			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) //最終レイアウト
@@ -222,7 +222,7 @@ TextureProperty TextureFactory::convertPattern(const std::string imageFilePath, 
 			.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 			.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
 			.withTiling(VK_IMAGE_TILING_OPTIMAL)
-			.withUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+			.withUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 			.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 			.withViewType(VK_IMAGE_VIEW_TYPE_2D)
@@ -230,7 +230,7 @@ TextureProperty TextureFactory::convertPattern(const std::string imageFilePath, 
 			.withTargetLayer(0,1)
 			.addView()
 			.withLayerCount(1)
-			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+			.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) //計算用なのでエッジで切る
 			.withMagFilter(VK_FILTER_LINEAR)
 			.withMinFilter(VK_FILTER_LINEAR)

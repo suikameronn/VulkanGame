@@ -489,7 +489,7 @@ void GameManager::OnStart()
 					comp.ID = skydomeFactory->Create
 					(
 						skydomeBuilder->initProperty()
-						.withImagePath("textures\\hdri_map.hdr")
+						.withImagePath("textures\\grass.hdr")
 						.Build()
 					);
 				}

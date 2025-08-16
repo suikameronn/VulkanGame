@@ -285,6 +285,12 @@ TextureProperty TextureBuilder::Build()
 		}
 	}
 
+	property.sampler.info.maxLod = static_cast<float>(property.image.info.mipLevels) - 1.0f;
+
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(vulkanCore->getPhysicalDevice(), &properties);
+	property.sampler.info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
 	if (property.image.info.mipLevels == 1)
 	{
 		property.sampler.info.minLod = 0.0f;
@@ -721,7 +727,7 @@ void TextureBuilder::generateMipmaps(VkImage image, const TextureImageProperty& 
 	int32_t mipWidth = imageProperty.info.extent.width;
 	int32_t mipHeight = imageProperty.info.extent.height;
 
-	for (uint32_t i = 1; i < imageProperty.info.arrayLayers; i++)
+	for (uint32_t i = 1; i < imageProperty.info.mipLevels; i++)
 	{
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -756,7 +762,7 @@ void TextureBuilder::generateMipmaps(VkImage image, const TextureImageProperty& 
 			VK_FILTER_LINEAR);
 
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 

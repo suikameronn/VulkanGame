@@ -94,8 +94,8 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		.withViewType(VK_IMAGE_VIEW_TYPE_2D)
 		.withTargetLayer(0, 1)
 		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
 		.withMagFilter(VK_FILTER_LINEAR)
 		.withMinFilter(VK_FILTER_LINEAR);
 
@@ -638,7 +638,7 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 			multiLayerTex[i * CUBEMAP_LAYER + j] = textureFactory->Create
 			(
 				textureFactory->getBuilder()->initProperty()
-				.withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i])
+				.withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i], 1)
 				.withImageType(VK_IMAGE_TYPE_2D)
 				.withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 				.withTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -646,7 +646,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 				.withLayerCount(1)
 				.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 				.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 				.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
 				.withViewType(VK_IMAGE_VIEW_TYPE_2D)
@@ -659,7 +658,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				.withMinFilter(VK_FILTER_LINEAR)
 				.Build()
 			);
-
 		}
 	}
 
@@ -691,8 +689,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 
 	bufferFactory->beginCommandBuffer(commandBuffer);
 
-	SpecularPushConstant constant{};
-
 	for (int i = 0; i < mipmapLevelSize.size(); i++)
 	{
 		for (int j = 0; j < CUBEMAP_LAYER; j++)
@@ -718,6 +714,7 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				pipelineFactory->Create(PipelinePattern::CALC_IBL_SPECULAR)->pipeline);
 
 			//ミップマップレベルに応じて、roughnessとしてシェーダに値を渡して、BRDFの値を調整する
+			SpecularPushConstant constant{};
 			constant.roughness = static_cast<float>(i) / static_cast<float>(mipmapLevelSize.size());
 			vkCmdPushConstants(commandBuffer->commandBuffer
 				, pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_SPECULAR)->pLayout

@@ -70,6 +70,7 @@ struct TextureSamplerProperty
 		info.mipLodBias = 0.0f;
 		info.maxAnisotropy = 1.0f;
 		info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		info.anisotropyEnable = VK_TRUE;
 	}
 };
 
