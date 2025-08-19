@@ -155,9 +155,8 @@ void GltfModelFactory::loadNode(size_t& offset, int parentIndex, std::shared_ptr
 
     if (gltfNode.children.size() > 0)
     {
-
 		//親ノードのインデックスを設定
-        parentIndex++;
+        parentIndex = offset;
 
         for (size_t i = 0; i < gltfNode.children.size(); i++)
         {
@@ -505,7 +504,6 @@ void GltfModelFactory::loadSkin(std::shared_ptr<GltfModel> model, tinygltf::Mode
         newSkin.jointNodeOffset.resize(source.joints.size());
         for (int i = 0;i < source.joints.size();i++)
         {
-
             int nodeOffset = model->nodeFromIndex(source.joints[i]);
             
             if (nodeOffset > -1) 

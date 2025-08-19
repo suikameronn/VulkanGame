@@ -82,6 +82,13 @@ public:
 
 		descriptorSetFactory = desc;
 	}
+
+	~GltfModelFactory()
+	{
+#ifdef _DEBUG
+		std::cout << "GltfModelFactory :: デストラクタ" << std::endl;
+#endif
+	}
 	
 	uint32_t Load(const std::string& filePath);
 

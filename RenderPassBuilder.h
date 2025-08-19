@@ -155,7 +155,7 @@ struct RenderPassProperty
 	}
 };
 
-class RenderPassBuilder
+class RenderPassBuilder : public std::enable_shared_from_this<RenderPassBuilder>
 {
 private:
 
@@ -174,52 +174,59 @@ public:
 
 	RenderPassBuilder(VkDevice& d);
 
+	~RenderPassBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "RenderPassBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//プロパティを初期化する
 	void initProperty();
 
 	//VkAttachmentDescriptionの作成
 
 	//フォーマットの設定
-	RenderPassBuilder& withFormat(const VkFormat& format);
+	std::shared_ptr<RenderPassBuilder> withFormat(const VkFormat& format);
 	//マルチサンプリングのサンプル数を設定
-	RenderPassBuilder& withMultiSamples(const VkSampleCountFlagBits& count);
+	std::shared_ptr<RenderPassBuilder> withMultiSamples(const VkSampleCountFlagBits& count);
 	//カラーアタッチメントを使用する前の処理を指定
-	RenderPassBuilder& withColorLoadOp(const VkAttachmentLoadOp& op);
+	std::shared_ptr<RenderPassBuilder> withColorLoadOp(const VkAttachmentLoadOp& op);
 	//カラーアタッチメントを使用した後の処理を指定
-	RenderPassBuilder& withColorStoreOp(const VkAttachmentStoreOp& op);
+	std::shared_ptr<RenderPassBuilder> withColorStoreOp(const VkAttachmentStoreOp& op);
 	//ステンシルアタッチメントを使用する前の処理を指定
-	RenderPassBuilder& withStencilLoadOp(const VkAttachmentLoadOp& op);
+	std::shared_ptr<RenderPassBuilder> withStencilLoadOp(const VkAttachmentLoadOp& op);
 	//ステンシルアタッチメントを使用した後の処理を指定
-	RenderPassBuilder& withStencilStoreOp(const VkAttachmentStoreOp& op);
+	std::shared_ptr<RenderPassBuilder> withStencilStoreOp(const VkAttachmentStoreOp& op);
 	//サブパスに入る前のレイアウトを指定
-	RenderPassBuilder& withInitialLayout(const VkImageLayout& layout);
+	std::shared_ptr<RenderPassBuilder> withInitialLayout(const VkImageLayout& layout);
 	//サブパスに出た後のレイアウトを指定
-	RenderPassBuilder& withFinalLayout(const VkImageLayout& layout);
+	std::shared_ptr<RenderPassBuilder> withFinalLayout(const VkImageLayout& layout);
 	//ディスクリプションを追加する
-	RenderPassBuilder& addColorAttachment();
-	RenderPassBuilder& addColorResolveAttachment();
-	RenderPassBuilder& addDepthStencilAttachment();
+	std::shared_ptr<RenderPassBuilder> addColorAttachment();
+	std::shared_ptr<RenderPassBuilder> addColorResolveAttachment();
+	std::shared_ptr<RenderPassBuilder> addDepthStencilAttachment();
 
 	//VkSubpassDependencyの作成
 
 	//一つ前のサブパスを指定する
-	RenderPassBuilder& withSrcSubpassIndex(const uint32_t& index);
+	std::shared_ptr<RenderPassBuilder> withSrcSubpassIndex(const uint32_t& index);
 	//一つ後のサブパスを指定する
-	RenderPassBuilder& withDstSubpassIndex(const uint32_t& index);
+	std::shared_ptr<RenderPassBuilder> withDstSubpassIndex(const uint32_t& index);
 	//一つ前のサブパスがどのステージまで行くまで待つかを設定する
-	RenderPassBuilder& withSrcStageMask(const VkPipelineStageFlags& flag);
+	std::shared_ptr<RenderPassBuilder> withSrcStageMask(const VkPipelineStageFlags& flag);
 	//一つ前のサブパスのメモリアクセスを待つのか設定する
-	RenderPassBuilder& withSrcAccessMask(const VkAccessFlags& mask);
+	std::shared_ptr<RenderPassBuilder> withSrcAccessMask(const VkAccessFlags& mask);
 	//このサブパスがどのステージで待つかを設定する
-	RenderPassBuilder& withDstStageMask(const VkPipelineStageFlags& flag);
+	std::shared_ptr<RenderPassBuilder> withDstStageMask(const VkPipelineStageFlags& flag);
 	//このサブパスのメモリアクセスで待つのか設定する
-	RenderPassBuilder& withDstAccessMask(const VkAccessFlags& mask);
+	std::shared_ptr<RenderPassBuilder> withDstAccessMask(const VkAccessFlags& mask);
 	//このサブパスから遷移する範囲を設定する
-	RenderPassBuilder& withFlag(const VkDependencyFlags& flag);
+	std::shared_ptr<RenderPassBuilder> withFlag(const VkDependencyFlags& flag);
 	//サブパスの依存関係を追加する
-	RenderPassBuilder& addDependency();
+	std::shared_ptr<RenderPassBuilder> addDependency();
 	//サブパスを追加する
-	RenderPassBuilder& addSubpass();
+	std::shared_ptr<RenderPassBuilder> addSubpass();
 
 	//プロパティからVkRenderPassCreateInfoを返す
 	RenderPassProperty Build();

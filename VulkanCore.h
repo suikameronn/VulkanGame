@@ -137,6 +137,7 @@ public:
 	bool windowSizeChanged;
 
 	VulkanCore(GLFWwindow* w);
+	~VulkanCore();
 
 	VkPhysicalDevice& getPhysicalDevice()
 	{
@@ -171,6 +172,14 @@ public:
 	bool isShouldCloseWindow()
 	{
 		return glfwWindowShouldClose(window);
+	}
+
+	void waitForGpuIdle()
+	{
+		if (vkDeviceWaitIdle(device) != VK_SUCCESS)
+		{
+			throw std::runtime_error("gpuの待機に失敗しました");
+		}
 	}
 
 	//コマンドプールを取得する

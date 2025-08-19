@@ -118,31 +118,31 @@ void PipelineBuilder::Create(const PipelineProperty& p, VkPipeline& pipeline)
 }
 
 //パイプラインの設定の初期化
-PipelineBuilder& PipelineBuilder::initProperty()
+std::shared_ptr<PipelineBuilder> PipelineBuilder::initProperty()
 {
 	property.initProperty();
 
-	return *this;
+	return shared_from_this();
 }
 
 //パイプラインレイアウトを設定する
-PipelineBuilder& PipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withPipelineLayout(const std::shared_ptr<PipelineLayout>& pLayout)
 {
 	property.pLayout = pLayout;
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダーパスを設定する
-PipelineBuilder& PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withRenderPass(const std::shared_ptr<RenderPass>& renderPass)
 {
 	property.renderPass = renderPass;
 
-	return *this;
+	return shared_from_this();
 }
 
 //頂点シェーダパスを設定
-PipelineBuilder& PipelineBuilder::withVertexShader(const std::string& path)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withVertexShader(const std::string& path)
 {
 	if (property.computeShader)
 	{
@@ -151,10 +151,10 @@ PipelineBuilder& PipelineBuilder::withVertexShader(const std::string& path)
 
 	property.vertexShader = shaderFactory->Create(path);
 
-	return *this;
+	return shared_from_this();
 }
 //フラグメントシェーダパスを設定
-PipelineBuilder& PipelineBuilder::withFragmentShader(const std::string& path)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withFragmentShader(const std::string& path)
 {
 	if (property.computeShader)
 	{
@@ -163,10 +163,10 @@ PipelineBuilder& PipelineBuilder::withFragmentShader(const std::string& path)
 
 	property.fragmentShader = shaderFactory->Create(path);
 
-	return *this;
+	return shared_from_this();
 }
 //コンピュートシェーダ
-PipelineBuilder& PipelineBuilder::withComputeShader(const std::string& path)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withComputeShader(const std::string& path)
 {
 	if (property.vertexShader || property.fragmentShader)
 	{
@@ -175,22 +175,22 @@ PipelineBuilder& PipelineBuilder::withComputeShader(const std::string& path)
 
 	property.computeShader = shaderFactory->Create(path);
 
-	return *this;
+	return shared_from_this();
 }
 
 //頂点データの読み取り方を設定
-PipelineBuilder& PipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withVertexInput(const uint32_t& binding, const VkVertexInputRate& rate
 	, const uint32_t& stride)
 {
 	property.bindingDescription.binding = binding;
 	property.bindingDescription.inputRate = rate;
 	property.bindingDescription.stride = stride;
 
-	return *this;
+	return shared_from_this();
 }
 
 //頂点アトリビュートの追加
-PipelineBuilder& PipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
+std::shared_ptr<PipelineBuilder> PipelineBuilder::addVertexInputAttrib(const uint32_t& location, const uint32_t& binding,
 	const VkFormat& format, const uint32_t& offset)
 {
 	VkVertexInputAttributeDescription attribute{};
@@ -201,138 +201,138 @@ PipelineBuilder& PipelineBuilder::addVertexInputAttrib(const uint32_t& location,
 
 	property.attributeDescriptions.push_back(attribute);
 
-	return *this;
+	return shared_from_this();
 }
 
 //プリミティブの設定
-PipelineBuilder& PipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withTopology(const VkPrimitiveTopology& topology)
 {
 	property.inputAssemblyState.topology = topology;
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //プリミティブの描画方法を設定
-PipelineBuilder& PipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withPolygonMode(const VkPolygonMode& mode)
 {
 	property.rasterizationState.polygonMode = mode;
 
-	return *this;
+	return shared_from_this();
 }
 //ラインの太さを設定
-PipelineBuilder& PipelineBuilder::withLineWidth(const float& width)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withLineWidth(const float& width)
 {
 	property.rasterizationState.lineWidth = width;
 
-	return *this;
+	return shared_from_this();
 }
 //カリングモードの設定
-PipelineBuilder& PipelineBuilder::withCullMode(const VkCullModeFlags& mode)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withCullMode(const VkCullModeFlags& mode)
 {
 	property.rasterizationState.cullMode = mode;
 
-	return *this;
+	return shared_from_this();
 }
 //ポリゴンの表裏判定を右回りか左回りに設定
-PipelineBuilder& PipelineBuilder::withFrontFace(const VkFrontFace& face)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withFrontFace(const VkFrontFace& face)
 {
 	property.rasterizationState.frontFace = face;
 
-	return *this;
+	return shared_from_this();
 }
 //デプスバイアスを設定する
-PipelineBuilder& PipelineBuilder::enableDepthBias(const bool& isBias)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableDepthBias(const bool& isBias)
 {
 	property.rasterizationState.depthBiasEnable = static_cast<VkBool32>(isBias);
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //マルチサンプリングシェーディングを設定
-PipelineBuilder& PipelineBuilder::enableMultiSampleShading(const bool& mode)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableMultiSampleShading(const bool& mode)
 {
 	property.multisampleState.sampleShadingEnable = static_cast<VkBool32>(mode);
 
-	return *this;
+	return shared_from_this();
 }
 //最低のサンプリングシェーディングポイントの数を設定
-PipelineBuilder& PipelineBuilder::withMinSampleShading(const float& min)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withMinSampleShading(const float& min)
 {
 	property.multisampleState.minSampleShading = min;
 
-	return *this;
+	return shared_from_this();
 }
 //マルチサンプリングを行う際のサンプル数を設定
-PipelineBuilder& PipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withRansterizationSamples(const VkSampleCountFlagBits& flag)
 {
 	property.multisampleState.rasterizationSamples = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //デプステストを設定する
-PipelineBuilder& PipelineBuilder::enableDepthTest(const bool& isEnable)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableDepthTest(const bool& isEnable)
 {
 	property.depthStencilState.depthTestEnable = static_cast<VkBool32>(isEnable);
 
-	return *this;
+	return shared_from_this();
 }
 //zバッファへの書き込みを設定する
-PipelineBuilder& PipelineBuilder::enableDepthWrite(const bool& isWrite)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableDepthWrite(const bool& isWrite)
 {
 	property.depthStencilState.depthWriteEnable = static_cast<VkBool32>(isWrite);
 
-	return *this;
+	return shared_from_this();
 }
 //z値の比較の仕方を設定する
-PipelineBuilder& PipelineBuilder::withDepthCompare(const VkCompareOp& compare)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withDepthCompare(const VkCompareOp& compare)
 {
 	property.depthStencilState.depthCompareOp = compare;
 
-	return *this;
+	return shared_from_this();
 }
 //z値の範囲を指定し、それに満たない頂点は破棄する
-PipelineBuilder& PipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableDepthBoundsTest(const float& min, const float& max)
 {
 	property.depthStencilState.depthBoundsTestEnable = VK_TRUE;
 	property.depthStencilState.minDepthBounds = min;
 	property.depthStencilState.maxDepthBounds = max;
 
-	return *this;
+	return shared_from_this();
 }
 //ステンシルテストを設定する
-PipelineBuilder& PipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::enableStencilTest(const VkStencilOpState& front, const VkStencilOpState& back)
 {
 	property.depthStencilState.stencilTestEnable = VK_TRUE;
 	property.depthStencilState.front = front;
 	property.depthStencilState.back = back;
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //ロジック演算を設定
-PipelineBuilder& PipelineBuilder::withLogicOp(const VkLogicOp& logic)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withLogicOp(const VkLogicOp& logic)
 {
 	property.colorBlendState.logicOpEnable = VK_TRUE;
 	property.colorBlendState.logicOp = logic;
 
-	return *this;
+	return shared_from_this();
 }
 
 //カラーブレンドアタッチメントの書き込みできる色を設定する
-PipelineBuilder& PipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withColorWriteMask(const VkColorComponentFlags& flag)
 {
 	colorBlendAttachment.colorWriteMask = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //色のブレンドの仕方を設定する
-PipelineBuilder& PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.blendEnable = VK_TRUE;
 
@@ -340,43 +340,43 @@ PipelineBuilder& PipelineBuilder::withColorBlendFactorOp(const VkBlendFactor& sr
 	colorBlendAttachment.dstColorBlendFactor = dst;
 	colorBlendAttachment.colorBlendOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //透明度のブレンドの仕方を設定する
-PipelineBuilder& PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withAlphaBlendFactorOp(const VkBlendFactor& src, const VkBlendFactor& dst, const VkBlendOp op)
 {
 	colorBlendAttachment.srcAlphaBlendFactor = src;
 	colorBlendAttachment.dstAlphaBlendFactor = dst;
 	colorBlendAttachment.alphaBlendOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //アタッチメントを追加
-PipelineBuilder& PipelineBuilder::addColoarAttachment()
+std::shared_ptr<PipelineBuilder> PipelineBuilder::addColoarAttachment()
 {
 	property.colorBlendStateArray.push_back(colorBlendAttachment);
 
 	colorBlendAttachment = VkPipelineColorBlendAttachmentState{};
 
-	return *this;
+	return shared_from_this();
 }
 //ブレンド定数を設定
-PipelineBuilder& PipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::withBlendConstant(const float& r, const float& g, const float& b, const float& a)
 {
 	property.colorBlendState.blendConstants[0] = r;
 	property.colorBlendState.blendConstants[1] = g;
 	property.colorBlendState.blendConstants[2] = b;
 	property.colorBlendState.blendConstants[3] = a;
 
-	return *this;
+	return shared_from_this();
 }
 
 //動的に変更するステートを積み上げる
-PipelineBuilder& PipelineBuilder::addDynamicState(const VkDynamicState& state)
+std::shared_ptr<PipelineBuilder> PipelineBuilder::addDynamicState(const VkDynamicState& state)
 {
 	property.dynamicStateArray.push_back(state);
 
-	return *this;
+	return shared_from_this();
 }

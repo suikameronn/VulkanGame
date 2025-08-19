@@ -22,6 +22,15 @@ public:
 
 	~FrameBufferFactory()
 	{
+		for (int i = 0; i < 2; i++)
+		{
+			resourceDestruct();
+			resourceDestruct();
+		}
+
+#ifdef _DEBUG
+		std::cout << "FrameBufferFactory :: デストラクタ" << std::endl;
+#endif
 	}
 
 	//フレームバッファビルダーを取得

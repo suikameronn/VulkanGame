@@ -44,7 +44,7 @@ struct RenderProperty
 	};
 };
 
-class Render
+class Render : public std::enable_shared_from_this<Render>
 {
 private:
 
@@ -56,30 +56,35 @@ public:
 
 	Render(VkDevice& d);
 
-	~Render() = default;
+	~Render()
+	{
+#ifdef _DEBUG
+		std::cout << "Render :: デストラクタ" << std::endl;
+#endif
+	}
 
-	Render initProperty();
+	std::shared_ptr<Render> initProperty();
 
 	//レンダーパスを設定
-	Render withRenderPass(const std::shared_ptr<RenderPass> pass);
+	std::shared_ptr<Render> withRenderPass(const std::shared_ptr<RenderPass> pass);
 
 	//フレームバッファの設定
-	Render withFrameBuffer(const std::shared_ptr<FrameBuffer> frameBuffer);
+	std::shared_ptr<Render> withFrameBuffer(const std::shared_ptr<FrameBuffer> frameBuffer);
 
 	//レンダー範囲の設定
-	Render withRenderArea(const uint32_t& width, const uint32_t& height);
+	std::shared_ptr<Render> withRenderArea(const uint32_t& width, const uint32_t& height);
 
 	//レンダー画像の初期化色の設定
-	Render withClearColor(const glm::ivec4& color);
+	std::shared_ptr<Render> withClearColor(const glm::ivec4& color);
 
 	//レンダー画像の初期化のデプスの設定
-	Render withClearDepth(const float& depth);
+	std::shared_ptr<Render> withClearDepth(const float& depth);
 
 	//レンダー画像の初期化のステンシルの設定
-	Render withClearStencil(const uint32_t& stencil);
+	std::shared_ptr<Render> withClearStencil(const uint32_t& stencil);
 
 	//コマンドを積むコマンドバッファを設定
-	Render withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer);
+	std::shared_ptr<Render> withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer);
 
 	//プロパティを返す
 	RenderProperty Build();

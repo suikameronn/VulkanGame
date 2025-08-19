@@ -5,27 +5,27 @@ DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder()
 }
 
 //プロパティの初期化
-DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::initProperty()
+std::shared_ptr<DescriptorSetLayoutBuilder> DescriptorSetLayoutBuilder::initProperty()
 {
 	properties.clear();
 
-	return *this;
+	return shared_from_this();
 }
 
 //タイプと使うシェーダの設定
-DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::setProperty(VkDescriptorType type, VkShaderStageFlagBits stage)
+std::shared_ptr<DescriptorSetLayoutBuilder> DescriptorSetLayoutBuilder::setProperty(VkDescriptorType type, VkShaderStageFlagBits stage)
 {
 	properties.push_back({ type,stage });
 
-	return *this;
+	return shared_from_this();
 }
 
 //フラグを複合させたとき用
-DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::setProperty(int type, int stage)
+std::shared_ptr<DescriptorSetLayoutBuilder> DescriptorSetLayoutBuilder::setProperty(int type, int stage)
 {
 	properties.push_back({ static_cast<VkDescriptorType>(type),static_cast<VkShaderStageFlagBits>(stage) });
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkDescriptorSetLayoutの作成

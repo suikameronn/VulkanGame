@@ -76,127 +76,127 @@ void DescriptorSetBuilder::Create(const DescriptorSetProperty& property, VkDescr
 }
 
 //プロパティの初期化
-DescriptorSetBuilder& DescriptorSetBuilder::initProperty()
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::initProperty()
 {
 	bufferProperty.initProperty();
 	imageProperty.initProperty();
 
 	property.initProperty(descriptorPool);
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkDescriptorSetLayoutの設定
-DescriptorSetBuilder& DescriptorSetBuilder::withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout)
 {
     property.layout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkDescriptorSetの個数の設定
-DescriptorSetBuilder& DescriptorSetBuilder::withDescriptorSetCount(const uint32_t& count)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withDescriptorSetCount(const uint32_t& count)
 {
 	property.allocateInfo.descriptorSetCount = count;
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkDescriptorBufferInfoの設定///////
 
-DescriptorSetBuilder& DescriptorSetBuilder::withBindingBuffer(const uint32_t& binding)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withBindingBuffer(const uint32_t& binding)
 {
 	bufferProperty.binding = binding;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withTypeBuffer(const VkDescriptorType& type)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withTypeBuffer(const VkDescriptorType& type)
 {
 	bufferProperty.type = type;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withBuffer(const std::shared_ptr<GpuBuffer>& buffer)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withBuffer(const std::shared_ptr<GpuBuffer>& buffer)
 {
 	bufferProperty.buffer = buffer;
 
 	bufferProperty.bufferInfo.buffer = buffer->buffer;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withOffset(const uint32_t& offset)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withOffset(const uint32_t& offset)
 {
 	bufferProperty.bufferInfo.offset = offset;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withRange(const uint32_t& range)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withRange(const uint32_t& range)
 {
 	bufferProperty.bufferInfo.range = range;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::addBufferInfo()
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::addBufferInfo()
 {
 	property.buffer.push_back(bufferProperty);
 
 	bufferProperty.initProperty();
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkDescriptorImageInfo/////////
 
-DescriptorSetBuilder& DescriptorSetBuilder::withBindingImage(const uint32_t& binding)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withBindingImage(const uint32_t& binding)
 {
 	imageProperty.binding = binding;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withTypeImage(const VkDescriptorType& type)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withTypeImage(const VkDescriptorType& type)
 {
 	imageProperty.type = type;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withImageLayout(const VkImageLayout& layout)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withImageLayout(const VkImageLayout& layout)
 {
 	imageProperty.imageInfo.imageLayout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture)
 {
 	imageProperty.texture = texture;
 
 	imageProperty.imageInfo.imageView = texture->viewArray[0];
 	imageProperty.imageInfo.sampler = texture->sampler;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer)
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer)
 {
 	imageProperty.texture = texture;
 
 	imageProperty.imageInfo.imageView = texture->viewArray[targetLayer];
 	imageProperty.imageInfo.sampler = texture->sampler;
 
-	return *this;
+	return shared_from_this();
 }
 
-DescriptorSetBuilder& DescriptorSetBuilder::addImageInfo()
+std::shared_ptr<DescriptorSetBuilder> DescriptorSetBuilder::addImageInfo()
 {
 	property.texture.push_back(imageProperty);
 	imageProperty.initProperty();
 
-	return *this;
+	return shared_from_this();
 }

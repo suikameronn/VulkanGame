@@ -8,11 +8,11 @@ struct TexCopyProperty
 {
 	VkImageCopy copyInfo;
 
-	std::shared_ptr<Texture> src;
+	std::weak_ptr<Texture> src;
 
-	std::shared_ptr<Texture> dst;
+	std::weak_ptr<Texture> dst;
 
-	std::shared_ptr<CommandBuffer> commandBuffer;
+	std::weak_ptr<CommandBuffer> commandBuffer;
 
 	void initProperty()
 	{
@@ -25,7 +25,7 @@ struct TexCopyProperty
 	};
 };
 
-class TextureCopy
+class TextureCopy : public std::enable_shared_from_this<TextureCopy>
 {
 private:
 
@@ -38,41 +38,47 @@ public:
 		property.initProperty();
 	}
 
-	TextureCopy& initProperty()
+
+	~TextureCopy()
+	{
+		std::cout << "TextureCopy :: デストラクタ" << std::endl;
+	}
+
+	std::shared_ptr<TextureCopy> initProperty()
 	{
 		property.initProperty();
 
-		return *this;
+		return shared_from_this();
 	}
 
 	//コピーするビューのタイプを指定する
-	TextureCopy& withAspectMask(const VkImageAspectFlagBits& flag);
+	std::shared_ptr<TextureCopy> withAspectMask(const VkImageAspectFlagBits& flag);
 
 	//ミップマップレベルを指定する
-	TextureCopy& withSrcMipmapLevel(const uint32_t& mipmapLevel);
+	std::shared_ptr<TextureCopy> withSrcMipmapLevel(const uint32_t& mipmapLevel);
 	
-	TextureCopy& withDstMipmapLevel(const uint32_t& mipmapLevel);
+	std::shared_ptr<TextureCopy> withDstMipmapLevel(const uint32_t& mipmapLevel);
 
 	//ベースレイヤーを指定する
-	TextureCopy& withSrcLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
+	std::shared_ptr<TextureCopy> withSrcLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
 
 	//レイヤー数を指定する
-	TextureCopy& withDstLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
+	std::shared_ptr<TextureCopy> withDstLayerRange(const uint32_t& baseLayer,const uint32_t& layerCount);
 
 	//テクスチャサイズを指定する
-	TextureCopy& withSize(const uint32_t& width, const uint32_t& height);
+	std::shared_ptr<TextureCopy> withSize(const uint32_t& width, const uint32_t& height);
 
 	//コピー元のテクスチャを指定する
-	TextureCopy& withSrcTexture(const std::shared_ptr<Texture> src);
+	std::shared_ptr<TextureCopy> withSrcTexture(const std::weak_ptr<Texture> src);
 
 	//コピー先のテクスチャを指定する
-	TextureCopy& withDstTexture(const std::shared_ptr<Texture> dst);
+	std::shared_ptr<TextureCopy> withDstTexture(const std::weak_ptr<Texture> dst);
 
 	//コマンドバッファを指定する
-	TextureCopy& withCommandBuffer(const std::shared_ptr<CommandBuffer> command);
+	std::shared_ptr<TextureCopy> withCommandBuffer(const std::weak_ptr<CommandBuffer> command);
 
 	//プロパティを返す
-	TexCopyProperty Build()
+	const TexCopyProperty& Build()
 	{
 		return property;
 	}

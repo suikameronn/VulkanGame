@@ -20,73 +20,73 @@ void RenderPassBuilder::initProperty()
 //VkAttachmentDescriptionの作成
 
 //フォーマットの設定
-RenderPassBuilder& RenderPassBuilder::withFormat(const VkFormat& format)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withFormat(const VkFormat& format)
 {
 	description.format = format;
 
-	return *this;
+	return shared_from_this();
 }
 
 //マルチサンプリングのサンプル数を設定
-RenderPassBuilder& RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withMultiSamples(const VkSampleCountFlagBits& count)
 {
 	description.samples = count;
 
-	return *this;
+	return shared_from_this();
 }
 
 //カラーアタッチメントを使用する前の処理を指定
-RenderPassBuilder& RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withColorLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.loadOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //カラーアタッチメントを使用した後の処理を指定
-RenderPassBuilder& RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withColorStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.storeOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ステンシルアタッチメントを使用する前の処理を指定
-RenderPassBuilder& RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withStencilLoadOp(const VkAttachmentLoadOp& op)
 {
 	description.stencilLoadOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ステンシルアタッチメントを使用した後の処理を指定
-RenderPassBuilder& RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withStencilStoreOp(const VkAttachmentStoreOp& op)
 {
 	description.stencilStoreOp = op;
 
-	return *this;
+	return shared_from_this();
 }
 
 //サブパスに入る前のレイアウトを指定
-RenderPassBuilder& RenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withInitialLayout(const VkImageLayout& layout)
 {
 	description.initialLayout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
 //サブパスに出た後のレイアウトを指定
-RenderPassBuilder& RenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withFinalLayout(const VkImageLayout& layout)
 {
 	description.finalLayout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ディスクリプションを追加する
 
 //カラーアタッチメント
-RenderPassBuilder& RenderPassBuilder::addColorAttachment()
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::addColorAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -98,11 +98,11 @@ RenderPassBuilder& RenderPassBuilder::addColorAttachment()
 	//初期化
 	description = VkAttachmentDescription{};
 
-	return *this;
+	return shared_from_this();
 }
 
 //リゾルブカラーアタッチメントを追加
-RenderPassBuilder& RenderPassBuilder::addColorResolveAttachment()
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::addColorResolveAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -114,11 +114,11 @@ RenderPassBuilder& RenderPassBuilder::addColorResolveAttachment()
 	//初期化
 	description = VkAttachmentDescription{};
 
-	return *this;
+	return shared_from_this();
 }
 
 //デプスステンシルアタッチメントを追加
-RenderPassBuilder& RenderPassBuilder::addDepthStencilAttachment()
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::addDepthStencilAttachment()
 {
 	VkAttachmentReference attachment{};
 	attachment.attachment = static_cast<uint32_t>(property.descriptions.size());
@@ -130,80 +130,80 @@ RenderPassBuilder& RenderPassBuilder::addDepthStencilAttachment()
 	//初期化
 	description = VkAttachmentDescription{};
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkSubpassDependencyの作成
 
 	//一つ前のサブパスを指定する
-RenderPassBuilder& RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withSrcSubpassIndex(const uint32_t& index)
 {
 	dependency.srcSubpass = index;
 
-	return *this;
+	return shared_from_this();
 }
 
 //一つ後のサブパスを指定する
-RenderPassBuilder& RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withDstSubpassIndex(const uint32_t& index)
 {
 	dependency.dstSubpass = index;
 
-	return *this;
+	return shared_from_this();
 }
 
 //一つ前のサブパスがどのステージまで行くまで待つかを設定する
-RenderPassBuilder& RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withSrcStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.srcStageMask = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //一つ前のサブパスのメモリアクセスを待つのか設定する
-RenderPassBuilder& RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withSrcAccessMask(const VkAccessFlags& mask)
 {
 	dependency.srcAccessMask = mask;
 
-	return *this;
+	return shared_from_this();
 }
 
 //このサブパスがどのステージで待つかを設定する
-RenderPassBuilder& RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withDstStageMask(const VkPipelineStageFlags& flag)
 {
 	dependency.dstStageMask = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //このサブパスのメモリアクセスで待つのか設定する
-RenderPassBuilder& RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withDstAccessMask(const VkAccessFlags& mask)
 {
 	dependency.dstAccessMask = mask;
 
-	return *this;
+	return shared_from_this();
 }
 
 //このサブパスから遷移する範囲を設定する
-RenderPassBuilder& RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::withFlag(const VkDependencyFlags& flag)
 {
 	dependency.dependencyFlags = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //サブパスの依存関係を追加する
-RenderPassBuilder& RenderPassBuilder::addDependency()
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::addDependency()
 {
 	property.dependency.push_back(dependency);
 
 	//構造体を初期化しておく
 	dependency = VkSubpassDependency{};
 
-	return *this;
+	return shared_from_this();
 }
 
 //サブパスを追加する
-RenderPassBuilder& RenderPassBuilder::addSubpass()
+std::shared_ptr<RenderPassBuilder> RenderPassBuilder::addSubpass()
 {
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -230,7 +230,7 @@ RenderPassBuilder& RenderPassBuilder::addSubpass()
 	//構造体を初期化しておく
 	subpassDescription = VkSubpassDescription{};
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダーパスのプロパティを返す

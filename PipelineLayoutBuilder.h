@@ -51,7 +51,7 @@ struct PipelineLayoutProperty
 	}
 };
 
-class PipelineLayoutBuilder
+class PipelineLayoutBuilder : public std::enable_shared_from_this<PipelineLayoutBuilder>
 {
 private:
 
@@ -64,14 +64,21 @@ public:
 
 	PipelineLayoutBuilder();
 
+	~PipelineLayoutBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "PipelineLayoutBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//レイアウトを初期化する
-	PipelineLayoutBuilder initProperty();
+	std::shared_ptr<PipelineLayoutBuilder> initProperty();
 
 	//DescriptorSetLayoutからレイアウトを積み上げる
-	PipelineLayoutBuilder addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
+	std::shared_ptr<PipelineLayoutBuilder> addLayout(const std::shared_ptr<DescriptorSetLayout> layout);
 
 	//VkPushConstantを加える
-	PipelineLayoutBuilder addPushConstant(const uint32_t& size, const VkShaderStageFlags& stage);
+	std::shared_ptr<PipelineLayoutBuilder> addPushConstant(const uint32_t& size, const VkShaderStageFlags& stage);
 
 	//パイプラインレイアウトを作成する
 	PipelineLayoutProperty Build();

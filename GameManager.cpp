@@ -121,6 +121,7 @@ void GameManager::createScene()
 
 void GameManager::mainGameLoop()//メインゲームループ
 {
+
     start = std::chrono::system_clock::now();//フレーム時間を計測
 
 	OnStart();
@@ -238,24 +239,24 @@ void GameManager::OnStart()
 									descriptorSetFactory->Create
 									(
 										descriptorSetBuilder->initProperty()
-										.withBindingBuffer(0)
-										.withBuffer(rendererComp.modelMatBuffer)
-										.withDescriptorSetCount(1)
-										.withDescriptorSetLayout(layout)
-										.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-										.withRange(sizeof(ModelMat))
-										.addBufferInfo()
-										.withBindingBuffer(1)
-										.withBuffer(rendererComp.nodeAnimBuffer[i])
-										.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-										.withRange(sizeof(NodeAnimMat))
-										.addBufferInfo()
-										.withBindingBuffer(2)
-										.withBuffer(rendererComp.boneMatBuffer)
-										.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-										.withRange(sizeof(BoneMat))
-										.addBufferInfo()
-										.Build()
+										->withBindingBuffer(0)
+										->withBuffer(rendererComp.modelMatBuffer)
+										->withDescriptorSetCount(1)
+										->withDescriptorSetLayout(layout)
+										->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+										->withRange(sizeof(ModelMat))
+										->addBufferInfo()
+										->withBindingBuffer(1)
+										->withBuffer(rendererComp.nodeAnimBuffer[i])
+										->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+										->withRange(sizeof(NodeAnimMat))
+										->addBufferInfo()
+										->withBindingBuffer(2)
+										->withBuffer(rendererComp.boneMatBuffer)
+										->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+										->withRange(sizeof(BoneMat))
+										->addBufferInfo()
+										->Build()
 									);
 							}
 						}
@@ -290,37 +291,37 @@ void GameManager::OnStart()
 			sceneLight->uniformDescriptorSet[0] = descriptorSetFactory->Create
 			(
 				descriptorSetBuilder->initProperty()
-				.withDescriptorSetCount(1)
-				.withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
-				.withBindingBuffer(0)
-				.withBuffer(sceneLight->uniformBuffer[0])
-				.withRange(sizeof(PointLightUniform))
-				.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.addBufferInfo()
-				.Build()
+				->withDescriptorSetCount(1)
+				->withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+				->withBindingBuffer(0)
+				->withBuffer(sceneLight->uniformBuffer[0])
+				->withRange(sizeof(PointLightUniform))
+				->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+				->addBufferInfo()
+				->Build()
 			);
 
 			//ポイントライトの用の複数のレイヤーを持つシャドウマップ用のテクスチャを作成する
 			sceneLight->shadowMap[0] = textureFactory->Create
 			(
 				textureBuilder->initProperty()
-				.withWidthHeight(extent.width, extent.height, 1)
-				.withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-				.withTiling(VK_IMAGE_TILING_OPTIMAL)
-				.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-				.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-				.withLayerCount(pointLightCount)
-				.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.withFormat(VK_FORMAT_D16_UNORM)
-				.withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
-				.withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
-				.withTargetLayer(0, pointLightCount)
-				.addView()
-				.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-				.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-				.withMagFilter(VK_FILTER_LINEAR)
-				.withMinFilter(VK_FILTER_LINEAR)
-				.Build()
+				->withWidthHeight(extent.width, extent.height, 1)
+				->withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+				->withTiling(VK_IMAGE_TILING_OPTIMAL)
+				->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+				->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+				->withLayerCount(pointLightCount)
+				->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				->withFormat(VK_FORMAT_D16_UNORM)
+				->withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
+				->withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+				->withTargetLayer(0, pointLightCount)
+				->addView()
+				->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+				->withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+				->withMagFilter(VK_FILTER_LINEAR)
+				->withMinFilter(VK_FILTER_LINEAR)
+				->Build()
 			);
 
 			//各ビューからフレームバッファを作成する
@@ -331,11 +332,11 @@ void GameManager::OnStart()
 				sceneLight->frameBuffer[0][i] = frameBufferFactory->Create
 				(
 					frameBufferFactory->getBuilder()->initProperty()
-					.withLayerCount(1)
-					.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
-					.withWidthHeight(extent.width, extent.height)
-					.addViewAttachment(sceneLight->shadowMap[0], i, 1)
-					.Build()
+					->withLayerCount(1)
+					->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
+					->withWidthHeight(extent.width, extent.height)
+					->addViewAttachment(sceneLight->shadowMap[0], i, 1)
+					->Build()
 				);
 			}
 		}
@@ -363,40 +364,40 @@ void GameManager::OnStart()
 			sceneLight->uniformDescriptorSet[1] = descriptorSetFactory->Create
 			(
 				descriptorSetBuilder->initProperty()
-				.withDescriptorSetCount(1)
-				.withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
-				.withBindingBuffer(0)
-				.withBuffer(sceneLight->uniformBuffer[1])
-				.withRange(sizeof(DirectionLightUniform))
-				.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.addBufferInfo()
-				.Build()
+				->withDescriptorSetCount(1)
+				->withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+				->withBindingBuffer(0)
+				->withBuffer(sceneLight->uniformBuffer[1])
+				->withRange(sizeof(DirectionLightUniform))
+				->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+				->addBufferInfo()
+				->Build()
 			);
 
 			//ディレクションライトの用の複数のレイヤーを持つシャドウマップ用のテクスチャを作成する
 			textureBuilder->initProperty()
-				.withWidthHeight(extent.width, extent.height, 1)
-				.withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-				.withTiling(VK_IMAGE_TILING_OPTIMAL)
-				.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-				.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-				.withLayerCount(directionLightCount)
-				.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.withFormat(VK_FORMAT_D16_UNORM);
+				->withWidthHeight(extent.width, extent.height, 1)
+				->withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+				->withTiling(VK_IMAGE_TILING_OPTIMAL)
+				->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+				->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+				->withLayerCount(directionLightCount)
+				->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				->withFormat(VK_FORMAT_D16_UNORM);
 
 			for (int i = 0; i < directionLightCount; i++)
 			{
 				textureBuilder->withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
-					.withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
-					.withTargetLayer(i, 1)
-					.addView();
+					->withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+					->withTargetLayer(i, 1)
+					->addView();
 			}
 
 			textureBuilder->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-				.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-				.withMagFilter(VK_FILTER_LINEAR)
-				.withMinFilter(VK_FILTER_LINEAR)
-				.Build();
+				->withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+				->withMagFilter(VK_FILTER_LINEAR)
+				->withMinFilter(VK_FILTER_LINEAR)
+				->Build();
 
 			sceneLight->shadowMap[1] = textureFactory->Create
 			(
@@ -411,11 +412,11 @@ void GameManager::OnStart()
 				sceneLight->frameBuffer[1][i] = frameBufferFactory->Create
 				(
 					frameBufferFactory->getBuilder()->initProperty()
-					.withLayerCount(1)
-					.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
-					.withWidthHeight(extent.width, extent.height)
-					.addViewAttachment(sceneLight->shadowMap[1], i, 1)
-					.Build()
+					->withLayerCount(1)
+					->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
+					->withWidthHeight(extent.width, extent.height)
+					->addViewAttachment(sceneLight->shadowMap[1], i, 1)
+					->Build()
 				);
 			}
 		}
@@ -424,29 +425,29 @@ void GameManager::OnStart()
 		sceneLight->texDescriptorSet = descriptorSetFactory->Create
 		(
 			descriptorSetBuilder->initProperty()
-			.withDescriptorSetCount(1)
-			.withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SHADOWMAP))
-			.withBindingBuffer(0)
-			.withBuffer(sceneLight->uniformBuffer[0])
-			.withRange(sizeof(PointLightUniform))
-			.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-			.addBufferInfo()
-			.withBindingBuffer(1)
-			.withBuffer(sceneLight->uniformBuffer[1])
-			.withRange(sizeof(DirectionLightUniform))
-			.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-			.addBufferInfo()
-			.withBindingImage(2)
-			.withTexture(sceneLight->shadowMap[0])
-			.withImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-			.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-			.addImageInfo()
-			.withBindingImage(3)
-			.withTexture(sceneLight->shadowMap[1])
-			.withImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-			.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-			.addImageInfo()
-			.Build()
+			->withDescriptorSetCount(1)
+			->withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::SHADOWMAP))
+			->withBindingBuffer(0)
+			->withBuffer(sceneLight->uniformBuffer[0])
+			->withRange(sizeof(PointLightUniform))
+			->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			->addBufferInfo()
+			->withBindingBuffer(1)
+			->withBuffer(sceneLight->uniformBuffer[1])
+			->withRange(sizeof(DirectionLightUniform))
+			->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			->addBufferInfo()
+			->withBindingImage(2)
+			->withTexture(sceneLight->shadowMap[0])
+			->withImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+			->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			->addImageInfo()
+			->withBindingImage(3)
+			->withTexture(sceneLight->shadowMap[1])
+			->withImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+			->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			->addImageInfo()
+			->Build()
 		);
 	}
 
@@ -489,8 +490,8 @@ void GameManager::OnStart()
 					comp.ID = skydomeFactory->Create
 					(
 						skydomeBuilder->initProperty()
-						.withImagePath("textures\\grass.hdr")
-						.Build()
+						->withImagePath("textures\\grass.hdr")
+						->Build()
 					);
 				}
 			}
@@ -512,14 +513,14 @@ void GameManager::OnStart()
 					comp.descriptorSet = descriptorSetFactory->Create
 						(
 							descriptorSetBuilder->initProperty()
-							.withDescriptorSetCount(1)
-							.withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::CAMERA))
-							.withBindingBuffer(0)
-							.withBuffer(comp.uniform)
-							.withRange(sizeof(CameraUniform))
-							.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-							.addBufferInfo()
-							.Build()
+							->withDescriptorSetCount(1)
+							->withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::CAMERA))
+							->withBindingBuffer(0)
+							->withBuffer(comp.uniform)
+							->withRange(sizeof(CameraUniform))
+							->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+							->addBufferInfo()
+							->Build()
 						);
 				}
 			}
@@ -656,13 +657,13 @@ void GameManager::Rendering()
 						const VkExtent2D extent = swapChain->getSwapChainExtent();
 
 						const RenderProperty renderProp = render->initProperty()
-							.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
-							.withFrameBuffer(sceneLight->frameBuffer[1][comp.index])
-							.withCommandBuffer(commandBuffer)
-							.withRenderArea(extent.width, extent.height)
-							.withClearDepth(1.0f)
-							.withClearStencil(0)
-							.Build();
+							->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_SHADOWMAP))
+							->withFrameBuffer(sceneLight->frameBuffer[1][comp.index])
+							->withCommandBuffer(commandBuffer)
+							->withRenderArea(extent.width, extent.height)
+							->withClearDepth(1.0f)
+							->withClearStencil(0)
+							->Build();
 
 						render->RenderStart(renderProp);
 
@@ -674,7 +675,7 @@ void GameManager::Rendering()
 										std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(modelComp.modelID);
 										if (!gltfModel)
 										{
-											throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+											throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 										}
 
 										vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -839,14 +840,14 @@ void GameManager::Rendering()
 		bufferFactory->beginCommandBuffer(commandBuffer);
 
 		const RenderProperty property = render->initProperty()
-			.withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
-			.withFrameBuffer(frameBuffer)
-			.withCommandBuffer(commandBuffer)
-			.withRenderArea(swapChain->getSwapChainExtent().width, swapChain->getSwapChainExtent().height)
-			.withClearColor({ 0.0, 0.0, 0.0, 1.0 })
-			.withClearDepth(1.0f)
-			.withClearStencil(0)
-			.Build();
+			->withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
+			->withFrameBuffer(frameBuffer)
+			->withCommandBuffer(commandBuffer)
+			->withRenderArea(swapChain->getSwapChainExtent().width, swapChain->getSwapChainExtent().height)
+			->withClearColor({ 0.0, 0.0, 0.0, 1.0 })
+			->withClearDepth(1.0f)
+			->withClearStencil(0)
+			->Build();
 
 		render->RenderStart(property);
 
@@ -887,5 +888,5 @@ void GameManager::exitScene()
 //ゲーム全体の終了処理
 void GameManager::FinishGame()
 {
-
+	vulkanCore->waitForGpuIdle();
 }

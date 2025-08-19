@@ -200,7 +200,7 @@ struct GltfNode
 	//このノードが所属するスケルトンのアニメーション行列を計算する
 	void update(NodeTransform& nodeTransform, std::array<glm::mat4, 128>& jointMatrices, size_t& updatedIndex)
 	{
-		glm::mat4 m = nodeTransform.nodeTransform[index];
+		glm::mat4 m = nodeTransform.nodeTransform[offset];
 
 		//ボーンの行列の更新
 		glm::mat4 inverseTransform = glm::inverse(m);
@@ -427,9 +427,6 @@ public:
 	{
 		return indeBuffer[index];
 	}
-
-	//AABBの計算
-	void calculateBoundingBox(GltfNode* node,GltfNode* parent);
 
 	//アニメーションの各ノードの更新処理
 	void updateAllNodes(NodeTransform& nodeTransform

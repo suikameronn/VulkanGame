@@ -158,6 +158,19 @@ public:
 
 	RenderPassFactory(std::shared_ptr<VulkanCore> core, std::shared_ptr<RenderPassBuilder> b);
 
+	~RenderPassFactory()
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			resourceDestruct();
+			resourceDestruct();
+		}
+
+#ifdef _DEBUG
+		std::cout << "RenderPassFactory :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//レンダーパスを作成する
 	std::shared_ptr<RenderPass> Create(const RenderPassProperty& property);
 	//レンダーパスを作成する

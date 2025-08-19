@@ -15,6 +15,8 @@ class TextureFactory : public std::enable_shared_from_this<TextureFactory>
 {
 private:
 
+	uint32_t count;
+
 	//フレームインデックス
 	uint32_t frameIndex;
 
@@ -45,6 +47,19 @@ private:
 public:
 
 	TextureFactory(VkDevice& d, std::shared_ptr<TextureBuilder> b);
+
+	~TextureFactory()
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			resourceDestruct();
+			resourceDestruct();
+		}
+
+#ifdef _DEBUG
+		std::cout << "TextureFactory :: デストラクタ" << std::endl;
+#endif
+	}
 
 	//ビルダーを取得
 	std::shared_ptr<TextureBuilder> getBuilder()
@@ -88,6 +103,8 @@ public:
 
 struct Texture
 {
+	uint32_t index;
+
 	//テクスチャの画像データ
 	VkImage image;
 	VkDeviceMemory memory;
@@ -101,7 +118,7 @@ struct Texture
 
 	std::shared_ptr<TextureFactory> factory;
 
-	Texture(std::shared_ptr<TextureFactory> f)
+	Texture(std::shared_ptr<TextureFactory> f,uint32_t count)
 	{
 		image = nullptr;
 		memory = nullptr;
@@ -111,10 +128,19 @@ struct Texture
 		property = TextureProperty{};
 
 		factory = f;
+
+		index = count;
+
+		if (index == 85 || index == 86)
+		{
+			std::cout << "Stop" << std::endl;
+		}
 	}
 
 	~Texture()
 	{
 		factory->addDefferedDestruct(image, memory, viewArray, sampler);
+
+		std::cout << index << std::endl;
 	}
 };

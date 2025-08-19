@@ -4,7 +4,7 @@
 
 #include"TextureFactory.h"
 
-class MaterialBuilder
+class MaterialBuilder : public std::enable_shared_from_this<MaterialBuilder>
 {
 private:
 
@@ -38,41 +38,48 @@ public:
 		createEmptyTexture();
 	}
 
+	~MaterialBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "MaterialBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//マテリアルのプロパティを初期化
-	MaterialBuilder initProperty();
+	std::shared_ptr<MaterialBuilder> initProperty();
 
 	//基本色のテクスチャを設定
-	MaterialBuilder withBaseColorTexture(const int& uvIndex,std::shared_ptr<Texture> texture);
+	std::shared_ptr<MaterialBuilder> withBaseColorTexture(const int& uvIndex,std::shared_ptr<Texture> texture);
 
 	//メタリックと粗さのテクスチャを設定
-	MaterialBuilder withMetallicRoughnessTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
+	std::shared_ptr<MaterialBuilder> withMetallicRoughnessTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
 
 	//法線用テクスチャを設定
-	MaterialBuilder withNormalTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
+	std::shared_ptr<MaterialBuilder> withNormalTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
 
 	//オクルージョン化リング用テクスチャを設定
-	MaterialBuilder withOcclusionTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
+	std::shared_ptr<MaterialBuilder> withOcclusionTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
 
 	//発光用テクスチャを設定
-	MaterialBuilder withEmissiveTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
+	std::shared_ptr<MaterialBuilder> withEmissiveTexture(const int& uvIndex, std::shared_ptr<Texture> texture);
 
 	//基本色の設定
-	MaterialBuilder withBaseColorFactor(const glm::vec4& factor);
+	std::shared_ptr<MaterialBuilder> withBaseColorFactor(const glm::vec4& factor);
 
 	//発光の設定
-	MaterialBuilder withEmissiveFactor(const glm::vec4& factor);
+	std::shared_ptr<MaterialBuilder> withEmissiveFactor(const glm::vec4& factor);
 
 	//金属光沢の度合いを設定
-	MaterialBuilder withMetallicFactor(const float& factor);
+	std::shared_ptr<MaterialBuilder> withMetallicFactor(const float& factor);
 
 	//粗さの度合いを設定
-	MaterialBuilder withRoughnessFactor(const float& factor);
+	std::shared_ptr<MaterialBuilder> withRoughnessFactor(const float& factor);
 
 	//透明度の最大値を設定
-	MaterialBuilder withAlphaMaskCutOff(const float& cutoff);
+	std::shared_ptr<MaterialBuilder> withAlphaMaskCutOff(const float& cutoff);
 
 	//自己放射の強さを設定
-	MaterialBuilder withEmissiveStrength(const float& strength);
+	std::shared_ptr<MaterialBuilder> withEmissiveStrength(const float& strength);
 
 	//マテリアルのプロパティを作成
 	MaterialProperty Build();

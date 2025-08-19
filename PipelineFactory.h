@@ -179,9 +179,9 @@ struct PipelineHash
 		size_t hash = FNV_OFFSET_BIAS;
 		
 		std::hash<std::string> strHasher;
-		hash ^= strHasher(a.vertexShader->path);
-		hash ^= strHasher(a.fragmentShader->path);
-		hash ^= strHasher(a.computeShader->path);
+		hash ^= (a.vertexShader == nullptr) ? 0 : strHasher(a.vertexShader->path);
+		hash ^= (a.fragmentShader == nullptr) ? 0 : strHasher(a.fragmentShader->path);
+		hash ^= (a.computeShader == nullptr) ? 0 : strHasher(a.computeShader->path);
 
 		for (const VkPipelineShaderStageCreateInfo& info : a.stages)
 		{
@@ -209,6 +209,8 @@ struct PipelineHash
 		getHash(a.pLayout, hash);
 
 		getHash(a.renderPass, hash);
+
+		return hash;
 	}
 };
 
@@ -252,7 +254,7 @@ private:
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
 
 	//既に作成したパイプラインレイアウトを格納する
-	std::unordered_map<Pipeline, std::weak_ptr<Pipeline>, PipelineHash> pipelineStorage;
+	std::unordered_map<PipelineProperty, std::weak_ptr<Pipeline>, PipelineHash> pipelineStorage;
 
 	//破棄予定のリソースのリスト
 	std::array<std::list<VkPipeline>, 2> destructList;

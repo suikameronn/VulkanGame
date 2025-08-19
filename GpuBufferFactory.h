@@ -65,6 +65,19 @@ public:
 
 	GpuBufferFactory(std::shared_ptr<VulkanCore> vulkanCore, std::shared_ptr<GpuBufferBuilder> b);
 
+	~GpuBufferFactory()
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			resourceDestruct();
+			resourceDestruct();
+		}
+
+#ifdef _DEBUG
+		std::cout << "GpuBufferFactory :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//バッファの設定を直接指定して、バッファを作成する
 	std::shared_ptr<GpuBuffer> Create(VkDeviceSize bufferSize, const void* srcPtr
 		, VkBufferUsageFlags usage, VkMemoryPropertyFlags property);

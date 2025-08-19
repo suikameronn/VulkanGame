@@ -12,12 +12,10 @@ TextureBuilder::TextureBuilder(std::shared_ptr<VulkanCore> core,std::shared_ptr<
 	bufferFactory = buffer;
 
 	device = vulkanCore->getLogicDevice();
-
-	initProperty();
 }
 
 //プロパティの初期化
-TextureBuilder& TextureBuilder::initProperty()
+std::shared_ptr<TextureBuilder> TextureBuilder::initProperty()
 {
 	property.initProperty();
 
@@ -25,33 +23,33 @@ TextureBuilder& TextureBuilder::initProperty()
 	view.initProperty();
 	sampler.initProperty();
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャサイズの設定
-TextureBuilder& TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height)
+std::shared_ptr<TextureBuilder> TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height)
 {
 	property.image.info.extent.width = width;
 	property.image.info.extent.height = height;
 
 	property.image.info.mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャサイズの設定
-TextureBuilder& TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height, const uint32_t& mipmapLevel)
+std::shared_ptr<TextureBuilder> TextureBuilder::withWidthHeight(const uint32_t& width, const uint32_t& height, const uint32_t& mipmapLevel)
 {
 	property.image.info.extent.width = width;
 	property.image.info.extent.height = height;
 
 	property.image.info.mipLevels = mipmapLevel;
 
-	return *this;
+	return shared_from_this();
 }
 
 //画像ファイルからピクセルを読み取る
-TextureBuilder& TextureBuilder::withImageFile(const std::string filePath)
+std::shared_ptr<TextureBuilder> TextureBuilder::withImageFile(const std::string filePath)
 {
 	//外部の画像ファイルからテクスチャを作る
 
@@ -80,11 +78,11 @@ TextureBuilder& TextureBuilder::withImageFile(const std::string filePath)
 
 	property.image.info.mipLevels = std::floor(std::log2(std::max(extent.width, extent.height))) + 1;
 
-	return *this;
+	return shared_from_this();
 }
 
 //画像ファイルからピクセルを読み取る
-TextureBuilder& TextureBuilder::withImageFile(const std::string filePath, const uint32_t miplevels)
+std::shared_ptr<TextureBuilder> TextureBuilder::withImageFile(const std::string filePath, const uint32_t miplevels)
 {
 	//外部の画像ファイルからテクスチャを作る
 
@@ -105,167 +103,167 @@ TextureBuilder& TextureBuilder::withImageFile(const std::string filePath, const 
 
 	property.image.info.mipLevels = miplevels;
 
-	return *this;
+	return shared_from_this();
 }
 
 //フォーマットを設定
-TextureBuilder& TextureBuilder::withFormat(const VkFormat& format)
+std::shared_ptr<TextureBuilder> TextureBuilder::withFormat(const VkFormat& format)
 {
 	property.image.info.format = format;
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkImageTypeを設定
-TextureBuilder& TextureBuilder::withImageType(const VkImageType& type)
+std::shared_ptr<TextureBuilder> TextureBuilder::withImageType(const VkImageType& type)
 {
 	property.image.info.imageType = type;
 
-	return *this;
+	return shared_from_this();
 }
 
 //VkImageFlagを設定(SamplerCubeの作成時などに使用)
-TextureBuilder& TextureBuilder::withImageFlag(const VkImageCreateFlagBits& flag)
+std::shared_ptr<TextureBuilder> TextureBuilder::withImageFlag(const VkImageCreateFlagBits& flag)
 {
 	property.image.info.flags = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //マルチサンプリング数の設定
-TextureBuilder& TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSamples)
+std::shared_ptr<TextureBuilder> TextureBuilder::withNumSamples(const VkSampleCountFlagBits& numSamples)
 {
 	property.image.info.samples = numSamples;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ピクセルの配置を設定
-TextureBuilder& TextureBuilder::withTiling(const VkImageTiling& tiling)
+std::shared_ptr<TextureBuilder> TextureBuilder::withTiling(const VkImageTiling& tiling)
 {
 	property.image.info.tiling = tiling;
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャのバッファの使い道を設定
-TextureBuilder& TextureBuilder::withUsage(const VkImageUsageFlags& usage)
+std::shared_ptr<TextureBuilder> TextureBuilder::withUsage(const VkImageUsageFlags& usage)
 {
 	property.image.info.usage = usage;
 
-	return *this;
+	return shared_from_this();
 }
 
 //メモリ配置を設定
-TextureBuilder& TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& prop)
+std::shared_ptr<TextureBuilder> TextureBuilder::withMemoryProperty(const VkMemoryPropertyFlags& prop)
 {
 	property.image.memProperty = prop;
 
-	return *this;
+	return shared_from_this();
 }
 
 //初期のテクスチャのレイアウト
-TextureBuilder& TextureBuilder::withInitialLayout(const VkImageLayout& layout)
+std::shared_ptr<TextureBuilder> TextureBuilder::withInitialLayout(const VkImageLayout& layout)
 {
 	property.image.info.initialLayout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
 //最終的なテクスチャのレイアウト
-TextureBuilder& TextureBuilder::withFinalLayout(const VkImageLayout& layout)
+std::shared_ptr<TextureBuilder> TextureBuilder::withFinalLayout(const VkImageLayout& layout)
 {
 	property.image.finalLayout = layout;
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //ビューのタイプを設定する
-TextureBuilder& TextureBuilder::withViewType(const VkImageViewType& type)
+std::shared_ptr<TextureBuilder> TextureBuilder::withViewType(const VkImageViewType& type)
 {
 	view.info.viewType = type;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ビューがアクセスできるデータを設定
-TextureBuilder& TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
+std::shared_ptr<TextureBuilder> TextureBuilder::withViewAccess(const VkImageAspectFlags& flag)
 {
 	view.info.subresourceRange.aspectMask = flag;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ビューがアクセスするレイヤーの範囲を指定する
-TextureBuilder& TextureBuilder::withTargetLayer(const uint32_t baseLayer, const uint32_t tagetLayerCount)
+std::shared_ptr<TextureBuilder> TextureBuilder::withTargetLayer(const uint32_t baseLayer, const uint32_t tagetLayerCount)
 {
 	view.info.subresourceRange.baseArrayLayer = baseLayer;
 	view.info.subresourceRange.layerCount = tagetLayerCount;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ビューがアクセスするミップマップレベルを指定する
-TextureBuilder& TextureBuilder::withTargetMipmapLevel(const uint32_t baseMipmapLevel, const uint32_t levelCount)
+std::shared_ptr<TextureBuilder> TextureBuilder::withTargetMipmapLevel(const uint32_t baseMipmapLevel, const uint32_t levelCount)
 {
 	view.info.subresourceRange.baseMipLevel = baseMipmapLevel;
 	view.info.subresourceRange.levelCount = levelCount;
 
-	return *this;
+	return shared_from_this();
 }
 
 //ビューを積み上げる
-TextureBuilder& TextureBuilder::addView()
+std::shared_ptr<TextureBuilder> TextureBuilder::addView()
 {
 	property.viewArray.push_back(view);
 
 	view.initProperty();
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャのレイヤー数を設定する
-TextureBuilder& TextureBuilder::withLayerCount(const uint32_t& layerCount)
+std::shared_ptr<TextureBuilder> TextureBuilder::withLayerCount(const uint32_t& layerCount)
 {
 	property.image.info.arrayLayers = layerCount;
 
-	return *this;
+	return shared_from_this();
 }
 
 
 //サンプラーのミップマップレベル間の補間方法を設定する
-TextureBuilder& TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
+std::shared_ptr<TextureBuilder> TextureBuilder::withMipMapMode(const VkSamplerMipmapMode& mode)
 {
 	property.sampler.info.mipmapMode = mode;
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャの境界部分の処理を設定
-TextureBuilder& TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
+std::shared_ptr<TextureBuilder> TextureBuilder::withAddressMode(const VkSamplerAddressMode& mode)
 {
 	property.sampler.info.addressModeU = mode;
 	property.sampler.info.addressModeV = mode;
 	property.sampler.info.addressModeW = mode;
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャの拡大時の補間方法を設定する
-TextureBuilder& TextureBuilder::withMagFilter(const VkFilter& filter)
+std::shared_ptr<TextureBuilder> TextureBuilder::withMagFilter(const VkFilter& filter)
 {
 	property.sampler.info.magFilter = filter;
 
-	return *this;
+	return shared_from_this();
 }
 
 //テクスチャの縮小時の補間方法を設定する
-TextureBuilder& TextureBuilder::withMinFilter(const VkFilter& filter)
+std::shared_ptr<TextureBuilder> TextureBuilder::withMinFilter(const VkFilter& filter)
 {
 	property.sampler.info.minFilter = filter;
 
-	return *this;
+	return shared_from_this();
 }
 
 TextureProperty TextureBuilder::Build()

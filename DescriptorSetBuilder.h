@@ -72,7 +72,7 @@ struct DescriptorSetProperty
 	}
 };
 
-class DescriptorSetBuilder
+class DescriptorSetBuilder : public std::enable_shared_from_this<DescriptorSetBuilder>
 {
 private:
 
@@ -92,43 +92,50 @@ public:
 
 	DescriptorSetBuilder(VkDevice& d);
 
+	~DescriptorSetBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "DescriptorSetBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
 	DescriptorSetProperty Build();
 
 	void Create(const DescriptorSetProperty& property, VkDescriptorSet& descriptorSet);
 
 	//プロパティの初期化
-	DescriptorSetBuilder& initProperty();
+	std::shared_ptr<DescriptorSetBuilder> initProperty();
 
 	//VkDescriptorSetLayoutの設定
-	DescriptorSetBuilder& withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout);
+	std::shared_ptr<DescriptorSetBuilder> withDescriptorSetLayout(const std::shared_ptr<DescriptorSetLayout>& layout);
 
 	//VkDescriptorSetの個数の設定
-	DescriptorSetBuilder& withDescriptorSetCount(const uint32_t& count);
+	std::shared_ptr<DescriptorSetBuilder> withDescriptorSetCount(const uint32_t& count);
 
 	//VkDescriptorBufferInfoの設定///////
 
-	DescriptorSetBuilder& withBindingBuffer(const uint32_t& binding);
+	std::shared_ptr<DescriptorSetBuilder> withBindingBuffer(const uint32_t& binding);
 
-	DescriptorSetBuilder& withTypeBuffer(const VkDescriptorType& type);
+	std::shared_ptr<DescriptorSetBuilder> withTypeBuffer(const VkDescriptorType& type);
 
-	DescriptorSetBuilder& withBuffer(const std::shared_ptr<GpuBuffer>& buffer);
+	std::shared_ptr<DescriptorSetBuilder> withBuffer(const std::shared_ptr<GpuBuffer>& buffer);
 
-	DescriptorSetBuilder& withOffset(const uint32_t& offset);
+	std::shared_ptr<DescriptorSetBuilder> withOffset(const uint32_t& offset);
 
-	DescriptorSetBuilder& withRange(const uint32_t& range);
+	std::shared_ptr<DescriptorSetBuilder> withRange(const uint32_t& range);
 
-	DescriptorSetBuilder& addBufferInfo();
+	std::shared_ptr<DescriptorSetBuilder> addBufferInfo();
 
 	//VkDescriptorImageInfo/////////
 
-	DescriptorSetBuilder& withBindingImage(const uint32_t& binding);
+	std::shared_ptr<DescriptorSetBuilder> withBindingImage(const uint32_t& binding);
 
-	DescriptorSetBuilder& withTypeImage(const VkDescriptorType& type);
+	std::shared_ptr<DescriptorSetBuilder> withTypeImage(const VkDescriptorType& type);
 
-	DescriptorSetBuilder& withImageLayout(const VkImageLayout& layout);
+	std::shared_ptr<DescriptorSetBuilder> withImageLayout(const VkImageLayout& layout);
 
-	DescriptorSetBuilder& withTexture(const std::shared_ptr<Texture> texture);
-	DescriptorSetBuilder& withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer);
+	std::shared_ptr<DescriptorSetBuilder> withTexture(const std::shared_ptr<Texture> texture);
+	std::shared_ptr<DescriptorSetBuilder> withTexture(const std::shared_ptr<Texture> texture, const uint32_t targetLayer);
 
-	DescriptorSetBuilder& addImageInfo();
+	std::shared_ptr<DescriptorSetBuilder> addImageInfo();
 };

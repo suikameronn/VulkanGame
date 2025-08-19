@@ -19,46 +19,46 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(vulkanCore->getSwapChainFormat())
-			.withMultiSamples(vulkanCore->getMaxMsaaSamples())
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-			.addColorAttachment();
+			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			->addColorAttachment();
 
 		builder->withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
-			.withMultiSamples(vulkanCore->getMaxMsaaSamples())
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-			.addDepthStencilAttachment();
+			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addDepthStencilAttachment();
 
 		builder->withFormat(vulkanCore->getSwapChainFormat())
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-			.addColorResolveAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addColorResolveAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withDstSubpassIndex(0)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withSrcAccessMask(0)
-			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withSrcAccessMask(0)
+			->withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+			->withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
 				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.addDependency()
-			.addSubpass();
+			->addDependency()
+			->addSubpass();
 
 		return builder->Build();
 	}
@@ -67,46 +67,46 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R8G8B8A8_UNORM)
-			.withMultiSamples(VK_SAMPLE_COUNT_8_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-			.addColorAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_8_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			->addColorAttachment();
 
 		builder->withFormat(VK_FORMAT_D32_SFLOAT)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-			.addDepthStencilAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addDepthStencilAttachment();
 
 		builder->withFormat(VK_FORMAT_R8G8B8A8_UNORM)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-			.addColorResolveAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addColorResolveAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withDstSubpassIndex(0)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withSrcAccessMask(0)
-			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withSrcAccessMask(0)
+			->withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+			->withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
 				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.addDependency()
-			.addSubpass();
+			->addDependency()
+			->addSubpass();
 
 		return builder->Build();
 	}
@@ -115,32 +115,32 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_D16_UNORM)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-			.addDepthStencilAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+			->addDepthStencilAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withSrcAccessMask(VK_ACCESS_SHADER_READ_BIT)
-			.withDstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
+			->withDstSubpassIndex(0)
+			->withSrcStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+			->withDstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+			->withSrcAccessMask(VK_ACCESS_SHADER_READ_BIT)
+			->withDstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+			->withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			->addDependency();
 
 		builder->withSrcSubpassIndex(0)
-			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-			.withSrcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(VK_ACCESS_SHADER_READ_BIT)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
+			->withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
+			->withSrcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+			->withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+			->withSrcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+			->withDstAccessMask(VK_ACCESS_SHADER_READ_BIT)
+			->withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			->addDependency();
 
 		builder->addSubpass();
 
@@ -151,24 +151,24 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-			.addColorAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+			->addColorAttachment();
 
 		builder->withSrcSubpassIndex(0)
-			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withSrcAccessMask(0)
-			.withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
-			.withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
-			.addDependency()
-			.addSubpass();
+			->withSrcAccessMask(0)
+			->withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
+			->withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+			->addDependency()
+			->addSubpass();
 
 		return builder->Build();
 	}
@@ -177,24 +177,24 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-			.addColorAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+			->addColorAttachment();
 
 		builder->withSrcSubpassIndex(0)
-			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			->withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-			.withSrcAccessMask(0)
-			.withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
-			.withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
-			.addDependency()
-			.addSubpass();
+			->withSrcAccessMask(0)
+			->withDstStageMask(VK_PIPELINE_STAGE_TRANSFER_BIT)
+			->withDstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+			->addDependency()
+			->addSubpass();
 
 		return builder->Build();
 	}
@@ -203,32 +203,32 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 		builder->initProperty();
 
 		builder->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-			.withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			.withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-			.withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
-			.withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			.withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			.addColorAttachment();
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+			->withFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			->addColorAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withDstSubpassIndex(0)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(0)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
+			->withDstSubpassIndex(0)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			->withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			->withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+			->withDstAccessMask(0)
+			->withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			->addDependency();
 
 		builder->withSrcSubpassIndex(0)
-			.withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
-			.withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-			.withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-			.withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-			.withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
-			.withFlag(VK_DEPENDENCY_BY_REGION_BIT)
-			.addDependency();
+			->withDstSubpassIndex(VK_SUBPASS_EXTERNAL)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+			->withDstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+			->withSrcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+			->withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
+			->withFlag(VK_DEPENDENCY_BY_REGION_BIT)
+			->addDependency();
 
 		builder->addSubpass();
 

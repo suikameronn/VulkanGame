@@ -194,13 +194,13 @@ void SwapChain::createSwapChainObj()
 
     TextureProperty property = textureFactory->getBuilder()
         ->initProperty()
-        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
-        .withViewType(VK_IMAGE_VIEW_TYPE_2D)
-        .withFormat(swapChainImageFormat)
-        .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-        .addView()
-        .withLayerCount(1)
-        .Build();
+        ->withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        ->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+        ->withFormat(swapChainImageFormat)
+        ->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+        ->addView()
+        ->withLayerCount(1)
+        ->Build();
 
     swapChainImages.resize(imageCount);
     for (size_t i = 0; i < swapChainImages.size(); ++i)
@@ -223,19 +223,19 @@ void SwapChain::createColorAttachment()
 	const VkSampleCountFlagBits msaaSampleCount = vulkanCore->getMaxMsaaSamples();
 
     TextureProperty property = textureFactory->getBuilder()->initProperty()
-        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
-        .withFormat(swapChainImageFormat)
-        .withNumSamples(msaaSampleCount)
-        .withTiling(VK_IMAGE_TILING_OPTIMAL)
-        .withUsage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-        .withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        .withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-        .withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-        .withViewType(VK_IMAGE_VIEW_TYPE_2D)
-        .withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-        .addView()
-        .withLayerCount(1)
-        .Build();
+        ->withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        ->withFormat(swapChainImageFormat)
+        ->withNumSamples(msaaSampleCount)
+        ->withTiling(VK_IMAGE_TILING_OPTIMAL)
+        ->withUsage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+        ->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        ->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+        ->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        ->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+        ->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+        ->addView()
+        ->withLayerCount(1)
+        ->Build();
 
     colorAttachment = textureFactory->ImageViewCreate(property);
 }
@@ -246,19 +246,19 @@ void SwapChain::createDepthAttachment()
     const VkSampleCountFlagBits msaaSampleCount = vulkanCore->getMaxMsaaSamples();
 
     TextureProperty property = textureFactory->getBuilder()->initProperty()
-        .withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
-        .withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
-        .withNumSamples(msaaSampleCount)
-        .withTiling(VK_IMAGE_TILING_OPTIMAL)
-        .withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        .withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        .withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-        .withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-        .withViewType(VK_IMAGE_VIEW_TYPE_2D)
-        .withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
-        .addView()
-        .withLayerCount(1)
-        .Build();
+        ->withWidthHeight(swapChainExtent.width, swapChainExtent.height, 1)
+        ->withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
+        ->withNumSamples(msaaSampleCount)
+        ->withTiling(VK_IMAGE_TILING_OPTIMAL)
+        ->withUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        ->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        ->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+        ->withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        ->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+        ->withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
+        ->addView()
+        ->withLayerCount(1)
+        ->Build();
 
     depthAttachment = textureFactory->ImageViewCreate(property);
 }
@@ -273,13 +273,13 @@ void SwapChain::createFrameBuffers()
     for (size_t i = 0; i < frameBuffers.size(); i++) 
     {
         const FrameBufferProperty property = frameBufferFactory->getBuilder()->initProperty()
-            .withWidthHeight(swapChainExtent.width, swapChainExtent.height)
-            .withRenderPass(renderPass)
-            .withLayerCount(1)
-			.addViewAttachment(colorAttachment)
-            .addViewAttachment(depthAttachment)
-			.addViewAttachment(swapChainImages[i])
-			.Build();
+            ->withWidthHeight(swapChainExtent.width, swapChainExtent.height)
+            ->withRenderPass(renderPass)
+            ->withLayerCount(1)
+			->addViewAttachment(colorAttachment)
+            ->addViewAttachment(depthAttachment)
+			->addViewAttachment(swapChainImages[i])
+			->Build();
 
         frameBuffers[i] = frameBufferFactory->Create(property);
     }

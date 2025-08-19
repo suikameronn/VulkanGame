@@ -22,6 +22,13 @@ public:
 	DescriptorSetFactory(VkDevice& d, std::shared_ptr<DescriptorSetBuilder> b
 		, std::shared_ptr<DescriptorSetLayoutFactory> lf);
 
+	~DescriptorSetFactory()
+	{
+#ifdef _DEBUG
+		std::cout << "DescriptorSetFactory :: デストラクタ" << std::endl;
+#endif
+	}
+
 	std::shared_ptr<DescriptorSetBuilder> getBuilder()
 	{
 		return builder;

@@ -23,6 +23,16 @@ PipelineLayoutFactory::~PipelineLayoutFactory()
 			itr.second.lock().reset();
 		}
 	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		resourceDestruct();
+		resourceDestruct();
+	}
+
+#ifdef _DEBUG
+	std::cout << "PipelineLayoutFactory :: デストラクタ" << std::endl;
+#endif
 }
 
 //既定のレイアウトから構造体を設定する
@@ -67,10 +77,10 @@ PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayou
 		(
 			layoutFactory->getBuilder()
 			->initProperty()
-			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
-			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
-			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build()
+			->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
+			->Build()
 		);
 
 		builder->addLayout(layout);
@@ -112,16 +122,16 @@ PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayou
 	{
 		std::shared_ptr<DescriptorSetLayout> raycastLayout = layoutFactory->Create(layoutFactory->getBuilder()
 			->initProperty()
-			.setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.setProperty(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build());
+			->setProperty(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			->setProperty(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			->Build());
 
 		//レイキャスト用
 		builder->initProperty();
 		builder->addLayout(raycastLayout)
-			.addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
-			.addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
-			.addLayout(layoutFactory->Create(LayoutPattern::RAYCAST));
+			->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+			->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+			->addLayout(layoutFactory->Create(LayoutPattern::RAYCAST));
 
 		builder->addPushConstant(sizeof(RaycastPushConstant), VK_SHADER_STAGE_COMPUTE_BIT);
 	}

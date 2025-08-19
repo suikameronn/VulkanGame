@@ -90,7 +90,7 @@ struct TextureProperty
 	}
 };
 
-class TextureBuilder
+class TextureBuilder : public std::enable_shared_from_this<TextureBuilder>
 {
 private:
 
@@ -138,6 +138,13 @@ public:
 
 	TextureBuilder(std::shared_ptr<VulkanCore> core,std::shared_ptr<GpuBufferFactory> buffer);
 
+	~TextureBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "TextureBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//プロパティを取得する
 	TextureProperty Build();
 
@@ -151,72 +158,72 @@ public:
 	void Create(const TextureProperty& property, VkImage& image, VkDeviceMemory& memory, std::vector<VkImageView>& viewArray);
 
 	//プロパティの初期化
-	TextureBuilder& initProperty();
+	std::shared_ptr<TextureBuilder> initProperty();
 
 	//テクスチャサイズの設定
-	TextureBuilder& withWidthHeight(const uint32_t& width, const uint32_t& height);
-	TextureBuilder& withWidthHeight(const uint32_t& width, const uint32_t& height,const uint32_t& mipmapLevel);
+	std::shared_ptr<TextureBuilder> withWidthHeight(const uint32_t& width, const uint32_t& height);
+	std::shared_ptr<TextureBuilder> withWidthHeight(const uint32_t& width, const uint32_t& height,const uint32_t& mipmapLevel);
 
 	//画像ファイルからピクセルを読み取る
-	TextureBuilder& withImageFile(const std::string filePath);
-	TextureBuilder& withImageFile(const std::string filePath, const uint32_t miplevels);
+	std::shared_ptr<TextureBuilder> withImageFile(const std::string filePath);
+	std::shared_ptr<TextureBuilder> withImageFile(const std::string filePath, const uint32_t miplevels);
 
 	//フォーマットを設定
-	TextureBuilder& withFormat(const VkFormat& format);
+	std::shared_ptr<TextureBuilder> withFormat(const VkFormat& format);
 
 	//VkImageTypeを設定
-	TextureBuilder& withImageType(const VkImageType& type);
+	std::shared_ptr<TextureBuilder> withImageType(const VkImageType& type);
 
 	//VkImageFlagを設定(SamplerCubeの作成時などに使用)
-	TextureBuilder& withImageFlag(const VkImageCreateFlagBits& flag);
+	std::shared_ptr<TextureBuilder> withImageFlag(const VkImageCreateFlagBits& flag);
 
 	//マルチサンプリング数の設定
-	TextureBuilder& withNumSamples(const VkSampleCountFlagBits& numSamples);
+	std::shared_ptr<TextureBuilder> withNumSamples(const VkSampleCountFlagBits& numSamples);
 
 	//ピクセルの配置を設定
-	TextureBuilder& withTiling(const VkImageTiling& tiling);
+	std::shared_ptr<TextureBuilder> withTiling(const VkImageTiling& tiling);
 
 	//テクスチャのバッファの使い道を設定
-	TextureBuilder& withUsage(const VkImageUsageFlags& usage);
+	std::shared_ptr<TextureBuilder> withUsage(const VkImageUsageFlags& usage);
 
 	//メモリ配置を設定
-	TextureBuilder& withMemoryProperty(const VkMemoryPropertyFlags& prop);
+	std::shared_ptr<TextureBuilder> withMemoryProperty(const VkMemoryPropertyFlags& prop);
 
 	//初期のテクスチャのレイアウト
-	TextureBuilder& withInitialLayout(const VkImageLayout& layout);
+	std::shared_ptr<TextureBuilder> withInitialLayout(const VkImageLayout& layout);
 
 	//最終的なテクスチャのレイアウト
-	TextureBuilder& withFinalLayout(const VkImageLayout& layout);
+	std::shared_ptr<TextureBuilder> withFinalLayout(const VkImageLayout& layout);
 
 	//テクスチャのレイヤー数を設定する
-	TextureBuilder& withLayerCount(const uint32_t& layerCount);
+	std::shared_ptr<TextureBuilder> withLayerCount(const uint32_t& layerCount);
 
 	//ビューのタイプを設定する
-	TextureBuilder& withViewType(const VkImageViewType& type);
+	std::shared_ptr<TextureBuilder> withViewType(const VkImageViewType& type);
 
 	//ビューがアクセスできるデータを設定
-	TextureBuilder& withViewAccess(const VkImageAspectFlags& flag);
+	std::shared_ptr<TextureBuilder> withViewAccess(const VkImageAspectFlags& flag);
 
 	//ビューがアクセスするレイヤーの範囲を指定する
-	TextureBuilder& withTargetLayer(const uint32_t baseLayer,const uint32_t tagetLayerCount);
+	std::shared_ptr<TextureBuilder> withTargetLayer(const uint32_t baseLayer,const uint32_t tagetLayerCount);
 
 	//ビューがアクセスするミップマップレベルを指定する
-	TextureBuilder& withTargetMipmapLevel(const uint32_t baseMipmapLevel, const uint32_t levelCount);
+	std::shared_ptr<TextureBuilder> withTargetMipmapLevel(const uint32_t baseMipmapLevel, const uint32_t levelCount);
 
 	//ビューを積み上げる
-	TextureBuilder& addView();
+	std::shared_ptr<TextureBuilder> addView();
 
 	//サンプラーのミップマップレベル間の補間方法を設定する
-	TextureBuilder& withMipMapMode(const VkSamplerMipmapMode& mode);
+	std::shared_ptr<TextureBuilder> withMipMapMode(const VkSamplerMipmapMode& mode);
 
 	//テクスチャの境界部分の処理を設定
-	TextureBuilder& withAddressMode(const VkSamplerAddressMode& mode);
+	std::shared_ptr<TextureBuilder> withAddressMode(const VkSamplerAddressMode& mode);
 
 	//テクスチャの拡大時の補間方法を設定する
-	TextureBuilder& withMagFilter(const VkFilter& filter);
+	std::shared_ptr<TextureBuilder> withMagFilter(const VkFilter& filter);
 
 	//テクスチャの縮小時の補間方法を設定する
-	TextureBuilder& withMinFilter(const VkFilter& filter);
+	std::shared_ptr<TextureBuilder> withMinFilter(const VkFilter& filter);
 
 	//画像のレイアウトを変更する
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout

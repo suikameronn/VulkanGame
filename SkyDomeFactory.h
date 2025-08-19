@@ -58,6 +58,13 @@ public:
 
 	SkyDomeFactory(std::shared_ptr<SkyDomeBuilder> b);
 
+	~SkyDomeFactory()
+	{
+#ifdef _DEBUG
+		std::cout << "SkyDomeFactory :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//SkyDomeを作成して、そのIDを返す
 	uint32_t Create(const SkyDomeProperty& property);
 

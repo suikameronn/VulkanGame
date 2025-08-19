@@ -153,21 +153,21 @@ void GltfModel::createDescriptorSet(std::vector<std::shared_ptr<DescriptorSet>>&
 
 				const DescriptorSetProperty descProperty = descriptorSetFactory->getBuilder()
 					->initProperty()
-					.withBindingBuffer(0)
-					.withDescriptorSetCount(1)
-					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-					.withBuffer(vertBuffer[nodes[i].mesh.meshIndex])
-					.withRange(sizeof(Vertex) * static_cast<uint32_t>(nodes[i].mesh.vertices.size()))
-					.addBufferInfo()
-					.withBindingBuffer(1)
-					.withDescriptorSetCount(1)
-					.withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-					.addBufferInfo()
-					.withDescriptorSetLayout(layout)
-					.withBuffer(indeBuffer[nodes[i].mesh.meshIndex])
-					.withRange(sizeof(uint32_t) * static_cast<uint32_t>(nodes[i].mesh.indices.size()))
-					.addBufferInfo()
-					.Build();
+					->withBindingBuffer(0)
+					->withDescriptorSetCount(1)
+					->withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+					->withBuffer(vertBuffer[nodes[i].mesh.meshIndex])
+					->withRange(sizeof(Vertex) * static_cast<uint32_t>(nodes[i].mesh.vertices.size()))
+					->addBufferInfo()
+					->withBindingBuffer(1)
+					->withDescriptorSetCount(1)
+					->withTypeBuffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+					->addBufferInfo()
+					->withDescriptorSetLayout(layout)
+					->withBuffer(indeBuffer[nodes[i].mesh.meshIndex])
+					->withRange(sizeof(uint32_t) * static_cast<uint32_t>(nodes[i].mesh.indices.size()))
+					->addBufferInfo()
+					->Build();
 
 				descriptorSet[nodes[i].mesh.meshIndex] = descriptorSetFactory->Create(descProperty);
 		}

@@ -117,7 +117,7 @@ struct SkyDomeProperty
 	}
 };
 
-class SkyDomeBuilder
+class SkyDomeBuilder : public std::enable_shared_from_this<SkyDomeBuilder>
 {
 private:
 
@@ -168,15 +168,22 @@ public:
 		, std::shared_ptr<DescriptorSetLayoutFactory> layout, std::shared_ptr<DescriptorSetFactory> descriptorSet
 		, std::shared_ptr<Render> render, std::shared_ptr<GltfModelFactory> modelFactory);
 
-	SkyDomeBuilder initProperty()
+	~SkyDomeBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "SkyDomeBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
+	std::shared_ptr<SkyDomeBuilder> initProperty()
 	{
 		property.initProperty();
 
-		return *this;
+		return shared_from_this();
 	}
 
 	//マップの元となる画像ファイルを設定する
-	SkyDomeBuilder withImagePath(const std::string path);
+	std::shared_ptr<SkyDomeBuilder> withImagePath(const std::string path);
 
 	//プロパティを返す
 	SkyDomeProperty Build()

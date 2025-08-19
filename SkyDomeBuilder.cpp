@@ -32,11 +32,11 @@ SkyDomeBuilder::SkyDomeBuilder(std::shared_ptr<VulkanCore> core, std::shared_ptr
 }
 
 //マップの元となる画像ファイルを設定する
-SkyDomeBuilder SkyDomeBuilder::withImagePath(const std::string path)
+std::shared_ptr<SkyDomeBuilder> SkyDomeBuilder::withImagePath(const std::string path)
 {
 	property.srcImagePath = path;
 
-	return *this;
+	return shared_from_this();
 }
 
 //キューブマップ作成時のビューの向きを切り替える
@@ -81,23 +81,23 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 
 	//SamplerCubeの6つのレイヤーを持つテクスチャを作成
 	textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size, 1)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(1)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_2D)
-		.withTargetLayer(0, 1)
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR);
+		->withWidthHeight(size, size, 1)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(1)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+		->withTargetLayer(0, 1)
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR);
 
 	std::array<std::shared_ptr<Texture>, CUBEMAP_LAYER> multiLayerTex;
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
@@ -116,11 +116,11 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		frameBufferArray[i] = frameBufferFactory->Create
 		(
 			frameBufferFactory->getBuilder()->initProperty()
-			.withLayerCount(1)
-			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
-			.withWidthHeight(size, size)
-			.addViewAttachment(multiLayerTex[i])
-			.Build()
+			->withLayerCount(1)
+			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
+			->withWidthHeight(size, size)
+			->addViewAttachment(multiLayerTex[i])
+			->Build()
 		);
 	}
 
@@ -132,20 +132,20 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
 		const RenderProperty renderProp = render->initProperty()
-			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
-			.withFrameBuffer(frameBufferArray[i])
-			.withCommandBuffer(commandBuffer)
-			.withRenderArea(size, size)
-			.withClearDepth(1.0f)
-			.withClearStencil(0)
-			.Build();
+			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
+			->withFrameBuffer(frameBufferArray[i])
+			->withCommandBuffer(commandBuffer)
+			->withRenderArea(size, size)
+			->withClearDepth(1.0f)
+			->withClearStencil(0)
+			->Build();
 
 		render->RenderStart(renderProp);
 
 		std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(cubemapModelID);
 		if (!gltfModel)
 		{
-			throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
 		vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -223,26 +223,26 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	backGround.multiLayerTex = textureFactory->Create
 	(
 		textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size, 1)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
-		.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(CUBEMAP_LAYER)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
-		.withTargetLayer(0, CUBEMAP_LAYER)
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR)
-		.Build()
+		->withWidthHeight(size, size, 1)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+		->withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(CUBEMAP_LAYER)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
+		->withTargetLayer(0, CUBEMAP_LAYER)
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR)
+		->Build()
 	);
 
 	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
@@ -253,16 +253,16 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		textureFactory->getCopy()->Copy
 		(
 			textureFactory->getCopy()->initProperty()
-			.withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-			.withSrcLayerRange(0, 1)
-			.withDstLayerRange(i, 1)
-			.withSrcMipmapLevel(0)
-			.withDstMipmapLevel(0)
-			.withSize(size, size)
-			.withCommandBuffer(secondCommand)
-			.withSrcTexture(multiLayerTex[i])
-			.withDstTexture(backGround.multiLayerTex)
-			.Build()
+			->withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+			->withSrcLayerRange(0, 1)
+			->withDstLayerRange(i, 1)
+			->withSrcMipmapLevel(0)
+			->withDstMipmapLevel(0)
+			->withSize(size, size)
+			->withCommandBuffer(secondCommand)
+			->withSrcTexture(multiLayerTex[i])
+			->withDstTexture(backGround.multiLayerTex)
+			->Build()
 		);
 	}
 
@@ -349,23 +349,23 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	//SamplerCubeの6つのレイヤーを持つテクスチャを作成
 	textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size, 1)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(1)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_2D)
-		.withTargetLayer(0, 1)
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR);
+		->withWidthHeight(size, size, 1)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(1)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+		->withTargetLayer(0, 1)
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR);
 
 	std::array<std::shared_ptr<Texture>, CUBEMAP_LAYER> multiLayerTexture;
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
@@ -384,11 +384,11 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		frameBufferArray[i] = frameBufferFactory->Create
 		(
 			frameBufferFactory->getBuilder()->initProperty()
-			.withLayerCount(1)
-			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
-			.withWidthHeight(size, size)
-			.addViewAttachment(multiLayerTexture[i])
-			.Build()
+			->withLayerCount(1)
+			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
+			->withWidthHeight(size, size)
+			->addViewAttachment(multiLayerTexture[i])
+			->Build()
 		);
 	}
 
@@ -400,20 +400,20 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
 		const RenderProperty renderProp = render->initProperty()
-			.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
-			.withFrameBuffer(frameBufferArray[i])
-			.withCommandBuffer(commandBuffer)
-			.withRenderArea(size, size)
-			.withClearDepth(1.0f)
-			.withClearStencil(0)
-			.Build();
+			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
+			->withFrameBuffer(frameBufferArray[i])
+			->withCommandBuffer(commandBuffer)
+			->withRenderArea(size, size)
+			->withClearDepth(1.0f)
+			->withClearStencil(0)
+			->Build();
 
 		render->RenderStart(renderProp);
 
 		std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(cubemapModelID);
 		if (!gltfModel)
 		{
-			throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
 		vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -494,26 +494,26 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	diffuse.multiLayerTex = textureFactory->Create
 	(
 		textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size, 1)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
-		.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(CUBEMAP_LAYER)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
-		.withTargetLayer(0, CUBEMAP_LAYER)
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR)
-		.Build()
+		->withWidthHeight(size, size, 1)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+		->withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(CUBEMAP_LAYER)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
+		->withTargetLayer(0, CUBEMAP_LAYER)
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR)
+		->Build()
 	);
 
 	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
@@ -524,16 +524,16 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		textureFactory->getCopy()->Copy
 		(
 			textureFactory->getCopy()->initProperty()
-			.withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-			.withSrcLayerRange(0, 1)
-			.withDstLayerRange(i, 1)
-			.withSrcMipmapLevel(0)
-			.withDstMipmapLevel(0)
-			.withSize(size, size)
-			.withCommandBuffer(secondCommand)
-			.withSrcTexture(multiLayerTexture[i])
-			.withDstTexture(diffuse.multiLayerTex)
-			.Build()
+			->withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+			->withSrcLayerRange(0, 1)
+			->withDstLayerRange(i, 1)
+			->withSrcMipmapLevel(0)
+			->withDstMipmapLevel(0)
+			->withSize(size, size)
+			->withCommandBuffer(secondCommand)
+			->withSrcTexture(multiLayerTexture[i])
+			->withDstTexture(diffuse.multiLayerTex)
+			->Build()
 		);
 	}
 
@@ -638,26 +638,34 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 			multiLayerTex[i * CUBEMAP_LAYER + j] = textureFactory->Create
 			(
 				textureFactory->getBuilder()->initProperty()
-				.withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i], 1)
-				.withImageType(VK_IMAGE_TYPE_2D)
-				.withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-				.withTiling(VK_IMAGE_TILING_OPTIMAL)
-				.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-				.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-				.withLayerCount(1)
-				.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-				.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-				.withViewType(VK_IMAGE_VIEW_TYPE_2D)
-				.withTargetLayer(0, 1)
-				.withTargetMipmapLevel(0, 1)
-				.addView()
-				.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
-				.withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-				.withMagFilter(VK_FILTER_LINEAR)
-				.withMinFilter(VK_FILTER_LINEAR)
-				.Build()
+				->withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i], 1)
+				->withImageType(VK_IMAGE_TYPE_2D)
+				->withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+				->withTiling(VK_IMAGE_TILING_OPTIMAL)
+				->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+				->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+				->withLayerCount(1)
+				->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+				->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+				->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+				->withTargetLayer(0, 1)
+				->withTargetMipmapLevel(0, 1)
+				->addView()
+				->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+				->withAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+				->withMagFilter(VK_FILTER_LINEAR)
+				->withMinFilter(VK_FILTER_LINEAR)
+				->Build()
 			);
+		}
+	}
+
+	for(int i = 0;i < multiLayerTex.size(); i++)
+	{
+		if (multiLayerTex[i]->index == 85)
+		{
+			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -665,22 +673,27 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	//フレームバッファを作る
 	std::vector<std::shared_ptr<FrameBuffer>> frameBufferArray(CUBEMAP_LAYER * mipmapLevelSize.size());
 
-	std::vector<std::vector<std::shared_ptr<FrameBuffer>>> frameBuffer(mipmapLevelSize.size()
-		, std::vector<std::shared_ptr<FrameBuffer>>(CUBEMAP_LAYER));
-
-	for(int i = 0;i < frameBuffer.size();i++)
+	for(int i = 0;i < mipmapLevelSize.size();i++)
 	{
-		for (int j = 0; j < frameBuffer[i].size(); j++)
+		for (int j = 0; j < CUBEMAP_LAYER; j++)
 		{
 			frameBufferArray[i * CUBEMAP_LAYER + j] = frameBufferFactory->Create
 			(
 				frameBufferFactory->getBuilder()->initProperty()
-				.withLayerCount(1)
-				.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
-				.withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i])
-				.addViewAttachment(multiLayerTex[i * CUBEMAP_LAYER + j])
-				.Build()
+				->withLayerCount(1)
+				->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
+				->withWidthHeight(mipmapLevelSize[i], mipmapLevelSize[i])
+				->addViewAttachment(multiLayerTex[i * CUBEMAP_LAYER + j])
+				->Build()
 			);
+		}
+	}
+
+	for (int i = 0; i < multiLayerTex.size(); i++)
+	{
+		if (multiLayerTex[i]->index == 85)
+		{
+			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -694,20 +707,20 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 		for (int j = 0; j < CUBEMAP_LAYER; j++)
 		{
 			const RenderProperty renderProp = render->initProperty()
-				.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
-				.withFrameBuffer(frameBufferArray[i * CUBEMAP_LAYER + j])
-				.withCommandBuffer(commandBuffer)
-				.withRenderArea(mipmapLevelSize[i], mipmapLevelSize[i])
-				.withClearDepth(1.0f)
-				.withClearStencil(0)
-				.Build();
+				->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
+				->withFrameBuffer(frameBufferArray[i * CUBEMAP_LAYER + j])
+				->withCommandBuffer(commandBuffer)
+				->withRenderArea(mipmapLevelSize[i], mipmapLevelSize[i])
+				->withClearDepth(1.0f)
+				->withClearStencil(0)
+				->Build();
 
 			render->RenderStart(renderProp);
 
 			std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(cubemapModelID);
 			if (!gltfModel)
 			{
-				throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+				throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 			}
 
 			vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -766,6 +779,14 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 		}
 	}
 
+	for (int i = 0; i < multiLayerTex.size(); i++)
+	{
+		if (multiLayerTex[i]->index == 85)
+		{
+			std::cout << multiLayerTex[i].use_count() << std::endl;
+		}
+	}
+
 	bufferFactory->endCommandBuffer(commandBuffer);
 
 	VkSemaphoreCreateInfo semaphoreInfo{};
@@ -796,27 +817,27 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	reflection.multiLayerTex = textureFactory->Create
 	(
 		textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
-		.withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(CUBEMAP_LAYER)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
-		.withTargetLayer(0, CUBEMAP_LAYER)
-		.withTargetMipmapLevel(0, static_cast<uint32_t>(mipmapLevelSize.size()))
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR)
-		.Build()
+		->withWidthHeight(size, size)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withImageFlag(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+		->withUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(CUBEMAP_LAYER)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFinalLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_CUBE)
+		->withTargetLayer(0, CUBEMAP_LAYER)
+		->withTargetMipmapLevel(0, static_cast<uint32_t>(mipmapLevelSize.size()))
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR)
+		->Build()
 	);
 
 	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
@@ -829,17 +850,25 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 			textureFactory->getCopy()->Copy
 			(
 				textureFactory->getCopy()->initProperty()
-				.withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-				.withSrcLayerRange(0, 1)
-				.withDstLayerRange(j, 1)
-				.withSrcMipmapLevel(0)
-				.withDstMipmapLevel(i)
-				.withSize(mipmapLevelSize[i], mipmapLevelSize[i])
-				.withCommandBuffer(secondCommand)
-				.withSrcTexture(multiLayerTex[i * CUBEMAP_LAYER + j])
-				.withDstTexture(reflection.multiLayerTex)
-				.Build()
+				->withAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+				->withSrcLayerRange(0, 1)
+				->withDstLayerRange(j, 1)
+				->withSrcMipmapLevel(0)
+				->withDstMipmapLevel(i)
+				->withSize(mipmapLevelSize[i], mipmapLevelSize[i])
+				->withCommandBuffer(secondCommand)
+				->withSrcTexture(multiLayerTex[i * CUBEMAP_LAYER + j])
+				->withDstTexture(reflection.multiLayerTex)
+				->Build()
 			);
+		}
+	}
+
+	for (int i = 0; i < multiLayerTex.size(); i++)
+	{
+		if (multiLayerTex[i]->index == 85)
+		{
+			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -923,24 +952,24 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	brdf.texture = textureFactory->Create
 	(
 		textureFactory->getBuilder()->initProperty()
-		.withWidthHeight(size, size, 1)
-		.withImageType(VK_IMAGE_TYPE_2D)
-		.withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-		.withTiling(VK_IMAGE_TILING_OPTIMAL)
-		.withNumSamples(VK_SAMPLE_COUNT_1_BIT)
-		.withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.withLayerCount(1)
-		.withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-		.withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-		.withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
-		.withViewType(VK_IMAGE_VIEW_TYPE_2D)
-		.withTargetLayer(0, 1)
-		.addView()
-		.withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-		.withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-		.withMagFilter(VK_FILTER_LINEAR)
-		.withMinFilter(VK_FILTER_LINEAR)
-		.Build()
+		->withWidthHeight(size, size, 1)
+		->withImageType(VK_IMAGE_TYPE_2D)
+		->withUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		->withTiling(VK_IMAGE_TILING_OPTIMAL)
+		->withNumSamples(VK_SAMPLE_COUNT_1_BIT)
+		->withMemoryProperty(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		->withLayerCount(1)
+		->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+		->withFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		->withViewAccess(VK_IMAGE_ASPECT_COLOR_BIT)
+		->withViewType(VK_IMAGE_VIEW_TYPE_2D)
+		->withTargetLayer(0, 1)
+		->addView()
+		->withMipMapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		->withAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+		->withMagFilter(VK_FILTER_LINEAR)
+		->withMinFilter(VK_FILTER_LINEAR)
+		->Build()
 	);
 
 	//上で作ったテクスチャの各レイヤーをレンダーターゲットとして
@@ -948,11 +977,11 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	std::shared_ptr<FrameBuffer> frameBuffer = frameBufferFactory->Create
 	(
 		frameBufferFactory->getBuilder()->initProperty()
-		.withLayerCount(1)
-		.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_BRDF))
-		.withWidthHeight(size, size)
-		.addViewAttachment(brdf.texture)
-		.Build()
+		->withLayerCount(1)
+		->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_BRDF))
+		->withWidthHeight(size, size)
+		->addViewAttachment(brdf.texture)
+		->Build()
 	);
 
 	//各フレームバッファにレンダリングしていく
@@ -961,20 +990,20 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	bufferFactory->beginCommandBuffer(commandBuffer);
 
 	const RenderProperty renderProp = render->initProperty()
-		.withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_BRDF))
-		.withFrameBuffer(frameBuffer)
-		.withCommandBuffer(commandBuffer)
-		.withRenderArea(size, size)
-		.withClearDepth(1.0f)
-		.withClearStencil(0)
-		.Build();
+		->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_BRDF))
+		->withFrameBuffer(frameBuffer)
+		->withCommandBuffer(commandBuffer)
+		->withRenderArea(size, size)
+		->withClearDepth(1.0f)
+		->withClearStencil(0)
+		->Build();
 
 	render->RenderStart(renderProp);
 
 	std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(cubemapModelID);
 	if (!gltfModel)
 	{
-		throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
+		throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 	}
 
 	vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1086,14 +1115,14 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 		uniformDescriptorSet[i] = descriptorSetFactory->Create
 		(
 			descriptorSetFactory->getBuilder()->initProperty()
-			.withDescriptorSetCount(1)
-			.withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
-			.withBindingBuffer(0)
-			.withBuffer(uniform[i])
-			.withRange(sizeof(CameraUniform))
-			.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-			.addBufferInfo()
-			.Build()
+			->withDescriptorSetCount(1)
+			->withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT))
+			->withBindingBuffer(0)
+			->withBuffer(uniform[i])
+			->withRange(sizeof(CameraUniform))
+			->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			->addBufferInfo()
+			->Build()
 		);
 
 		switchView(uniformDescriptorSet[i], i);
@@ -1102,14 +1131,14 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 	std::shared_ptr<DescriptorSet> srcTexDescriptorSet = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
-		.withDescriptorSetCount(1)
-		.withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG))
-		.withBindingImage(0)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.withTexture(srcTexture)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.addImageInfo()
-		.Build()
+		->withDescriptorSetCount(1)
+		->withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG))
+		->withBindingImage(0)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->withTexture(srcTexture)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->addImageInfo()
+		->Build()
 	);
 
 	//背景のマップを作成
@@ -1118,49 +1147,52 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 	std::shared_ptr<DescriptorSet> backGroundDesc = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
-		.withBindingImage(0)
-		.withTexture(skydome->backGround.multiLayerTex)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.withDescriptorSetCount(1)
-		.withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG))
-		.addImageInfo()
-		.Build()
+		->withBindingImage(0)
+		->withTexture(skydome->backGround.multiLayerTex)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->withDescriptorSetCount(1)
+		->withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG))
+		->addImageInfo()
+		->Build()
 	);
 
 	//ディフーズのマップを作成
 	createDiffuse(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
 	//スペキュラーの反射マップを作成
 	createReflection(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
+
+	textureFactory->getCopy()->initProperty();
+
 	//スペキュラーのBRDFマップを作成
 	createBRDF(skydome, srcTexture, uniformDescriptorSet);
 
 	skydome->descriptorSet = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
-		.withDescriptorSetCount(1)
-		.withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::IBL))
-		.withBindingImage(0)
-		.withTexture(skydome->backGround.multiLayerTex)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.addImageInfo()
-		.withBindingImage(1)
-		.withTexture(skydome->diffuse.multiLayerTex)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.addImageInfo()
-		.withBindingImage(2)
-		.withTexture(skydome->reflection.multiLayerTex)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.addImageInfo()
-		.withBindingImage(3)
-		.withTexture(skydome->brdf.texture)
-		.withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		.withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		.addImageInfo()
-		.Build()
+		->withDescriptorSetCount(1)
+		->withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::IBL))
+		->withBindingImage(0)
+		->withTexture(skydome->backGround.multiLayerTex)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->addImageInfo()
+		->withBindingImage(1)
+		->withTexture(skydome->diffuse.multiLayerTex)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->addImageInfo()
+		->withBindingImage(2)
+		->withTexture(skydome->reflection.multiLayerTex)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->addImageInfo()
+		->withBindingImage(3)
+		->withTexture(skydome->brdf.texture)
+		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		->addImageInfo()
+		->Build()
 	);
 
 	return skydome;

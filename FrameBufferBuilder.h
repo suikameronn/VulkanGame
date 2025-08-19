@@ -38,7 +38,7 @@ struct FrameBufferProperty
 	}
 };
 
-class FrameBufferBuilder
+class FrameBufferBuilder : public std::enable_shared_from_this<FrameBufferBuilder>
 {
 private:
 
@@ -50,22 +50,29 @@ public:
 
 	FrameBufferBuilder(VkDevice& d);
 
-	FrameBufferBuilder initProperty();
+	~FrameBufferBuilder()
+	{
+#ifdef _DEBUG
+		std::cout << "FrameBufferBuilder :: デストラクタ" << std::endl;
+#endif
+	}
+
+	std::shared_ptr<FrameBufferBuilder> initProperty();
 
 	FrameBufferProperty Build();
 
 	void Create(VkFramebuffer& frameBuffer, const FrameBufferProperty& property);
 
 	//フレームバッファの幅と高さを設定する
-	FrameBufferBuilder withWidthHeight(const uint32_t& width, const uint32_t& height);
+	std::shared_ptr<FrameBufferBuilder> withWidthHeight(const uint32_t& width, const uint32_t& height);
 
 	//レンダーパスを設定する
-	FrameBufferBuilder withRenderPass(const std::shared_ptr<RenderPass> renderPass);
+	std::shared_ptr<FrameBufferBuilder> withRenderPass(const std::shared_ptr<RenderPass> renderPass);
 
 	//VkImageViewを積み上げる
-	FrameBufferBuilder addViewAttachment(const std::shared_ptr<Texture> texture);
-	FrameBufferBuilder addViewAttachment(const std::shared_ptr<Texture> texture, const uint32_t baseViewIndex, const uint32_t viewCount);
+	std::shared_ptr<FrameBufferBuilder> addViewAttachment(const std::shared_ptr<Texture> texture);
+	std::shared_ptr<FrameBufferBuilder> addViewAttachment(const std::shared_ptr<Texture> texture, const uint32_t baseViewIndex, const uint32_t viewCount);
 
 	//レイヤー数を設定する
-	FrameBufferBuilder withLayerCount(const uint32_t& layerCount);
+	std::shared_ptr<FrameBufferBuilder> withLayerCount(const uint32_t& layerCount);
 };

@@ -3,45 +3,43 @@
 Render::Render(VkDevice& d)
 {
 	device = d;
-
-	initProperty();
 }
 
-Render Render::initProperty()
+std::shared_ptr<Render> Render::initProperty()
 {
 	property.initProperty();
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダーパスを設定
-Render Render::withRenderPass(const std::shared_ptr<RenderPass> pass)
+std::shared_ptr<Render> Render::withRenderPass(const std::shared_ptr<RenderPass> pass)
 {
 	property.renderPass = pass;
 	property.info.renderPass = pass->renderPass;
 
-	return *this;
+	return shared_from_this();
 }
 
 //フレームバッファの設定
-Render Render::withFrameBuffer(const std::shared_ptr<FrameBuffer> frameBuffer)
+std::shared_ptr<Render> Render::withFrameBuffer(const std::shared_ptr<FrameBuffer> frameBuffer)
 {
 	property.frameBuffer = frameBuffer;
 	property.info.framebuffer = frameBuffer->frameBuffer;
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダー範囲の設定
-Render Render::withRenderArea(const uint32_t& width, const uint32_t& height)
+std::shared_ptr<Render> Render::withRenderArea(const uint32_t& width, const uint32_t& height)
 {
 	property.info.renderArea.extent = { width,height };
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダー画像の初期化色の設定
-Render Render::withClearColor(const glm::ivec4& color)
+std::shared_ptr<Render> Render::withClearColor(const glm::ivec4& color)
 {
 	property.isClear = true;
 
@@ -50,35 +48,35 @@ Render Render::withClearColor(const glm::ivec4& color)
 		property.clearValues[0].color.int32[i] = color[i];
 	}
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダー画像の初期化のデプスの設定
-Render Render::withClearDepth(const float& depth)
+std::shared_ptr<Render> Render::withClearDepth(const float& depth)
 {
 	property.isClear = true;
 
 	property.clearValues[1].depthStencil.depth = depth;
 
-	return *this;
+	return shared_from_this();
 }
 
 //レンダー画像の初期化のステンシルの設定
-Render Render::withClearStencil(const uint32_t& stencil)
+std::shared_ptr<Render> Render::withClearStencil(const uint32_t& stencil)
 {
 	property.isClear = true;
 
 	property.clearValues[1].depthStencil.stencil = stencil;
 
-	return *this;
+	return shared_from_this();
 }
 
 //コマンドを積むコマンドバッファを設定
-Render Render::withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer)
+std::shared_ptr<Render> Render::withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer)
 {
 	property.commandBuffer = commandBuffer;
 
-	return *this;
+	return shared_from_this();
 }
 
 //プロパティを返す

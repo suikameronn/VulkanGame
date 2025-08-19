@@ -30,6 +30,19 @@ public:
 
 	ShaderFactory(VkDevice& d);
 
+	~ShaderFactory()
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			resourceDestruct();
+			resourceDestruct();
+		}
+
+#ifdef _DEBUG
+		std::cout << "ShaderFactory :: デストラクタ" << std::endl;
+#endif
+	}
+
 	//VkShaderModuleを渡す
 	std::shared_ptr<Shader> Create(const std::string& shaderPath);
 
@@ -63,5 +76,10 @@ struct Shader
 	~Shader()
 	{
 		factory->addDefferedDestruct(module);
+	}
+
+	bool operator==(const Shader& other) const
+	{
+		return path == other.path;
 	}
 };

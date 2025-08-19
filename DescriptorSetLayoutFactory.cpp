@@ -22,6 +22,16 @@ DescriptorSetLayoutFactory::~DescriptorSetLayoutFactory()
 			itr.second.lock().reset();
 		}
 	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		resourceDestruct();
+		resourceDestruct();
+	}
+
+#ifdef _DEBUG
+	std::cout << "DescriptorSetLayoutFactory :: デストラクタ" << std::endl;
+#endif
 }
 
 //レイアウトの作成

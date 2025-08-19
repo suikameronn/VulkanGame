@@ -100,6 +100,10 @@ public:
 	~SwapChain()
 	{
 		destroySwapChain();
+
+#ifdef _DEBUG
+		std::cout << "SwapChain :: デストラクタ" << std::endl;
+#endif
 	}
 
 	VkSwapchainKHR getSwapchin()
