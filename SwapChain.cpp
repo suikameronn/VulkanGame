@@ -305,7 +305,7 @@ void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
     submitInfo.pWaitDstStageMask = waitStages.data();
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+    submitInfo.pCommandBuffers = &commandBuffer->getCommand();
 
     std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[frameIndex] };
     submitInfo.signalSemaphoreCount = 1;
@@ -344,6 +344,14 @@ void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
 //スワップチェーンの破棄
 void SwapChain::destroySwapChain()
 {
+	//スワップチェーンの画像は、
+    //swapCahain破棄時に、同時に破棄されるため、
+    //ファクトリーでの破棄を防ぐ
+    for (auto& texture : swapChainImages)
+    {
+		texture->image = VK_NULL_HANDLE;
+    }
+
     swapChainImages.clear();
 
 	colorAttachment.reset();
@@ -353,6 +361,22 @@ void SwapChain::destroySwapChain()
     frameBuffers.clear();
 
     vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
+
+//セマフォの破棄
+void SwapChain::destroySemaphore()
+{
+    for(VkSemaphore& semaphore : imageAvailableSemaphores) {
+        vkDestroySemaphore(device, semaphore, nullptr);
+	}
+
+    for(VkSemaphore& semaphore : renderFinishedSemaphores) {
+        vkDestroySemaphore(device, semaphore, nullptr);
+    }
+
+    for(VkFence& fence : inFlightFences) {
+        vkDestroyFence(device, fence, nullptr);
+    }
 }
 
 //ウィンドウサイズ変更時のスワップチェーンの再作成

@@ -436,24 +436,39 @@ void VulkanCore::endSingleTimeCommandBuffer(VkCommandBuffer& commandBuffer)
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
 
-    auto a = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    VkFence fence = VK_NULL_HANDLE;
+    createSingleTimeFence(fence, commandBuffer);
+
+    auto a = vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
     if (a != VK_SUCCESS)
     {
         throw std::runtime_error("queue submit error");
     }
 
-    auto b = vkQueueWaitIdle(graphicsQueue);
-    if (b != VK_SUCCESS)
+    if (vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
     {
-        throw std::runtime_error("wait idle failed");
+        throw std::runtime_error("failed to submit draw command buffer!");
     }
 
+    vkDestroyFence(device, fence, nullptr);
+
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
+
+//使い捨て用のコマンドバッファ用のフェンスを作成
+void VulkanCore::createSingleTimeFence(VkFence& fence, VkCommandBuffer& commandBuffer)
+{
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    vkCreateFence(device, &fenceInfo, nullptr, &fence);
+    vkResetFences(device, 1, &fence);
 }
 
 //コマンドプールの作成

@@ -14,7 +14,7 @@ DescriptorSetFactory::DescriptorSetFactory(VkDevice& d,std::shared_ptr<Descripto
 
 std::shared_ptr<DescriptorSet> DescriptorSetFactory::Create(const DescriptorSetProperty& property)
 {
-	std::shared_ptr<DescriptorSet> descriptorSet = std::make_shared<DescriptorSet>();
+	std::shared_ptr<DescriptorSet> descriptorSet = std::make_shared<DescriptorSet>(shared_from_this());
 
 	builder->Create(property, descriptorSet->descriptorSet);
 
@@ -34,4 +34,21 @@ std::shared_ptr<DescriptorSet> DescriptorSetFactory::Create(const DescriptorSetP
 	}
 
 	return descriptorSet;
+}
+
+void DescriptorSetFactory::addDefferedDestruct(VkDescriptorSet& descriptorSet)
+{
+	destructList[frameIndex].push_back(descriptorSet);
+}
+
+void DescriptorSetFactory::resourceDestruct()
+{
+	frameIndex = (frameIndex == 0) ? 1 : 0; //フレームインデックスを切り替える
+
+	for (VkDescriptorSet& descriptorSet : destructList[frameIndex])
+	{
+		vkFreeDescriptorSets(device, builder->getPool(), 1, &descriptorSet);
+	}
+
+	destructList[frameIndex].clear();
 }

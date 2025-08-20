@@ -663,7 +663,7 @@ void TextureBuilder::transitionImageLayout(VkImage image, VkFormat format, VkIma
 	}
 
 	vkCmdPipelineBarrier(
-		commandBuffer->commandBuffer,
+		commandBuffer->getCommand(),
 		sourceStage, destinationStage,
 		0,
 		0, nullptr,

@@ -77,7 +77,7 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	
 	const TextureProperty texProp = srcTexture->property;
 	const VkExtent3D extent = srcTexture->property.image.info.extent;
-	const uint32_t size = std::min(extent.width, extent.height) / 2;
+	const uint32_t size = std::min(extent.width, extent.height);
 
 	//SamplerCubeの6つのレイヤーを持つテクスチャを作成
 	textureFactory->getBuilder()->initProperty()
@@ -148,7 +148,7 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
-		vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineFactory->Create(PipelinePattern::CALC_CUBEMAP)->pipeline);
 
 		VkViewport viewport{};
@@ -158,12 +158,12 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		viewport.height = (float)size;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = { size,size };
-		vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+		vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
 
 		std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -175,20 +175,20 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 
 			if (mesh.vertices.size() != 0)
 			{
-				vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+				vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 				for (const auto& primitive : mesh.primitives)
 				{
 					descriptorSets[0] = uniform[i]->descriptorSet;
 					descriptorSets[1] = srcTex->descriptorSet;
 
-					vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 						pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_CUBEMAP)->pLayout, 0
 						, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-					vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+					vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
 			}
 		}
@@ -211,7 +211,7 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
 
@@ -336,6 +336,9 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	}
 
 	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
+
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
 }
 
 void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -345,7 +348,7 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	const TextureProperty texProp = srcTexture->property;
 	const VkExtent3D extent = srcTexture->property.image.info.extent;
-	const uint32_t size = std::min(extent.width, extent.height) / 2;
+	const uint32_t size = std::min(extent.width, extent.height);
 
 	//SamplerCubeの6つのレイヤーを持つテクスチャを作成
 	textureFactory->getBuilder()->initProperty()
@@ -376,6 +379,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		);
 	}
 
+	std::cout << "Create Image" << std::endl;
+
 	//上で作ったテクスチャの各レイヤーをレンダーターゲットとして
 	//フレームバッファを作る
 	std::array<std::shared_ptr<FrameBuffer>, CUBEMAP_LAYER> frameBufferArray;
@@ -391,6 +396,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 			->Build()
 		);
 	}
+
+	std::cout << "Create FrameBuffer" << std::endl;
 
 	//各フレームバッファにレンダリングしていく
 	std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
@@ -416,7 +423,7 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
-		vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineFactory->Create(PipelinePattern::CALC_IBL_DIFFUSE)->pipeline);
 
 		VkViewport viewport{};
@@ -426,12 +433,12 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		viewport.height = (float)size;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = { size,size };
-		vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+		vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
 
 		std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -443,20 +450,20 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 			if (mesh.vertices.size() != 0)
 			{
-				vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+				vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 				for (const auto& primitive : mesh.primitives)
 				{
 					descriptorSets[0] = uniform[i]->descriptorSet;
 					descriptorSets[1] = srcTex->descriptorSet;
 
-					vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 						pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_DIFFUSE)->pLayout, 0
 						, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-					vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+					vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
 			}
 		}
@@ -481,7 +488,7 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
 	submitInfo.pWaitDstStageMask = &flag;
@@ -490,6 +497,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	{
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
+
+	std::cout << "Render" << std::endl;
 
 	diffuse.multiLayerTex = textureFactory->Create
 	(
@@ -515,6 +524,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		->withMinFilter(VK_FILTER_LINEAR)
 		->Build()
 	);
+
+	std::cout << "Copy " << std::endl;
 
 	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
 	bufferFactory->beginCommandBuffer(secondCommand);
@@ -561,6 +572,8 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
+	std::cout << "Transition" << std::endl;
+
 	std::shared_ptr<CommandBuffer> thirdCommand = bufferFactory->CommandBufferCreate();
 	bufferFactory->beginCommandBuffer(thirdCommand);
 
@@ -599,12 +612,17 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
+	std::cout << "Multi Transition" << std::endl;
+
 	if (vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
 	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
+
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
 }
 
 void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -614,7 +632,7 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 
 	const TextureProperty texProp = srcTexture->property;
 	const VkExtent3D extent = srcTexture->property.image.info.extent;
-	const uint32_t size = std::min(extent.width, extent.height) / 2;
+	const uint32_t size = std::min(extent.width, extent.height);
 
 	uint32_t mipmap = size;
 	std::vector<uint32_t> mipmapLevelSize;
@@ -661,14 +679,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 		}
 	}
 
-	for(int i = 0;i < multiLayerTex.size(); i++)
-	{
-		if (multiLayerTex[i]->index == 85)
-		{
-			std::cout << multiLayerTex[i].use_count() << std::endl;
-		}
-	}
-
 	//上で作ったテクスチャの各レイヤーをレンダーターゲットとして
 	//フレームバッファを作る
 	std::vector<std::shared_ptr<FrameBuffer>> frameBufferArray(CUBEMAP_LAYER * mipmapLevelSize.size());
@@ -686,14 +696,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				->addViewAttachment(multiLayerTex[i * CUBEMAP_LAYER + j])
 				->Build()
 			);
-		}
-	}
-
-	for (int i = 0; i < multiLayerTex.size(); i++)
-	{
-		if (multiLayerTex[i]->index == 85)
-		{
-			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -723,13 +725,13 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 			}
 
-			vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipelineFactory->Create(PipelinePattern::CALC_IBL_SPECULAR)->pipeline);
 
 			//ミップマップレベルに応じて、roughnessとしてシェーダに値を渡して、BRDFの値を調整する
 			SpecularPushConstant constant{};
 			constant.roughness = static_cast<float>(i) / static_cast<float>(mipmapLevelSize.size());
-			vkCmdPushConstants(commandBuffer->commandBuffer
+			vkCmdPushConstants(commandBuffer->getCommand()
 				, pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_SPECULAR)->pLayout
 				, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SpecularPushConstant), &constant);
 
@@ -740,12 +742,12 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 			viewport.height = (float)mipmapLevelSize[i];
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+			vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
 
 			VkRect2D scissor{};
 			scissor.offset = { 0, 0 };
 			scissor.extent = { mipmapLevelSize[i],mipmapLevelSize[i] };
-			vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+			vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
 
 			std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -757,33 +759,25 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 
 				if (mesh.vertices.size() != 0)
 				{
-					vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+					vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 					for (const auto& primitive : mesh.primitives)
 					{
 						descriptorSets[0] = uniform[j]->descriptorSet;
 						descriptorSets[1] = srcTex->descriptorSet;
 
-						vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+						vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 							pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_SPECULAR)->pLayout, 0
 							, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-						vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+						vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 					}
 				}
 			}
 
 			render->RenderEnd(renderProp);
-		}
-	}
-
-	for (int i = 0; i < multiLayerTex.size(); i++)
-	{
-		if (multiLayerTex[i]->index == 85)
-		{
-			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -804,7 +798,7 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
 	submitInfo.pWaitDstStageMask = &flag;
@@ -861,14 +855,6 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				->withDstTexture(reflection.multiLayerTex)
 				->Build()
 			);
-		}
-	}
-
-	for (int i = 0; i < multiLayerTex.size(); i++)
-	{
-		if (multiLayerTex[i]->index == 85)
-		{
-			std::cout << multiLayerTex[i].use_count() << std::endl;
 		}
 	}
 
@@ -937,6 +923,9 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
 
 	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
+
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
 }
 
 void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -1006,7 +995,7 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 		throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 	}
 
-	vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineFactory->Create(PipelinePattern::CALC_IBL_BRDF)->pipeline);
 
 	VkViewport viewport{};
@@ -1016,12 +1005,12 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	viewport.height = (float)extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+	vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = { extent.width,extent.height };
-	vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+	vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
 
 	std::array<VkDescriptorSet, 1> descriptorSets;
 
@@ -1033,15 +1022,15 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 
 		if (mesh.vertices.size() != 0)
 		{
-			vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+			vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-			vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 			for (const auto& primitive : mesh.primitives)
 			{
 				descriptorSets[0] = uniform[0]->descriptorSet;
 
-				vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+				vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}
 	}
@@ -1065,7 +1054,7 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
 	submitInfo.pWaitDstStageMask = &flag;
@@ -1087,6 +1076,8 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
 
 	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
+
+	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
 }
 
 std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
@@ -1144,6 +1135,8 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 	//背景のマップを作成
 	createBackGround(skydome, srcTexture, uniformDescriptorSet, srcTexDescriptorSet);
 
+	std::cout << "BackGround" << std::endl;
+
 	std::shared_ptr<DescriptorSet> backGroundDesc = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
@@ -1159,8 +1152,13 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 
 	//ディフーズのマップを作成
 	createDiffuse(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
+
+	std::cout << "Diffuse Finish" << std::endl;
+
 	//スペキュラーの反射マップを作成
 	createReflection(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
+
+	std::cout << "Reflection Finish" << std::endl;
 
 	textureFactory->getCopy()->initProperty();
 

@@ -4,6 +4,7 @@
 #include"TextureFactory.h"
 #include"FrameBufferFactory.h"
 #include"RenderPassFactory.h"
+#include"CommandBufferFactory.h"
 
 class SwapChain
 {
@@ -92,6 +93,9 @@ private:
 	//スワップチェーンの破棄
 	void destroySwapChain();
 
+	//セマフォの破棄
+	void destroySemaphore();
+
 public:
 
 	SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFactory> tf
@@ -100,6 +104,10 @@ public:
 	~SwapChain()
 	{
 		destroySwapChain();
+
+		vkDestroySurfaceKHR(vulkanCore->getInstance(), surface, nullptr);
+
+		destroySemaphore();
 
 #ifdef _DEBUG
 		std::cout << "SwapChain :: デストラクタ" << std::endl;
@@ -119,6 +127,12 @@ public:
 	const VkFormat& getSwapChainImageFormat() const
 	{
 		return swapChainImageFormat;
+	}
+
+	//現在のフレームインデックスを取得する
+	uint32_t getCurrentFrameIndex() const
+	{
+		return frameIndex;
 	}
 
 	//現在のフレームバッファを取得する

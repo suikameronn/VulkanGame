@@ -80,6 +80,7 @@ void GameManager::createFactory()
 	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(device, pipelineLayoutBuilder, descriptorSetLayoutFactory);
 	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
 	shaderFactory = std::make_shared<ShaderFactory>(device);
+	commandBufferFactory = std::make_shared<ComamndBufferFactory>(vulkanCore);
 }
 
 //シーンの作成
@@ -121,6 +122,7 @@ void GameManager::createScene()
 
 void GameManager::mainGameLoop()//メインゲームループ
 {
+	renderCommand = commandBufferFactory->Create();
 
     start = std::chrono::system_clock::now();//フレーム時間を計測
 
@@ -650,9 +652,9 @@ void GameManager::Rendering()
 				{
 					[&](DirectionLightComp& comp)
 					{
-						std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+						std::shared_ptr<CommandBuffer> commandBuffer = commandBufferFactory->Create(1);
 
-						bufferFactory->beginCommandBuffer(commandBuffer);
+						commandBufferFactory->Begin(commandBuffer->getCommand());
 
 						const VkExtent2D extent = swapChain->getSwapChainExtent();
 
@@ -678,10 +680,10 @@ void GameManager::Rendering()
 											throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 										}
 
-										vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+										vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 											pipelineFactory->Create(PipelinePattern::CALC_SHADOWMAP)->pipeline);
 
-										vkCmdSetDepthBias(commandBuffer->commandBuffer, 1.25f, 0.0f, 1.75f);
+										vkCmdSetDepthBias(commandBuffer->getCommand(), 1.25f, 0.0f, 1.75f);
 
 										VkViewport viewport{};
 										viewport.x = 0.0f;
@@ -690,12 +692,12 @@ void GameManager::Rendering()
 										viewport.height = (float)swapChain->getSwapChainExtent().height;
 										viewport.minDepth = 0.0f;
 										viewport.maxDepth = 1.0f;
-										vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+										vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
 
 										VkRect2D scissor{};
 										scissor.offset = { 0, 0 };
 										scissor.extent = swapChain->getSwapChainExtent();
-										vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+										vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
 
 										std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -707,9 +709,9 @@ void GameManager::Rendering()
 
 											if (mesh.vertices.size() != 0)
 											{
-												vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+												vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-												vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+												vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 												for (const auto& primitive : mesh.primitives)
 												{
@@ -718,11 +720,11 @@ void GameManager::Rendering()
 													descriptorSets[0] = rendererComp.modelAnimDesc[i]->descriptorSet;
 													descriptorSets[1] = sceneLight->uniformDescriptorSet[1]->descriptorSet;
 
-													vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+													vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 														pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_SHADOWMAP)->pLayout, 0
 														, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-													vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+													vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 												}
 											}
 										}
@@ -732,14 +734,14 @@ void GameManager::Rendering()
 
 						render->RenderEnd(renderProp);
 
-						bufferFactory->endCommandBuffer(commandBuffer);
+						commandBufferFactory->End(commandBuffer->getCommand());
 
 						VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 						VkSubmitInfo thirdSubmitInfo{};
 						thirdSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 						thirdSubmitInfo.commandBufferCount = 1;
-						thirdSubmitInfo.pCommandBuffers = &commandBuffer->commandBuffer;
+						thirdSubmitInfo.pCommandBuffers = &commandBuffer->getCommand();
 						thirdSubmitInfo.pWaitDstStageMask = &flag;
 
 						VkFenceCreateInfo fenceInfo{};
@@ -765,7 +767,8 @@ void GameManager::Rendering()
 	}
 
 	{
-		std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+		const uint32_t frameIndex = swapChain->getCurrentFrameIndex();
+
 		std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
 
 		std::function<void(GltfModelComp&, MeshRendererComp&)> renderModel =
@@ -777,7 +780,7 @@ void GameManager::Rendering()
 					throw std::runtime_error("GameManager::Render::gltfModel is nullptr");
 				}
 
-				vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vkCmdBindPipeline(renderCommand[frameIndex]->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 					pipelineFactory->Create(PipelinePattern::PBR)->pipeline);
 
 				VkViewport viewport{};
@@ -787,16 +790,16 @@ void GameManager::Rendering()
 				viewport.height = (float)swapChain->getSwapChainExtent().height;
 				viewport.minDepth = 0.0f;
 				viewport.maxDepth = 1.0f;
-				vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+				vkCmdSetViewport(renderCommand[frameIndex]->getCommand(), 0, 1, &viewport);
 
 				VkRect2D scissor{};
 				scissor.offset = { 0, 0 };
 				scissor.extent = swapChain->getSwapChainExtent();
-				vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+				vkCmdSetScissor(renderCommand[frameIndex]->getCommand(), 0, 1, &scissor);
 
 				FragmentParam param{};
 				param.alphaness = 1.0f;
-				vkCmdPushConstants(commandBuffer->commandBuffer, pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout
+				vkCmdPushConstants(renderCommand[frameIndex]->getCommand(), pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout
 					, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FragmentParam), &param);
 
 				std::array<VkDescriptorSet, 5> descriptorSets;
@@ -809,9 +812,9 @@ void GameManager::Rendering()
 
 					if (mesh.vertices.size() != 0)
 					{
-						vkCmdBindVertexBuffers(commandBuffer->commandBuffer, 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+						vkCmdBindVertexBuffers(renderCommand[frameIndex]->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-						vkCmdBindIndexBuffer(commandBuffer->commandBuffer, gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+						vkCmdBindIndexBuffer(renderCommand[frameIndex]->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 						for (const auto& primitive : mesh.primitives)
 						{
@@ -827,22 +830,22 @@ void GameManager::Rendering()
 							descriptorSets[3] = gltfModel->materials[primitive.materialIndex]->getDescriptorSet()->descriptorSet;
 							descriptorSets[4] = skydome->descriptorSet->descriptorSet;
 
-							vkCmdBindDescriptorSets(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+							vkCmdBindDescriptorSets(renderCommand[frameIndex]->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 								pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout, 0
 								, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-							vkCmdDrawIndexed(commandBuffer->commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+							vkCmdDrawIndexed(renderCommand[frameIndex]->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 						}
 					}
 				}
 			};
 
-		bufferFactory->beginCommandBuffer(commandBuffer);
+		commandBufferFactory->Begin(renderCommand[frameIndex]->getCommand());
 
 		const RenderProperty property = render->initProperty()
 			->withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
 			->withFrameBuffer(frameBuffer)
-			->withCommandBuffer(commandBuffer)
+			->withCommandBuffer(renderCommand[frameIndex])
 			->withRenderArea(swapChain->getSwapChainExtent().width, swapChain->getSwapChainExtent().height)
 			->withClearColor({ 0.0, 0.0, 0.0, 1.0 })
 			->withClearDepth(1.0f)
@@ -855,9 +858,19 @@ void GameManager::Rendering()
 
 		render->RenderEnd(property);
 
-		bufferFactory->endCommandBuffer(commandBuffer);
+		commandBufferFactory->End(renderCommand[frameIndex]->getCommand());
 
-		swapChain->flipSwapChainImage(commandBuffer);
+		{
+			//一つ前のフレームのレンダリングの終了を待ち
+			//コマンドバッファをリセットしておく
+
+			const uint32_t lastFrame = (frameIndex == 0) ? 1 : 0;
+
+			renderCommand[lastFrame]->waitFence();
+			commandBufferFactory->ResetCommand(renderCommand[lastFrame]);
+		}
+
+		swapChain->flipSwapChainImage(renderCommand[frameIndex]);
 	}
 
 

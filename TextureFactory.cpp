@@ -385,7 +385,10 @@ void TextureFactory::addDefferedDestruct(VkImage& image, VkDeviceMemory& memory
 
 	for (auto& view : viewArray)
 	{
-		destructListView[frameIndex].push_back(view);
+		if (view != VK_NULL_HANDLE)
+		{
+			destructListView[frameIndex].push_back(view);
+		}
 	}
 
 	if (sampler != VK_NULL_HANDLE)

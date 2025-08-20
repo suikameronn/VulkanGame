@@ -131,6 +131,9 @@ private:
 	//コマンドプールの作成
 	void createCommandPool();
 
+	//使い捨て用のコマンドバッファ用のフェンスを作成
+	void createSingleTimeFence(VkFence& fence, VkCommandBuffer& commandBuffer);
+
 public:
 
 	//ウィンドウサイズの変更のフラグ
@@ -147,6 +150,11 @@ public:
 	VkDevice& getLogicDevice()
 	{
 		return device;
+	}
+
+	VkInstance& getInstance()
+	{
+		return instance;
 	}
 
 	GLFWwindow* getWindow()

@@ -158,6 +158,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CommandBufferFactory.cpp" />
     <ClCompile Include="ECSManager.cpp" />
     <ClCompile Include="FrameBufferFactory.cpp" />
     <ClCompile Include="GltfModelFactory.cpp" />
@@ -198,6 +199,7 @@
     <ClInclude Include="CameraComp.h" />
     <ClInclude Include="ColiderComp.h" />
     <ClInclude Include="ColiderComponent.h" />
+    <ClInclude Include="CommandBufferFactory.h" />
     <ClInclude Include="ControllerComponent.h" />
     <ClInclude Include="ECSManager.h" />
     <ClInclude Include="Entity.h" />

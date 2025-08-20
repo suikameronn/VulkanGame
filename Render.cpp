@@ -94,12 +94,12 @@ RenderProperty Render::Build()
 //レンダリング開始
 void Render::RenderStart(const RenderProperty& property)
 {
-	vkCmdBeginRenderPass(property.commandBuffer->commandBuffer, &property.info
+	vkCmdBeginRenderPass(property.commandBuffer->getCommand(), &property.info
 		, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 //レンダリング終了
 void Render::RenderEnd(const RenderProperty& property)
 {
-	vkCmdEndRenderPass(property.commandBuffer->commandBuffer);
+	vkCmdEndRenderPass(property.commandBuffer->getCommand());
 }

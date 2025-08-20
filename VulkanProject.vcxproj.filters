@@ -189,6 +189,9 @@
     <ClCompile Include="TextureCopy.cpp">
       <Filter>ソース ファイル\Material</Filter>
     </ClCompile>
+    <ClCompile Include="CommandBufferFactory.cpp">
+      <Filter>ソース ファイル\Vulkan\Factory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
@@ -358,6 +361,9 @@
     </ClInclude>
     <ClInclude Include="TextureCopy.h">
       <Filter>ヘッダー ファイル\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandBufferFactory.h">
+      <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

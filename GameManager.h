@@ -14,6 +14,7 @@
 #include"RenderPassFactory.h"
 #include"ShaderFactory.h"
 #include"TextureFactory.h"
+#include"CommandBufferFactory.h"
 
 #include"GltfModelFactory.h"
 #include"MaterialBuilder.h"
@@ -73,9 +74,13 @@ private:
 	std::shared_ptr<ShaderFactory> shaderFactory;
 	std::shared_ptr<TextureFactory> textureFactory;
 	std::shared_ptr<SkyDomeFactory> skydomeFactory;
+	std::shared_ptr<ComamndBufferFactory> commandBufferFactory;
 
 	//スワップチェーンのクラス
 	std::shared_ptr<SwapChain> swapChain;
+
+	//レンダー用のコマンドバッファ
+	std::vector<std::shared_ptr<CommandBuffer>> renderCommand;
 
 	//レンダークラス
 	std::shared_ptr<Render> render;

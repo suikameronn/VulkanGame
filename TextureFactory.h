@@ -53,7 +53,6 @@ public:
 		for (int i = 0; i < 2; i++)
 		{
 			resourceDestruct();
-			resourceDestruct();
 		}
 
 #ifdef _DEBUG
@@ -130,17 +129,10 @@ struct Texture
 		factory = f;
 
 		index = count;
-
-		if (index == 85 || index == 86)
-		{
-			std::cout << "Stop" << std::endl;
-		}
 	}
 
 	~Texture()
 	{
 		factory->addDefferedDestruct(image, memory, viewArray, sampler);
-
-		std::cout << index << std::endl;
 	}
 };

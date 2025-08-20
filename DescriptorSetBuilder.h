@@ -94,9 +94,18 @@ public:
 
 	~DescriptorSetBuilder()
 	{
+		// プールから確保したすべてのVkDescriptorSetをまとめて破棄する
+		vkResetDescriptorPool(device, descriptorPool, 0);
+		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
 #ifdef _DEBUG
 		std::cout << "DescriptorSetBuilder :: デストラクタ" << std::endl;
 #endif
+	}
+
+	VkDescriptorPool& getPool()
+	{
+		return descriptorPool;
 	}
 
 	DescriptorSetProperty Build();

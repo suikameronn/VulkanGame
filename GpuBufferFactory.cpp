@@ -8,8 +8,6 @@ GpuBufferFactory::GpuBufferFactory(std::shared_ptr<VulkanCore> core, std::shared
 	physicalDevice = core->getPhysicalDevice();
 	device = core->getLogicDevice();
 
-	commandPool = core->getCommandPool();
-
 	//初回のフレームインデックスを1に設定する
 	frameIndex = 1;
 
@@ -269,54 +267,10 @@ std::shared_ptr<GpuBuffer> GpuBufferFactory::Create(VkDeviceSize bufferSize, Buf
 	return buffer;
 }
 
-//コマンドバッファーを作成する
-std::shared_ptr<CommandBuffer> GpuBufferFactory::CommandBufferCreate()
-{
-	std::shared_ptr<CommandBuffer> commandBuffer = std::make_shared<CommandBuffer>(shared_from_this());
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-
-	if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer->commandBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
-
-	return commandBuffer;
-}
-
-//コマンドバッファにコマンドを積み上げ始める
-void GpuBufferFactory::beginCommandBuffer(std::shared_ptr<CommandBuffer> command)
-{
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	if (vkBeginCommandBuffer(command->commandBuffer, &beginInfo) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to begin recording command buffer!");
-	}
-}
-
-//コマンドバッファのコマンド積み上げを終了する
-void GpuBufferFactory::endCommandBuffer(std::shared_ptr<CommandBuffer> command)
-{
-	if (vkEndCommandBuffer(command->commandBuffer) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to record command buffer!");
-	}
-}
-
 //遅延破棄リストにバッファを追加する
 void GpuBufferFactory::addDefferedDestruct(VkBuffer buffer, VkDeviceMemory memory)
 {
 	destructList[frameIndex].push_back({ buffer,memory });
-}
-
-void GpuBufferFactory::addDefferedDestruct(VkCommandBuffer commandBuffer)
-{
-	destructListCommand[frameIndex].push_back(commandBuffer);
 }
 
 //バッファを破棄する
@@ -332,11 +286,5 @@ void GpuBufferFactory::resourceDestruct()
 		vkFreeMemory(device, bufferMemory.second, nullptr);
 	}
 
-	for (auto& command : destructListCommand[frameIndex])
-	{
-		vkFreeCommandBuffers(device, commandPool, 1, &command);
-	}
-
 	destructList[frameIndex].clear();
-	destructListCommand[frameIndex].clear();
 }
