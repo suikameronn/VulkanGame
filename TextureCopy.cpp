@@ -83,7 +83,7 @@ std::shared_ptr<Texture> TextureCopy::Copy(const TexCopyProperty& prop)
 		throw std::runtime_error("TextureCopy : weak_ptr");
 	}
 
-	vkCmdCopyImage(prop.commandBuffer.lock()->commandBuffer, prop.src.lock()->image
+	vkCmdCopyImage(prop.commandBuffer.lock()->getCommand(), prop.src.lock()->image
 		, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, prop.dst.lock()->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &prop.copyInfo);
 
 	return prop.dst.lock();

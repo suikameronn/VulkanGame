@@ -1,7 +1,8 @@
 #include"SwapChain.h"
 
 SwapChain::SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFactory> tf
-    , std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb)
+    , std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb
+    , std::shared_ptr<CommandBufferFactory> cf)
 {
     frameIndex = 0;
 
@@ -9,6 +10,7 @@ SwapChain::SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFa
     textureFactory = tf;
 	renderPassFactory = rf;
 	frameBufferFactory = fb;
+    commandBufferFactory = cf;
 
     physicalDevice = vulkanCore->getPhysicalDevice();
     device = vulkanCore->getLogicDevice();
@@ -37,8 +39,6 @@ void SwapChain::createSwapChain()
 void SwapChain::createSync()
 {
     imageAvailableSemaphores.resize(swapChainImages.size());
-    renderFinishedSemaphores.resize(swapChainImages.size());
-    inFlightFences.resize(swapChainImages.size());
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -48,9 +48,7 @@ void SwapChain::createSync()
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
-        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
@@ -288,38 +286,15 @@ void SwapChain::createFrameBuffers()
 //スワップチェーンの画像を切り替える(動機も行う)
 void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
 {
-    uint32_t lastFrame = (frameIndex == 0) ? 1 : 0;
+	commandBuffer->addWaitSemaphore(imageAvailableSemaphores[frameIndex]);
 
-    //前回のレンダリングの終了を待つ
-    vkWaitForFences(device, 1, &inFlightFences[lastFrame], VK_TRUE, UINT64_MAX);
-
-    vkResetFences(device, 1, &inFlightFences[frameIndex]);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    std::vector<VkSemaphore> waitSemaphores = { imageAvailableSemaphores[frameIndex] };
-    std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
-    submitInfo.pWaitDstStageMask = waitStages.data();
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer->getCommand();
-
-    std::vector<VkSemaphore> signalSemaphores = { renderFinishedSemaphores[frameIndex] };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-    if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, inFlightFences[frameIndex]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
+    commandBuffer->Submit(vulkanCore->getGraphicsQueue());
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores.data();
+    presentInfo.pWaitSemaphores = &commandBuffer->getSemaphore();
 
     std::vector<VkSwapchainKHR> swapChains = { swapChain };
     presentInfo.swapchainCount = 1;
@@ -369,14 +344,6 @@ void SwapChain::destroySemaphore()
     for(VkSemaphore& semaphore : imageAvailableSemaphores) {
         vkDestroySemaphore(device, semaphore, nullptr);
 	}
-
-    for(VkSemaphore& semaphore : renderFinishedSemaphores) {
-        vkDestroySemaphore(device, semaphore, nullptr);
-    }
-
-    for(VkFence& fence : inFlightFences) {
-        vkDestroyFence(device, fence, nullptr);
-    }
 }
 
 //ウィンドウサイズ変更時のスワップチェーンの再作成

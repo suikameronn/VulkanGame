@@ -102,4 +102,6 @@ void Render::RenderStart(const RenderProperty& property)
 void Render::RenderEnd(const RenderProperty& property)
 {
 	vkCmdEndRenderPass(property.commandBuffer->getCommand());
+
+	initProperty();
 }

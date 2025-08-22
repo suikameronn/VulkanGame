@@ -4,7 +4,8 @@ SkyDomeBuilder::SkyDomeBuilder(std::shared_ptr<VulkanCore> core, std::shared_ptr
 	, std::shared_ptr<FrameBufferFactory> frame, std::shared_ptr<PipelineLayoutFactory> pLayout
 	, std::shared_ptr<PipelineFactory> pipeline, std::shared_ptr<RenderPassFactory> renderPass
 	, std::shared_ptr<DescriptorSetLayoutFactory> layout, std::shared_ptr<DescriptorSetFactory> descriptorSet
-	, std::shared_ptr<Render> render, std::shared_ptr<GltfModelFactory> model)
+	, std::shared_ptr<Render> render, std::shared_ptr<GltfModelFactory> model
+	, std::shared_ptr<CommandBufferFactory> command)
 {
 	vulkanCore = core;
 
@@ -27,6 +28,8 @@ SkyDomeBuilder::SkyDomeBuilder(std::shared_ptr<VulkanCore> core, std::shared_ptr
 	this->render = render;
 
 	modelFactory = model;
+
+	commandFactory = command;
 
 	cubemapModelID = modelFactory->Load("models/cubemap.glb");
 }
@@ -125,16 +128,19 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 	}
 
 	//各フレームバッファにレンダリングしていく
-	std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
 
-	bufferFactory->beginCommandBuffer(commandBuffer);
+	renderCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setSemaphore(commandFactory->createSemaphore(), VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	renderCommand->recordBegin();
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
 		const RenderProperty renderProp = render->initProperty()
 			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
 			->withFrameBuffer(frameBufferArray[i])
-			->withCommandBuffer(commandBuffer)
+			->withCommandBuffer(renderCommand)
 			->withRenderArea(size, size)
 			->withClearDepth(1.0f)
 			->withClearStencil(0)
@@ -148,7 +154,7 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
-		vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindPipeline(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineFactory->Create(PipelinePattern::CALC_CUBEMAP)->pipeline);
 
 		VkViewport viewport{};
@@ -158,12 +164,12 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		viewport.height = (float)size;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
+		vkCmdSetViewport(renderCommand->getCommand(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = { size,size };
-		vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
+		vkCmdSetScissor(renderCommand->getCommand(), 0, 1, &scissor);
 
 		std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -175,20 +181,20 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 
 			if (mesh.vertices.size() != 0)
 			{
-				vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+				vkCmdBindVertexBuffers(renderCommand->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(renderCommand->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 				for (const auto& primitive : mesh.primitives)
 				{
 					descriptorSets[0] = uniform[i]->descriptorSet;
 					descriptorSets[1] = srcTex->descriptorSet;
 
-					vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+					vkCmdBindDescriptorSets(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 						pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_CUBEMAP)->pLayout, 0
 						, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-					vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+					vkCmdDrawIndexed(renderCommand->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
 			}
 		}
@@ -196,29 +202,9 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		render->RenderEnd(renderProp);
 	}
 
-	bufferFactory->endCommandBuffer(commandBuffer);
+	renderCommand->recordEnd();
 
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkSemaphore cubemapRenderSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &cubemapRenderSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
+	renderCommand->Submit(vulkanCore->getGraphicsQueue());
 
 	backGround.multiLayerTex = textureFactory->Create
 	(
@@ -245,8 +231,13 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		->Build()
 	);
 
-	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(secondCommand);
+	std::shared_ptr<CommandBuffer> copyCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+
+	copyCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setSemaphore(commandFactory->createSemaphore(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
+		->addWaitCommand(renderCommand);
+
+	copyCommand->recordBegin();
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
@@ -259,41 +250,23 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 			->withSrcMipmapLevel(0)
 			->withDstMipmapLevel(0)
 			->withSize(size, size)
-			->withCommandBuffer(secondCommand)
+			->withCommandBuffer(copyCommand)
 			->withSrcTexture(multiLayerTex[i])
 			->withDstTexture(backGround.multiLayerTex)
 			->Build()
 		);
 	}
 
-	bufferFactory->endCommandBuffer(secondCommand);
+	copyCommand->recordEnd();
 
-	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	copyCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkSemaphore secondSemaphore{};
+	std::shared_ptr<CommandBuffer> transCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+	transCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->addWaitCommand(copyCommand)
+		->setFence(commandFactory->createFence());
 
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &secondSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkSubmitInfo secondSubmitInfo{};
-	secondSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	secondSubmitInfo.commandBufferCount = 1;
-	secondSubmitInfo.pCommandBuffers = &secondCommand->commandBuffer;
-	secondSubmitInfo.waitSemaphoreCount = 1;
-	secondSubmitInfo.pWaitSemaphores = &cubemapRenderSemaphore;
-	secondSubmitInfo.pWaitDstStageMask = &flag;
-	secondSubmitInfo.signalSemaphoreCount = 1;
-	secondSubmitInfo.pSignalSemaphores = &secondSemaphore;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &secondSubmitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	std::shared_ptr<CommandBuffer> thirdCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(thirdCommand);
+	transCommand->recordBegin();
 
 	textureFactory->getBuilder()->transitionImageLayout
 	(
@@ -303,42 +276,14 @@ void SkyDomeBuilder::createBackGround(const std::shared_ptr<SkyDome> skydome,con
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		1,
 		CUBEMAP_LAYER,
-		thirdCommand
+		transCommand
 	);
 
-	bufferFactory->endCommandBuffer(thirdCommand);
+	transCommand->recordEnd();
 
-	VkSubmitInfo thirdSubmitInfo{};
-	thirdSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	thirdSubmitInfo.commandBufferCount = 1;
-	thirdSubmitInfo.pCommandBuffers = &thirdCommand->commandBuffer;
-	thirdSubmitInfo.waitSemaphoreCount = 1;
-	thirdSubmitInfo.pWaitSemaphores = &secondSemaphore;
-	thirdSubmitInfo.pWaitDstStageMask = &flag;
+	transCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	VkFence fence;
-
-	vkCreateFence(vulkanCore->getLogicDevice(), &fenceInfo, nullptr, &fence);
-	vkResetFences(vulkanCore->getLogicDevice(), 1, &fence);
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &thirdSubmitInfo, fence) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	if (vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
-	{
-		throw std::runtime_error("aaaa");
-	}
-
-	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
-
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
+	transCommand->waitFence();
 }
 
 void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -400,16 +345,19 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	std::cout << "Create FrameBuffer" << std::endl;
 
 	//各フレームバッファにレンダリングしていく
-	std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
 
-	bufferFactory->beginCommandBuffer(commandBuffer);
+	renderCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setFence(commandFactory->createFence());
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
+		renderCommand->recordBegin();
+
 		const RenderProperty renderProp = render->initProperty()
 			->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
 			->withFrameBuffer(frameBufferArray[i])
-			->withCommandBuffer(commandBuffer)
+			->withCommandBuffer(renderCommand)
 			->withRenderArea(size, size)
 			->withClearDepth(1.0f)
 			->withClearStencil(0)
@@ -423,7 +371,7 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 			throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 		}
 
-		vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindPipeline(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineFactory->Create(PipelinePattern::CALC_IBL_DIFFUSE)->pipeline);
 
 		VkViewport viewport{};
@@ -433,12 +381,12 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		viewport.height = (float)size;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
+		vkCmdSetViewport(renderCommand->getCommand(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = { size,size };
-		vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
+		vkCmdSetScissor(renderCommand->getCommand(), 0, 1, &scissor);
 
 		std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -450,52 +398,31 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 			if (mesh.vertices.size() != 0)
 			{
-				vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+				vkCmdBindVertexBuffers(renderCommand->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-				vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(renderCommand->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 				for (const auto& primitive : mesh.primitives)
 				{
 					descriptorSets[0] = uniform[i]->descriptorSet;
 					descriptorSets[1] = srcTex->descriptorSet;
 
-					vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+					vkCmdBindDescriptorSets(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 						pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_DIFFUSE)->pLayout, 0
 						, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-					vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+					vkCmdDrawIndexed(renderCommand->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
 			}
 		}
 
 		render->RenderEnd(renderProp);
-	}
 
-	bufferFactory->endCommandBuffer(commandBuffer);
+		renderCommand->recordEnd();
 
-	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		renderCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkSemaphore cubemapRenderSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &cubemapRenderSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
-	submitInfo.pWaitDstStageMask = &flag;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
+		renderCommand->waitFence();
 	}
 
 	std::cout << "Render" << std::endl;
@@ -527,8 +454,11 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	std::cout << "Copy " << std::endl;
 
-	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(secondCommand);
+	std::shared_ptr<CommandBuffer> copyCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+	copyCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setSemaphore(commandFactory->createSemaphore(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+
+	copyCommand->recordBegin();
 
 	for (int i = 0; i < CUBEMAP_LAYER; i++)
 	{
@@ -541,41 +471,25 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 			->withSrcMipmapLevel(0)
 			->withDstMipmapLevel(0)
 			->withSize(size, size)
-			->withCommandBuffer(secondCommand)
+			->withCommandBuffer(copyCommand)
 			->withSrcTexture(multiLayerTexture[i])
 			->withDstTexture(diffuse.multiLayerTex)
 			->Build()
 		);
 	}
 
-	bufferFactory->endCommandBuffer(secondCommand);
+	copyCommand->recordEnd();
 
-	VkSemaphore secondSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &secondSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkSubmitInfo secondSubmitInfo{};
-	secondSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	secondSubmitInfo.commandBufferCount = 1;
-	secondSubmitInfo.pCommandBuffers = &secondCommand->commandBuffer;
-	secondSubmitInfo.waitSemaphoreCount = 1;
-	secondSubmitInfo.pWaitSemaphores = &cubemapRenderSemaphore;
-	secondSubmitInfo.pWaitDstStageMask = &flag;
-	secondSubmitInfo.signalSemaphoreCount = 1;
-	secondSubmitInfo.pSignalSemaphores = &secondSemaphore;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &secondSubmitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
+	copyCommand->Submit(vulkanCore->getGraphicsQueue());
 
 	std::cout << "Transition" << std::endl;
 
-	std::shared_ptr<CommandBuffer> thirdCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(thirdCommand);
+	std::shared_ptr<CommandBuffer> transCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+	transCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->addWaitCommand(copyCommand)
+		->setFence(commandFactory->createFence());
+
+	transCommand->recordBegin();
 
 	textureFactory->getBuilder()->transitionImageLayout
 	(
@@ -585,44 +499,14 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		1,
 		CUBEMAP_LAYER,
-		thirdCommand
+		transCommand
 	);
 
-	bufferFactory->endCommandBuffer(thirdCommand);
+	transCommand->recordEnd();
 
-	VkSubmitInfo thirdSubmitInfo{};
-	thirdSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	thirdSubmitInfo.commandBufferCount = 1;
-	thirdSubmitInfo.pCommandBuffers = &thirdCommand->commandBuffer;
-	thirdSubmitInfo.waitSemaphoreCount = 1;
-	thirdSubmitInfo.pWaitSemaphores = &secondSemaphore;
-	thirdSubmitInfo.pWaitDstStageMask = &flag;
+	transCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	VkFence fence;
-
-	vkCreateFence(vulkanCore->getLogicDevice(), &fenceInfo, nullptr, &fence);
-	vkResetFences(vulkanCore->getLogicDevice(), 1, &fence);
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &thirdSubmitInfo, fence) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	std::cout << "Multi Transition" << std::endl;
-
-	if (vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
-
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
+	transCommand->waitFence();
 }
 
 void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -700,18 +584,21 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 	}
 
 	//各フレームバッファにレンダリングしていく
-	std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
 
-	bufferFactory->beginCommandBuffer(commandBuffer);
+	renderCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setFence(commandFactory->createFence());
 
 	for (int i = 0; i < mipmapLevelSize.size(); i++)
 	{
 		for (int j = 0; j < CUBEMAP_LAYER; j++)
 		{
+			renderCommand->recordBegin();
+
 			const RenderProperty renderProp = render->initProperty()
 				->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_DIFFUSE_SPECULAR))
 				->withFrameBuffer(frameBufferArray[i * CUBEMAP_LAYER + j])
-				->withCommandBuffer(commandBuffer)
+				->withCommandBuffer(renderCommand)
 				->withRenderArea(mipmapLevelSize[i], mipmapLevelSize[i])
 				->withClearDepth(1.0f)
 				->withClearStencil(0)
@@ -725,13 +612,13 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 			}
 
-			vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+			vkCmdBindPipeline(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipelineFactory->Create(PipelinePattern::CALC_IBL_SPECULAR)->pipeline);
 
 			//ミップマップレベルに応じて、roughnessとしてシェーダに値を渡して、BRDFの値を調整する
 			SpecularPushConstant constant{};
 			constant.roughness = static_cast<float>(i) / static_cast<float>(mipmapLevelSize.size());
-			vkCmdPushConstants(commandBuffer->getCommand()
+			vkCmdPushConstants(renderCommand->getCommand()
 				, pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_SPECULAR)->pLayout
 				, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SpecularPushConstant), &constant);
 
@@ -742,12 +629,12 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 			viewport.height = (float)mipmapLevelSize[i];
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
+			vkCmdSetViewport(renderCommand->getCommand(), 0, 1, &viewport);
 
 			VkRect2D scissor{};
 			scissor.offset = { 0, 0 };
 			scissor.extent = { mipmapLevelSize[i],mipmapLevelSize[i] };
-			vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
+			vkCmdSetScissor(renderCommand->getCommand(), 0, 1, &scissor);
 
 			std::array<VkDescriptorSet, 2> descriptorSets;
 
@@ -759,53 +646,32 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 
 				if (mesh.vertices.size() != 0)
 				{
-					vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+					vkCmdBindVertexBuffers(renderCommand->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-					vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(renderCommand->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 					for (const auto& primitive : mesh.primitives)
 					{
 						descriptorSets[0] = uniform[j]->descriptorSet;
 						descriptorSets[1] = srcTex->descriptorSet;
 
-						vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+						vkCmdBindDescriptorSets(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 							pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_IBL_SPECULAR)->pLayout, 0
 							, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-						vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+						vkCmdDrawIndexed(renderCommand->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 					}
 				}
 			}
 
 			render->RenderEnd(renderProp);
+
+			renderCommand->recordEnd();
+
+			renderCommand->Submit(vulkanCore->getGraphicsQueue());
+
+			renderCommand->waitFence();
 		}
-	}
-
-	bufferFactory->endCommandBuffer(commandBuffer);
-
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkSemaphore cubemapRenderSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &cubemapRenderSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
-	submitInfo.pWaitDstStageMask = &flag;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
 	reflection.multiLayerTex = textureFactory->Create
@@ -834,11 +700,15 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 		->Build()
 	);
 
-	std::shared_ptr<CommandBuffer> secondCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(secondCommand);
+	std::shared_ptr<CommandBuffer> copyCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+
+	copyCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setFence(commandFactory->createFence());
 
 	for (int i = 0; i < mipmapLevelSize.size(); i++)
 	{
+		copyCommand->recordBegin();
+
 		for (int j = 0; j < CUBEMAP_LAYER; j++)
 		{
 			textureFactory->getCopy()->Copy
@@ -850,40 +720,25 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 				->withSrcMipmapLevel(0)
 				->withDstMipmapLevel(i)
 				->withSize(mipmapLevelSize[i], mipmapLevelSize[i])
-				->withCommandBuffer(secondCommand)
+				->withCommandBuffer(copyCommand)
 				->withSrcTexture(multiLayerTex[i * CUBEMAP_LAYER + j])
 				->withDstTexture(reflection.multiLayerTex)
 				->Build()
 			);
 		}
+
+		copyCommand->recordEnd();
+
+		copyCommand->Submit(vulkanCore->getGraphicsQueue());
+
+		copyCommand->waitFence();
 	}
 
-	bufferFactory->endCommandBuffer(secondCommand);
+	std::shared_ptr<CommandBuffer> transCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+	transCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setFence(commandFactory->createFence());
 
-	VkSemaphore secondSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &secondSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkSubmitInfo secondSubmitInfo{};
-	secondSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	secondSubmitInfo.commandBufferCount = 1;
-	secondSubmitInfo.pCommandBuffers = &secondCommand->commandBuffer;
-	secondSubmitInfo.waitSemaphoreCount = 1;
-	secondSubmitInfo.pWaitSemaphores = &cubemapRenderSemaphore;
-	secondSubmitInfo.pWaitDstStageMask = &flag;
-	secondSubmitInfo.signalSemaphoreCount = 1;
-	secondSubmitInfo.pSignalSemaphores = &secondSemaphore;
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &secondSubmitInfo, nullptr) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	std::shared_ptr<CommandBuffer> thirdCommand = bufferFactory->CommandBufferCreate();
-	bufferFactory->beginCommandBuffer(thirdCommand);
+	transCommand->recordBegin();
 
 	textureFactory->getBuilder()->transitionImageLayout
 	(
@@ -893,39 +748,14 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		static_cast<uint32_t>(mipmapLevelSize.size()),
 		CUBEMAP_LAYER,
-		thirdCommand
+		transCommand
 	);
 
-	bufferFactory->endCommandBuffer(thirdCommand);
+	transCommand->recordEnd();
 
-	VkSubmitInfo thirdSubmitInfo{};
-	thirdSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	thirdSubmitInfo.commandBufferCount = 1;
-	thirdSubmitInfo.pCommandBuffers = &thirdCommand->commandBuffer;
-	thirdSubmitInfo.waitSemaphoreCount = 1;
-	thirdSubmitInfo.pWaitSemaphores = &secondSemaphore;
-	thirdSubmitInfo.pWaitDstStageMask = &flag;
+	transCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	VkFence fence;
-
-	vkCreateFence(vulkanCore->getLogicDevice(), &fenceInfo, nullptr, &fence);
-	vkResetFences(vulkanCore->getLogicDevice(), 1, &fence);
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &thirdSubmitInfo, fence) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
-
-	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
-
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), secondSemaphore, nullptr);
+	transCommand->waitFence();
 }
 
 void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const std::shared_ptr<Texture> srcTexture
@@ -974,14 +804,16 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	);
 
 	//各フレームバッファにレンダリングしていく
-	std::shared_ptr<CommandBuffer> commandBuffer = bufferFactory->CommandBufferCreate();
+	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
+	renderCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
+		->setFence(commandFactory->createFence());
 
-	bufferFactory->beginCommandBuffer(commandBuffer);
+	renderCommand->recordBegin();
 
 	const RenderProperty renderProp = render->initProperty()
 		->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_IBL_BRDF))
 		->withFrameBuffer(frameBuffer)
-		->withCommandBuffer(commandBuffer)
+		->withCommandBuffer(renderCommand)
 		->withRenderArea(size, size)
 		->withClearDepth(1.0f)
 		->withClearStencil(0)
@@ -995,7 +827,7 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 		throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
 	}
 
-	vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(renderCommand->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineFactory->Create(PipelinePattern::CALC_IBL_BRDF)->pipeline);
 
 	VkViewport viewport{};
@@ -1005,12 +837,12 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 	viewport.height = (float)extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
+	vkCmdSetViewport(renderCommand->getCommand(), 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = { extent.width,extent.height };
-	vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
+	vkCmdSetScissor(renderCommand->getCommand(), 0, 1, &scissor);
 
 	std::array<VkDescriptorSet, 1> descriptorSets;
 
@@ -1022,62 +854,26 @@ void SkyDomeBuilder::createBRDF(const std::shared_ptr<SkyDome> skydome, const st
 
 		if (mesh.vertices.size() != 0)
 		{
-			vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+			vkCmdBindVertexBuffers(renderCommand->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
 
-			vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(renderCommand->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
 
 			for (const auto& primitive : mesh.primitives)
 			{
 				descriptorSets[0] = uniform[0]->descriptorSet;
 
-				vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+				vkCmdDrawIndexed(renderCommand->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}
 	}
 
 	render->RenderEnd(renderProp);
 
-	bufferFactory->endCommandBuffer(commandBuffer);
+	renderCommand->recordEnd();
 
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	renderCommand->Submit(vulkanCore->getGraphicsQueue());
 
-	VkSemaphore cubemapRenderSemaphore{};
-
-	if (vkCreateSemaphore(vulkanCore->getLogicDevice(), &semaphoreInfo, nullptr, &cubemapRenderSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCreateSemaphore : error");
-	}
-
-	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer->getCommand();
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &cubemapRenderSemaphore;
-	submitInfo.pWaitDstStageMask = &flag;
-
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	VkFence fence;
-
-	vkCreateFence(vulkanCore->getLogicDevice(), &fenceInfo, nullptr, &fence);
-	vkResetFences(vulkanCore->getLogicDevice(), 1, &fence);
-
-	if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &submitInfo, fence) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
-
-	vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
-
-	vkDestroySemaphore(vulkanCore->getLogicDevice(), cubemapRenderSemaphore, nullptr);
+	renderCommand->waitFence();
 }
 
 std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)

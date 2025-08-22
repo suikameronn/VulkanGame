@@ -74,7 +74,7 @@ private:
 	std::shared_ptr<ShaderFactory> shaderFactory;
 	std::shared_ptr<TextureFactory> textureFactory;
 	std::shared_ptr<SkyDomeFactory> skydomeFactory;
-	std::shared_ptr<ComamndBufferFactory> commandBufferFactory;
+	std::shared_ptr<CommandBufferFactory> commandBufferFactory;
 
 	//スワップチェーンのクラス
 	std::shared_ptr<SwapChain> swapChain;
@@ -110,6 +110,9 @@ private:
 	void createBuilder();
 	//ファクトリーの用意
 	void createFactory();
+
+	//レンダー用コマンドバッファの作成
+	void createRenderCommand();
 
 	void setLoadUI();
 

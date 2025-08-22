@@ -1,6 +1,7 @@
 #pragma once
 
 #include"GpuBufferFactory.h"
+#include"CommandBufferFactory.h"
 
 struct Texture;
 

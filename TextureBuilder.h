@@ -5,6 +5,7 @@
 
 #include"VulkanCore.h"
 #include"GpuBufferFactory.h"
+#include"CommandBufferFactory.h"
 
 #include "tiny_gltf.h"
 

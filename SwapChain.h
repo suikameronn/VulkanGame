@@ -16,6 +16,7 @@ private:
 	std::shared_ptr<TextureFactory> textureFactory;
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
 	std::shared_ptr<FrameBufferFactory> frameBufferFactory;
+	std::shared_ptr<CommandBufferFactory> commandBufferFactory;
 
 	VkPhysicalDevice physicalDevice;
 
@@ -47,12 +48,6 @@ private:
 
 	//そのコマンドバッファが使用可能になるまで待つ
 	std::vector<VkSemaphore> imageAvailableSemaphores;
-
-	//そのコマンドバッファでの処理が終わったら信号を送る
-	std::vector<VkSemaphore> renderFinishedSemaphores;
-
-	//cpuにgpuからレンダリングの終了を知らせる
-	std::vector<VkFence> inFlightFences;
 
 	//スワップチェーンが使用するフォーマットの候補を取得する
 	SwapChainSupportDetails querySwapChainSupport();
@@ -99,7 +94,8 @@ private:
 public:
 
 	SwapChain(std::shared_ptr<VulkanCore> core, std::shared_ptr<TextureFactory> tf
-		, std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb);
+		, std::shared_ptr<RenderPassFactory> rf, std::shared_ptr<FrameBufferFactory> fb
+		, std::shared_ptr<CommandBufferFactory> cf);
 	
 	~SwapChain()
 	{
@@ -135,9 +131,16 @@ public:
 		return frameIndex;
 	}
 
+	//画像が利用可能になるまで待つセマフォを取得する
+	VkSemaphore& getImageAvailableSemaphore()
+	{
+		return imageAvailableSemaphores[frameIndex];
+	}
+
 	//現在のフレームバッファを取得する
 	std::shared_ptr<FrameBuffer> getCurrentFrameBuffer();
 
-	//スワップチェーンの画像を切り替える(動機も行う)
+	//メインのレンダリングを終える
+	//スワップチェーンの画像を切り替える(同期も行う)
 	void flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer);
 };

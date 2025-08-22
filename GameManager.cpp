@@ -18,6 +18,8 @@ void GameManager::initGame()//ゲーム全体の初期化処理
 
 	createScene();//シーンの作成
 
+	createRenderCommand();//レンダー用コマンドバッファの作成
+
     mainGameLoop();//ゲームのメインループを開始
 }
 
@@ -42,13 +44,14 @@ void GameManager::createInstance()
 	modelFactory = std::make_shared<GltfModelFactory>(materialBuilder, textureFactory
 		, bufferFactory, descriptorSetLayoutFactory, descriptorSetFactory);
 
-    swapChain = std::make_shared<SwapChain>(vulkanCore, textureFactory, renderPassFactory, frameBufferFactory);
+	swapChain = std::make_shared<SwapChain>(vulkanCore, textureFactory, renderPassFactory, frameBufferFactory, commandBufferFactory);
 
 	render = std::make_shared<Render>(device);
 
 	skydomeBuilder = std::make_shared<SkyDomeBuilder>(vulkanCore, bufferFactory, textureFactory, frameBufferFactory
 		, pipelineLayoutFactory, pipelineFactory, renderPassFactory
-		, descriptorSetLayoutFactory, descriptorSetFactory, render, modelFactory);
+		, descriptorSetLayoutFactory, descriptorSetFactory, render, modelFactory
+		, commandBufferFactory);
 
 	skydomeFactory = std::make_shared<SkyDomeFactory>(skydomeBuilder);
 }
@@ -80,7 +83,7 @@ void GameManager::createFactory()
 	pipelineLayoutFactory = std::make_shared<PipelineLayoutFactory>(device, pipelineLayoutBuilder, descriptorSetLayoutFactory);
 	renderPassFactory = std::make_shared<RenderPassFactory>(vulkanCore, renderPassBuilder);
 	shaderFactory = std::make_shared<ShaderFactory>(device);
-	commandBufferFactory = std::make_shared<ComamndBufferFactory>(vulkanCore);
+	commandBufferFactory = std::make_shared<CommandBufferFactory>(vulkanCore);
 }
 
 //シーンの作成
@@ -120,9 +123,23 @@ void GameManager::createScene()
 	dLight->direction = glm::vec3(1.0f);
 }
 
+//レンダー用コマンドバッファの作成
+void GameManager::createRenderCommand()
+{
+	renderCommand.resize(2);
+
+	//あらかじめVkCommandBufferとVkFenceを作成しておく
+	for (auto& command : renderCommand)
+	{
+		command = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
+
+		command->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
+			->setFence(commandBufferFactory->createFence());
+	}
+}
+
 void GameManager::mainGameLoop()//メインゲームループ
 {
-	renderCommand = commandBufferFactory->Create();
 
     start = std::chrono::system_clock::now();//フレーム時間を計測
 
@@ -645,6 +662,8 @@ void GameManager::OnLateUpdate()
 //オブジェクトのレンダリング
 void GameManager::Rendering()
 {
+	const uint32_t frameIndex = swapChain->getCurrentFrameIndex();
+
 	{
 		//シャドウマップを作成する
 		ecsManager->RunFunction<DirectionLightComp>
@@ -652,9 +671,13 @@ void GameManager::Rendering()
 				{
 					[&](DirectionLightComp& comp)
 					{
-						std::shared_ptr<CommandBuffer> commandBuffer = commandBufferFactory->Create(1);
+						std::shared_ptr<CommandBuffer> commandBuffer
+							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
-						commandBufferFactory->Begin(commandBuffer->getCommand());
+						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
+							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+						commandBuffer->recordBegin();
 
 						const VkExtent2D extent = swapChain->getSwapChainExtent();
 
@@ -734,8 +757,9 @@ void GameManager::Rendering()
 
 						render->RenderEnd(renderProp);
 
-						commandBufferFactory->End(commandBuffer->getCommand());
+						commandBuffer->recordEnd();
 
+						/*
 						VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 						VkSubmitInfo thirdSubmitInfo{};
@@ -761,14 +785,17 @@ void GameManager::Rendering()
 						vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
 
 						vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
+						*/
+
+						commandBuffer->Submit(vulkanCore->getGraphicsQueue());
+
+						renderCommand[frameIndex]->addWaitCommand(commandBuffer);
 					}
 				}
 			);
 	}
 
 	{
-		const uint32_t frameIndex = swapChain->getCurrentFrameIndex();
-
 		std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
 
 		std::function<void(GltfModelComp&, MeshRendererComp&)> renderModel =
@@ -840,7 +867,7 @@ void GameManager::Rendering()
 				}
 			};
 
-		commandBufferFactory->Begin(renderCommand[frameIndex]->getCommand());
+		renderCommand[frameIndex]->recordBegin();
 
 		const RenderProperty property = render->initProperty()
 			->withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
@@ -858,7 +885,7 @@ void GameManager::Rendering()
 
 		render->RenderEnd(property);
 
-		commandBufferFactory->End(renderCommand[frameIndex]->getCommand());
+		renderCommand[frameIndex]->recordEnd();
 
 		{
 			//一つ前のフレームのレンダリングの終了を待ち
@@ -867,7 +894,6 @@ void GameManager::Rendering()
 			const uint32_t lastFrame = (frameIndex == 0) ? 1 : 0;
 
 			renderCommand[lastFrame]->waitFence();
-			commandBufferFactory->ResetCommand(renderCommand[lastFrame]);
 		}
 
 		swapChain->flipSwapChainImage(renderCommand[frameIndex]);

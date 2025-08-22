@@ -142,6 +142,8 @@ private:
 
 	std::shared_ptr<GltfModelFactory> modelFactory;
 
+	std::shared_ptr<CommandBufferFactory> commandFactory;
+
 	std::shared_ptr<Render> render;
 
 	SkyDomeProperty property;
@@ -166,7 +168,8 @@ public:
 		, std::shared_ptr<FrameBufferFactory> frame, std::shared_ptr<PipelineLayoutFactory> pLayout
 		, std::shared_ptr<PipelineFactory> pipeline, std::shared_ptr<RenderPassFactory> renderPass
 		, std::shared_ptr<DescriptorSetLayoutFactory> layout, std::shared_ptr<DescriptorSetFactory> descriptorSet
-		, std::shared_ptr<Render> render, std::shared_ptr<GltfModelFactory> modelFactory);
+		, std::shared_ptr<Render> render, std::shared_ptr<GltfModelFactory> modelFactory
+		, std::shared_ptr<CommandBufferFactory> command);
 
 	~SkyDomeBuilder()
 	{
