@@ -91,7 +91,7 @@ void GameManager::createScene()
 {
 	size_t entity1 = ecsManager->GenerateEntity();
 
-	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(10.0f);
+	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(200.0f);
 
 	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
@@ -104,8 +104,9 @@ void GameManager::createScene()
 
 	size_t entity2 = ecsManager->GenerateEntity();
 	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity2);
+	dLight->position = glm::vec3(200.0f, 200.0f, 200.0f);
 	dLight->color = glm::vec4(1.0f);
-	dLight->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
+	dLight->direction = glm::vec3(-200.0f, -200.0f, -200.0f);
 	ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
 
 	size_t entity3 = ecsManager->GenerateEntity();
@@ -119,10 +120,12 @@ void GameManager::createScene()
 	cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
 
-	size_t entity5 = ecsManager->GenerateEntity();
+	/*size_t entity5 = ecsManager->GenerateEntity();
 	DirectionLightComp* dLight2 = ecsManager->AddComponent<DirectionLightComp>(entity5);
+	dLight2->position = glm::vec3(200.0f, 200.0f, 200.0f);
 	dLight2->color = glm::vec4(1.0f);
-	dLight2->direction = glm::vec3(1.0f);
+	dLight2->direction = glm::vec3(-200.0f, -200.0f, -200.0f);
+	*/
 }
 
 //レンダー用コマンドバッファの作成
@@ -410,7 +413,7 @@ void GameManager::OnStart()
 			for (int i = 0; i < directionLightCount; i++)
 			{
 				textureBuilder->withViewAccess(VK_IMAGE_ASPECT_DEPTH_BIT)
-					->withViewType(VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+					->withViewType(VK_IMAGE_VIEW_TYPE_2D)
 					->withTargetLayer(i, 1)
 					->addView();
 			}
@@ -497,6 +500,7 @@ void GameManager::OnStart()
 					{
 						comp.index = sceneLight->getDirectionLightIndex();
 
+						sceneLight->dirUniform.position[comp.index] = glm::vec4(comp.position, 0.0f);
 						sceneLight->dirUniform.direction[comp.index] = glm::vec4(comp.direction, 0.0f);
 						sceneLight->dirUniform.color[comp.index] = comp.color;
 					}
@@ -583,20 +587,22 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
-	ecsManager->RunFunction<DirectionLightComp, TransformComp>
+	ecsManager->RunFunction<DirectionLightComp>
 		(
 			{
-				[&](DirectionLightComp& dirLightComp,TransformComp& transComp)
+				[&](DirectionLightComp& dirLightComp)
 				{
 					sceneLight->dirUniform.lightCount
 						= static_cast<uint32_t>(ecsManager->GetEntitiesWithComponents<DirectionLightComp>().size());
+
+					sceneLight->dirUniform.position[dirLightComp.index] = glm::vec4(dirLightComp.position, 0.0f);
 
 					sceneLight->dirUniform.color[dirLightComp.index] = dirLightComp.color;
 
 					sceneLight->dirUniform.direction[dirLightComp.index] = glm::vec4(dirLightComp.direction, 0.0f);
 
 					sceneLight->dirUniform.viewProj[dirLightComp.index] = glm::ortho(-500.0f, 500.0f, 500.0f, -500.0f, 0.1f, 1000.0f)
-						* glm::lookAt(transComp.position, transComp.position - dirLightComp.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+						* glm::lookAt(dirLightComp.position, dirLightComp.position + dirLightComp.direction, glm::vec3(0.0f, 1.0f, 0.0f));
 				}
 			}
 		);
@@ -682,7 +688,8 @@ void GameManager::Rendering()
 							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
 						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
-							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+							//->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+						->setFence(commandBufferFactory->createFence());
 
 						commandBuffer->recordBegin();
 
@@ -713,7 +720,7 @@ void GameManager::Rendering()
 										vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 											pipelineFactory->Create(PipelinePattern::CALC_SHADOWMAP)->pipeline);
 
-										vkCmdSetDepthBias(commandBuffer->getCommand(), 1.25f, 0.0f, 1.75f);
+										//vkCmdSetDepthBias(commandBuffer->getCommand(), 1.25f, 0.0f, 1.75f);
 
 										VkViewport viewport{};
 										viewport.x = 0.0f;
@@ -771,7 +778,9 @@ void GameManager::Rendering()
 
 						commandBuffer->Submit(vulkanCore->getGraphicsQueue());
 
-						renderCommand[frameIndex]->addWaitCommand(commandBuffer);
+						commandBuffer->waitFence();
+
+						//renderCommand[frameIndex]->addWaitCommand(commandBuffer);
 					}
 				}
 			);

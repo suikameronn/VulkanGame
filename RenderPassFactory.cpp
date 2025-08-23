@@ -23,17 +23,17 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 			->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 			->addColorAttachment();
 
 		builder->withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
 			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
-			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
 			->addDepthStencilAttachment();
@@ -43,7 +43,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
 			->addColorResolveAttachment();
@@ -78,7 +78,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 
 		builder->withFormat(VK_FORMAT_D32_SFLOAT)
 			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
-			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)

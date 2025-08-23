@@ -4,7 +4,7 @@ void MaterialBuilder::createEmptyTexture()
 {
 	const uint32_t texChannel = 4;
 	const uint32_t size = 2;
-	const std::vector<unsigned char> pixels(size * size, 0);
+	const std::vector<unsigned char> pixels(size * size * texChannel, 0);
 
 	emptyTexture = textureFactory->Create(texChannel,pixels.data()
 		, size, size, TexturePattern::NORMAL);

@@ -27,6 +27,7 @@ layout(set = 0,binding = 2) uniform BoneMatrices
 layout(set = 1,binding = 0) uniform LightMatrices
 {
 	uint lightCount;
+    vec4[LIGHT_MAX] pos;
 	vec4[LIGHT_MAX] dir;
 	vec4[LIGHT_MAX] color;
     mat4[LIGHT_MAX] viewProj;

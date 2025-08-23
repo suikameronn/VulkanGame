@@ -27,9 +27,9 @@ layout(set = 2,binding = 1) uniform DirectionLightUBO
     mat4[LIGHT_MAX] viewProj;
 }directionLight;
 
-layout(set = 2, binding = 2) uniform sampler2DArray pointLightShadowMapArray;
+layout(set = 2, binding = 2) uniform sampler2D pointLightShadowMapArray;
 
-layout(set = 2, binding = 3) uniform sampler2DArray directionLightShadowMapArray;
+layout(set = 2, binding = 3) uniform sampler2D directionLightShadowMapArray;
 
 layout (set = 3, binding = 0) uniform ShaderMaterial
 {
@@ -148,7 +148,7 @@ float directionLightShadowCalc()
 		{
 			if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
 			{
-				float dist = texture( directionLightShadowMapArray, vec3(shadowCoord.st,0) ).r;
+				float dist = texture( directionLightShadowMapArray, shadowCoord.st ).r;
 				if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
 				{
 					shadow = 0.1;
