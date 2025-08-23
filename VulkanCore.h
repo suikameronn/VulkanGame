@@ -219,6 +219,9 @@ public:
 
 	//ウィンドウのサイズ変更を通知する
 	bool isWindowSizeChanged();
+
+	//gpuの処理の完了を待つ
+	bool freezeGpu(const VkQueue& queue);
 };
 
 //ウィンドウサイズを変えた時に呼び出され、次回フレームレンダリング前に、スワップチェーンの画像サイズをウィンドウに合わせる

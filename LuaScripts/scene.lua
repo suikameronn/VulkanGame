@@ -1,11 +1,11 @@
 --Modelオブジェクトの作成
 local model = createModel()
 --Modelオブジェクトにgltfモデルをセット
-setGltfModel(model,"models/concrete.glb")
+setGltfModel(model,"models/Ground.glb")
 --初期座標の設定
 setPos(model,0.0,0.0,0.0)
 --スケールの設定
-setScale(model,30.0,30.0,30.0)
+setScale(model,3000.0,3000.0,3000.0)
 --回転の設定
 setRotate(model,0.0,0.0,0.0)
 --コライダーを付与する

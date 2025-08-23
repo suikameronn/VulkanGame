@@ -57,6 +57,8 @@ VkSemaphore CommandBufferFactory::createSemaphore()
 	{
 		throw std::runtime_error("vkCreateSemaphore : error");
 	}
+
+	return semaphore;
 }
 
 //コマンドバッファを破棄する

@@ -101,6 +101,8 @@ private:
 
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
 
+	std::shared_ptr<CommandBufferFactory> commandBufferFactory;
+
 	//各種プロパティ
 	TextureProperty property;
 
@@ -137,7 +139,8 @@ private:
 
 public:
 
-	TextureBuilder(std::shared_ptr<VulkanCore> core,std::shared_ptr<GpuBufferFactory> buffer);
+	TextureBuilder(std::shared_ptr<VulkanCore> core, std::shared_ptr<GpuBufferFactory> buffer
+		, std::shared_ptr<CommandBufferFactory> command);
 
 	~TextureBuilder()
 	{

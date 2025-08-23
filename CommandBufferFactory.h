@@ -2,6 +2,8 @@
 
 #include"VulkanCore.h"
 
+#include<chrono>
+
 class CommandBuffer;
 
 class CommandBufferFactory : public std::enable_shared_from_this<CommandBufferFactory>
@@ -44,7 +46,7 @@ private:
 	//待機するべき、コマンドバッファ
 	std::vector<std::shared_ptr<CommandBuffer>> waitPrevCommand;
 
-	std::vector<VkSemaphore> waitSemaphores;
+	std::pair<std::vector<VkSemaphore>, std::vector<VkPipelineStageFlags>> waitSemaphores;
 
 	//スコープ外へ出た際の破棄を防止
 	std::shared_ptr<CommandBuffer> thisPtr;
@@ -58,6 +60,9 @@ private:
 		isSubmitted = false;
 
 		waitPrevCommand.clear();
+
+		waitSemaphores.first.clear();
+		waitSemaphores.second.clear();
 	}
 
 public:
@@ -76,8 +81,6 @@ public:
 
 		waitPrevCommand.clear();
 
-		waitSemaphores.clear();
-
 		waitStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 		factory = f;
@@ -86,6 +89,12 @@ public:
 	~CommandBuffer()
 	{
 		factory->Destruct(commandBuffer, semaphore, fence);
+	}
+
+	void releaseMyPtr()
+	{
+		//自身への参照を破棄する
+		thisPtr.reset();
 	}
 
 	std::shared_ptr<CommandBuffer> setCommandBufffer(std::vector<VkCommandBuffer> src)
@@ -118,15 +127,17 @@ public:
 
 		if(command->getSemaphore() != VK_NULL_HANDLE)
 		{
-			waitSemaphores.push_back(command->getSemaphore());
+			waitSemaphores.first.push_back(command->getSemaphore());
+			waitSemaphores.second.push_back(command->getWaitStageMask());
 		}
 
 		return shared_from_this();
 	}
 
-	std::shared_ptr<CommandBuffer> addWaitSemaphore(const VkSemaphore& semaphore)
+	std::shared_ptr<CommandBuffer> addWaitSemaphore(const VkSemaphore& semaphore, const VkPipelineStageFlags& waitStageMask)
 	{
-		waitSemaphores.push_back(semaphore);
+		waitSemaphores.first.push_back(semaphore);
+		waitSemaphores.second.push_back(waitStageMask);
 
 		return shared_from_this();
 	}
@@ -156,7 +167,12 @@ public:
 		return semaphore;
 	}
 
-	std::vector<VkSemaphore>& getWaitSemaphores()
+	VkPipelineStageFlags& getWaitStageMask()
+	{
+		return waitStageMask;
+	}
+
+	std::pair<std::vector<VkSemaphore>, std::vector<VkPipelineStageFlags>>& getWaitSemaphores()
 	{
 		return waitSemaphores;
 	}
@@ -165,7 +181,20 @@ public:
 	{
 		if(fence != VK_NULL_HANDLE && isSubmitted)
 		{
-			vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+			auto start = std::chrono::high_resolution_clock::now();
+			if (vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+			{
+				// 時間計測の終了
+				auto end = std::chrono::high_resolution_clock::now();
+
+				// 経過時間の計算（ミリ秒単位）
+				std::chrono::duration<double, std::milli> elapsed = end - start;
+
+				std::cout << "vkWaitForFences 待機時間: " << elapsed.count() << " ms" << std::endl;
+
+
+				throw std::runtime_error("failed to submit draw command buffer!");
+			}
 
 			vkResetFences(device, 1, &fence);
 
@@ -222,7 +251,7 @@ public:
 
 	void Submit(const VkQueue& queue)
 	{
-		if (!isSubmitted)
+		if (isSubmitted)
 		{
 			return;
 		}
@@ -238,11 +267,11 @@ public:
 		submitInfo.pCommandBuffers = commandBuffer.data();
 
 		//このコマンドバッファが待機すべき、セマフォを設定
-		if (waitSemaphores.size() > 0)
+		if (waitSemaphores.first.size() > 0)
 		{
-			submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-			submitInfo.pWaitSemaphores = waitSemaphores.data();
-			submitInfo.pWaitDstStageMask = &waitStageMask;
+			submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.first.size());
+			submitInfo.pWaitSemaphores = waitSemaphores.first.data();
+			submitInfo.pWaitDstStageMask = waitSemaphores.second.data();
 		}
 
 		//セマフォが作成されている場合、このSubmitにセマフォを括り付ける

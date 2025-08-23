@@ -35,7 +35,7 @@ void GameManager::createInstance()
 	pipelineFactory = std::make_shared<PipelineFactory>(vulkanCore, pipelineLayoutFactory, shaderFactory
 		, pipelineBuilder, renderPassFactory);
 
-	textureBuilder = std::make_shared<TextureBuilder>(vulkanCore, bufferFactory);
+	textureBuilder = std::make_shared<TextureBuilder>(vulkanCore, bufferFactory, commandBufferFactory);
 	textureFactory = std::make_shared<TextureFactory>(device, textureBuilder);
 
     materialBuilder = std::make_shared<MaterialBuilder>(bufferFactory, descriptorSetLayoutFactory
@@ -103,7 +103,9 @@ void GameManager::createScene()
 	comp->filePath = "models/robot.glb";
 
 	size_t entity2 = ecsManager->GenerateEntity();
-	ecsManager->AddComponent<DirectionLightComp>(entity2);
+	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity2);
+	dLight->color = glm::vec4(1.0f);
+	dLight->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
 	ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
 
 	size_t entity3 = ecsManager->GenerateEntity();
@@ -118,9 +120,9 @@ void GameManager::createScene()
 	cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
 
 	size_t entity5 = ecsManager->GenerateEntity();
-	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity5);
-	dLight->color = glm::vec4(1.0f);
-	dLight->direction = glm::vec3(1.0f);
+	DirectionLightComp* dLight2 = ecsManager->AddComponent<DirectionLightComp>(entity5);
+	dLight2->color = glm::vec4(1.0f);
+	dLight2->direction = glm::vec3(1.0f);
 }
 
 //レンダー用コマンドバッファの作成
@@ -134,7 +136,8 @@ void GameManager::createRenderCommand()
 		command = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
 		command->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
-			->setFence(commandBufferFactory->createFence());
+			->setFence(commandBufferFactory->createFence())
+			->setSemaphore(commandBufferFactory->createSemaphore(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 	}
 }
 
@@ -481,7 +484,7 @@ void GameManager::OnStart()
 					{
 						comp.index = sceneLight->getPointLightIndex();
 
-						sceneLight->pointUniform.position[comp.index] = comp.position;
+						sceneLight->pointUniform.position[comp.index] = glm::vec4(comp.position, 0.0f);
 						sceneLight->pointUniform.color[comp.index] = comp.color;
 					}
 				}
@@ -494,7 +497,7 @@ void GameManager::OnStart()
 					{
 						comp.index = sceneLight->getDirectionLightIndex();
 
-						sceneLight->dirUniform.direction[comp.index] = comp.direction;
+						sceneLight->dirUniform.direction[comp.index] = glm::vec4(comp.direction, 0.0f);
 						sceneLight->dirUniform.color[comp.index] = comp.color;
 					}
 				}
@@ -590,10 +593,10 @@ void GameManager::OnLateUpdate()
 
 					sceneLight->dirUniform.color[dirLightComp.index] = dirLightComp.color;
 
-					sceneLight->dirUniform.direction[dirLightComp.index] = dirLightComp.direction;
+					sceneLight->dirUniform.direction[dirLightComp.index] = glm::vec4(dirLightComp.direction, 0.0f);
 
-					sceneLight->dirUniform.viewProj[dirLightComp.index] = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, 0.1f, 1000.0f)
-						* glm::lookAt(transComp.position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+					sceneLight->dirUniform.viewProj[dirLightComp.index] = glm::ortho(-500.0f, 500.0f, 500.0f, -500.0f, 0.1f, 1000.0f)
+						* glm::lookAt(transComp.position, transComp.position - dirLightComp.direction, glm::vec3(0.0f, 1.0f, 0.0f));
 				}
 			}
 		);
@@ -657,6 +660,10 @@ void GameManager::OnLateUpdate()
 				}
 			}
 		);
+
+
+	memcpy(sceneLight->uniformBuffer[0]->mappedPtr, &sceneLight->pointUniform, sizeof(PointLightUniform));
+	memcpy(sceneLight->uniformBuffer[1]->mappedPtr, &sceneLight->dirUniform, sizeof(DirectionLightUniform));
 }
 
 //オブジェクトのレンダリング
@@ -675,7 +682,7 @@ void GameManager::Rendering()
 							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
 						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
-							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
 						commandBuffer->recordBegin();
 
@@ -726,6 +733,9 @@ void GameManager::Rendering()
 
 										VkDeviceSize offsets[] = { 0 };
 
+										vkCmdPushConstants(commandBuffer->getCommand(), pipelineLayoutFactory->Create(PipelineLayoutPattern::CALC_SHADOWMAP)->pLayout
+											, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &comp.index);
+
 										for (int i = 0; i < gltfModel->nodes.size(); i++)
 										{
 											const Mesh& mesh = gltfModel->nodes[i].mesh;
@@ -758,34 +768,6 @@ void GameManager::Rendering()
 						render->RenderEnd(renderProp);
 
 						commandBuffer->recordEnd();
-
-						/*
-						VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-						VkSubmitInfo thirdSubmitInfo{};
-						thirdSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-						thirdSubmitInfo.commandBufferCount = 1;
-						thirdSubmitInfo.pCommandBuffers = &commandBuffer->getCommand();
-						thirdSubmitInfo.pWaitDstStageMask = &flag;
-
-						VkFenceCreateInfo fenceInfo{};
-						fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-						fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-						VkFence fence;
-
-						vkCreateFence(vulkanCore->getLogicDevice(), &fenceInfo, nullptr, &fence);
-						vkResetFences(vulkanCore->getLogicDevice(), 1, &fence);
-
-						if (vkQueueSubmit(vulkanCore->getGraphicsQueue(), 1, &thirdSubmitInfo, fence) != VK_SUCCESS)
-						{
-							throw std::runtime_error("failed to submit draw command buffer!");
-						}
-
-						vkWaitForFences(vulkanCore->getLogicDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
-
-						vkDestroyFence(vulkanCore->getLogicDevice(), fence, nullptr);
-						*/
 
 						commandBuffer->Submit(vulkanCore->getGraphicsQueue());
 
@@ -920,6 +902,11 @@ void GameManager::OnFrameEnd()
 //シーンを終了させる処理
 void GameManager::exitScene()
 {
+	for (auto& command : renderCommand)
+	{
+		command->releaseMyPtr();
+	}
+
     //ゲームを終了させる
     FinishGame();
 }

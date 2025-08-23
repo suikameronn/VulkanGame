@@ -74,6 +74,16 @@ std::shared_ptr<Render> Render::withClearStencil(const uint32_t& stencil)
 //コマンドを積むコマンドバッファを設定
 std::shared_ptr<Render> Render::withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer)
 {
+	property.commandIndex = 0;
+	property.commandBuffer = commandBuffer;
+
+	return shared_from_this();
+}
+
+//コマンドを積むコマンドバッファを設定
+std::shared_ptr<Render> Render::withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer, const uint32_t& index)
+{
+	property.commandIndex = index;
 	property.commandBuffer = commandBuffer;
 
 	return shared_from_this();
@@ -94,14 +104,14 @@ RenderProperty Render::Build()
 //レンダリング開始
 void Render::RenderStart(const RenderProperty& property)
 {
-	vkCmdBeginRenderPass(property.commandBuffer->getCommand(), &property.info
+	vkCmdBeginRenderPass(property.commandBuffer->getCommand(property.commandIndex), &property.info
 		, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 //レンダリング終了
 void Render::RenderEnd(const RenderProperty& property)
 {
-	vkCmdEndRenderPass(property.commandBuffer->getCommand());
+	vkCmdEndRenderPass(property.commandBuffer->getCommand(property.commandIndex));
 
 	initProperty();
 }

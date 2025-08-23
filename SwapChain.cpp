@@ -286,7 +286,7 @@ void SwapChain::createFrameBuffers()
 //スワップチェーンの画像を切り替える(動機も行う)
 void SwapChain::flipSwapChainImage(std::shared_ptr<CommandBuffer> commandBuffer)
 {
-	commandBuffer->addWaitSemaphore(imageAvailableSemaphores[frameIndex]);
+    commandBuffer->addWaitSemaphore(imageAvailableSemaphores[frameIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
     commandBuffer->Submit(vulkanCore->getGraphicsQueue());
 

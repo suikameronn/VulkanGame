@@ -85,6 +85,8 @@ PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayou
 
 		builder->addLayout(layout);
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+
+		builder->addPushConstant(sizeof(uint32_t), VK_SHADER_STAGE_VERTEX_BIT);
 	}
 	else if (pattern == PipelineLayoutPattern::CALC_CUBEMAP)
 	{

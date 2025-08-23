@@ -20,6 +20,7 @@ struct RenderProperty
 
 	std::shared_ptr<FrameBuffer> frameBuffer;
 
+	uint32_t commandIndex;
 	std::shared_ptr<CommandBuffer> commandBuffer;
 
 	bool isClear;
@@ -41,6 +42,8 @@ struct RenderProperty
 
 		clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
 		clearValues[1].depthStencil = { 1.0f,0 };
+
+		commandIndex = 0;
 	};
 };
 
@@ -85,6 +88,7 @@ public:
 
 	//コマンドを積むコマンドバッファを設定
 	std::shared_ptr<Render> withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer);
+	std::shared_ptr<Render> withCommandBuffer(const std::shared_ptr<CommandBuffer> commandBuffer, const uint32_t& index);
 
 	//プロパティを返す
 	RenderProperty Build();

@@ -293,7 +293,7 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	const TextureProperty texProp = srcTexture->property;
 	const VkExtent3D extent = srcTexture->property.image.info.extent;
-	const uint32_t size = std::min(extent.width, extent.height);
+	const uint32_t size = std::min(extent.width, extent.height) / 2;
 
 	//SamplerCubeの6つのレイヤーを持つテクスチャを作成
 	textureFactory->getBuilder()->initProperty()
@@ -346,7 +346,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 
 	//各フレームバッファにレンダリングしていく
 	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
-
 	renderCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
 		->setFence(commandFactory->createFence());
 
@@ -516,7 +515,7 @@ void SkyDomeBuilder::createReflection(const std::shared_ptr<SkyDome> skydome, co
 
 	const TextureProperty texProp = srcTexture->property;
 	const VkExtent3D extent = srcTexture->property.image.info.extent;
-	const uint32_t size = std::min(extent.width, extent.height);
+	const uint32_t size = std::min(extent.width, extent.height) / 2;
 
 	uint32_t mipmap = size;
 	std::vector<uint32_t> mipmapLevelSize;

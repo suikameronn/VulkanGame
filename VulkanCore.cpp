@@ -504,3 +504,14 @@ bool VulkanCore::isWindowSizeChanged()
 
     return b;
 }
+
+//gpu‚Ìˆ—‚ÌŠ®—¹‚ğ‘Ò‚Â
+bool VulkanCore::freezeGpu(const VkQueue& queue)
+{
+	VkResult result = vkQueueWaitIdle(queue);
+
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to freeze GPU!");
+    }
+    return true;
+}
