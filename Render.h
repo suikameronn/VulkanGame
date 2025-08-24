@@ -23,8 +23,13 @@ struct RenderProperty
 	uint32_t commandIndex;
 	std::shared_ptr<CommandBuffer> commandBuffer;
 
-	bool isClear;
-	std::array<VkClearValue, 2> clearValues;
+	bool isColorClear;
+	VkClearValue colorClear;
+
+	bool isDepthStencilClear;
+	VkClearValue depthStencilClear;
+
+	std::vector<VkClearValue> clearValues;
 
 	void initProperty()
 	{
@@ -38,10 +43,11 @@ struct RenderProperty
 
 		frameBuffer.reset();
 
-		isClear = false;
-
-		clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
-		clearValues[1].depthStencil = { 1.0f,0 };
+		isColorClear = false;
+		colorClear.color = { {0.0f,0.0f,0.0f,1.0f} };
+		
+		isDepthStencilClear = false;
+		depthStencilClear.depthStencil = { 1.0f,0 };
 
 		commandIndex = 0;
 	};

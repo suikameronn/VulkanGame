@@ -91,7 +91,7 @@ void GameManager::createScene()
 {
 	size_t entity1 = ecsManager->GenerateEntity();
 
-	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(200.0f);
+	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(300.0f);
 
 	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
@@ -688,8 +688,7 @@ void GameManager::Rendering()
 							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
 						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
-							//->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-						->setFence(commandBufferFactory->createFence());
+							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 						commandBuffer->recordBegin();
 
@@ -720,7 +719,7 @@ void GameManager::Rendering()
 										vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 											pipelineFactory->Create(PipelinePattern::CALC_SHADOWMAP)->pipeline);
 
-										//vkCmdSetDepthBias(commandBuffer->getCommand(), 1.25f, 0.0f, 1.75f);
+										vkCmdSetDepthBias(commandBuffer->getCommand(), 1.25f, 0.0f, 1.75f);
 
 										VkViewport viewport{};
 										viewport.x = 0.0f;
@@ -778,9 +777,7 @@ void GameManager::Rendering()
 
 						commandBuffer->Submit(vulkanCore->getGraphicsQueue());
 
-						commandBuffer->waitFence();
-
-						//renderCommand[frameIndex]->addWaitCommand(commandBuffer);
+						renderCommand[frameIndex]->addWaitCommand(commandBuffer);
 					}
 				}
 			);

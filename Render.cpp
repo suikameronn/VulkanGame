@@ -41,11 +41,11 @@ std::shared_ptr<Render> Render::withRenderArea(const uint32_t& width, const uint
 //レンダー画像の初期化色の設定
 std::shared_ptr<Render> Render::withClearColor(const glm::ivec4& color)
 {
-	property.isClear = true;
+	property.isColorClear = true;
 
 	for (int i = 0; i < 4; i++)
 	{
-		property.clearValues[0].color.int32[i] = color[i];
+		property.colorClear.color.int32[i] = color[i];
 	}
 
 	return shared_from_this();
@@ -54,9 +54,9 @@ std::shared_ptr<Render> Render::withClearColor(const glm::ivec4& color)
 //レンダー画像の初期化のデプスの設定
 std::shared_ptr<Render> Render::withClearDepth(const float& depth)
 {
-	property.isClear = true;
+	property.isDepthStencilClear = true;
 
-	property.clearValues[1].depthStencil.depth = depth;
+	property.depthStencilClear.depthStencil.depth = depth;
 
 	return shared_from_this();
 }
@@ -64,9 +64,9 @@ std::shared_ptr<Render> Render::withClearDepth(const float& depth)
 //レンダー画像の初期化のステンシルの設定
 std::shared_ptr<Render> Render::withClearStencil(const uint32_t& stencil)
 {
-	property.isClear = true;
+	property.isDepthStencilClear = true;
 
-	property.clearValues[1].depthStencil.stencil = stencil;
+	property.depthStencilClear.depthStencil.stencil = stencil;
 
 	return shared_from_this();
 }
@@ -92,10 +92,32 @@ std::shared_ptr<Render> Render::withCommandBuffer(const std::shared_ptr<CommandB
 //プロパティを返す
 RenderProperty Render::Build()
 {
-	if (property.isClear)
+	if(property.isColorClear && property.isDepthStencilClear)
 	{
-		property.info.clearValueCount = static_cast<uint32_t>(property.clearValues.size());
+		property.info.clearValueCount = 2;
+		property.clearValues.resize(2);
+		property.clearValues[0] = property.colorClear;
+		property.clearValues[1] = property.depthStencilClear;
 		property.info.pClearValues = property.clearValues.data();
+	}
+	else if(property.isColorClear)
+	{
+		property.info.clearValueCount = 1;
+		property.clearValues.resize(1);
+		property.clearValues[0] = property.colorClear;
+		property.info.pClearValues = property.clearValues.data();
+	}
+	else if(property.isDepthStencilClear)
+	{
+		property.info.clearValueCount = 1;
+		property.clearValues.resize(1);
+		property.clearValues[0] = property.depthStencilClear;
+		property.info.pClearValues = property.clearValues.data();
+	}
+	else
+	{
+		property.info.clearValueCount = 0;
+		property.info.pClearValues = nullptr;
 	}
 
 	return property;
