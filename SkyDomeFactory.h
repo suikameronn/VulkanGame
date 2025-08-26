@@ -70,4 +70,6 @@ public:
 
 	//ID‚©‚çSkyDome‚ğæ“¾‚·‚é
 	std::shared_ptr<SkyDome> GetSkyDome(const uint32_t id);
+
+	uint32_t getCubemapModelID();
 };

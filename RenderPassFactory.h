@@ -12,6 +12,7 @@ struct RenderPass;
 enum class RenderPassPattern
 {
 	PBR,
+	CUBEMAP,
 	UI,
 	CALC_SHADOWMAP,
 	CALC_CUBEMAP,

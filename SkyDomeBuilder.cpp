@@ -324,8 +324,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		);
 	}
 
-	std::cout << "Create Image" << std::endl;
-
 	//上で作ったテクスチャの各レイヤーをレンダーターゲットとして
 	//フレームバッファを作る
 	std::array<std::shared_ptr<FrameBuffer>, CUBEMAP_LAYER> frameBufferArray;
@@ -341,8 +339,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 			->Build()
 		);
 	}
-
-	std::cout << "Create FrameBuffer" << std::endl;
 
 	//各フレームバッファにレンダリングしていく
 	std::shared_ptr<CommandBuffer> renderCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
@@ -424,8 +420,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		renderCommand->waitFence();
 	}
 
-	std::cout << "Render" << std::endl;
-
 	diffuse.multiLayerTex = textureFactory->Create
 	(
 		textureFactory->getBuilder()->initProperty()
@@ -450,8 +444,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 		->withMinFilter(VK_FILTER_LINEAR)
 		->Build()
 	);
-
-	std::cout << "Copy " << std::endl;
 
 	std::shared_ptr<CommandBuffer> copyCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
 	copyCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
@@ -480,8 +472,6 @@ void SkyDomeBuilder::createDiffuse(const std::shared_ptr<SkyDome> skydome, const
 	copyCommand->recordEnd();
 
 	copyCommand->Submit(vulkanCore->getGraphicsQueue());
-
-	std::cout << "Transition" << std::endl;
 
 	std::shared_ptr<CommandBuffer> transCommand = std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandFactory);
 	transCommand->setCommandBufffer(commandFactory->createCommandBuffer(1))
@@ -930,9 +920,7 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 	//背景のマップを作成
 	createBackGround(skydome, srcTexture, uniformDescriptorSet, srcTexDescriptorSet);
 
-	std::cout << "BackGround" << std::endl;
-
-	std::shared_ptr<DescriptorSet> backGroundDesc = descriptorSetFactory->Create
+	skydome->cubemapDescriptorSet = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
 		->withBindingImage(0)
@@ -946,41 +934,32 @@ std::shared_ptr<SkyDome> SkyDomeBuilder::Create(const SkyDomeProperty& prop)
 	);
 
 	//ディフーズのマップを作成
-	createDiffuse(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
-
-	std::cout << "Diffuse Finish" << std::endl;
+	createDiffuse(skydome, srcTexture, uniformDescriptorSet, skydome->cubemapDescriptorSet);
 
 	//スペキュラーの反射マップを作成
-	createReflection(skydome, srcTexture, uniformDescriptorSet, backGroundDesc);
-
-	std::cout << "Reflection Finish" << std::endl;
+	createReflection(skydome, srcTexture, uniformDescriptorSet, skydome->cubemapDescriptorSet);
 
 	textureFactory->getCopy()->initProperty();
 
 	//スペキュラーのBRDFマップを作成
 	createBRDF(skydome, srcTexture, uniformDescriptorSet);
 
-	skydome->descriptorSet = descriptorSetFactory->Create
+	skydome->iblDescriptorSet = descriptorSetFactory->Create
 	(
 		descriptorSetFactory->getBuilder()->initProperty()
 		->withDescriptorSetCount(1)
 		->withDescriptorSetLayout(layoutFactory->Create(LayoutPattern::IBL))
 		->withBindingImage(0)
-		->withTexture(skydome->backGround.multiLayerTex)
-		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		->addImageInfo()
-		->withBindingImage(1)
 		->withTexture(skydome->diffuse.multiLayerTex)
 		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		->addImageInfo()
-		->withBindingImage(2)
+		->withBindingImage(1)
 		->withTexture(skydome->reflection.multiLayerTex)
 		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		->addImageInfo()
-		->withBindingImage(3)
+		->withBindingImage(2)
 		->withTexture(skydome->brdf.texture)
 		->withTypeImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		->withImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)

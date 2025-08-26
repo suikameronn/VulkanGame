@@ -56,10 +56,9 @@ layout (set = 3, binding = 3) uniform sampler2D normalMap;//法線マップ
 layout (set = 3, binding = 4) uniform sampler2D aoMap;
 layout (set = 3, binding = 5) uniform sampler2D emissiveMap;//光のマップ
 
-layout(set = 4,binding = 0) uniform samplerCube backGroundMap;
-layout(set = 4,binding = 1) uniform samplerCube diffuseMap;
-layout(set = 4,binding = 2) uniform samplerCube specularReflectionMap;
-layout(set = 4,binding = 3) uniform sampler2D specularBRDFMap;
+layout(set = 4,binding = 0) uniform samplerCube diffuseMap;
+layout(set = 4,binding = 1) uniform samplerCube specularReflectionMap;
+layout(set = 4,binding = 2) uniform sampler2D specularBRDFMap;
 
 layout(location = 0) out vec4 outColor;
 

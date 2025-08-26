@@ -91,12 +91,14 @@ void GameManager::createScene()
 {
 	size_t entity1 = ecsManager->GenerateEntity();
 
-	ecsManager->AddComponent<TransformComp>(entity1)->scale = glm::vec3(300.0f);
+	TransformComp* transComp = ecsManager->AddComponent<TransformComp>(entity1);
+	transComp->scale = glm::vec3(6.0f);
+	transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
 
 	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
 	GltfModelAnimComp* animComp = ecsManager->AddComponent<GltfModelAnimComp>(entity1);
-	animComp->animationName = "Idle";
+	animComp->animationName = "Idle_gunMiddle";
 
 	ecsManager->AddComponent<MeshRendererComp>(entity1);
 
@@ -104,9 +106,9 @@ void GameManager::createScene()
 
 	size_t entity2 = ecsManager->GenerateEntity();
 	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity2);
-	dLight->position = glm::vec3(200.0f, 200.0f, 200.0f);
+	dLight->position = glm::vec3(100.0f, 100.0f, 100.0f);
 	dLight->color = glm::vec4(1.0f);
-	dLight->direction = glm::vec3(-200.0f, -200.0f, -200.0f);
+	dLight->direction = glm::vec3(-100.0f, -100.0f, -100.0f);
 	ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
 
 	size_t entity3 = ecsManager->GenerateEntity();
@@ -116,8 +118,8 @@ void GameManager::createScene()
 	CameraComp* cameraComp = ecsManager->AddComponent<CameraComp>(entity4);
 	cameraComp->aspect = 900.0f / 600.0f;
 	cameraComp->viewAngle = 45.0f;
-	cameraComp->matrices.position = glm::vec3(-10.0f);
-	cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	cameraComp->matrices.position = glm::vec3(0.0f, 0.0f, -25.0f);
+	cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 	cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
 
 	/*size_t entity5 = ecsManager->GenerateEntity();
@@ -171,7 +173,7 @@ void GameManager::mainGameLoop()//メインゲームループ
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();//フレーム間時間を計算する
         if (elapsed < frameDuration)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//fpsを制限する
+            //std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameDuration - elapsed)));//fpsを制限する
         }
         else
         {
@@ -613,9 +615,9 @@ void GameManager::OnLateUpdate()
 			[&](TransformComp& transComp,MeshRendererComp& rendererComp)
 			{
 				glm::mat4 rotateMat = glm::mat4(1.0f);
-				rotateMat *= glm::rotate(glm::radians(transComp.rotation[0]), glm::vec3(1, 0, 0));
-				rotateMat *= glm::rotate(glm::radians(transComp.rotation[1]), glm::vec3(0, 1, 0));
-				rotateMat *= glm::rotate(glm::radians(transComp.rotation[2]), glm::vec3(0, 0, 1));
+				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[0]), glm::vec3(1, 0, 0));
+				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[1]), glm::vec3(0, 1, 0));
+				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[2]), glm::vec3(0, 0, 1));
 
 				const glm::mat4 model = glm::translate(glm::mat4(1.0f),transComp.position)
 					* rotateMat * glm::scale(glm::mat4(1.0f),transComp.scale);
@@ -639,7 +641,7 @@ void GameManager::OnLateUpdate()
 
 					std::vector<std::array<glm::mat4, 128>> jointMat(1);
 
-					float deltaTime = animComp.startTime;
+					float deltaTime = (clock() - animComp.startTime) / 1000.0f;
 					if (deltaTime > gltfModel->animations[animComp.animationName].end)
 					{
 						deltaTime = gltfModel->animations[animComp.animationName].start;
@@ -688,7 +690,7 @@ void GameManager::Rendering()
 							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
 
 						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
-							->setSemaphore(commandBufferFactory->createSemaphore(),VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+							->setSemaphore(commandBufferFactory->createSemaphore(), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 						commandBuffer->recordBegin();
 
@@ -783,9 +785,114 @@ void GameManager::Rendering()
 			);
 	}
 
-	{
-		std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
+	std::shared_ptr<FrameBuffer> frameBuffer = swapChain->getCurrentFrameBuffer();
 
+	{
+		ecsManager->RunFunction<SkyDomeComp>
+			(
+				{
+					[&](SkyDomeComp& comp)
+					{
+						std::shared_ptr<SkyDome> skydome = skydomeFactory->GetSkyDome(comp.ID);
+
+						std::shared_ptr<CommandBuffer> commandBuffer
+							= std::make_shared<CommandBuffer>(vulkanCore->getLogicDevice(), commandBufferFactory);
+
+						commandBuffer->setCommandBufffer(commandBufferFactory->createCommandBuffer(1))
+							->setSemaphore(commandBufferFactory->createSemaphore(), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+						commandBuffer->recordBegin();
+
+						const VkExtent2D extent = swapChain->getSwapChainExtent();
+
+						const RenderProperty renderProp = render->initProperty()
+							->withRenderPass(renderPassFactory->Create(RenderPassPattern::CUBEMAP))
+							->withFrameBuffer(frameBuffer)
+							->withCommandBuffer(commandBuffer)
+							->withRenderArea(extent.width, extent.height)
+							->withClearColor(glm::vec4(0.0f))
+							->withClearDepth(1.0f)
+							->withClearStencil(0)
+							->Build();
+
+						render->RenderStart(renderProp);
+
+						ecsManager->RunFunction<CameraComp>
+							(
+								{
+									[&](CameraComp& cameraComp)
+									{
+										const uint32_t modelID = skydomeFactory->getCubemapModelID();
+
+										std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(modelID);
+										if (!gltfModel)
+										{
+											throw std::runtime_error("GameManager::std::shared_ptr<Render>::gltfModel is nullptr");
+										}
+
+										vkCmdBindPipeline(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+											pipelineFactory->Create(PipelinePattern::CUBEMAP)->pipeline);
+
+										VkViewport viewport{};
+										viewport.x = 0.0f;
+										viewport.y = 0.0f;
+										viewport.width = (float)swapChain->getSwapChainExtent().width;
+										viewport.height = (float)swapChain->getSwapChainExtent().height;
+										viewport.minDepth = 0.0f;
+										viewport.maxDepth = 1.0f;
+										vkCmdSetViewport(commandBuffer->getCommand(), 0, 1, &viewport);
+
+										VkRect2D scissor{};
+										scissor.offset = { 0, 0 };
+										scissor.extent = swapChain->getSwapChainExtent();
+										vkCmdSetScissor(commandBuffer->getCommand(), 0, 1, &scissor);
+
+										std::array<VkDescriptorSet, 2> descriptorSets;
+
+										VkDeviceSize offsets[] = { 0 };
+
+										for (int i = 0; i < gltfModel->nodes.size(); i++)
+										{
+											const Mesh& mesh = gltfModel->nodes[i].mesh;
+
+											if (mesh.vertices.size() != 0)
+											{
+												vkCmdBindVertexBuffers(commandBuffer->getCommand(), 0, 1, &gltfModel->getVertBuffer(mesh.meshIndex)->buffer, offsets);
+
+												vkCmdBindIndexBuffer(commandBuffer->getCommand(), gltfModel->getIndeBuffer(mesh.meshIndex)->buffer, 0, VK_INDEX_TYPE_UINT32);
+
+												for (const auto& primitive : mesh.primitives)
+												{
+													std::shared_ptr<Material> material = gltfModel->materials[primitive.materialIndex];
+
+													descriptorSets[0] = cameraComp.descriptorSet->descriptorSet;
+													descriptorSets[1] = skydome->cubemapDescriptorSet->descriptorSet;
+
+													vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+														pipelineLayoutFactory->Create(PipelineLayoutPattern::CUBEMAP)->pLayout, 0
+														, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+													vkCmdDrawIndexed(commandBuffer->getCommand(), primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+												}
+											}
+										}
+									}
+								}
+							);
+
+						render->RenderEnd(renderProp);
+
+						commandBuffer->recordEnd();
+
+						commandBuffer->Submit(vulkanCore->getGraphicsQueue());
+
+						renderCommand[frameIndex]->addWaitCommand(commandBuffer);
+					}
+				}
+			);
+	}
+
+	{
 		std::function<void(GltfModelComp&, MeshRendererComp&)> renderModel =
 			[&](GltfModelComp& gltfComp, MeshRendererComp& meshRendererComp)
 			{
@@ -843,7 +950,7 @@ void GameManager::Rendering()
 							descriptorSets[1] = ecsManager->GetComponent<CameraComp>(cameraEntity)->descriptorSet->descriptorSet;
 							descriptorSets[2] = sceneLight->texDescriptorSet->descriptorSet;
 							descriptorSets[3] = gltfModel->materials[primitive.materialIndex]->getDescriptorSet()->descriptorSet;
-							descriptorSets[4] = skydome->descriptorSet->descriptorSet;
+							descriptorSets[4] = skydome->iblDescriptorSet->descriptorSet;
 
 							vkCmdBindDescriptorSets(renderCommand[frameIndex]->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
 								pipelineLayoutFactory->Create(PipelineLayoutPattern::PBR)->pLayout, 0

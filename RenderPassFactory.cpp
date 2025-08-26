@@ -20,6 +20,54 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 
 		builder->withFormat(vulkanCore->getSwapChainFormat())
 			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_LOAD)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			->addColorAttachment();
+
+		builder->withFormat(VK_FORMAT_D32_SFLOAT_S8_UINT)
+			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addDepthStencilAttachment();
+
+		builder->withFormat(vulkanCore->getSwapChainFormat())
+			->withMultiSamples(VK_SAMPLE_COUNT_1_BIT)
+			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
+			->withInitialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->addColorResolveAttachment();
+
+		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)
+			->withDstSubpassIndex(0)
+			->withSrcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+			->withSrcAccessMask(0)
+			->withDstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+			->withDstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+			->addDependency()
+			->addSubpass();
+
+		return builder->Build();
+	}
+	else if (pattern == RenderPassPattern::CUBEMAP)
+	{
+		builder->initProperty();
+
+		builder->withFormat(vulkanCore->getSwapChainFormat())
+			->withMultiSamples(vulkanCore->getMaxMsaaSamples())
 			->withColorLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
 			->withColorStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
@@ -35,7 +83,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->withFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 			->addDepthStencilAttachment();
 
 		builder->withFormat(vulkanCore->getSwapChainFormat())
@@ -45,7 +93,7 @@ RenderPassProperty RenderPassFactory::convertPattern(const RenderPassPattern& pa
 			->withStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 			->withStencilStoreOp(VK_ATTACHMENT_STORE_OP_STORE)
 			->withInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			->withFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+			->withFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 			->addColorResolveAttachment();
 
 		builder->withSrcSubpassIndex(VK_SUBPASS_EXTERNAL)

@@ -118,6 +118,8 @@ void GltfModelFactory::loadNode(std::shared_ptr<GltfModel> model, const int node
     if (gltfNode.children.size() > 0)
     {
         size_t offset = 1;
+
+		//現在のオフセットを親ノードのインデックスとして設定
         int parentIndex = 0;
 
         for (size_t i = 0; i < gltfNode.children.size(); i++)
@@ -156,7 +158,7 @@ void GltfModelFactory::loadNode(size_t& offset, int parentIndex, std::shared_ptr
     if (gltfNode.children.size() > 0)
     {
 		//親ノードのインデックスを設定
-        parentIndex = offset;
+        parentIndex = offset - 1;
 
         for (size_t i = 0; i < gltfNode.children.size(); i++)
         {

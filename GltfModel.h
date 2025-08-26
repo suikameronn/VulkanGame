@@ -142,7 +142,7 @@ struct NodeTransform
 		std::fill(rotation.begin(), rotation.end(), glm::quat());
 		std::fill(scale.begin(), scale.end(), glm::vec3(1.0f));
 		std::fill(matrix.begin(), matrix.end(), glm::mat4(1.0f));
-		std::fill(nodeTransform.begin(), nodeTransform.end(), glm::mat4(1.0f));
+		std::fill(nodeTransform.begin(), nodeTransform.end(), glm::mat4(-1000.0f));
 	}
 };
 
@@ -153,7 +153,7 @@ struct GltfNode
 	//このindexはtinygltf上の番号
 	uint32_t index;
 	//parentIndex実際の配列上の親ノードの位置
-	size_t parentIndex;
+	int parentIndex;
 	glm::mat4 matrix;//ローカル空間へ変換用行列
 	std::string name;
 	Mesh mesh;

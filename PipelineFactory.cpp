@@ -133,7 +133,7 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
             ->withFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
             ->enableMultiSampleShading(VK_TRUE)
             ->withMinSampleShading(0.2f)
-            ->withRansterizationSamples(VK_SAMPLE_COUNT_1_BIT)
+            ->withRansterizationSamples(vulkanCore->getMaxMsaaSamples())
             ->withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                 | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
             ->withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
@@ -147,8 +147,8 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
             ->enableDepthTest(VK_TRUE)
             ->enableDepthWrite(VK_TRUE)
             ->withDepthCompare(VK_COMPARE_OP_LESS_OR_EQUAL)
-            ->withRenderPass(renderPassFactory->Create(RenderPassPattern::CALC_CUBEMAP))
-            ->withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::CALC_CUBEMAP))
+            ->withRenderPass(renderPassFactory->Create(RenderPassPattern::CUBEMAP))
+            ->withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::CUBEMAP))
             ->Build();
     }
     else if (pattern == PipelinePattern::CALC_SHADOWMAP)

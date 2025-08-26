@@ -32,3 +32,8 @@ std::shared_ptr<SkyDome> SkyDomeFactory::GetSkyDome(const uint32_t id)
 
 	throw std::runtime_error("Skydome : fatal id");
 }
+
+uint32_t SkyDomeFactory::getCubemapModelID()
+{
+	return builder->getCubemapModelID();
+}

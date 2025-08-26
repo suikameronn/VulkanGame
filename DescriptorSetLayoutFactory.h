@@ -69,6 +69,7 @@ enum class LayoutPattern
 	MATERIAL,//各種テクスチャを含む
 	LIGHT,//ライトの色
 	SHADOWMAP,//シャドウマップのライト視点の行列とデプスバッファのテクスチャ
+	CUBEMAP,//6つのレイヤーを持つキューブマップテクスチャ
 	IBL,//IBLのディフーズ、スペキュラー、BRDFを含む
 	RAYCAST,//二つのストレージバッファ
 	UI,//UI用の変換行列とテクスチャ

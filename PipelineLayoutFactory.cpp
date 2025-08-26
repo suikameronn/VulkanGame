@@ -64,7 +64,7 @@ PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayou
 		//キューブマップレンダリング
 
 		builder->initProperty();
-		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));
+		builder->addLayout(layoutFactory->Create(LayoutPattern::CAMERA));
 		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_TEX_FLAG));
 	}
 	else if (pattern == PipelineLayoutPattern::CALC_SHADOWMAP)

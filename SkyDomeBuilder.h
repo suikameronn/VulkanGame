@@ -98,7 +98,8 @@ struct SkyDome
 	ReflectionMap reflection;
 	BRDFMap brdf;
 
-	std::shared_ptr<DescriptorSet> descriptorSet;
+	std::shared_ptr<DescriptorSet> cubemapDescriptorSet;
+	std::shared_ptr<DescriptorSet> iblDescriptorSet;
 };
 
 struct SkyDomeProperty
@@ -195,4 +196,9 @@ public:
 	}
 
 	std::shared_ptr<SkyDome> Create(const SkyDomeProperty& prop);
+
+	uint32_t getCubemapModelID()
+	{
+		return cubemapModelID;
+	}
 };
