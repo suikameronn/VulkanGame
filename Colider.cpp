@@ -1,9 +1,7 @@
 #include"Colider.h"
 
-#include"VulkanBase.h"
-
 Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger
-	,std::shared_ptr<GpuBufferFactory> buffer,std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+	,std::shared_ptr<GpuBufferFactory> buffer,std::shared_ptr<DescriptorSetLayoutFactory> layout
 	,std::shared_ptr<DescriptorSetFactory> desc)
 {
 	bufferFactory = buffer;
@@ -114,7 +112,7 @@ void Colider::createBuffer()
 	indeBuffer = bufferFactory->Create(sizeof(uint32_t)
 		, BufferUsage::INDEX, BufferTransferType::DST);
 
-	matBuffer = bufferFactory->Create(sizeof(MatricesUBO)
+	matBuffer = bufferFactory->Create(sizeof(ModelMat)
 		, BufferUsage::UNIFORM, BufferTransferType::NONE);
 }
 
@@ -125,14 +123,14 @@ void Colider::createDescriptorSet()
 
 	descriptorSet = descriptorSetFactory->Create(descriptorSetFactory->getBuilder()
 		->initProperty()
-		.withBindingBuffer(0)
-		.withBuffer(matBuffer)
-		.withDescriptorSetCount(1)
-		.withDescriptorSetLayout(layout)
-		.withRange(sizeof(MatricesUBO))
-		.withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-		.addBufferInfo()
-		.Build()
+		->withBindingBuffer(0)
+		->withBuffer(matBuffer)
+		->withDescriptorSetCount(1)
+		->withDescriptorSetLayout(layout)
+		->withRange(sizeof(ModelMat))
+		->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		->addBufferInfo()
+		->Build()
 	);
 }
 

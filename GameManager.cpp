@@ -54,6 +54,10 @@ void GameManager::createInstance()
 		, commandBufferFactory);
 
 	skydomeFactory = std::make_shared<SkyDomeFactory>(skydomeBuilder);
+
+	coliderFactory = std::make_shared<ColiderFactory>(modelFactory, bufferFactory, descriptorSetLayoutFactory, descriptorSetFactory);
+
+	inputSystem = std::make_shared<InputSystem>();
 }
 
 //ビルダーの用意
@@ -89,39 +93,74 @@ void GameManager::createFactory()
 //シーンの作成
 void GameManager::createScene()
 {
+
 	size_t entity1 = ecsManager->GenerateEntity();
+	{
+		TransformComp* transComp = ecsManager->AddComponent<TransformComp>(entity1);
+		transComp->scale = glm::vec3(6.0f);
+		transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
 
-	TransformComp* transComp = ecsManager->AddComponent<TransformComp>(entity1);
-	transComp->scale = glm::vec3(6.0f);
-	transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+		GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
-	GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
+		GltfModelAnimComp* animComp = ecsManager->AddComponent<GltfModelAnimComp>(entity1);
+		animComp->animationName = "Idle_gunMiddle";
 
-	GltfModelAnimComp* animComp = ecsManager->AddComponent<GltfModelAnimComp>(entity1);
-	animComp->animationName = "Idle_gunMiddle";
+		ecsManager->AddComponent<MeshRendererComp>(entity1);
 
-	ecsManager->AddComponent<MeshRendererComp>(entity1);
+		comp->filePath = "models/robot.glb";
 
-	comp->filePath = "models/robot.glb";
+		ecsManager->AddComponent<ColiderComp>(entity1);
 
-	size_t entity2 = ecsManager->GenerateEntity();
-	DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity2);
-	dLight->position = glm::vec3(100.0f, 100.0f, 100.0f);
-	dLight->color = glm::vec4(1.0f);
-	dLight->direction = glm::vec3(-100.0f, -100.0f, -100.0f);
-	ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
+		PhysicComp* physic = ecsManager->AddComponent<PhysicComp>(entity1);
+		//physic->gravity = glm::vec3(0.0f, 0.98f, 0.0f);
 
-	size_t entity3 = ecsManager->GenerateEntity();
-	SkyDomeComp* skydomeComp = ecsManager->AddComponent<SkyDomeComp>(entity3);
+		InputComp* input = ecsManager->AddComponent<InputComp>(entity1);
+	}
 
-	size_t entity4 = ecsManager->GenerateEntity();
-	CameraComp* cameraComp = ecsManager->AddComponent<CameraComp>(entity4);
-	cameraComp->aspect = 900.0f / 600.0f;
-	cameraComp->viewAngle = 45.0f;
-	cameraComp->matrices.position = glm::vec3(0.0f, 0.0f, -25.0f);
-	cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
+	{
+		size_t entity2 = ecsManager->GenerateEntity();
+		DirectionLightComp* dLight = ecsManager->AddComponent<DirectionLightComp>(entity2);
+		dLight->position = glm::vec3(100.0f, 100.0f, 100.0f);
+		dLight->color = glm::vec4(1.0f);
+		dLight->direction = glm::vec3(-100.0f, -100.0f, -100.0f);
+		ecsManager->AddComponent<TransformComp>(entity2)->position = glm::vec3(10.0f);
+	}
 
+	{
+		size_t entity3 = ecsManager->GenerateEntity();
+		SkyDomeComp* skydomeComp = ecsManager->AddComponent<SkyDomeComp>(entity3);
+	}
+
+	{
+		size_t entity4 = ecsManager->GenerateEntity();
+		CameraComp* cameraComp = ecsManager->AddComponent<CameraComp>(entity4);
+		cameraComp->aspect = 900.0f / 600.0f;
+		cameraComp->viewAngle = 45.0f;
+		cameraComp->matrices.position = glm::vec3(0.0f, -13.0f, -25.0f);
+		cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
+
+		TargetEntityComp* target = ecsManager->AddComponent<TargetEntityComp>(entity4);
+		target->targetEntity = entity1;
+		target->offset = glm::vec3(0.0f, -13.0f, -25.0f);
+	}
+
+	{
+		size_t ground = ecsManager->GenerateEntity();
+
+		TransformComp* transComp = ecsManager->AddComponent<TransformComp>(ground);
+		transComp->position = glm::vec3(0.0f, 0.0f, -5.0f);
+		transComp->scale = glm::vec3(100.0f,100.0f,100.0f);
+		transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+
+		ColiderComp* colider = ecsManager->AddComponent<ColiderComp>(ground);
+		colider->type = ColliderType::Box;
+
+		GltfModelComp* gltfModel = ecsManager->AddComponent<GltfModelComp>(ground);
+		gltfModel->filePath = "models/Ground.glb";
+
+		ecsManager->AddComponent<MeshRendererComp>(ground);
+	}
 	/*size_t entity5 = ecsManager->GenerateEntity();
 	DirectionLightComp* dLight2 = ecsManager->AddComponent<DirectionLightComp>(entity5);
 	dLight2->position = glm::vec3(200.0f, 200.0f, 200.0f);
@@ -288,6 +327,21 @@ void GameManager::OnStart()
 							}
 						}
 					}
+				}
+			}
+		);
+
+	ecsManager->RunFunction<GltfModelComp, ColiderComp>
+		(
+			{
+				[&](GltfModelComp& gltfModel,ColiderComp& colider)
+				{
+					colider.ID = coliderFactory->Create(gltfModel.modelID);
+
+					std::unique_ptr<Colider>& coliderPtr = coliderFactory->GetColider(colider.ID);
+
+					coliderPtr->createBuffer();
+					coliderPtr->createDescriptorSet();
 				}
 			}
 		);
@@ -558,12 +612,65 @@ void GameManager::OnStart()
 //コンポーネントの更新処理
 void GameManager::OnUpdate()
 {
+	ecsManager->RunFunction<InputComp>
+		(
+			{
+				[&](InputComp& input)
+				{
+					input.lastFrame.copy(input.currentFrame);
+				}
+			}
+		);
 
+	ecsManager->RunFunction<PhysicComp, TransformComp>
+		(
+			{
+				[&](PhysicComp& physic,TransformComp& transform)
+				{
+					transform.position += physic.gravity;
+				}
+			}
+		);
 }
 
 //更新処理後の処理
 void GameManager::OnLateUpdate()
 {
+	ecsManager->RunFunction<PhysicComp, TransformComp, InputComp>
+		(
+			{
+				[&](PhysicComp& physic,TransformComp& transform,InputComp& input)
+				{
+					int w = inputSystem->getKey(GLFW_KEY_W);
+					int s = inputSystem->getKey(GLFW_KEY_S);
+					int a = inputSystem->getKey(GLFW_KEY_A);
+					int d = inputSystem->getKey(GLFW_KEY_D);
+
+					if (w == GLFW_PRESS)
+					{
+						physic.velocity.velocity = glm::vec3(0.0f, 0.0f, 1.0f);
+					}
+
+					if (s == GLFW_PRESS)
+					{
+						physic.velocity.velocity = glm::vec3(0.0f, 0.0f, -1.0f);
+					}
+
+					if (a == GLFW_PRESS)
+					{
+						physic.velocity.velocity = glm::vec3(-1.0f, 0.0f, 0.0f);
+					}
+
+					if (d == GLFW_PRESS)
+					{
+						physic.velocity.velocity = glm::vec3(1.0f, 0.0f, 0.0f);
+					}
+
+					transform.position += physic.velocity.velocity;
+				}
+			}
+		);
+
 	ecsManager->RunFunction<TargetEntityComp, TransformComp>
 		(
 			{
@@ -576,15 +683,29 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
-	ecsManager->RunFunction<TargetEntityComp, TransformComp, CameraComp>
+	ecsManager->RunFunction<CameraComp,InputComp>
 		(
 			{
-				[&](TargetEntityComp& targetComp,TransformComp& transComp,CameraComp& cameraComp)
+				[&](CameraComp& camera,InputComp& input)
+				{
+					
+				}
+			}
+		);
+
+	ecsManager->RunFunction<TargetEntityComp, CameraComp>
+		(
+			{
+				[&](TargetEntityComp& targetComp,CameraComp& cameraComp)
 				{
 					TransformComp* target = ecsManager->GetComponent<TransformComp>(targetComp.targetEntity);
 
-					cameraComp.matrices.view = glm::lookAt(transComp.position, target->position, glm::vec3(0.0f, 1.0f, 0.0f));
+					cameraComp.matrices.position = target->position + targetComp.offset;
+
+					cameraComp.matrices.view = glm::lookAt(cameraComp.matrices.position, target->position, glm::vec3(0.0f, -1.0f, 0.0f));
 					cameraComp.matrices.proj = glm::perspective(cameraComp.viewAngle, cameraComp.aspect, cameraComp.zNear, cameraComp.zFar);
+
+					memcpy(cameraComp.uniform->mappedPtr, &cameraComp.matrices, sizeof(CameraUniform));
 				}
 			}
 		);

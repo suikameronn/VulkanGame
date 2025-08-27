@@ -14,6 +14,8 @@ struct Velocity
 
 struct PhysicComp
 {
+	Velocity velocity;
+
 	//d—Í‰Á‘¬“x
 	glm::vec3 gravity;
 	//‹ó‹C’ïRŒW”
@@ -23,7 +25,7 @@ struct PhysicComp
 
 	PhysicComp()
 	{
-		gravity = glm::vec3(0.0f, -9.81f, 0.0f);
+		gravity = glm::vec3(0.0f, 0.0f, 0.0f);
 		airResistance = 0.1f;
 		friction = 0.5f;
 	};

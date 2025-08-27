@@ -15,6 +15,7 @@
 #include"ShaderFactory.h"
 #include"TextureFactory.h"
 #include"CommandBufferFactory.h"
+#include"ColiderFactory.h"
 
 #include"GltfModelFactory.h"
 #include"MaterialBuilder.h"
@@ -23,6 +24,8 @@
 #include"Render.h"
 
 #include"SkyDomeFactory.h"
+
+#include"InputSystem.h"
 
 #include"TransformComp.h"
 #include"ColiderComp.h"
@@ -33,6 +36,7 @@
 #include"CameraComp.h"
 #include"TargetEntityComp.h"
 #include"SkyDomeComp.h"
+#include"InputComp.h"
 
 #include"ECSManager.h"
 
@@ -75,6 +79,10 @@ private:
 	std::shared_ptr<TextureFactory> textureFactory;
 	std::shared_ptr<SkyDomeFactory> skydomeFactory;
 	std::shared_ptr<CommandBufferFactory> commandBufferFactory;
+	std::shared_ptr<ColiderFactory> coliderFactory;
+
+	//キー入力を受け取る
+	std::shared_ptr<InputSystem> inputSystem;
 
 	//スワップチェーンのクラス
 	std::shared_ptr<SwapChain> swapChain;

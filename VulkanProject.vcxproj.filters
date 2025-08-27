@@ -192,6 +192,15 @@
     <ClCompile Include="CommandBufferFactory.cpp">
       <Filter>ソース ファイル\Vulkan\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="Colider.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="ColiderFactory.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Material.h">
@@ -311,9 +320,6 @@
     <ClInclude Include="GltfModelFactory.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ControllerComponent.h">
-      <Filter>ヘッダー ファイル\ECS\OldComponent</Filter>
-    </ClInclude>
     <ClInclude Include="GltfModelSystem.h">
       <Filter>ヘッダー ファイル\CompSystem</Filter>
     </ClInclude>
@@ -364,6 +370,18 @@
     </ClInclude>
     <ClInclude Include="CommandBufferFactory.h">
       <Filter>ヘッダー ファイル\Vulkan\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="Colider.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ColiderFactory.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="InputComp.h">
+      <Filter>ヘッダー ファイル\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

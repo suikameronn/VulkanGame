@@ -5,10 +5,11 @@
 
 #include"Object.h"
 #include"GltfModel.h"
-#include"EnumList.h"
 
 #include"GpuBufferFactory.h"
 #include"DescriptorSetFactory.h"
+
+#include"MeshRendererComp.h"
 
 #include<random>
 
@@ -87,7 +88,7 @@ private:
 
 	//コライダー描画用のファクトリー
 	std::shared_ptr<GpuBufferFactory> bufferFactory;
-	std::shared_ptr<GpuDescriptorSetLayoutFactory> layoutFactory;
+	std::shared_ptr<DescriptorSetLayoutFactory> layoutFactory;
 	std::shared_ptr<DescriptorSetFactory> descriptorSetFactory;
 
 	//コライダー描画用の変数
@@ -134,7 +135,7 @@ private:
 public:
 
 	Colider(std::shared_ptr<GltfModel> model,bool isTrigger
-		, std::shared_ptr<GpuBufferFactory> buffer, std::shared_ptr<GpuDescriptorSetLayoutFactory> layout
+		, std::shared_ptr<GpuBufferFactory> buffer, std::shared_ptr<DescriptorSetLayoutFactory> layout
 		, std::shared_ptr<DescriptorSetFactory> desc);
 
 	bool isTrigger()

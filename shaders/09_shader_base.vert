@@ -83,8 +83,8 @@ void main() {
     }
     else
     {
-        locPos = modelMatrix.matrix * nodeAnimMatrices.nodeMatrix* vec4(inPosition,1.0);
-        outNormal = normalize(transpose(inverse(mat3(modelMatrix.matrix * nodeAnimMatrices.matrix * nodeAnimMatrices.nodeMatrix))) * inNormal);
+        locPos = modelMatrix.matrix * vec4(inPosition,1.0);
+        outNormal = normalize(transpose(inverse(mat3(modelMatrix.matrix))) * inNormal);
     }
     
     for(int i = 0;i < pointLight.lightCount;i++)
@@ -101,8 +101,11 @@ void main() {
 
     outWorldPos = locPos.xyz / locPos.w;
 
-    outUV0 = inTexCoord1 * modelMatrix.scale.xy;
-    outUV1 = inTexCoord2 * modelMatrix.scale.xy;
+    //outUV0 = inTexCoord1 * modelMatrix.scale.xy;
+    //outUV1 = inTexCoord2 * modelMatrix.scale.xy;
+
+    outUV0 = inTexCoord1;
+    outUV1 = inTexCoord2;
 
     camPos = vec3(camera.pos);
 

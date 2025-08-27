@@ -158,7 +158,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Colider.cpp" />
+    <ClCompile Include="ColiderFactory.cpp" />
     <ClCompile Include="CommandBufferFactory.cpp" />
+    <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="ECSManager.cpp" />
     <ClCompile Include="FrameBufferFactory.cpp" />
     <ClCompile Include="GltfModelFactory.cpp" />
@@ -197,10 +200,11 @@
   <ItemGroup>
     <ClInclude Include="AnimationComponent.h" />
     <ClInclude Include="CameraComp.h" />
+    <ClInclude Include="Colider.h" />
     <ClInclude Include="ColiderComp.h" />
     <ClInclude Include="ColiderComponent.h" />
+    <ClInclude Include="ColiderFactory.h" />
     <ClInclude Include="CommandBufferFactory.h" />
-    <ClInclude Include="ControllerComponent.h" />
     <ClInclude Include="ECSManager.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="GameManager.h" />
@@ -211,6 +215,8 @@
     <ClInclude Include="GltfModelSystem.h" />
     <ClInclude Include="IBL.h" />
     <ClInclude Include="IComponent.h" />
+    <ClInclude Include="InputComp.h" />
+    <ClInclude Include="InputSystem.h" />
     <ClInclude Include="LightComp.h" />
     <ClInclude Include="MaterialBuilder.h" />
     <ClInclude Include="DescriptorSetBuilder.h" />

@@ -1,12 +1,15 @@
 #pragma once
 
+//コライダーの種類
+enum class ColliderType
+{
+	Box
+};
+
 struct ColiderComp
 {
-	//コライダーの種類
-	enum class ColliderType
-	{
-		Box
-	};
+	//コライダーのID
+	size_t ID;
 
 	//コライダーのタイプ
 	ColliderType type;
@@ -19,6 +22,7 @@ struct ColiderComp
 
 	ColiderComp()
 	{
+		ID = 0;
 		type = ColliderType::Box;
 		size = 1.0f;
 	};
