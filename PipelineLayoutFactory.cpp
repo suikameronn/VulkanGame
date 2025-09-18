@@ -137,6 +137,14 @@ PipelineLayoutProperty PipelineLayoutFactory::convertLayouts(const PipelineLayou
 
 		builder->addPushConstant(sizeof(RaycastPushConstant), VK_SHADER_STAGE_COMPUTE_BIT);
 	}
+	else if (pattern == PipelineLayoutPattern::COLIDER)
+	{
+		//コライダー描画用
+
+		builder->initProperty();
+		builder->addLayout(layoutFactory->Create(LayoutPattern::SINGLE_UNIFORM_VERT));//モデル行列
+		builder->addLayout(layoutFactory->Create(LayoutPattern::CAMERA));
+	}
 
 	//レイアウトの構造体を取得する
 	return builder->Build();

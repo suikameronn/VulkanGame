@@ -6,6 +6,13 @@
 
 struct SkyDomeComp
 {
+	size_t entityID;
+
 	//ファクトリーから取得する
-	uint32_t ID;
+	size_t ID;
+
+	SkyDomeComp(const size_t& entity)
+	{
+		entityID = entity;
+	}
 };

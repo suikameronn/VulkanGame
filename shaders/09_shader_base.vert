@@ -84,6 +84,11 @@ void main() {
     else
     {
         locPos = modelMatrix.matrix * vec4(inPosition,1.0);
+
+        mat3 a = mat3(modelMatrix.matrix);
+        mat3 b = inverse(a);
+        mat3 c = transpose(b);
+
         outNormal = normalize(transpose(inverse(mat3(modelMatrix.matrix))) * inNormal);
     }
     

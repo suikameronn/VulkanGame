@@ -111,6 +111,9 @@ private:
 	//計測したフレーム時間
 	long long elapsed;
 
+	//ゲーム全体の上ベクトル
+	const glm::vec3 upVector = { 0.0f,-1.0f,0.0f };
+
 	//インスタンスを作成する
 	void createInstance();
 

@@ -138,7 +138,7 @@ private:
 
 	std::shared_ptr<RenderPassFactory> renderPassFactory;
 
-	uint32_t cubemapModelID;
+	size_t cubemapModelID;
 	CameraUniform camera;
 
 	std::shared_ptr<GltfModelFactory> modelFactory;
@@ -197,7 +197,7 @@ public:
 
 	std::shared_ptr<SkyDome> Create(const SkyDomeProperty& prop);
 
-	uint32_t getCubemapModelID()
+	size_t getCubemapModelID()
 	{
 		return cubemapModelID;
 	}

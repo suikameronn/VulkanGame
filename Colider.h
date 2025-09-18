@@ -66,6 +66,10 @@ private:
 	//コライダーが当たり判定を解消するかどうか
 	bool trigger;
 
+	//コライダー自身のオフセット
+	glm::vec3 offsetPos;
+	glm::vec3 offsetScale;
+
 	//AABB上の左上、右下の頂点
 	glm::vec3 min, max;
 	//AABBに座標変換を加えたもの
@@ -110,17 +114,17 @@ private:
 	//引数の方向ベクトルの向きで最も遠い頂点を求める
 	glm::vec3 getFurthestPoint(glm::vec3 dir);
 	//サポート写像を求める
-	glm::vec3 getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir);
+	glm::vec3 getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir);
 	//GJKの次の単体を求める
 	bool nextSimplex(Simplex& simplex, glm::vec3& dir);
 	//その線分から最も近い頂点を求める
 	glm::vec3 getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point);
 	//GJK法での当たり判定を実行
-	bool GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthVec);
+	bool GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisionDepthVec);
 	//GJK法後にEPA法で衝突を解消するためのベクトルを取得
-	void EPA(std::shared_ptr<Colider> oppColider, Simplex& simplex, glm::vec3& collisionDepthVec);
+	void EPA(const std::unique_ptr<Colider>& oppColider, Simplex& simplex, glm::vec3& collisionDepthVec);
 	//分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
-	bool SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal);
+	bool SAT(const std::unique_ptr<Colider>& oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 	//同一の線分を含まなければその頂点を単体に含める
 	void addIfUniqueEdge(std::vector<std::pair<int, int>>& edges, const std::vector<int>& faces,
 						 int a, int b);
@@ -147,6 +151,10 @@ public:
 	void createBuffer();
 	void createDescriptorSet();
 
+	//コライダーの各オフセットを設定する
+	void setOffsetPos(const glm::vec3& pos);
+	void setOffsetScale(const glm::vec3& scale);
+
 	//Modelクラスの初期座標から座標変換を適用する
 	void initFrameSettings(glm::vec3 initScale);
 	//コライダーのスケールを設定
@@ -154,7 +162,7 @@ public:
 	//コライダーのスケール行列を取得
 	glm::mat4 getScaleMat();
 	//Modelクラスの移動などをコライダーにも反映
-	void reflectMovement(const glm::mat4& transform);
+	void reflectMovement(const glm::vec3& translate, const glm::mat4& rotate, const glm::vec3& scale);
 
 	//サポート写像を求める(SAT用)
 	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
@@ -167,9 +175,9 @@ public:
 	std::shared_ptr<DescriptorSet> getDescriptorSet() { return descriptorSet; }
 
 	//SAT用当たり判定の実行
-	virtual bool Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector);
+	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector);
 	//GJK用当たり判定の実行
-	virtual bool Intersect(std::shared_ptr<Colider> oppColider);
+	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider);
 	//ボックスレイキャスト用の当たり判定の実行
 	virtual bool Intersect(glm::vec3 origin, glm::vec3 dir, float length,glm::vec3& normal);
 

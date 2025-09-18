@@ -24,11 +24,18 @@ struct PointLightComp
 
 struct DirectionLightComp
 {
+	size_t entityID;
+
 	int index;
 
 	glm::vec3 position;
 	glm::vec3 direction;
 	glm::vec4 color;
+
+	DirectionLightComp(const size_t& entity)
+	{
+		entityID = entity;
+	}
 };
 
 struct PointLightUniform

@@ -6,9 +6,9 @@ SkyDomeFactory::SkyDomeFactory(std::shared_ptr<SkyDomeBuilder> b)
 }
 
 //SkyDome‚ğì¬‚µ‚ÄA‚»‚ÌID‚ğ•Ô‚·
-uint32_t SkyDomeFactory::Create(const SkyDomeProperty& property)
+size_t SkyDomeFactory::Create(const SkyDomeProperty& property)
 {
-	const uint32_t id = hash(property);
+	const size_t id = hash(property);
 
 	if (skydomeMap[id])
 	{
@@ -23,7 +23,7 @@ uint32_t SkyDomeFactory::Create(const SkyDomeProperty& property)
 }
 
 //ID‚©‚çSkyDome‚ğæ“¾‚·‚é
-std::shared_ptr<SkyDome> SkyDomeFactory::GetSkyDome(const uint32_t id)
+std::shared_ptr<SkyDome> SkyDomeFactory::GetSkyDome(const size_t id)
 {
 	if (skydomeMap[id])
 	{
@@ -33,7 +33,7 @@ std::shared_ptr<SkyDome> SkyDomeFactory::GetSkyDome(const uint32_t id)
 	throw std::runtime_error("Skydome : fatal id");
 }
 
-uint32_t SkyDomeFactory::getCubemapModelID()
+size_t SkyDomeFactory::getCubemapModelID()
 {
 	return builder->getCubemapModelID();
 }

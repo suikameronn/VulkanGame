@@ -24,7 +24,7 @@ private:
 	std::shared_ptr<TextureFactory> textureFactory;
 
 	//ロードしたgltfモデルを保存するマップ
-	std::unordered_map<uint32_t, std::shared_ptr<GltfModel>> modelStorage;
+	std::unordered_map<size_t, std::shared_ptr<GltfModel>> modelStorage;
 
 	//コライダー用のAABBの座標を求める
 	glm::vec3 minPos;
@@ -35,10 +35,10 @@ private:
 	int indexNum;
 
 	//ファイルパスからハッシュ値を計算する
-	uint32_t hashFilePath(const std::string& filePath)
+	size_t hashFilePath(const std::string& filePath)
 	{
 		std::hash<std::string> hasher;
-		return static_cast<uint32_t>(hasher(filePath));
+		return hasher(filePath);
 	}
 
 	//gltfモデルのノードを再帰的に読み込む
@@ -90,9 +90,9 @@ public:
 #endif
 	}
 	
-	uint32_t Load(const std::string& filePath);
+	size_t Load(const std::string& filePath);
 
-	std::shared_ptr<GltfModel> GetModel(uint32_t hash)
+	std::shared_ptr<GltfModel> GetModel(size_t hash)
 	{
 		if (modelStorage.find(hash) != modelStorage.end())
 		{

@@ -224,7 +224,8 @@ enum PipelinePattern
 	CALC_IBL_DIFFUSE,
 	CALC_IBL_SPECULAR,
 	CALC_IBL_BRDF,
-	RAYCAST
+	RAYCAST,
+	COLIDER
 };
 
 class PipelineFactory : public std::enable_shared_from_this<PipelineFactory>

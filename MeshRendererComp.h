@@ -40,6 +40,8 @@ struct BoneMat
 
 struct MeshRendererComp
 {
+	size_t entityID;
+
 	ModelMat model;
 
 	std::vector<NodeAnimMat> nodeAnim;
@@ -53,4 +55,9 @@ struct MeshRendererComp
 	std::shared_ptr<GpuBuffer> boneMatBuffer;
 
 	std::vector<std::shared_ptr<DescriptorSet>> modelAnimDesc;
+
+	MeshRendererComp(const size_t& entity)
+	{
+		entityID = entity;
+	}
 };

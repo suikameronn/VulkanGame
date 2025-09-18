@@ -28,19 +28,6 @@ int GltfModel::nodeFromIndex(const int& index)
 //アニメーションの各ノードの更新処理
 void GltfModel::updateAllNodes(NodeTransform& nodeTransform, std::vector<std::array<glm::mat4, 128>>& jointMatrices, size_t& updatedIndex)
 {
-	/*
-	if (parent->meshArray.size() != 0 && parent->skin)
-	{
-		//このノードの所属するジョイントのアニメーション行列を計算
-		parent->update(nodeTransform, jointMatrices[parent->globalHasSkinNodeIndex], updatedIndex);
-	}
-
-	for (size_t i = 0; i < parent->children.size(); i++)
-	{
-		updateAllNodes(parent->children[i], nodeTransform, jointMatrices, updatedIndex);
-	}
-	*/
-
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		if (nodes[i].mesh.vertices.size() != 0 && nodes[i].skinIndex > -1)

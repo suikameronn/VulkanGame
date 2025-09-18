@@ -1,32 +1,38 @@
 #pragma once
 
+#include"PhysicMotion.h"
+
 #include<glm/glm.hpp>
-
-struct Velocity
-{
-	glm::vec3 velocity; //速度
-
-	Velocity()
-	{
-		velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-	}
-};
+#include<glm/gtx/normalize_dot.hpp>
 
 struct PhysicComp
 {
-	Velocity velocity;
+	size_t entityID;
 
-	//重力加速度
-	glm::vec3 gravity;
-	//空気抵抗係数
-	float airResistance;
-	//摩擦係数
-	float friction;
+	//オブジェクトの位置フレーム前の位置
+	glm::vec3 lastFramePosition;
 
-	PhysicComp()
+	//1フレーム前の速度
+	glm::vec3 lastFrameVeloctity;
+
+	//現在の速度
+	glm::vec3 velocity;
+
+	//物理的特性
+	PhysicParam param;
+
+	//このフレーム、オブジェクトに加えられる力の配列
+	std::list<std::shared_ptr<Force>> forceList;
+
+	PhysicComp(const size_t& entity)
 	{
-		gravity = glm::vec3(0.0f, 0.0f, 0.0f);
-		airResistance = 0.1f;
-		friction = 0.5f;
+		entityID = entity;
+
+		lastFrameVeloctity = glm::vec3(0.0f);
+		velocity = glm::vec3(0.0f);
+
+		param = PhysicParam();
+
+		forceList.clear();
 	};
 };

@@ -28,6 +28,13 @@ struct Input
 
 struct InputComp
 {
+	size_t entityID;
+
 	Input lastFrame;
 	Input currentFrame;
+
+	InputComp(const size_t& entity)
+	{
+		entityID = entity;
+	}
 };

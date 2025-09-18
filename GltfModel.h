@@ -7,6 +7,8 @@
 #include<map>
 #include<glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
+#include<glm/gtc/matrix_transform.hpp>
+
 
 #include"Material.h"
 #include"StructList.h"
@@ -127,7 +129,7 @@ struct NodeTransform
 		nodeTransform.clear();
 	}
 
-	void setNodeCount(int nodeCount)
+	void setNodeCount(size_t nodeCount)
 	{
 		translation.resize(nodeCount);
 		rotation.resize(nodeCount);
@@ -285,6 +287,8 @@ struct AnimationSampler {
 			return cubicSplineInterpolation(index, time, 3);
 		}
 		}
+
+		return glm::vec3(0.0f);
 	}
 
 	//Šg‘å‚Ì•âŠÔ
@@ -302,6 +306,8 @@ struct AnimationSampler {
 			return cubicSplineInterpolation(index, time, 3);
 		}
 		}
+
+		return glm::vec3(1.0f);
 	}
 
 	//‰ñ“]‚Ì•âŠÔ
@@ -340,6 +346,8 @@ struct AnimationSampler {
 			return glm::normalize(q);
 		}
 		}
+
+		return glm::quat();
 	}
 };
 

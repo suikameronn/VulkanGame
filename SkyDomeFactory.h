@@ -52,7 +52,7 @@ private:
 	std::shared_ptr<SkyDomeBuilder> builder;
 
 	//ì¬‚µ‚½SkyDome‚ğ‚±‚±‚É‹L˜^‚·‚é
-	std::unordered_map<uint32_t, std::shared_ptr<SkyDome>> skydomeMap;
+	std::unordered_map<size_t, std::shared_ptr<SkyDome>> skydomeMap;
 
 public:
 
@@ -66,10 +66,10 @@ public:
 	}
 
 	//SkyDome‚ğì¬‚µ‚ÄA‚»‚ÌID‚ğ•Ô‚·
-	uint32_t Create(const SkyDomeProperty& property);
+	size_t Create(const SkyDomeProperty& property);
 
 	//ID‚©‚çSkyDome‚ğæ“¾‚·‚é
-	std::shared_ptr<SkyDome> GetSkyDome(const uint32_t id);
+	std::shared_ptr<SkyDome> GetSkyDome(const size_t id);
 
-	uint32_t getCubemapModelID();
+	size_t getCubemapModelID();
 };

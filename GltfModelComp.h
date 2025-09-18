@@ -4,13 +4,17 @@
 
 struct GltfModelComp
 {
+	size_t entityID;
+
 	//3DモデルへのID
-	uint32_t modelID;
+	size_t modelID;
 
 	std::string filePath;
 
-	GltfModelComp()
+	GltfModelComp(const size_t& entity)
 	{
+		entityID = entity;
+
 		modelID = 0;
 
 		filePath = "";
@@ -19,6 +23,8 @@ struct GltfModelComp
 
 struct GltfModelAnimComp
 {
+	size_t entityID;
+
 	//アニメーションの名前
 	std::string animationName;
 	//アニメーションの再生速度
@@ -31,8 +37,10 @@ struct GltfModelAnimComp
 	//ノードごとのアニメーション行列
 	NodeTransform nodeTransform;
 
-	GltfModelAnimComp()
+	GltfModelAnimComp(const size_t& entity)
 	{
+		entityID = entity;
+
 		animationName = "";
 		speed = 1.0f;
 		loop = true;

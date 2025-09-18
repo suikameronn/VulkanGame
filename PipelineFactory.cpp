@@ -323,6 +323,40 @@ PipelineProperty PipelineFactory::convertPattern(const PipelinePattern& pattern)
             ->withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::RAYCAST))
             ->Build();
     }
+    else if (pattern == PipelinePattern::COLIDER)
+    {
+        builder->initProperty();
+
+        return builder->withVertexShader("shaders/line.vert.spv")
+            ->withFragmentShader("shaders/line.frag.spv")
+            ->withVertexInput(0, VK_VERTEX_INPUT_RATE_VERTEX, sizeof(glm::vec3))
+            ->addVertexInputAttrib(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+            ->withTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            ->withLineWidth(1.0f)
+            ->withPolygonMode(VK_POLYGON_MODE_LINE)
+            ->withCullMode(VK_CULL_MODE_BACK_BIT)
+            ->withFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+            ->enableDepthBias(VK_FALSE)
+            ->enableMultiSampleShading(VK_TRUE)
+            ->withMinSampleShading(0.2f)
+            ->withRansterizationSamples(vulkanCore->getMaxMsaaSamples())
+            ->withColorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+            ->withColorBlendFactorOp(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+                , VK_BLEND_OP_ADD)
+            ->withAlphaBlendFactorOp(VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO
+                , VK_BLEND_OP_ADD)
+            ->addColoarAttachment()
+            ->withBlendConstant(0.0f, 0.0f, 0.0f, 0.0f)
+            ->addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+            ->addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+            ->enableDepthTest(VK_TRUE)
+            ->enableDepthWrite(VK_TRUE)
+            ->withDepthCompare(VK_COMPARE_OP_LESS)
+            ->withRenderPass(renderPassFactory->Create(RenderPassPattern::PBR))
+            ->withPipelineLayout(pLayoutFactory->Create(PipelineLayoutPattern::COLIDER))
+            ->Build();
+    }
 }
 
 //パイプラインを作成する

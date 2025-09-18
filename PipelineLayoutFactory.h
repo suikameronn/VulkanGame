@@ -15,7 +15,8 @@ enum class PipelineLayoutPattern
 	CALC_IBL_DIFFUSE,
 	CALC_IBL_SPECULAR,
 	CALC_IBL_BRDF,
-	RAYCAST
+	RAYCAST,
+	COLIDER
 };
 
 struct PipelineLayout;

@@ -97,6 +97,7 @@ void GameManager::createScene()
 	size_t entity1 = ecsManager->GenerateEntity();
 	{
 		TransformComp* transComp = ecsManager->AddComponent<TransformComp>(entity1);
+		transComp->position = glm::vec3(0.0f, -100.0f, 0.0f);
 		transComp->scale = glm::vec3(6.0f);
 		transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
 
@@ -109,10 +110,13 @@ void GameManager::createScene()
 
 		comp->filePath = "models/robot.glb";
 
-		ecsManager->AddComponent<ColiderComp>(entity1);
+		ColiderComp* colider = ecsManager->AddComponent<ColiderComp>(entity1);
+		colider->freeze = false;
+		colider->offsetPos = glm::vec3(0.0f, -11.7f, 0.0f);
+		colider->offsetScale = glm::vec3(-1.5f, -0.5f, 0.0f);
 
 		PhysicComp* physic = ecsManager->AddComponent<PhysicComp>(entity1);
-		//physic->gravity = glm::vec3(0.0f, 0.98f, 0.0f);
+		physic->param.m = 10.0f;
 
 		InputComp* input = ecsManager->AddComponent<InputComp>(entity1);
 	}
@@ -136,25 +140,27 @@ void GameManager::createScene()
 		CameraComp* cameraComp = ecsManager->AddComponent<CameraComp>(entity4);
 		cameraComp->aspect = 900.0f / 600.0f;
 		cameraComp->viewAngle = 45.0f;
-		cameraComp->matrices.position = glm::vec3(0.0f, -13.0f, -25.0f);
+		cameraComp->matrices.position = glm::vec3(0.0f, 0.0f, -22.0f);
 		cameraComp->matrices.view = glm::lookAt(cameraComp->matrices.position, glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 		cameraComp->matrices.proj = glm::perspective(cameraComp->viewAngle, cameraComp->aspect, 0.1f, 1000.0f);
 
 		TargetEntityComp* target = ecsManager->AddComponent<TargetEntityComp>(entity4);
 		target->targetEntity = entity1;
-		target->offset = glm::vec3(0.0f, -13.0f, -25.0f);
+		target->offset = glm::vec3(0.0f, -17.0f, -35.0f);
+
+		InputComp* input = ecsManager->AddComponent<InputComp>(entity4);
 	}
 
 	{
 		size_t ground = ecsManager->GenerateEntity();
 
 		TransformComp* transComp = ecsManager->AddComponent<TransformComp>(ground);
-		transComp->position = glm::vec3(0.0f, 0.0f, -5.0f);
-		transComp->scale = glm::vec3(100.0f,100.0f,100.0f);
-		transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+		transComp->position = glm::vec3(0.0f, 10.0f, 0.0f);
+		transComp->scale = glm::vec3(100.0f, 150.0f, 100.0f);
 
 		ColiderComp* colider = ecsManager->AddComponent<ColiderComp>(ground);
 		colider->type = ColliderType::Box;
+		colider->freeze = true;
 
 		GltfModelComp* gltfModel = ecsManager->AddComponent<GltfModelComp>(ground);
 		gltfModel->filePath = "models/Ground.glb";
@@ -188,9 +194,9 @@ void GameManager::createRenderCommand()
 void GameManager::mainGameLoop()//メインゲームループ
 {
 
-    start = std::chrono::system_clock::now();//フレーム時間を計測
-
 	OnStart();
+
+	elapsed = 1.0f;
 
     while (true)
     {
@@ -199,6 +205,8 @@ void GameManager::mainGameLoop()//メインゲームループ
         {
             break;
         }
+
+		start = std::chrono::system_clock::now();//フレーム時間を計測
 
 		OnUpdate();//コンポーネントの更新処理
 
@@ -229,6 +237,16 @@ void GameManager::mainGameLoop()//メインゲームループ
 //コンポーネントの初回処理
 void GameManager::OnStart()
 {
+	ecsManager->RunFunction<PhysicComp, TransformComp>
+		(
+			{
+				[&](PhysicComp& physic,TransformComp& transform)
+				{
+					physic.lastFramePosition = transform.position;
+				}
+			}
+		);
+
 
 	ecsManager->RunFunction<GltfModelComp>
 		(
@@ -250,7 +268,7 @@ void GameManager::OnStart()
 					animComp.nodeTransform.init();
 					animComp.nodeTransform.setNodeCount(gltfModel->nodes.size());
 
-					animComp.startTime = clock();
+					animComp.startTime = static_cast<float>(clock());
 				}
 			}
 		);
@@ -340,8 +358,77 @@ void GameManager::OnStart()
 
 					std::unique_ptr<Colider>& coliderPtr = coliderFactory->GetColider(colider.ID);
 
+					coliderPtr->setOffsetPos(colider.offsetPos);
+					coliderPtr->setOffsetScale(colider.offsetScale);
+
 					coliderPtr->createBuffer();
 					coliderPtr->createDescriptorSet();
+				}
+			}
+		);
+
+	ecsManager->RunFunction<TransformComp, ColiderComp, PhysicComp>
+		(
+			{
+				[&](TransformComp& transform,ColiderComp& colider,PhysicComp& physic)
+				{
+					std::unique_ptr<Colider>& coliderPtr = coliderFactory->GetColider(colider.ID);
+
+					const glm::mat3 scale = glm::scale(transform.scale);
+
+					//コライダーの各面の面積を計算する
+					for (int i = 0; i < 6; i++)
+					{
+						glm::vec3 a = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[(i * 6)]] * scale;
+						glm::vec3 b = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[(i * 6) + 1]] * scale;
+						glm::vec3 c = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[(i * 6) + 2]] * scale;
+
+						//面積
+						float squareArea = glm::length(b - a) * glm::length(c - a);
+
+						//この平面に垂直なベクトルを求め
+						//それを断面の面積とのペアにする
+						glm::vec3 cross = glm::normalize(glm::cross((b - a), (c - a)));
+
+						physic.param.crossArea[i] = { cross, squareArea };
+					}
+
+					//対角線上の平面の断面積を調べる
+					{
+						//正面から背後の面にかけての面
+
+						glm::vec3 a = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[0]] * scale;
+						glm::vec3 b = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[1]] * scale;
+
+						glm::vec3 c = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[7]] * scale;
+						glm::vec3 d = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[6]] * scale;
+
+						float ab = glm::length(b - a);
+						float cd = glm::length(d - c);
+						float squareArea = ab * cd;
+
+						glm::vec3 cross = glm::normalize(glm::cross(b - a, d - c));
+
+						physic.param.crossArea[6] = { cross,squareArea };
+					}
+
+					{
+						//左から右の面にかけての面
+
+						glm::vec3 a = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[0]] * scale;
+						glm::vec3 b = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[3]] * scale;
+
+						glm::vec3 c = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[5]] * scale;
+						glm::vec3 d = coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[6]] * scale;
+
+						float ab = glm::length(b - a);
+						float cd = glm::length(d - c);
+						float squareArea = ab * cd;
+
+						glm::vec3 cross = glm::normalize(glm::cross(b - a, d - c));
+
+						physic.param.crossArea[7] = { cross,squareArea };
+					}
 				}
 			}
 		);
@@ -622,12 +709,15 @@ void GameManager::OnUpdate()
 			}
 		);
 
-	ecsManager->RunFunction<PhysicComp, TransformComp>
+	//重力をオブジェクトに加える
+	ecsManager->RunFunction<PhysicComp>
 		(
 			{
-				[&](PhysicComp& physic,TransformComp& transform)
+				[&](PhysicComp& physic)
 				{
-					transform.position += physic.gravity;
+					std::shared_ptr<Force> force = std::make_shared<Gravity>();
+
+					physic.forceList.push_back(force);
 				}
 			}
 		);
@@ -636,6 +726,49 @@ void GameManager::OnUpdate()
 //更新処理後の処理
 void GameManager::OnLateUpdate()
 {
+	ecsManager->RunFunction<PhysicComp,TransformComp>
+		(
+			{
+				[&](PhysicComp& physic,TransformComp& transform)
+				{
+					glm::vec3 totalForce = glm::vec3(0.0f);
+
+					float deltaTime = elapsed / 1000.0f;
+
+					for (auto& force : physic.forceList)
+					{
+						std::vector<glm::vec3> totalF = force->getForce(physic.param,physic.velocity, deltaTime);
+
+						for (const auto& f : totalF)
+						{
+							totalForce += f;
+						}
+					}
+
+					//現在の位置を記録しておく
+					glm::vec3 currentPosition = transform.position;
+
+					//現在の速度を控えておく
+					glm::vec3 currentVelcoity = physic.velocity;
+
+					//速度を計算する
+					physic.velocity = deltaTime * (totalForce / physic.param.m) + physic.lastFrameVeloctity;
+
+					//現在の位置を更新する
+					transform.position = deltaTime * physic.velocity + transform.position;
+
+					//過去の位置を更新する
+					physic.lastFramePosition = currentPosition;
+
+					//過去の速度を更新する
+					physic.lastFrameVeloctity = currentVelcoity;
+					
+					//コンポーネントから力を削除する
+					physic.forceList.clear();
+				}
+			}
+		);
+
 	ecsManager->RunFunction<PhysicComp, TransformComp, InputComp>
 		(
 			{
@@ -646,27 +779,33 @@ void GameManager::OnLateUpdate()
 					int a = inputSystem->getKey(GLFW_KEY_A);
 					int d = inputSystem->getKey(GLFW_KEY_D);
 
+					const size_t cameraEntity = ecsManager->GetEntitiesWithComponents<CameraComp>()[0];
+					const CameraComp* camera = ecsManager->GetComponent<CameraComp>(cameraEntity);
+
+					const float speed = 0.1f;
+
+					const glm::vec3 forward = camera->forward * speed;
+					const glm::vec3 right = camera->right * speed;
+
 					if (w == GLFW_PRESS)
 					{
-						physic.velocity.velocity = glm::vec3(0.0f, 0.0f, 1.0f);
+						transform.position += forward;
 					}
 
 					if (s == GLFW_PRESS)
 					{
-						physic.velocity.velocity = glm::vec3(0.0f, 0.0f, -1.0f);
+						transform.position -= forward;
 					}
 
 					if (a == GLFW_PRESS)
 					{
-						physic.velocity.velocity = glm::vec3(-1.0f, 0.0f, 0.0f);
+						transform.position -= right;
 					}
 
 					if (d == GLFW_PRESS)
 					{
-						physic.velocity.velocity = glm::vec3(1.0f, 0.0f, 0.0f);
+						transform.position += right;
 					}
-
-					transform.position += physic.velocity.velocity;
 				}
 			}
 		);
@@ -683,29 +822,69 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
-	ecsManager->RunFunction<CameraComp,InputComp>
+	ecsManager->RunFunction<TargetEntityComp, CameraComp, InputComp>
 		(
 			{
-				[&](CameraComp& camera,InputComp& input)
+				[&](TargetEntityComp& target,CameraComp& camera,InputComp& input)
 				{
-					
-				}
-			}
-		);
+					int right = inputSystem->getKey(GLFW_KEY_RIGHT);
+					int left = inputSystem->getKey(GLFW_KEY_LEFT);
+					int up = inputSystem->getKey(GLFW_KEY_UP);
+					int down = inputSystem->getKey(GLFW_KEY_DOWN);
 
-	ecsManager->RunFunction<TargetEntityComp, CameraComp>
-		(
-			{
-				[&](TargetEntityComp& targetComp,CameraComp& cameraComp)
-				{
-					TransformComp* target = ecsManager->GetComponent<TransformComp>(targetComp.targetEntity);
+					if (right == GLFW_PRESS)
+					{
+						camera.phi -= 0.5f;
+					}
 
-					cameraComp.matrices.position = target->position + targetComp.offset;
+					if (left == GLFW_PRESS)
+					{
+						camera.phi += 0.5f;
+					}
 
-					cameraComp.matrices.view = glm::lookAt(cameraComp.matrices.position, target->position, glm::vec3(0.0f, -1.0f, 0.0f));
-					cameraComp.matrices.proj = glm::perspective(cameraComp.viewAngle, cameraComp.aspect, cameraComp.zNear, cameraComp.zFar);
+					if (up == GLFW_PRESS)
+					{
+						camera.theta += 0.5f;
 
-					memcpy(cameraComp.uniform->mappedPtr, &cameraComp.matrices, sizeof(CameraUniform));
+						if (camera.theta >= 180.0f)
+						{
+							camera.theta = 179.5f;
+						}
+					}
+
+					if (down == GLFW_PRESS)
+					{
+						camera.theta -= 0.5f;
+
+						if (camera.theta <= 0.0f)
+						{
+							camera.theta = 0.5f;
+						}
+					}
+
+					TransformComp* targetTransform = ecsManager->GetComponent<TransformComp>(target.targetEntity);
+
+					const float radTheta = camera.theta * (PI / 180.0f);
+					const float radPhi = camera.phi * (PI / 180.0f);
+
+					const float r = glm::length(target.offset);
+					camera.matrices.position.x = r * sin(radTheta) * cos(radPhi);
+					camera.matrices.position.y = r * cos(radTheta);
+					camera.matrices.position.z = r * sin(radTheta) * sin(radPhi);
+
+					camera.matrices.position += targetTransform->position;
+
+					camera.matrices.view = glm::lookAt(camera.matrices.position, targetTransform->position, glm::vec3(0.0f, -1.0f, 0.0f));
+					camera.matrices.proj = glm::perspective(camera.viewAngle, camera.aspect, camera.zNear, camera.zFar);
+
+					memcpy(camera.uniform->mappedPtr, &camera.matrices, sizeof(CameraUniform));
+
+					//カメラの正面ベクトルを計算する
+					camera.forward = targetTransform->position - camera.matrices.position;
+					camera.forward = glm::normalize(camera.forward - glm::dot(camera.forward, upVector) * upVector);
+
+					//上方向のベクトルと正面のベクトルとの外積から、右ベクトルを計算する
+					camera.right = glm::normalize(glm::cross(camera.forward, upVector));
 				}
 			}
 		);
@@ -730,25 +909,47 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
+	ecsManager->RunFunction<TransformComp>
+		(
+			{
+				[&](TransformComp& transform)
+				{
+					glm::mat4 rotateMat = glm::mat4(1.0f);
+					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[0]), glm::vec3(1, 0, 0));
+					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[1]), glm::vec3(0, 1, 0));
+					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[2]), glm::vec3(0, 0, 1));
+
+					transform.rotate = rotateMat;
+
+					transform.model = glm::translate(glm::mat4(1.0f), transform.position)
+						* rotateMat * glm::scale(glm::mat4(1.0f), transform.scale);
+				}
+			}
+		);
+
 	ecsManager->RunFunction<TransformComp, MeshRendererComp>
 		(
 			{
 			[&](TransformComp& transComp,MeshRendererComp& rendererComp)
 			{
-				glm::mat4 rotateMat = glm::mat4(1.0f);
-				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[0]), glm::vec3(1, 0, 0));
-				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[1]), glm::vec3(0, 1, 0));
-				rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transComp.rotation[2]), glm::vec3(0, 0, 1));
-
-				const glm::mat4 model = glm::translate(glm::mat4(1.0f),transComp.position)
-					* rotateMat * glm::scale(glm::mat4(1.0f),transComp.scale);
-
 				ModelMat modelMat{};
 				modelMat.scale = transComp.scale;
-				modelMat.matrix = model;
+				modelMat.matrix = transComp.model;
 
 				bufferFactory->copyMemory(sizeof(ModelMat), &modelMat, rendererComp.modelMatBuffer);
 			}
+			}
+		);
+
+	ecsManager->RunFunction<TransformComp, ColiderComp>
+		(
+			{
+				[&](TransformComp& transComp,ColiderComp& coliderComp)
+				{
+					std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
+
+					colider->reflectMovement(transComp.position,transComp.rotate,transComp.scale);
+				}
 			}
 		);
 
@@ -766,7 +967,7 @@ void GameManager::OnLateUpdate()
 					if (deltaTime > gltfModel->animations[animComp.animationName].end)
 					{
 						deltaTime = gltfModel->animations[animComp.animationName].start;
-						animComp.startTime = clock();
+						animComp.startTime = static_cast<float>(clock());
 					}
 
 					gltfModel->updateAnimation(deltaTime, animComp.animationName, animComp.nodeTransform, jointMat);
@@ -786,6 +987,64 @@ void GameManager::OnLateUpdate()
 							bufferFactory->copyMemory(sizeof(NodeAnimMat), &rendererComp.nodeAnim[i], rendererComp.nodeAnimBuffer[i]);
 						}
 					}
+				}
+			}
+		);
+
+	ecsManager->RunFunction<TransformComp, ColiderComp>
+		(
+			{
+				[&](TransformComp& transformComp,ColiderComp& coliderComp)
+				{
+					if (!coliderComp.freeze)
+					{
+						const std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
+
+						ecsManager->RunFunction<ColiderComp>
+							(
+								{
+									[&](ColiderComp& otherColiderComp)
+									{
+										if (otherColiderComp.ID != coliderComp.ID)
+										{
+											const std::unique_ptr<Colider>& otherColider = coliderFactory->GetColider(otherColiderComp.ID);
+
+											//衝突を解消するためのベクトル
+											glm::vec3 collisionVector = glm::vec3(0.0f);
+											colider->Intersect(otherColider, collisionVector);
+
+											if (glm::length(collisionVector) != 0.0f)
+											{
+												transformComp.position -= collisionVector;
+
+												//もし物理コンポーネントを持っていたら垂直抗力を与える
+												PhysicComp* physic = ecsManager->GetComponent<PhysicComp>(transformComp.entityID);
+												if (physic != nullptr)
+												{
+													std::unique_ptr<CollisionForce> f = std::make_unique<CollisionForce>();
+													f->setCollisionVector(collisionVector);
+													physic->velocity = f->afterBounceVelocity(physic->param, physic->velocity);
+
+													physic->forceList.push_back(std::move(f));
+												}
+											}
+										}
+									}
+								}
+							);
+					}
+				}
+			}
+		);
+
+		ecsManager->RunFunction<TransformComp, ColiderComp>
+		(
+			{
+				[&](TransformComp& transComp,ColiderComp& coliderComp)
+				{
+					std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
+
+					colider->reflectMovement(transComp.position,transComp.rotate,transComp.scale);
 				}
 			}
 		);
@@ -943,7 +1202,7 @@ void GameManager::Rendering()
 								{
 									[&](CameraComp& cameraComp)
 									{
-										const uint32_t modelID = skydomeFactory->getCubemapModelID();
+										const size_t modelID = skydomeFactory->getCubemapModelID();
 
 										std::shared_ptr<GltfModel> gltfModel = modelFactory->GetModel(modelID);
 										if (!gltfModel)
@@ -1098,6 +1357,52 @@ void GameManager::Rendering()
 		render->RenderStart(property);
 
 		ecsManager->RunFunction<GltfModelComp, MeshRendererComp>(renderModel);
+
+		ecsManager->RunFunction<ColiderComp>
+			(
+				{
+					[&](ColiderComp& coliderComp)
+					{
+						const std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
+
+						vkCmdBindPipeline(renderCommand[frameIndex]->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+							pipelineFactory->Create(PipelinePattern::COLIDER)->pipeline);
+
+						VkViewport viewport{};
+						viewport.x = 0.0f;
+						viewport.y = 0.0f;
+						viewport.width = (float)swapChain->getSwapChainExtent().width;
+						viewport.height = (float)swapChain->getSwapChainExtent().height;
+						viewport.minDepth = 0.0f;
+						viewport.maxDepth = 1.0f;
+						vkCmdSetViewport(renderCommand[frameIndex]->getCommand(), 0, 1, &viewport);
+
+						VkRect2D scissor{};
+						scissor.offset = { 0, 0 };
+						scissor.extent = swapChain->getSwapChainExtent();
+						vkCmdSetScissor(renderCommand[frameIndex]->getCommand(), 0, 1, &scissor);
+
+						std::array<VkDescriptorSet,2> descriptorSets;
+
+						VkDeviceSize offsets[] = { 0 };
+
+						vkCmdBindVertexBuffers(renderCommand[frameIndex]->getCommand(), 0, 1, &colider->getVertexBuffer()->buffer, offsets);
+
+						vkCmdBindIndexBuffer(renderCommand[frameIndex]->getCommand(), colider->getIndexBuffer()->buffer, 0, VK_INDEX_TYPE_UINT32);
+
+						size_t cameraEntity = ecsManager->GetEntitiesWithComponents<CameraComp>()[0];
+
+						descriptorSets[0] = colider->getDescriptorSet()->descriptorSet;
+						descriptorSets[1] = ecsManager->GetComponent<CameraComp>(cameraEntity)->descriptorSet->descriptorSet;
+
+						vkCmdBindDescriptorSets(renderCommand[frameIndex]->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+							pipelineLayoutFactory->Create(PipelineLayoutPattern::COLIDER)->pLayout, 0
+							, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+						vkCmdDrawIndexed(renderCommand[frameIndex]->getCommand(), colider->getColiderIndicesSize(), 1, 0, 0, 0);
+					}
+				}
+			);
 
 		render->RenderEnd(property);
 

@@ -1,8 +1,8 @@
 #include"GltfModelFactory.h"
 
-uint32_t GltfModelFactory::Load(const std::string& filePath)
+size_t GltfModelFactory::Load(const std::string& filePath)
 {
-	uint32_t hash = hashFilePath(filePath);
+	size_t hash = hashFilePath(filePath);
 
 	if(modelStorage.find(hash) != modelStorage.end())
 	{
@@ -37,6 +37,10 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
     //gltfモデルのシーンは一つのみを前提とする
     loadNode(model, scene.nodes[0], gltfModel);
 
+    //AABB用の座標を設定する
+    model->initPoseMax = maxPos;
+    model->initPoseMin = minPos;
+
 	loadMaterial(model, gltfModel);//マテリアルデータの読み取り
 
     if (gltfModel.animations.size() > 0)
@@ -58,39 +62,6 @@ uint32_t GltfModelFactory::Load(const std::string& filePath)
 //gltfモデルのノードを再帰的に読み込む
 void GltfModelFactory::loadNode(std::shared_ptr<GltfModel> model, const int nodeIndex, const tinygltf::Model& gltfModel)
 {
-    /*
-    current->index = nodeIndex;
-    current->name = gltfNode.name;
-    current->skinIndex = gltfNode.skin;
-    current->matrix = glm::mat4(1.0f);
-
-    if (gltfNode.matrix.size() == 16) {
-        current->matrix = glm::make_mat4x4(gltfNode.matrix.data());
-    };
-
-    if (gltfNode.mesh > -1)
-    {
-        for (int i = 0; i <= gltfNode.mesh; i++)
-        {
-            //メッシュの読み取り
-            loadMesh(gltfNode, gltfModel, current, model, i);
-        }
-    }
-
-    if (gltfNode.children.size() > 0)
-    {
-        current->children.resize(gltfNode.children.size());
-
-        for (size_t i = 0; i < gltfNode.children.size(); i++)
-        {
-            GltfNode* newNode = new GltfNode();
-            loadNode(newNode, model, gltfModel.nodes[gltfNode.children[i]], gltfNode.children[i], gltfModel);
-
-            current->children[i] = newNode;
-        }
-    }
-    */
-
     const tinygltf::Node& gltfNode = gltfModel.nodes[nodeIndex];
 
     model->nodes[0].offset = 0;
@@ -158,7 +129,7 @@ void GltfModelFactory::loadNode(size_t& offset, int parentIndex, std::shared_ptr
     if (gltfNode.children.size() > 0)
     {
 		//親ノードのインデックスを設定
-        parentIndex = offset - 1;
+        parentIndex = static_cast<int>(offset) - 1;
 
         for (size_t i = 0; i < gltfNode.children.size(); i++)
         {
@@ -225,8 +196,8 @@ void GltfModelFactory::loadPrimitive(Mesh& mesh, int& indexStart
 	//AABBのために頂点の最小値と最大値を求める
     for (int i = 0; i < 3; i++)
     {
-		std::min(minPos[i], posMin[i]);
-		std::max(maxPos[i], posMax[i]);
+		minPos[i] = std::min(minPos[i], posMin[i]);
+		maxPos[i] = std::max(maxPos[i], posMax[i]);
     }
 
     //以下頂点座標と同じように、取得していく

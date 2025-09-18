@@ -232,6 +232,7 @@
     <ClInclude Include="GpuBufferFactory.h" />
     <ClInclude Include="DescriptorSetLayoutBuilder.h" />
     <ClInclude Include="DescriptorSetLayoutFactory.h" />
+    <ClInclude Include="PhysicMotion.h" />
     <ClInclude Include="PipelineBuilder.h" />
     <ClInclude Include="PipelineFactory.h" />
     <ClInclude Include="PipelineLayoutBuilder.h" />

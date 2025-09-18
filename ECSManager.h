@@ -253,9 +253,9 @@ public:
 		{
 			if (components.size() <= a_entity)
 			{
-				components.resize(a_entity + 1, CompType());
+				components.resize(a_entity + 1, CompType(0));
 			}
-			components[a_entity] = CompType();
+			components[a_entity] = CompType(a_entity);
 			return &components[a_entity];
 		}
 

@@ -30,6 +30,8 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger
 	originalVertexPos[6] = glm::vec3(max.x, max.y, max.z);
 	originalVertexPos[7] = glm::vec3(min.x, max.y, max.z);
 
+	coliderVertices.resize(8);
+
 	coliderIndices =
 	{
 		//下面
@@ -54,62 +56,64 @@ Colider::Colider(std::shared_ptr<GltfModel> gltfModel,bool isTrigger
 
 	drawColiderIndices =
 	{
-		// 下面
 		0, 1,
 		1, 3,
 		3, 0,
 		1, 2,
 		2, 3,
 		3, 1,
-		// 上面
 		4, 7,
 		7, 5,
 		5, 4,
 		7, 6,
 		6, 5,
 		5, 7,
-		// 前面
 		0, 4,
 		4, 1,
 		1, 0,
 		4, 5,
 		5, 1,
 		1, 4,
-		// 背面
 		3, 2,
 		2, 7,
 		7, 3,
 		2, 6,
 		6, 7,
 		7, 2,
-		// 左面
 		0, 3,
 		3, 4,
 		4, 0,
 		3, 7,
 		7, 4,
 		4, 3,
-		// 右面
 		1, 5,
 		5, 2,
 		2, 1,
 		5, 6,
 		6, 2,
-		2, 5
+		2, 5,
+		1,6,
+		6,2,
+		2,7,
+		3,7,
+		0,7
 	};
 
 	satIndices.resize(3 * 6);
 	satIndices = { 0,4,5,1,5,6,6,2,3,3,7,4,2,1,0,6,5,4 };
 	satIndices = { 1,0,2,4,5,6,5,6,1,4,0,7,5,4,1,7,6,3 };//衝突判定用のインデックス配列
+
+	offsetPos = glm::vec3(0.0f);
+	offsetScale = glm::vec3(0.0f);
 }
 
 //描画に必要なリソースを作成する
 void Colider::createBuffer()
 {
-	vertBuffer = bufferFactory->Create(sizeof(glm::vec3)
+	vertBuffer = bufferFactory->Create(originalVertexPos.size() * sizeof(glm::vec3), originalVertexPos.data()
 		, BufferUsage::VERTEX, BufferTransferType::DST);
 
-	indeBuffer = bufferFactory->Create(sizeof(uint32_t)
+	indeBuffer = bufferFactory->Create(coliderIndices.size() * sizeof(uint32_t), coliderIndices.data()
 		, BufferUsage::INDEX, BufferTransferType::DST);
 
 	matBuffer = bufferFactory->Create(sizeof(ModelMat)
@@ -132,6 +136,17 @@ void Colider::createDescriptorSet()
 		->addBufferInfo()
 		->Build()
 	);
+}
+
+//コライダーの各オフセットを設定する
+void Colider::setOffsetPos(const glm::vec3& pos)
+{
+	offsetPos = pos;
+}
+
+void Colider::setOffsetScale(const glm::vec3& scale)
+{
+	offsetScale = scale;
 }
 
 //Modelクラスの初期座標から座標変換を適用する
@@ -185,8 +200,15 @@ glm::mat4 Colider::getScaleMat()
 }
 
 //Modelクラスの移動などをコライダーにも反映
-void Colider::reflectMovement(const glm::mat4& transform)
+void Colider::reflectMovement(const glm::vec3& translate, const glm::mat4& rotate, const glm::vec3& scale)
 {
+	//与えられた位置にコライダーのオフセットを加える
+	glm::vec3 tmpT = translate + offsetPos;
+	glm::vec3 tmpS = scale + offsetScale;
+
+	glm::mat4 transform = glm::translate(glm::mat4(1.0f), tmpT)
+		* rotate * glm::scale(glm::mat4(1.0f), tmpS);
+
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
@@ -194,10 +216,15 @@ void Colider::reflectMovement(const glm::mat4& transform)
 
 	transformedMin = transform * glm::vec4(min, 1.0f);
 	transformedMax = transform * glm::vec4(max, 1.0f);
+
+	ModelMat model{};
+	model.scale = glm::vec3(1.0f);
+	model.matrix = transform;
+	memcpy(matBuffer->mappedPtr, &model, sizeof(ModelMat));
 }
 
 //SAT用当たり判定の実行
-bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisionVector)
+bool Colider::Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector)
 {
 	bool collision = false;
 	
@@ -207,7 +234,7 @@ bool Colider::Intersect(std::shared_ptr<Colider> oppColider, glm::vec3& collisio
 }
 
 //GJK用当たり判定の実行
-bool Colider::Intersect(std::shared_ptr<Colider> oppColider)
+bool Colider::Intersect(const std::unique_ptr<Colider>& oppColider)
 {
 	bool collision = false;
 
@@ -266,7 +293,7 @@ bool Colider::Intersect(glm::vec3 origin, glm::vec3 dir, float length,glm::vec3&
 }
 
 //分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
-bool Colider::SAT(std::shared_ptr<Colider> oppColider, float& collisionDepth, glm::vec3& collisionNormal)
+bool Colider::SAT(const std::unique_ptr<Colider>& oppColider, float& collisionDepth, glm::vec3& collisionNormal)
 {
 	std::array<glm::vec3, 12> normals;
 
@@ -342,7 +369,7 @@ void Colider::projection(float& min, float& max, glm::vec3& minVertex, glm::vec3
 }
 
 //GJK法での当たり判定を実行
-bool Colider::GJK(std::shared_ptr<Colider> oppColider,glm::vec3& collisionDepthVec)
+bool Colider::GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisionDepthVec)
 {
 	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));//適当な方向のサポート写像を求める
 
@@ -395,7 +422,7 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 }
 
 //サポート写像を求める
-glm::vec3 Colider::getSupportVector(std::shared_ptr<Colider> oppColider, glm::vec3 dir)
+glm::vec3 Colider::getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir)
 {
 	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
 }
@@ -526,7 +553,7 @@ bool Colider::nextSimplex(Simplex& simplex, glm::vec3& dir)
 }
 
 //GJK法後にEPA法で衝突を解消するためのベクトルを取得
-void Colider::EPA(std::shared_ptr<Colider> oppColider,Simplex& simplex, glm::vec3& collisionDepthVec)
+void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, glm::vec3& collisionDepthVec)
 {
 	std::vector<glm::vec3> polytope;
 	simplex.setSimplexVertices(polytope);
