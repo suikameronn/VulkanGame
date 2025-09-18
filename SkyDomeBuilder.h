@@ -19,12 +19,12 @@
 
 enum class CUBEMAP_VIEW
 {
-	FRONT = 0,
-	BACK,
-	RIGHT,
+	RIGHT = 0,
 	LEFT,
 	TOP,
-	BOTTOM
+	BOTTOM,
+	FRONT,
+	BACK
 };
 
 struct BackGroundColor

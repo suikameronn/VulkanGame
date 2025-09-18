@@ -35,8 +35,16 @@ struct CameraComp
 
 	CameraUniform matrices;
 
+	//’Êí‚Ì•¨‚Æ‚ÍˆÙ‚È‚èAy²ã‚Ì‰ñ“]‚ª”½“]
+	CameraUniform cubemapMat;
+
 	std::shared_ptr<GpuBuffer> uniform;
+
+	std::shared_ptr<GpuBuffer> cubemapUniform;
+
 	std::shared_ptr<DescriptorSet> descriptorSet;
+
+	std::shared_ptr<DescriptorSet> cubemapDescriptorSet;
 
 	CameraComp(const size_t& entity)
 	{
@@ -56,5 +64,7 @@ struct CameraComp
 		matrices.position = glm::vec3(0.0f);
 		matrices.view = glm::mat4(1.0f);
 		matrices.proj = glm::mat4(1.0f);
+
+		cubemapMat = matrices;
 	}
 };

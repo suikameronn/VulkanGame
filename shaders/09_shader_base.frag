@@ -206,7 +206,7 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 baseColor,float roughness,float m
 	{
 		ao = texture(aoMap,shaderMaterial.baseColorTextureIndex == 0 ? inUV0 : inUV1).r;
 	}
-	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse * 0.5) + specular) * ao;
+	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse/* * 0.5*/) + specular) * ao;
 
 	return vec4(ambient,0.0f);
 }

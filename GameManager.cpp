@@ -679,6 +679,14 @@ void GameManager::OnStart()
 						BufferTransferType::NONE
 					);
 
+					comp.cubemapUniform = bufferFactory->Create
+					(
+						sizeof(CameraUniform),
+						&comp.cubemapMat,
+						BufferUsage::UNIFORM,
+						BufferTransferType::NONE
+					);
+
 					comp.descriptorSet = descriptorSetFactory->Create
 						(
 							descriptorSetBuilder->initProperty()
@@ -691,6 +699,19 @@ void GameManager::OnStart()
 							->addBufferInfo()
 							->Build()
 						);
+
+					comp.cubemapDescriptorSet = descriptorSetFactory->Create
+					(
+						descriptorSetBuilder->initProperty()
+						->withDescriptorSetCount(1)
+						->withDescriptorSetLayout(descriptorSetLayoutFactory->Create(LayoutPattern::CAMERA))
+						->withBindingBuffer(0)
+						->withBuffer(comp.cubemapUniform)
+						->withRange(sizeof(CameraUniform))
+						->withTypeBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+						->addBufferInfo()
+						->Build()
+					);
 				}
 			}
 		);
@@ -885,6 +906,19 @@ void GameManager::OnLateUpdate()
 
 					//上方向のベクトルと正面のベクトルとの外積から、右ベクトルを計算する
 					camera.right = glm::normalize(glm::cross(camera.forward, upVector));
+
+					//キューブマップ用の行列とバッファ
+					camera.cubemapMat = camera.matrices;
+
+					camera.cubemapMat.position.x = -r * sin(radTheta) * cos(radPhi);
+					camera.cubemapMat.position.y = -r * cos(radTheta);
+					camera.cubemapMat.position.z = -r * sin(radTheta) * sin(radPhi);
+
+					camera.cubemapMat.position += targetTransform->position;
+
+					camera.cubemapMat.view = glm::lookAt(camera.cubemapMat.position, targetTransform->position, glm::vec3(0.0f, -1.0f, 0.0f));
+
+					memcpy(camera.cubemapUniform->mappedPtr, &camera.cubemapMat, sizeof(CameraUniform));
 				}
 			}
 		);
@@ -1245,7 +1279,7 @@ void GameManager::Rendering()
 												{
 													std::shared_ptr<Material> material = gltfModel->materials[primitive.materialIndex];
 
-													descriptorSets[0] = cameraComp.descriptorSet->descriptorSet;
+													descriptorSets[0] = cameraComp.cubemapDescriptorSet->descriptorSet;
 													descriptorSets[1] = skydome->cubemapDescriptorSet->descriptorSet;
 
 													vkCmdBindDescriptorSets(commandBuffer->getCommand(), VK_PIPELINE_BIND_POINT_GRAPHICS,

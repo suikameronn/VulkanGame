@@ -16,8 +16,6 @@ void main()
     mat4 viewMat = mat4(mat3(camera.view));
 
     gl_Position = camera.proj * viewMat * vec4(inPosition,1.0);
-    gl_Position.z = 1.0;
-    gl_Position.w = 1.0;
 
     outTexCoords = inPosition;
 }
