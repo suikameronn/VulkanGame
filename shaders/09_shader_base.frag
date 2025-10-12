@@ -22,6 +22,7 @@ layout(set = 2, binding = 0) uniform PointLightUBO
 layout(set = 2,binding = 1) uniform DirectionLightUBO
 {
 	int lightCount;
+	vec4[LIGHT_MAX] pos;
 	vec4[LIGHT_MAX] dir;
 	vec4[LIGHT_MAX] color;
     mat4[LIGHT_MAX] viewProj;
@@ -206,7 +207,7 @@ vec4 getIBL(vec3 f0,vec3 normal,vec3 view,vec3 baseColor,float roughness,float m
 	{
 		ao = texture(aoMap,shaderMaterial.baseColorTextureIndex == 0 ? inUV0 : inUV1).r;
 	}
-	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse/* * 0.5*/) + specular) * ao;
+	vec3 ambient = (((1.0 - F) * (1.0 - metallic) * diffuse * 0.5) + specular) * ao;
 
 	return vec4(ambient,0.0f);
 }

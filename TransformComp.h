@@ -6,6 +6,8 @@ struct TransformComp
 {
 	size_t entityID;
 
+	glm::vec3 centerPos;//重心
+
 	glm::vec3 position; //位置
 	glm::vec3 rotation; //回転(オイラー角)
 	glm::vec3 scale; //スケール
@@ -21,6 +23,8 @@ struct TransformComp
 
 		rotate = glm::mat4(1.0f);
 		model = glm::mat4(1.0f);
+
+		centerPos = position;
 	}
 
 	TransformComp(const size_t& entity)
@@ -33,5 +37,7 @@ struct TransformComp
 
 		rotate = glm::mat4(1.0f);
 		model = glm::mat4(1.0f);
+
+		centerPos = position;
 	}
 };

@@ -13,12 +13,33 @@
 
 #include<random>
 
+struct SimplexVertex
+{
+	//ミンコフスキー空間上の座標
+	glm::vec3 point;
+
+	//上の座標が割り出されるコライダーの頂点のペアの一対
+	glm::vec3 myPoint;
+
+	//相手のコライダーのペアの一対
+	glm::vec3 oppPoint;
+
+	SimplexVertex()
+	{
+		point = glm::vec3(0.0f);
+
+		myPoint = glm::vec3(0.0f);
+
+		oppPoint = glm::vec3(0.0f);
+	}
+};
+
 //GJKの構造体
 struct Simplex
 {
 private:
 	//GJK法で扱う最大4つの頂点を持つ図形
-	std::array<glm::vec3, 4> points;
+	std::array<SimplexVertex, 4> vertices;
 
 public:
 	//有効な頂点の数
@@ -28,33 +49,34 @@ public:
 	{
 		size = 0;
 		glm::vec3 zero = glm::vec3(0.0f, 0.0f, 0.0f);
-		points = { zero };
+		vertices = {};
 	}
 
 	//頂点の追加
-	void push_front(glm::vec3 v)
+	void push_front(const SimplexVertex& v)
 	{
-		points = { v,points[0],points[1] ,points[2] };
+		vertices = { v,vertices[0],vertices[1],vertices[2] };
+
 		size = std::min(size + 1, 4);
 	}
 
-	Simplex& operator=(std::initializer_list<glm::vec3> list)
+	Simplex& operator=(std::initializer_list<SimplexVertex> list)
 	{
 		size = 0;
 
-		for (glm::vec3 point : list)
-			points[size++] = point;
+		for (SimplexVertex point : list)
+			vertices[size++] = point;
 
 		return *this;
 	}
 
-	glm::vec3& operator[](int i) { return points[i]; }
+	SimplexVertex& operator[](int i) { return vertices[i]; }
 
 	//epa法での構造へのコピー
-	void setSimplexVertices(std::vector<glm::vec3>& polytope)
+	void setSimplexVertices(std::vector<SimplexVertex>& polytope)
 	{
-		polytope.resize(points.size());
-		std::copy(points.begin(), points.end(), polytope.begin());
+		polytope.resize(vertices.size());
+		std::copy(vertices.begin(), vertices.end(), polytope.begin());
 	}
 };
 
@@ -114,15 +136,19 @@ private:
 	//引数の方向ベクトルの向きで最も遠い頂点を求める
 	glm::vec3 getFurthestPoint(glm::vec3 dir);
 	//サポート写像を求める
-	glm::vec3 getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir);
+	SimplexVertex getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir);
 	//GJKの次の単体を求める
 	bool nextSimplex(Simplex& simplex, glm::vec3& dir);
 	//その線分から最も近い頂点を求める
 	glm::vec3 getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFinish, glm::vec3 point);
 	//GJK法での当たり判定を実行
-	bool GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisionDepthVec);
+	bool GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisionDepthVec, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint);
 	//GJK法後にEPA法で衝突を解消するためのベクトルを取得
-	void EPA(const std::unique_ptr<Colider>& oppColider, Simplex& simplex, glm::vec3& collisionDepthVec);
+	void EPA(const std::unique_ptr<Colider>& oppColider, Simplex& simplex, glm::vec3& collisionDepthVec, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint);
+	//衝突点を計算する
+	void CollisionPoint(const std::array<SimplexVertex, 3>& triangle, const glm::vec3& point, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint);
+	//三角形上の頂点の重心座標を求める
+	std::array<float, 3> CenterCoord(const std::array<glm::vec3, 3>& triangle, const glm::vec3& position);
 	//分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
 	bool SAT(const std::unique_ptr<Colider>& oppColider, float& collisionDepth, glm::vec3& collisionNormal);
 	//同一の線分を含まなければその頂点を単体に含める
@@ -130,7 +156,7 @@ private:
 						 int a, int b);
 	//面の法線を取得
 	std::pair<std::vector<glm::vec4>, int> getFaceNormals(
-		std::vector<glm::vec3>& vertices,
+		std::vector<SimplexVertex>& vertices,
 		std::vector<int>& faces);
 
 	//gltfモデルから頂点を取得する
@@ -163,6 +189,8 @@ public:
 	glm::mat4 getScaleMat();
 	//Modelクラスの移動などをコライダーにも反映
 	void reflectMovement(const glm::vec3& translate, const glm::mat4& rotate, const glm::vec3& scale);
+	//重心を返す
+	glm::vec3 getCenterPos();
 
 	//サポート写像を求める(SAT用)
 	void projection(float& min, float& max, glm::vec3& minVertex, glm::vec3& maxVertex, glm::vec3& axis);
@@ -175,7 +203,7 @@ public:
 	std::shared_ptr<DescriptorSet> getDescriptorSet() { return descriptorSet; }
 
 	//SAT用当たり判定の実行
-	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector);
+	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint);
 	//GJK用当たり判定の実行
 	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider);
 	//ボックスレイキャスト用の当たり判定の実行

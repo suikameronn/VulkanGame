@@ -57,9 +57,10 @@ struct PhysicParam
 
 class Force
 {
-private:
+protected:
 
-	float time;
+	//合計の力
+	glm::vec3 totalForce;
 
 public:
 
@@ -71,6 +72,11 @@ public:
 		return std::vector<glm::vec3>();
 	}
 
+	//その運動による力のモーメントを返す
+	virtual std::vector<glm::vec3> getMoment(const glm::vec3& rotatePoint, const PhysicParam& param, const glm::vec3& initMoment, const float& deltaTime)
+	{
+		return std::vector<glm::vec3>();
+	}
 };
 
 //重力の力
@@ -136,6 +142,12 @@ private:
 	//動摩擦力係数
 	float kineticFriction;
 
+	//衝突点
+	glm::vec3 collisionPoint;
+
+	//衝突法線
+	glm::vec3 collisionNormal;
+
 public:
 
 	CollisionForce()
@@ -146,6 +158,11 @@ public:
 	CollisionForce(const glm::vec3& gravity)
 	{
 		g = gravity;
+	}
+
+	glm::vec3 getTotalForce()
+	{
+		return totalForce;
 	}
 
 	//衝突時の解消ベクトルを衝突面の法線
@@ -166,7 +183,14 @@ public:
 
 	glm::vec3 afterBounceVelocity(const PhysicParam& param, const glm::vec3& initVelocity)
 	{
-		return -initVelocity * param.restitution;
+		float cos = std::abs(glm::normalizeDot(-g, collisionDirection));
+
+		if (cos > 0.5f)
+		{				 
+			return -initVelocity * param.restitution;
+		}
+
+		return initVelocity;
 	}
 
 	std::vector<glm::vec3> getForce(const PhysicParam& param, const glm::vec3& initVelocity, const float& deltaTime) override
@@ -200,6 +224,37 @@ public:
 		//斜面に平行な力の合計
 		force[1] = horizontalForce - kineticFriction * horizntal;
 
+		totalForce = glm::vec3(0.0f);
+		for (int i = 0; i < force.size(); i++)
+		{
+			totalForce += force[i];
+		}
+
 		return force;
+	}
+
+	//その運動による力のモーメントを返す
+	std::vector<glm::vec3> getMoment(const glm::vec3& rotatePoint, const PhysicParam& param, const glm::vec3& initMoment, const float& deltaTime) override
+	{
+		//回転軸
+		const glm::vec3 rotateAxis = glm::normalize(rotatePoint);
+
+		//作用線
+		const glm::vec3 forceAxis = glm::normalize(collisionNormal);
+
+		//二つのベクトルの法線を求める
+		const glm::vec3 normal = glm::cross(rotateAxis, forceAxis);
+
+		//衝突点からオブジェクトの重心へのベクトルを求める
+		const glm::vec3 line = collisionPoint - rotatePoint;
+
+		//力のモーメントの距離
+		const float distance = std::abs(glm::dot(line, normal) / glm::length(normal));
+
+		std::vector<glm::vec3> morment(1);
+
+		morment[0] = distance * totalForce;
+
+		return morment;
 	}
 };

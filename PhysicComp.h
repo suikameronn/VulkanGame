@@ -18,6 +18,15 @@ struct PhysicComp
 	//現在の速度
 	glm::vec3 velocity;
 
+	//1フレーム前の角加速度
+	glm::vec3 lastAngVelocity;
+
+	//現在の角加速度
+	glm::vec3 angVelocity;
+
+	//慣性モーメント
+	float inertia;
+
 	//物理的特性
 	PhysicParam param;
 
@@ -30,6 +39,9 @@ struct PhysicComp
 
 		lastFrameVeloctity = glm::vec3(0.0f);
 		velocity = glm::vec3(0.0f);
+
+		lastAngVelocity = glm::vec3(0.0f);
+		angVelocity = glm::vec3(0.0f);
 
 		param = PhysicParam();
 

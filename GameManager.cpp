@@ -167,12 +167,6 @@ void GameManager::createScene()
 
 		ecsManager->AddComponent<MeshRendererComp>(ground);
 	}
-	/*size_t entity5 = ecsManager->GenerateEntity();
-	DirectionLightComp* dLight2 = ecsManager->AddComponent<DirectionLightComp>(entity5);
-	dLight2->position = glm::vec3(200.0f, 200.0f, 200.0f);
-	dLight2->color = glm::vec4(1.0f);
-	dLight2->direction = glm::vec3(-200.0f, -200.0f, -200.0f);
-	*/
 }
 
 //レンダー用コマンドバッファの作成
@@ -747,43 +741,78 @@ void GameManager::OnUpdate()
 //更新処理後の処理
 void GameManager::OnLateUpdate()
 {
-	ecsManager->RunFunction<PhysicComp,TransformComp>
+	ecsManager->RunFunction<PhysicComp, TransformComp>
 		(
 			{
 				[&](PhysicComp& physic,TransformComp& transform)
 				{
-					glm::vec3 totalForce = glm::vec3(0.0f);
+					{//速度の更新
 
-					float deltaTime = elapsed / 1000.0f;
+						glm::vec3 totalForce = glm::vec3(0.0f);
 
-					for (auto& force : physic.forceList)
-					{
-						std::vector<glm::vec3> totalF = force->getForce(physic.param,physic.velocity, deltaTime);
+						float deltaTime = elapsed / 1000.0f;
 
-						for (const auto& f : totalF)
+						for (auto& force : physic.forceList)
 						{
-							totalForce += f;
+							std::vector<glm::vec3> totalF = force->getForce(physic.param,physic.velocity, deltaTime);
+
+							for (const auto& f : totalF)
+							{
+								totalForce += f;
+							}
 						}
+
+						//現在の位置を記録しておく
+						glm::vec3 currentPosition = transform.position;
+
+						//現在の速度を控えておく
+						glm::vec3 currentVelcoity = physic.velocity;
+
+						//速度を計算する
+						physic.velocity = deltaTime * (totalForce / physic.param.m) + physic.lastFrameVeloctity;
+
+						//現在の位置を更新する
+						transform.position = deltaTime * physic.velocity + transform.position;
+
+						//過去の位置を更新する
+						physic.lastFramePosition = currentPosition;
+
+						//過去の速度を更新する
+						physic.lastFrameVeloctity = currentVelcoity;
 					}
 
-					//現在の位置を記録しておく
-					glm::vec3 currentPosition = transform.position;
+					{//角速度の更新
 
-					//現在の速度を控えておく
-					glm::vec3 currentVelcoity = physic.velocity;
+						glm::vec3 totalMorment(0.0f);
 
-					//速度を計算する
-					physic.velocity = deltaTime * (totalForce / physic.param.m) + physic.lastFrameVeloctity;
+						float deltaTime = elapsed / 1000.0f;
 
-					//現在の位置を更新する
-					transform.position = deltaTime * physic.velocity + transform.position;
+						for (auto& morment : physic.forceList)
+						{
+							std::vector<glm::vec3> totalM = morment->getMoment(transform.centerPos, physic.param, physic.lastAngVelocity, deltaTime);
 
-					//過去の位置を更新する
-					physic.lastFramePosition = currentPosition;
+							for (const auto& m : totalM)
+							{
+								totalMorment += m;
+							}
+						}
 
-					//過去の速度を更新する
-					physic.lastFrameVeloctity = currentVelcoity;
-					
+						//現在の角速度を控えておく
+						glm::vec3 currentAngVelocity = physic.angVelocity;
+
+						//角加速度を計算する
+						glm::vec3 angAcceleration = totalMorment / physic.inertia;
+
+						//現在の角速度を更新する
+						physic.angVelocity += angAcceleration;
+
+						//現在の回転を更新する
+
+
+						//過去の角速度を更新する
+						physic.lastAngVelocity = currentAngVelocity;
+					}
+
 					//コンポーネントから力を削除する
 					physic.forceList.clear();
 				}
@@ -983,6 +1012,8 @@ void GameManager::OnLateUpdate()
 					std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
 
 					colider->reflectMovement(transComp.position,transComp.rotate,transComp.scale);
+
+					transComp.centerPos = colider->getCenterPos();
 				}
 			}
 		);
@@ -1045,7 +1076,10 @@ void GameManager::OnLateUpdate()
 
 											//衝突を解消するためのベクトル
 											glm::vec3 collisionVector = glm::vec3(0.0f);
-											colider->Intersect(otherColider, collisionVector);
+											glm::vec3 myCollisionPoint(0.0f);
+											glm::vec3 oppCollisionPoint(0.0f);
+
+											colider->Intersect(otherColider, collisionVector, myCollisionPoint, oppCollisionPoint);
 
 											if (glm::length(collisionVector) != 0.0f)
 											{

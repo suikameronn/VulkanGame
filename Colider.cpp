@@ -223,12 +223,22 @@ void Colider::reflectMovement(const glm::vec3& translate, const glm::mat4& rotat
 	memcpy(matBuffer->mappedPtr, &model, sizeof(ModelMat));
 }
 
+//重心を返す
+glm::vec3 Colider::getCenterPos()
+{
+	glm::vec3 centerPos = transformedMin + transformedMax;
+
+	centerPos /= 2.0f;
+
+	return centerPos;
+}
+
 //SAT用当たり判定の実行
-bool Colider::Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector)
+bool Colider::Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint)
 {
 	bool collision = false;
-	
-	collision = GJK(oppColider,collisionVector);
+
+	collision = GJK(oppColider, collisionVector, myCollisionPoint, oppCollisionPoint);
 
 	return collision;
 }
@@ -239,8 +249,10 @@ bool Colider::Intersect(const std::unique_ptr<Colider>& oppColider)
 	bool collision = false;
 
 	glm::vec3 collisionVector;
+	glm::vec3 myCollisionPoint;
+	glm::vec3 oppCollisionPoint;
 
-	collision = GJK(oppColider, collisionVector);
+	collision = GJK(oppColider, collisionVector, myCollisionPoint, oppCollisionPoint);
 
 	return collision;
 }
@@ -369,14 +381,14 @@ void Colider::projection(float& min, float& max, glm::vec3& minVertex, glm::vec3
 }
 
 //GJK法での当たり判定を実行
-bool Colider::GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisionDepthVec)
+bool Colider::GJK(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionDepthVec, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint)
 {
-	glm::vec3 support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));//適当な方向のサポート写像を求める
+	SimplexVertex support = getSupportVector(oppColider, glm::vec3(1.0f, 0.0f, 0.0f));//適当な方向のサポート写像を求める
 
 	Simplex simplex;
 	simplex.push_front(support);
 
-	glm::vec3 dir = -support;
+	glm::vec3 dir = -support.point;
 
 	int count = 50;
 
@@ -384,7 +396,7 @@ bool Colider::GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisio
 	{
 		support = getSupportVector(oppColider, dir);//サポート写像を求める
 
-		if (glm::dot(support, dir) <= 0.0f)//もし求めたサポート写像が原点の方向と向きが逆だったら、当たり判定を終了
+		if (glm::dot(support.point, dir) <= 0.0f)//もし求めたサポート写像が原点の方向と向きが逆だったら、当たり判定を終了
 		{
 			return false;
 		}
@@ -393,7 +405,7 @@ bool Colider::GJK(const std::unique_ptr<Colider>& oppColider,glm::vec3& collisio
 
 		if (nextSimplex(simplex, dir))//単体の更新、四角錐内に原点が含まれていたら、EPAに移行
 		{
-			EPA(oppColider,simplex, collisionDepthVec);//衝突を解消するためのベクトルの計算
+			EPA(oppColider, simplex, collisionDepthVec, myCollisionPoint, oppCollisionPoint);//衝突を解消するためのベクトルの計算
 			return true;
 		}
 
@@ -422,19 +434,26 @@ glm::vec3 Colider::getFurthestPoint(glm::vec3 dir)
 }
 
 //サポート写像を求める
-glm::vec3 Colider::getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir)
+SimplexVertex Colider::getSupportVector(const std::unique_ptr<Colider>& oppColider, glm::vec3 dir)
 {
-	return getFurthestPoint(dir) - oppColider->getFurthestPoint(-dir);
+	SimplexVertex vertex{};
+	
+	vertex.myPoint = getFurthestPoint(dir);
+	vertex.oppPoint = oppColider->getFurthestPoint(-dir);
+
+	vertex.point = vertex.myPoint - vertex.oppPoint;
+
+	return  vertex;
 }
 
 //線分同士でわかる範囲でミンコフスキー差が原点を含みそうか調べる
 bool Colider::Line(Simplex& simplex, glm::vec3& dir)
 {
-	glm::vec3 a = simplex[0];
-	glm::vec3 b = simplex[1];
+	SimplexVertex a = simplex[0];
+	SimplexVertex b = simplex[1];
 
-	glm::vec3 ab = b - a;
-	glm::vec3 ao = -a;//a0:原点方向のベクトル
+	glm::vec3 ab = b.point - a.point;
+	glm::vec3 ao = -a.point;//a0:原点方向のベクトル
 
 	if (sameDirection(ab, ao))//bが原点方向に位置しない=単体を三角形にしても原点を含まない
 	{		
@@ -452,13 +471,13 @@ bool Colider::Line(Simplex& simplex, glm::vec3& dir)
 //三角形でわかる範囲でミンコフスキー差が原点を含みそうか調べる
 bool Colider::Triangle(Simplex& simplex, glm::vec3& dir)
 {
-	glm::vec3 a = simplex[0];
-	glm::vec3 b = simplex[1];
-	glm::vec3 c = simplex[2];
+	SimplexVertex a = simplex[0];
+	SimplexVertex b = simplex[1];
+	SimplexVertex c = simplex[2];
 
-	glm::vec3 ab = b - a;
-	glm::vec3 ac = c - a;
-	glm::vec3 point = -a;
+	glm::vec3 ab = b.point - a.point;
+	glm::vec3 ac = c.point - a.point;
+	glm::vec3 point = -a.point;
 
 	glm::vec3 triangleCross = glm::cross(ab, ac);
 
@@ -505,15 +524,15 @@ bool Colider::Triangle(Simplex& simplex, glm::vec3& dir)
 //四角錐でわかる範囲でミンコフスキー差が原点を含むか調べる
 bool Colider::Tetrahedron(Simplex& simplex, glm::vec3& dir)
 {
-	glm::vec3 a = simplex[0];
-	glm::vec3 b = simplex[1];
-	glm::vec3 c = simplex[2];
-	glm::vec3 d = simplex[3];
+	SimplexVertex a = simplex[0];
+	SimplexVertex b = simplex[1];
+	SimplexVertex c = simplex[2];
+	SimplexVertex d = simplex[3];
 
-	glm::vec3 ab = b - a;
-	glm::vec3 ac = c - a;
-	glm::vec3 ad = d - a;
-	glm::vec3 point = -a;
+	glm::vec3 ab = b.point - a.point;
+	glm::vec3 ac = c.point - a.point;
+	glm::vec3 ad = d.point - a.point;
+	glm::vec3 point = -a.point;
 
 	glm::vec3 abc = glm::cross(ab, ac);
 	glm::vec3 acd = glm::cross(ac, ad);
@@ -553,9 +572,9 @@ bool Colider::nextSimplex(Simplex& simplex, glm::vec3& dir)
 }
 
 //GJK法後にEPA法で衝突を解消するためのベクトルを取得
-void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, glm::vec3& collisionDepthVec)
+void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, glm::vec3& collisionDepthVec, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint)
 {
-	std::vector<glm::vec3> polytope;
+	std::vector<SimplexVertex> polytope;
 	simplex.setSimplexVertices(polytope);
 
 	std::vector<int> faces =
@@ -576,8 +595,8 @@ void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, g
 		minNormal = normals[minFace];
 		minDistance = normals[minFace].w;
 
-		glm::vec3 support = getSupportVector(oppColider, minNormal);
-		float sDistance = glm::dot(minNormal, support);
+		SimplexVertex support = getSupportVector(oppColider, minNormal);
+		float sDistance = glm::dot(minNormal, support.point);
 
 		if (abs(sDistance - minDistance) > 0.001f)
 		{
@@ -586,7 +605,7 @@ void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, g
 
 			for (int i = 0; i < normals.size(); i++)
 			{
-				if (sameDirection(normals[i], support))
+				if (sameDirection(normals[i], support.point))
 				{
 					int f = i * 3;
 
@@ -646,7 +665,15 @@ void Colider::EPA(const std::unique_ptr<Colider>& oppColider,Simplex& simplex, g
 		limit--;
 	}
 
-	collisionDepthVec = minNormal * (minDistance + 0.0000f);//遊びをとっておく
+	collisionDepthVec = minNormal * minDistance;
+
+	//二つのコライダーの衝突点を求める
+	std::array<SimplexVertex, 3> triangle{};
+	for (int i = 0; i < 3; i++)
+	{
+		triangle[i] = polytope[faces[minFace * 3 + i]];
+	}
+	CollisionPoint(triangle, collisionDepthVec, myCollisionPoint, oppCollisionPoint);
 }
 
 //同一の線分を含まなければその頂点を単体に含める
@@ -673,7 +700,7 @@ void Colider::addIfUniqueEdge(
 
 //面の法線を取得
 std::pair<std::vector<glm::vec4>, int> Colider::getFaceNormals(
-	std::vector<glm::vec3>& vertices,
+	std::vector<SimplexVertex>& vertices,
 	std::vector<int>& faces)
 {
 	std::vector<glm::vec4> normals;
@@ -681,9 +708,9 @@ std::pair<std::vector<glm::vec4>, int> Colider::getFaceNormals(
 	float  minDistance = FLT_MAX;
 
 	for (int i = 0; i < faces.size(); i += 3) {
-		glm::vec3 a = vertices[faces[i]];
-		glm::vec3 b = vertices[faces[i + 1]];
-		glm::vec3 c = vertices[faces[i + 2]];
+		glm::vec3 a = vertices[faces[i]].point;
+		glm::vec3 b = vertices[faces[i + 1]].point;
+		glm::vec3 c = vertices[faces[i + 2]].point;
 
 		glm::vec3 normal = glm::normalize(glm::cross(b - a, c - a));
 		float distance = glm::dot(normal, a);
@@ -711,4 +738,52 @@ glm::vec3 Colider::getClosestLineToVertex(glm::vec3 lineStart, glm::vec3 lineFin
 	float dot = glm::dot(point, lineVector);
 
 	return lineStart + dot * lineVector;
+}
+
+//衝突点を計算する
+void Colider::CollisionPoint(const std::array<SimplexVertex, 3>& triangle, const glm::vec3& point, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint)
+{
+	std::array<glm::vec3, 3> simplexVertices;
+	for (int i = 0; i < 3; i++)
+	{
+		simplexVertices[i] = triangle[i].point;
+	}
+
+	std::array<float, 3> centerCoord = CenterCoord(simplexVertices, point);
+
+	myCollisionPoint = centerCoord[0] * triangle[0].myPoint + centerCoord[1] * triangle[1].myPoint + centerCoord[2] * triangle[2].myPoint;
+
+	oppCollisionPoint = centerCoord[0] * triangle[0].oppPoint + centerCoord[1] * triangle[1].oppPoint + centerCoord[2] * triangle[2].oppPoint;
+}
+
+//三角形上の頂点の重心座標を求める
+std::array<float, 3> Colider::CenterCoord(const std::array<glm::vec3, 3>& triangle, const glm::vec3& position)
+{
+	//三角形の法線
+	glm::vec3 faceNormal = glm::cross(triangle[1] - triangle[0], triangle[2] - triangle[0]);
+
+	//三角形上に投影された原点を計算する
+	glm::vec3 origin = glm::vec3(0.0f) - glm::normalize(faceNormal) * (std::abs(glm::dot(-triangle[0], glm::normalize(faceNormal))));
+
+	//三角形の全体の面積を求める
+	float totalArea = 0.5f * glm::length(faceNormal);
+
+	//重心座標を求める
+	std::array<float, 3> centerCoord{};
+
+	centerCoord[0] = 0.5f * glm::length(glm::cross(triangle[2] - triangle[1], (origin - triangle[1])));
+	centerCoord[1] = 0.5f * glm::length(glm::cross(triangle[0] - triangle[2], (origin - triangle[2])));
+	centerCoord[2] = 0.5f * glm::length(glm::cross(triangle[1] - triangle[0], (origin - triangle[0])));
+
+	for (int i = 0; i < 3; i++)
+	{
+		centerCoord[i] /= totalArea;
+
+		if (centerCoord[i] < 0.0f)
+		{
+			std::cout << "centerCoord error" << std::endl;
+		}
+	}
+
+	return centerCoord;
 }
