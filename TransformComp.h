@@ -2,6 +2,9 @@
 
 #include"glm/glm.hpp"
 
+#include<glm/gtc/quaternion.hpp>
+#include<glm/gtx/quaternion.hpp>
+
 struct TransformComp
 {
 	size_t entityID;
@@ -9,7 +12,7 @@ struct TransformComp
 	glm::vec3 centerPos;//重心
 
 	glm::vec3 position; //位置
-	glm::vec3 rotation; //回転(オイラー角)
+	glm::quat rotateQuat;//回転クォータニオン
 	glm::vec3 scale; //スケール
 
 	glm::mat4 rotate;//回転行列
@@ -18,7 +21,7 @@ struct TransformComp
 	TransformComp()
 	{
 		position = glm::vec3(0.0f, 0.0f, 0.0f);
-		rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		rotateQuat = glm::quat(glm::vec4(0.0f));
 		scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
 		rotate = glm::mat4(1.0f);
@@ -32,7 +35,7 @@ struct TransformComp
 		entityID = entity;
 
 		position = glm::vec3(0.0f, 0.0f, 0.0f);
-		rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		rotateQuat = glm::quat(glm::vec4(0.0f));
 		scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
 		rotate = glm::mat4(1.0f);

@@ -75,7 +75,11 @@ public:
 	//その運動による力のモーメントを返す
 	virtual std::vector<glm::vec3> getMoment(const glm::vec3& rotatePoint, const PhysicParam& param, const glm::vec3& initMoment, const float& deltaTime)
 	{
-		return std::vector<glm::vec3>();
+		std::vector<glm::vec3> moment(1);
+
+		moment[0] = glm::vec3(0.0f);
+
+		return moment;
 	}
 };
 
@@ -176,9 +180,13 @@ public:
 		kineticFriction = param.kineticFriction;
 	}
 
-	void setCollisionVector(const glm::vec3& normal)
+	void setCollisionVector(const glm::vec3& normal,const glm::vec3& point)
 	{
 		collisionDirection = glm::normalize(normal);
+
+		collisionPoint = point;
+
+		collisionNormal = collisionDirection;
 	}
 
 	glm::vec3 afterBounceVelocity(const PhysicParam& param, const glm::vec3& initVelocity)
@@ -206,7 +214,7 @@ public:
 		force[0] = param.m * g * cos;
 
 		float sin = sqrt(1 - (cos * cos));
-		
+
 		//重力の中の、斜面に平行な成分
 		glm::vec3 horizontalForce = param.m * g * sin;
 
@@ -217,12 +225,12 @@ public:
 		if (glm::length(horizontalForce) <= glm::length(horizntal * staticFriction))
 		{
 			force[1] = glm::vec3(0.0f);
-
-			return force;
 		}
-
-		//斜面に平行な力の合計
-		force[1] = horizontalForce - kineticFriction * horizntal;
+		else
+		{
+			//斜面に平行な力の合計
+			force[1] = horizontalForce - kineticFriction * horizntal;
+		}
 
 		totalForce = glm::vec3(0.0f);
 		for (int i = 0; i < force.size(); i++)
@@ -236,24 +244,11 @@ public:
 	//その運動による力のモーメントを返す
 	std::vector<glm::vec3> getMoment(const glm::vec3& rotatePoint, const PhysicParam& param, const glm::vec3& initMoment, const float& deltaTime) override
 	{
-		//回転軸
-		const glm::vec3 rotateAxis = glm::normalize(rotatePoint);
-
-		//作用線
-		const glm::vec3 forceAxis = glm::normalize(collisionNormal);
-
-		//二つのベクトルの法線を求める
-		const glm::vec3 normal = glm::cross(rotateAxis, forceAxis);
-
-		//衝突点からオブジェクトの重心へのベクトルを求める
 		const glm::vec3 line = collisionPoint - rotatePoint;
-
-		//力のモーメントの距離
-		const float distance = std::abs(glm::dot(line, normal) / glm::length(normal));
 
 		std::vector<glm::vec3> morment(1);
 
-		morment[0] = distance * totalForce;
+		morment[0] = glm::cross(line, totalForce);
 
 		return morment;
 	}

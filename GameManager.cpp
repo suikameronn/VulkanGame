@@ -99,7 +99,9 @@ void GameManager::createScene()
 		TransformComp* transComp = ecsManager->AddComponent<TransformComp>(entity1);
 		transComp->position = glm::vec3(0.0f, -100.0f, 0.0f);
 		transComp->scale = glm::vec3(6.0f);
-		transComp->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+
+		glm::quat pitch = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		transComp->rotateQuat = pitch;
 
 		GltfModelComp* comp = ecsManager->AddComponent<GltfModelComp>(entity1);
 
@@ -112,8 +114,7 @@ void GameManager::createScene()
 
 		ColiderComp* colider = ecsManager->AddComponent<ColiderComp>(entity1);
 		colider->freeze = false;
-		colider->offsetPos = glm::vec3(0.0f, -11.7f, 0.0f);
-		colider->offsetScale = glm::vec3(-1.5f, -0.5f, 0.0f);
+		colider->offsetPos = glm::vec3(0.0f, -2.0f, 0.0f);
 
 		PhysicComp* physic = ecsManager->AddComponent<PhysicComp>(entity1);
 		physic->param.m = 10.0f;
@@ -423,6 +424,26 @@ void GameManager::OnStart()
 
 						physic.param.crossArea[7] = { cross,squareArea };
 					}
+
+					const float width = glm::length(coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[0]] * scale
+						- coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[1]] * scale);
+
+					const float height = glm::length(coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[0]] * scale
+						- coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[4]] * scale);
+
+					const float depth = glm::length(coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[0]] * scale
+						- coliderPtr->getColiderOriginalVertices()[coliderPtr->getColiderIndices()[3]] * scale);
+
+					const float width2 = pow(width, 2);
+					const float height2 = pow(height, 2);
+					const float depth2 = pow(depth, 2);
+
+					//physic.inertia = (1.0f / 3.0f) * physic.param.m * (width * width + height * height);
+
+					physic.inertia = glm::mat4(1.0f);
+					physic.inertia[0][0] = (1.0f / 12.0f) * physic.param.m * (height2 + depth2);
+					physic.inertia[1][1] = (1.0f / 12.0f) * physic.param.m * (width2 + depth2);
+					physic.inertia[2][2] = (1.0f / 12.0f) * physic.param.m * (width2 + height2);
 				}
 			}
 		);
@@ -797,17 +818,29 @@ void GameManager::OnLateUpdate()
 							}
 						}
 
+						//totalMorment += -0.005f * glm::length(physic.angVelocity) * physic.angVelocity;
+
+						totalMorment = glm::transpose(glm::mat3(transform.rotate)) * totalMorment;
+
 						//現在の角速度を控えておく
 						glm::vec3 currentAngVelocity = physic.angVelocity;
 
+						const glm::mat3 invInertia = glm::inverse(physic.inertia);
+
 						//角加速度を計算する
-						glm::vec3 angAcceleration = totalMorment / physic.inertia;
+						glm::vec3 angAcceleration = invInertia * totalMorment;
 
 						//現在の角速度を更新する
-						physic.angVelocity += angAcceleration;
+						physic.angVelocity += angAcceleration * deltaTime;
 
 						//現在の回転を更新する
+						transform.rotateQuat = glm::normalize(deltaTime * 0.5f * glm::quat(cos(0.5f * glm::length(physic.angVelocity) * deltaTime), physic.angVelocity) * transform.rotateQuat);
 
+						if (glm::length2(transform.rotateQuat) < 1e-6f || glm::any(glm::isnan(transform.rotateQuat)))
+						{
+							transform.rotateQuat = glm::quat(1.0f, glm::vec3(0.0f));
+							physic.angVelocity = glm::vec3(0.0f);
+						}
 
 						//過去の角速度を更新する
 						physic.lastAngVelocity = currentAngVelocity;
@@ -977,10 +1010,7 @@ void GameManager::OnLateUpdate()
 			{
 				[&](TransformComp& transform)
 				{
-					glm::mat4 rotateMat = glm::mat4(1.0f);
-					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[0]), glm::vec3(1, 0, 0));
-					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[1]), glm::vec3(0, 1, 0));
-					rotateMat *= glm::rotate(glm::mat4(1.0f), glm::radians(transform.rotation[2]), glm::vec3(0, 0, 1));
+					glm::mat4 rotateMat = glm::toMat4(transform.rotateQuat);
 
 					transform.rotate = rotateMat;
 
@@ -1090,7 +1120,7 @@ void GameManager::OnLateUpdate()
 												if (physic != nullptr)
 												{
 													std::unique_ptr<CollisionForce> f = std::make_unique<CollisionForce>();
-													f->setCollisionVector(collisionVector);
+													f->setCollisionVector(collisionVector, myCollisionPoint);
 													physic->velocity = f->afterBounceVelocity(physic->param, physic->velocity);
 
 													physic->forceList.push_back(std::move(f));

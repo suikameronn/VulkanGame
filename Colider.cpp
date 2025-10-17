@@ -202,24 +202,24 @@ glm::mat4 Colider::getScaleMat()
 //Modelクラスの移動などをコライダーにも反映
 void Colider::reflectMovement(const glm::vec3& translate, const glm::mat4& rotate, const glm::vec3& scale)
 {
-	//与えられた位置にコライダーのオフセットを加える
-	glm::vec3 tmpT = translate + offsetPos;
-	glm::vec3 tmpS = scale + offsetScale;
+	glm::mat4 transform = glm::translate(glm::mat4(1.0f), translate)
+		* rotate * glm::scale(glm::mat4(1.0f), scale);
 
-	glm::mat4 transform = glm::translate(glm::mat4(1.0f), tmpT)
-		* rotate * glm::scale(glm::mat4(1.0f), tmpS);
+	const glm::vec3 rotateOffset = rotate * glm::scale(glm::mat4(1.0f), scale) * glm::vec4(offsetPos, 1.0f);
 
 	for (int i = 0; i < coliderVertices.size(); i++)
 	{
 		coliderVertices[i] = transform * glm::vec4(originalVertexPos[i], 1.0f);
+		coliderVertices[i] += rotateOffset;
 	}
 
-	transformedMin = transform * glm::vec4(min, 1.0f);
-	transformedMax = transform * glm::vec4(max, 1.0f);
+	transformedMin = glm::vec3(transform * glm::vec4(min, 1.0f)) + rotateOffset;
+	transformedMax = glm::vec3(transform * glm::vec4(max, 1.0f)) + rotateOffset;
 
 	ModelMat model{};
 	model.scale = glm::vec3(1.0f);
 	model.matrix = transform;
+	model.offset = rotateOffset;
 	memcpy(matBuffer->mappedPtr, &model, sizeof(ModelMat));
 }
 

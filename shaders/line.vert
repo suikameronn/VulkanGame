@@ -4,6 +4,7 @@ layout (set = 0,binding = 0) uniform ModelRender
 {
     vec3 scale;
     mat4 matrix;
+    vec3 offset;
 } modelMatrix;
 
 layout(set = 1,binding = 0) uniform Camera
@@ -19,7 +20,10 @@ layout(location = 0) out vec3 fragColor;
 
 void main() 
 {
-    gl_Position = camera.proj * camera.view * modelMatrix.matrix * vec4(inPosition,1.0);
+    gl_Position = modelMatrix.matrix * vec4(inPosition,1.0);
+    gl_Position += vec4(modelMatrix.offset,0.0);
+
+    gl_Position = camera.proj * camera.view * gl_Position;
     gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 

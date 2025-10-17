@@ -6,11 +6,13 @@ struct ModelMat
 {
 	glm::vec3 scale;
 	alignas(16) glm::mat4 matrix;
+	glm::vec3 offset;
 
 	ModelMat()
 	{
 		scale = glm::vec3(1.0f);
 		matrix = glm::mat4(1.0f);
+		offset = glm::vec3(0.0f);
 	}
 };
 

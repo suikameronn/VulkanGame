@@ -25,7 +25,8 @@ struct PhysicComp
 	glm::vec3 angVelocity;
 
 	//Šµ«ƒ‚[ƒƒ“ƒg
-	float inertia;
+	//float inertia;
+	glm::mat3 inertia;
 
 	//•¨—“I“Á«
 	PhysicParam param;

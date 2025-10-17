@@ -4,6 +4,7 @@ layout (set = 0,binding = 0) uniform ModelRender
 {
     vec3 scale;
     mat4 matrix;
+    vec3 offset;
 } modelMatrix;
 
 layout(set = 0,binding = 1) uniform NodeAnimMatrices
