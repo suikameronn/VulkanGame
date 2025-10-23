@@ -11,6 +11,8 @@
 
 #include"MeshRendererComp.h"
 
+#include"TransformComp.h"
+
 #include<random>
 
 struct SimplexVertex
@@ -150,7 +152,10 @@ private:
 	//三角形上の頂点の重心座標を求める
 	std::array<float, 3> CenterCoord(const std::array<glm::vec3, 3>& triangle, const glm::vec3& position);
 	//分離軸定理を利用した当たり判定を実行、衝突を解消するためのベクトルも計算
+	int intersectRectQuad2(float* h, float* p, float* ret);
 	bool SAT(const std::unique_ptr<Colider>& oppColider, float& collisionDepth, glm::vec3& collisionNormal);
+	bool SAT(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionNormal,glm::vec3& myCollisionPoint,glm::vec3& oppCollisionPoint
+		,const TransformComp& myTransform,const TransformComp& oppTransform);
 	//同一の線分を含まなければその頂点を単体に含める
 	void addIfUniqueEdge(std::vector<std::pair<int, int>>& edges, const std::vector<int>& faces,
 						 int a, int b);
@@ -203,7 +208,8 @@ public:
 	std::shared_ptr<DescriptorSet> getDescriptorSet() { return descriptorSet; }
 
 	//SAT用当たり判定の実行
-	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint);
+	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisionVector, glm::vec3& myCollisionPoint, glm::vec3& oppCollisionPoint
+		, const TransformComp& myTransform, const TransformComp& oppTransform);
 	//GJK用当たり判定の実行
 	virtual bool Intersect(const std::unique_ptr<Colider>& oppColider);
 	//ボックスレイキャスト用の当たり判定の実行

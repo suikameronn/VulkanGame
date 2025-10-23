@@ -146,6 +146,9 @@ private:
 	//動摩擦力係数
 	float kineticFriction;
 
+	//反発係数
+	float bounciness;
+
 	//衝突点
 	glm::vec3 collisionPoint;
 
@@ -157,11 +160,21 @@ public:
 	CollisionForce()
 	{
 		g = glm::vec3(0.0f, 9.8f, 0.0f);
+
+		staticFriction = 1.0f;
+		kineticFriction = 1.0f;
+		
+		bounciness = 0.0f;
 	}
 
 	CollisionForce(const glm::vec3& gravity)
 	{
 		g = gravity;
+
+		staticFriction = 1.0f;
+		kineticFriction = 1.0f;
+
+		bounciness = 0.0f;
 	}
 
 	glm::vec3 getTotalForce()
@@ -189,31 +202,24 @@ public:
 		collisionNormal = collisionDirection;
 	}
 
-	glm::vec3 afterBounceVelocity(const PhysicParam& param, const glm::vec3& initVelocity)
-	{
-		float cos = std::abs(glm::normalizeDot(-g, collisionDirection));
-
-		if (cos > 0.5f)
-		{				 
-			return -initVelocity * param.restitution;
-		}
-
-		return initVelocity;
-	}
-
 	std::vector<glm::vec3> getForce(const PhysicParam& param, const glm::vec3& initVelocity, const float& deltaTime) override
 	{
 		//垂直抗力と静摩擦力の二つ
 		std::vector<glm::vec3> force(2);
 
-		float top = glm::normalizeDot(param.m * g, collisionDirection);
-		float bottom = (glm::length(param.m * g) * glm::length(collisionDirection));
+		float top = glm::dot(param.m * g, collisionDirection);
+		float bottom = ((glm::length(param.m * g) * glm::length(collisionDirection)));
+		
 		float cos = top / bottom;
+		float sin = sqrt(1.0f - (cos * cos));
+		float tan = sin / cos;
 
-		//垂直抗力
-		force[0] = param.m * g * cos;
+		//垂直抗力を求める
+		force[0] = param.m * (-initVelocity);
 
-		float sin = sqrt(1 - (cos * cos));
+		//インパルス法を採用するため
+		//垂直抗力を時間ステップで割り、無理やり速度が0になるような力に変える
+		force[0] /= deltaTime;
 
 		//重力の中の、斜面に平行な成分
 		glm::vec3 horizontalForce = param.m * g * sin;
@@ -222,7 +228,7 @@ public:
 		glm::vec3 horizntal = glm::normalize(horizontalForce);
 
 		//物体が滑り出すかどうかを調べる
-		if (glm::length(horizontalForce) <= glm::length(horizntal * staticFriction))
+		if (tan < staticFriction)
 		{
 			force[1] = glm::vec3(0.0f);
 		}
@@ -248,7 +254,11 @@ public:
 
 		std::vector<glm::vec3> morment(1);
 
-		morment[0] = glm::cross(line, totalForce);
+		morment[0] = glm::vec3(0.0f);
+		if (glm::length(line) >= 0.1f)
+		{
+			morment[0] = glm::cross(line, totalForce);
+		}
 
 		return morment;
 	}

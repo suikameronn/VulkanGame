@@ -790,7 +790,7 @@ void GameManager::OnLateUpdate()
 						glm::vec3 currentVelcoity = physic.velocity;
 
 						//速度を計算する
-						physic.velocity = deltaTime * (totalForce / physic.param.m) + physic.lastFrameVeloctity;
+						physic.velocity = deltaTime * (totalForce / physic.param.m) + physic.velocity;
 
 						//現在の位置を更新する
 						transform.position = deltaTime * physic.velocity + transform.position;
@@ -1095,10 +1095,10 @@ void GameManager::OnLateUpdate()
 					{
 						const std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
 
-						ecsManager->RunFunction<ColiderComp>
+						ecsManager->RunFunction<TransformComp,ColiderComp>
 							(
 								{
-									[&](ColiderComp& otherColiderComp)
+									[&](TransformComp& otherTransformComp,ColiderComp& otherColiderComp)
 									{
 										if (otherColiderComp.ID != coliderComp.ID)
 										{
@@ -1109,11 +1109,13 @@ void GameManager::OnLateUpdate()
 											glm::vec3 myCollisionPoint(0.0f);
 											glm::vec3 oppCollisionPoint(0.0f);
 
-											colider->Intersect(otherColider, collisionVector, myCollisionPoint, oppCollisionPoint);
+											bool collision = colider->Intersect(otherColider, collisionVector, myCollisionPoint, oppCollisionPoint
+												, transformComp, otherTransformComp);
 
-											if (glm::length(collisionVector) != 0.0f)
+											if (collision)
 											{
-												transformComp.position -= collisionVector;
+												transformComp.position += -collisionVector;
+												myCollisionPoint += -collisionVector;
 
 												//もし物理コンポーネントを持っていたら垂直抗力を与える
 												PhysicComp* physic = ecsManager->GetComponent<PhysicComp>(transformComp.entityID);
@@ -1121,7 +1123,6 @@ void GameManager::OnLateUpdate()
 												{
 													std::unique_ptr<CollisionForce> f = std::make_unique<CollisionForce>();
 													f->setCollisionVector(collisionVector, myCollisionPoint);
-													physic->velocity = f->afterBounceVelocity(physic->param, physic->velocity);
 
 													physic->forceList.push_back(std::move(f));
 												}
@@ -1143,6 +1144,8 @@ void GameManager::OnLateUpdate()
 					std::unique_ptr<Colider>& colider = coliderFactory->GetColider(coliderComp.ID);
 
 					colider->reflectMovement(transComp.position,transComp.rotate,transComp.scale);
+
+					transComp.centerPos = colider->getCenterPos();
 				}
 			}
 		);
