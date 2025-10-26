@@ -550,7 +550,7 @@ bool Colider::SAT(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisi
 #undef TST
 
 	if (!code) return 0;
-
+	
 	glm::vec3 normal;
 	float depth;
 
@@ -558,7 +558,7 @@ bool Colider::SAT(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisi
 	// in global coordinates.
 	// この点に到達すると、ボックスは相互に貫通します。法線を計算します。
 	// グローバル座標で。
-	if (glm::length(normalR) > 0.0f)
+	if (code <= 6)
 	{
 		normal[0] = normalR[0];
 		normal[1] = normalR[1];
@@ -568,6 +568,7 @@ bool Colider::SAT(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisi
 	{
 		normal = R1 * normalC;
 	}
+
 	if (invertNormal)
 	{
 		normal[0] = -normal[0];
@@ -855,18 +856,31 @@ bool Colider::SAT(const std::unique_ptr<Colider>& oppColider, glm::vec3& collisi
 	}
 	if (cnum < 1) return false;  // this should never happen ここは怒らないはず
 
-	collisionNormal = glm::vec3(0.0f);
-	if (glm::length(normal2) > 0.0f)
-	{
-		collisionNormal = glm::normalize(normal2) * dep[0];
-	}
-
 	glm::vec3 totalCollisionPoint(0.0f);
-	for (int i = 0; i < cnum; i++)
+	for (i = 0; i < cnum; i++)
 	{
 		totalCollisionPoint += point[i];
 	}
-	myCollisionPoint = (totalCollisionPoint / (float)cnum) + pa;
+
+	myCollisionPoint = glm::vec3(0.0f);
+	for (i = 0; i < cnum; i++)
+	{
+		myCollisionPoint += (totalCollisionPoint / (float)cnum) + pa - normal * dep[i];
+	}
+	myCollisionPoint = myCollisionPoint / (float)cnum;
+
+	collisionNormal = glm::vec3(0.0f);
+	if (glm::length(normal) > 0.0f)
+	{
+		const glm::vec3 normalizedNormal = glm::normalize(normal);
+
+		for (i = 0; i < cnum; i++)
+		{
+			collisionNormal += normalizedNormal * dep[i];
+		}
+
+		collisionNormal = collisionNormal / (float)cnum;
+	}
 
 	return true;
 }

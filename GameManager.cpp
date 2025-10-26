@@ -772,6 +772,10 @@ void GameManager::OnLateUpdate()
 						glm::vec3 totalForce = glm::vec3(0.0f);
 
 						float deltaTime = elapsed / 1000.0f;
+						if (deltaTime > 0.016)
+						{
+							deltaTime = 0.016f;
+						}
 
 						for (auto& force : physic.forceList)
 						{
@@ -807,6 +811,10 @@ void GameManager::OnLateUpdate()
 						glm::vec3 totalMorment(0.0f);
 
 						float deltaTime = elapsed / 1000.0f;
+						if (deltaTime > 0.016)
+						{
+							deltaTime = 0.016f;
+						}
 
 						for (auto& morment : physic.forceList)
 						{
@@ -820,7 +828,7 @@ void GameManager::OnLateUpdate()
 
 						//totalMorment += -0.005f * glm::length(physic.angVelocity) * physic.angVelocity;
 
-						totalMorment = glm::transpose(glm::mat3(transform.rotate)) * totalMorment;
+						totalMorment = glm::transpose(glm::mat3(transform.model)) * totalMorment;
 
 						//現在の角速度を控えておく
 						glm::vec3 currentAngVelocity = physic.angVelocity;
@@ -830,11 +838,14 @@ void GameManager::OnLateUpdate()
 						//角加速度を計算する
 						glm::vec3 angAcceleration = invInertia * totalMorment;
 
+						//ワールド空間に変換する
+						angAcceleration = glm::mat3(transform.model) * angAcceleration;
+
 						//現在の角速度を更新する
 						physic.angVelocity += angAcceleration * deltaTime;
 
 						//現在の回転を更新する
-						transform.rotateQuat = glm::normalize(deltaTime * 0.5f * glm::quat(cos(0.5f * glm::length(physic.angVelocity) * deltaTime), physic.angVelocity) * transform.rotateQuat);
+						//transform.rotateQuat = glm::normalize(deltaTime * 0.5f * glm::quat(cos(0.5f * glm::length(physic.angVelocity) * deltaTime), physic.angVelocity) * transform.rotateQuat);
 
 						if (glm::length2(transform.rotateQuat) < 1e-6f || glm::any(glm::isnan(transform.rotateQuat)))
 						{
@@ -1020,20 +1031,6 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
-	ecsManager->RunFunction<TransformComp, MeshRendererComp>
-		(
-			{
-			[&](TransformComp& transComp,MeshRendererComp& rendererComp)
-			{
-				ModelMat modelMat{};
-				modelMat.scale = transComp.scale;
-				modelMat.matrix = transComp.model;
-
-				bufferFactory->copyMemory(sizeof(ModelMat), &modelMat, rendererComp.modelMatBuffer);
-			}
-			}
-		);
-
 	ecsManager->RunFunction<TransformComp, ColiderComp>
 		(
 			{
@@ -1114,8 +1111,10 @@ void GameManager::OnLateUpdate()
 
 											if (collision)
 											{
-												transformComp.position += -collisionVector;
-												myCollisionPoint += -collisionVector;
+												collisionVector *= -1.0f;
+
+												transformComp.position += collisionVector;
+												myCollisionPoint += collisionVector;
 
 												//もし物理コンポーネントを持っていたら垂直抗力を与える
 												PhysicComp* physic = ecsManager->GetComponent<PhysicComp>(transformComp.entityID);
@@ -1136,7 +1135,36 @@ void GameManager::OnLateUpdate()
 			}
 		);
 
-		ecsManager->RunFunction<TransformComp, ColiderComp>
+	ecsManager->RunFunction<TransformComp>
+		(
+			{
+				[&](TransformComp& transform)
+				{
+					glm::mat4 rotateMat = glm::toMat4(transform.rotateQuat);
+
+					transform.rotate = rotateMat;
+
+					transform.model = glm::translate(glm::mat4(1.0f), transform.position)
+						* rotateMat * glm::scale(glm::mat4(1.0f), transform.scale);
+				}
+			}
+		);
+
+	ecsManager->RunFunction<TransformComp, MeshRendererComp>
+		(
+			{
+			[&](TransformComp& transComp,MeshRendererComp& rendererComp)
+			{
+				ModelMat modelMat{};
+				modelMat.scale = transComp.scale;
+				modelMat.matrix = transComp.model;
+
+				bufferFactory->copyMemory(sizeof(ModelMat), &modelMat, rendererComp.modelMatBuffer);
+			}
+			}
+		);
+
+	ecsManager->RunFunction<TransformComp, ColiderComp>
 		(
 			{
 				[&](TransformComp& transComp,ColiderComp& coliderComp)

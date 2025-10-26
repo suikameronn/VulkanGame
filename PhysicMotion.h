@@ -212,10 +212,15 @@ public:
 		
 		float cos = top / bottom;
 		float sin = sqrt(1.0f - (cos * cos));
-		float tan = sin / cos;
+		float tan;
+		tan = sin / cos;
+		if (cos <= 0.0f)
+		{
+			tan = FLT_MAX;
+		}
 
 		//垂直抗力を求める
-		force[0] = param.m * (-initVelocity);
+		force[0] = param.m * (initVelocity) * cos;
 
 		//インパルス法を採用するため
 		//垂直抗力を時間ステップで割り、無理やり速度が0になるような力に変える
@@ -226,6 +231,10 @@ public:
 
 		//斜面に平行なベクトル
 		glm::vec3 horizntal = glm::normalize(horizontalForce);
+		if (glm::length(horizontalForce) <= 0.0f)
+		{
+			horizntal = glm::vec3(0.0f);
+		}
 
 		//物体が滑り出すかどうかを調べる
 		if (tan < staticFriction)
@@ -250,14 +259,20 @@ public:
 	//その運動による力のモーメントを返す
 	std::vector<glm::vec3> getMoment(const glm::vec3& rotatePoint, const PhysicParam& param, const glm::vec3& initMoment, const float& deltaTime) override
 	{
+		//重心から作用点へのベクトル
 		const glm::vec3 line = collisionPoint - rotatePoint;
+
+		const glm::vec3 normalizeForce = glm::normalize(totalForce);
+
+		//上のベクトルから、力に平行な成分を除いたベクトルを求める
+		const glm::vec3 projLine = line - glm::dot(line, normalizeForce) * normalizeForce;
 
 		std::vector<glm::vec3> morment(1);
 
 		morment[0] = glm::vec3(0.0f);
-		if (glm::length(line) >= 0.1f)
+		if (glm::length(projLine) >= 0.01f)
 		{
-			morment[0] = glm::cross(line, totalForce);
+			morment[0] = glm::cross(line, totalForce) * 0.0001f;
 		}
 
 		return morment;
